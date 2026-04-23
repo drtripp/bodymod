@@ -1,0 +1,47 @@
+TARGETS = [
+    {
+        "id": "astarion",
+        "label": "Astarion",
+        "source_type": "character",
+        "notes": "Estimated placeholder profile.",
+        "measurements": {
+            "height": 178,
+            "weight": 71,
+            "sex": "male",
+            "shoulders": 108,
+            "underbust": 88,
+            "waist": 76,
+            "hips": 92,
+        },
+    },
+    {
+        "id": "thor",
+        "label": "Thor",
+        "source_type": "character",
+        "notes": "Estimated placeholder profile.",
+        "measurements": {
+            "height": 191,
+            "weight": 104,
+            "sex": "male",
+            "shoulders": 132,
+            "underbust": 108,
+            "waist": 88,
+            "hips": 102,
+        },
+    },
+    {
+        "id": "shadowheart",
+        "label": "Shadowheart",
+        "source_type": "character",
+        "notes": "Estimated placeholder profile.",
+        "measurements": {
+            "height": 163,
+            "weight": 56,
+            "sex": "female",
+            "shoulders": 96,
+            "underbust": 76,
+            "waist": 64,
+            "hips": 92,
+        },
+    },
+]

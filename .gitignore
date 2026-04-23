@@ -5,6 +5,11 @@ node_modules/
 out/
 dist/
 coverage/
+.venv/
+backend/.venv/
+frontend/dist/
+__pycache__/
+*.pyc
 .env
 .env.local
 .env.*.local
