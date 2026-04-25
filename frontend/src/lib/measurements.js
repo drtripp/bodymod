@@ -1,3 +1,9 @@
+import {
+  formatDisplayValue,
+  getFieldUnitLabel,
+  resolveFieldUnitSystem
+} from "./units";
+
 export const measurementFields = [
   {
     name: "height",
@@ -74,7 +80,11 @@ export function coerceMeasurements(formState) {
   }, {});
 }
 
-export function validateMeasurements(formState) {
+export function validateMeasurements(
+  formState,
+  globalUnitSystem = "metric",
+  fieldUnitOverrides = {}
+) {
   const errors = {};
 
   for (const field of measurementFields) {
@@ -95,7 +105,15 @@ export function validateMeasurements(formState) {
     }
 
     if (numericValue < field.min || numericValue > field.max) {
-      errors[field.name] = `Expected ${field.min}-${field.max} ${field.unit}`;
+      const unitSystem = resolveFieldUnitSystem(
+        field.name,
+        globalUnitSystem,
+        fieldUnitOverrides
+      );
+      const min = formatDisplayValue(field.name, field.min, unitSystem);
+      const max = formatDisplayValue(field.name, field.max, unitSystem);
+      const label = getFieldUnitLabel(field.name, unitSystem);
+      errors[field.name] = `Expected ${min}-${max} ${label}`;
     }
   }
 

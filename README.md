@@ -61,6 +61,13 @@ It does not yet include:
 - share links
 - any Hugging Face or ONNX inference work
 
+## Model Notes
+
+- `facebook/sapiens2` was evaluated on April 24, 2026 as a possible future photo/body-analysis model.
+- It is not a fit for the current app direction. The present product is measurement-first, and the MVP explicitly excludes raw photo uploads.
+- Even for a future photo-assisted flow, Sapiens2 appears misaligned: its published checkpoints are for pose estimation, body-part segmentation, surface normals, and pointmaps rather than direct measurement extraction.
+- More importantly, the Sapiens2 license explicitly restricts use "for biometric processing", which makes it a poor candidate for a body-measurement product without separate legal review and a narrower use case.
+
 ## Docs
 
 - `body-modding-platform-plan.docx`: original exploratory document

@@ -10,7 +10,9 @@ export default function MatchList({ matches }) {
         {matches.map((match) => (
           <li key={match.id} className="match-row">
             <span>{match.label}</span>
-            <span>{match.score.toFixed(3)}</span>
+            <span>
+              {typeof match.score === "number" ? match.score.toFixed(3) : "--"}
+            </span>
           </li>
         ))}
       </ul>

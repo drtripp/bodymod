@@ -1,35 +1,7 @@
-function widthFromCircumference(value, scale = 0.72) {
-  return Math.max(28, value * scale);
-}
+import { buildFrontSilhouette } from "../lib/silhouette";
 
 export default function SilhouetteView({ measurements, label }) {
-  const shoulderWidth = widthFromCircumference(measurements.shoulders, 0.58);
-  const chestWidth = widthFromCircumference(measurements.underbust, 0.64);
-  const waistWidth = widthFromCircumference(measurements.waist, 0.62);
-  const hipWidth = widthFromCircumference(measurements.hips, 0.68);
-  const heightScale = Math.max(230, measurements.height * 1.35);
-
-  const topY = 32;
-  const neckY = 56;
-  const chestY = 98;
-  const waistY = 170;
-  const hipY = 232;
-  const bottomY = Math.min(332, heightScale);
-  const centerX = 120;
-
-  const path = [
-    `M ${centerX - 18} ${topY}`,
-    `Q ${centerX - shoulderWidth * 0.14} ${neckY} ${centerX - shoulderWidth / 2} ${chestY}`,
-    `Q ${centerX - chestWidth / 2} ${waistY - 26} ${centerX - waistWidth / 2} ${waistY}`,
-    `Q ${centerX - hipWidth / 2} ${hipY - 10} ${centerX - hipWidth / 2} ${hipY}`,
-    `Q ${centerX - hipWidth * 0.18} ${bottomY - 18} ${centerX - 16} ${bottomY}`,
-    `L ${centerX + 16} ${bottomY}`,
-    `Q ${centerX + hipWidth * 0.18} ${bottomY - 18} ${centerX + hipWidth / 2} ${hipY}`,
-    `Q ${centerX + hipWidth / 2} ${hipY - 10} ${centerX + waistWidth / 2} ${waistY}`,
-    `Q ${centerX + chestWidth / 2} ${waistY - 26} ${centerX + shoulderWidth / 2} ${chestY}`,
-    `Q ${centerX + shoulderWidth * 0.14} ${neckY} ${centerX + 18} ${topY}`,
-    "Z"
-  ].join(" ");
+  const silhouette = buildFrontSilhouette(measurements);
 
   return (
     <figure className="silhouette-figure">
@@ -39,8 +11,14 @@ export default function SilhouetteView({ measurements, label }) {
         role="img"
         aria-label={`${label} silhouette`}
       >
-        <circle cx="120" cy="24" r="18" className="silhouette-head" />
-        <path d={path} className="silhouette-body" />
+        <line x1="120" y1="10" x2="120" y2="345" className="silhouette-axis" />
+        <circle
+          cx={silhouette.head.cx}
+          cy={silhouette.head.cy}
+          r={silhouette.head.r}
+          className="silhouette-head"
+        />
+        <path d={silhouette.path} className="silhouette-body" />
       </svg>
       <figcaption>{label}</figcaption>
     </figure>

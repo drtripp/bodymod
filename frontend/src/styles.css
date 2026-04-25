@@ -42,15 +42,14 @@ select {
 }
 
 .app-shell {
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: 24px 16px 48px;
+  min-height: 100vh;
+  width: 100%;
+  padding: 20px 24px 24px;
 }
 
 .site-header {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
   gap: 24px;
   padding-bottom: 20px;
   border-bottom: 1px solid #1b1b1b;
@@ -67,17 +66,27 @@ select {
   max-width: 42rem;
 }
 
-.site-nav {
-  display: flex;
-  gap: 16px;
-  font-size: 0.95rem;
-}
-
-.main-grid {
+.workspace {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.85fr);
   gap: 16px;
   padding-top: 20px;
+  min-height: calc(100vh - 110px);
+}
+
+.visual-column,
+.control-column {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.visual-column {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.control-column {
+  grid-template-rows: repeat(3, auto);
 }
 
 .panel {
@@ -88,6 +97,13 @@ select {
 
 .panel-header {
   margin-bottom: 12px;
+}
+
+.panel-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
 }
 
 .panel-header h2 {
@@ -120,16 +136,69 @@ select {
   display: flex;
   justify-content: space-between;
   gap: 12px;
+  align-items: start;
   font-size: 0.95rem;
 }
 
-.field-unit {
-  color: #555555;
+.field-unit-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.field-unit-group.is-overridden .mini-unit-toggle {
+  box-shadow: 0 0 0 1px #a8511a;
+}
+
+.mini-unit-toggle {
+  display: inline-flex;
+  gap: 0;
+}
+
+.mini-unit-toggle .button {
+  min-height: 24px;
+  padding: 2px 7px;
+  font-size: 0.82rem;
+  line-height: 1.1;
+}
+
+.mini-unit-toggle .button + .button {
+  margin-left: -1px;
+}
+
+.field-unit-reset {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 1px solid #1b1b1b;
+  background: #fcfbf8;
+  color: #111111;
+  opacity: 0.4;
+  cursor: pointer;
+}
+
+.field-unit-reset.is-visible {
+  opacity: 1;
 }
 
 .field-error {
   color: #8a1e12;
   font-size: 0.9rem;
+}
+
+.unit-toggle {
+  display: inline-flex;
+  gap: 0;
+}
+
+.unit-toggle .button {
+  min-height: 34px;
+  padding: 6px 10px;
+}
+
+.unit-toggle .button + .button {
+  margin-left: -1px;
 }
 
 .button {
@@ -164,6 +233,18 @@ select {
   gap: 16px;
 }
 
+.visual-column .panel {
+  min-height: 0;
+}
+
+.visual-column .result-grid {
+  align-items: stretch;
+}
+
+.visual-column .silhouette-figure {
+  min-height: 100%;
+}
+
 .result-copy {
   display: grid;
   gap: 12px;
@@ -188,12 +269,21 @@ select {
   margin: 0;
   border: 1px solid #1b1b1b;
   padding: 12px;
+  background:
+    linear-gradient(to right, transparent calc(50% - 0.5px), #e3e0d6 calc(50% - 0.5px), #e3e0d6 calc(50% + 0.5px), transparent calc(50% + 0.5px));
 }
 
 .silhouette-svg {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  min-height: 360px;
+  max-height: 64vh;
+}
+
+.silhouette-axis {
+  stroke: #c9c4b7;
+  stroke-width: 1;
 }
 
 .silhouette-head,
@@ -201,6 +291,8 @@ select {
   fill: none;
   stroke: #111111;
   stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
 .comparison-toolbar {
@@ -294,23 +386,80 @@ select {
   border-bottom: 1px solid #d0d0cc;
 }
 
-.snapshot-placeholder,
-.anchor-panel p,
+.snapshot-actions {
+  margin-bottom: 12px;
+}
+
+.snapshot-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid #d0d0cc;
+}
+
+.snapshot-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #d0d0cc;
+}
+
+.snapshot-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.snapshot-copy span {
+  color: #333333;
+  font-size: 0.95rem;
+}
+
 .muted-text {
   color: #333333;
 }
 
 @media (max-width: 760px) {
+  .app-shell {
+    padding: 24px 16px 48px;
+  }
+
   .site-header,
-  .comparison-toolbar,
+  .panel-header-row,
   .result-grid,
-  .comparison-grid,
-  .measurement-form {
+  .measurement-form,
+  .workspace {
     grid-template-columns: 1fr;
     display: grid;
   }
 
-  .site-nav {
-    gap: 12px;
+  .panel-header-row {
+    gap: 10px;
+  }
+
+  .field-label {
+    gap: 8px;
+  }
+
+  .workspace {
+    min-height: auto;
+  }
+
+  .control-column {
+    order: 1;
+  }
+
+  .visual-column {
+    order: 2;
+  }
+
+  .silhouette-svg {
+    min-height: 280px;
+    max-height: none;
+  }
+  .snapshot-row {
+    grid-template-columns: 1fr;
+    display: grid;
   }
 }

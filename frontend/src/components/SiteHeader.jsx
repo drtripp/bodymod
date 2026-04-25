@@ -8,10 +8,6 @@ export default function SiteHeader() {
           over time.
         </p>
       </div>
-      <nav className="site-nav" aria-label="Primary">
-        <a href="#method">Method</a>
-        <a href="#privacy">Privacy</a>
-      </nav>
     </header>
   );
 }
