@@ -204,6 +204,7 @@ export function buildFrontSilhouette(measurements) {
   const halfWidths = buildHalfWidths(measurements, profile);
 
   const leftSide = Object.entries(profile.y).map(([key, proportion]) => ({
+    key,
     x: centerX - halfWidths[key],
     y: bodyTopY + bodyHeight * proportion
   }));
@@ -217,6 +218,7 @@ export function buildFrontSilhouette(measurements) {
   const rightSide = [...leftSide]
     .reverse()
     .map((point) => ({
+      key: point.key,
       x: centerX + (centerX - point.x),
       y: point.y
     }));
@@ -227,12 +229,32 @@ export function buildFrontSilhouette(measurements) {
     ...rightSide
   ].map(roundPoint);
 
+  const anchors = {
+    shoulders: {
+      left: roundPoint(leftSide.find((point) => point.key === "shoulder")),
+      right: roundPoint(rightSide.find((point) => point.key === "shoulder"))
+    },
+    underbust: {
+      left: roundPoint(leftSide.find((point) => point.key === "underbust")),
+      right: roundPoint(rightSide.find((point) => point.key === "underbust"))
+    },
+    waist: {
+      left: roundPoint(leftSide.find((point) => point.key === "waist")),
+      right: roundPoint(rightSide.find((point) => point.key === "waist"))
+    },
+    hips: {
+      left: roundPoint(leftSide.find((point) => point.key === "hip")),
+      right: roundPoint(rightSide.find((point) => point.key === "hip"))
+    }
+  };
+
   return {
     head: {
       cx: centerX,
       cy: headCenterY,
       r: Number(headRadius.toFixed(2))
     },
+    anchors,
     path: `${smoothPath(pathPoints)} Z`
   };
 }

@@ -33,6 +33,7 @@ export default function App() {
   const [snapshots, setSnapshots] = useState([]);
   const [globalUnitSystem, setGlobalUnitSystem] = useState("metric");
   const [fieldUnitOverrides, setFieldUnitOverrides] = useState({});
+  const [hoveredMeasurement, setHoveredMeasurement] = useState(null);
 
   useEffect(() => {
     const storedSnapshots = loadSnapshots();
@@ -253,6 +254,8 @@ export default function App() {
             measurements={currentMeasurements}
             result={result}
             apiStatus={apiStatus}
+            hoveredMeasurement={hoveredMeasurement}
+            onMeasurementHover={setHoveredMeasurement}
           />
         </section>
 
@@ -268,6 +271,8 @@ export default function App() {
             onGlobalUnitChange={handleGlobalUnitChange}
             onFieldUnitChange={handleFieldUnitChange}
             onFieldUnitReset={handleFieldUnitReset}
+            hoveredMeasurement={hoveredMeasurement}
+            onMeasurementHover={setHoveredMeasurement}
           />
 
           <MatchList matches={rankedMatches} />

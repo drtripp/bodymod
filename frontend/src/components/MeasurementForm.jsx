@@ -11,7 +11,9 @@ export default function MeasurementForm({
   fieldUnitOverrides,
   onGlobalUnitChange,
   onFieldUnitChange,
-  onFieldUnitReset
+  onFieldUnitReset,
+  hoveredMeasurement,
+  onMeasurementHover
 }) {
   return (
     <section className="panel">
@@ -47,9 +49,15 @@ export default function MeasurementForm({
             fieldUnitOverrides
           );
           const hasOverride = Boolean(fieldUnitOverrides[field.name]);
+          const isHighlighted = hoveredMeasurement === field.name;
 
           return (
-            <label key={field.name} className="field">
+            <label
+              key={field.name}
+              className={`field ${isHighlighted ? "is-highlighted" : ""}`}
+              onMouseEnter={() => onMeasurementHover?.(field.name)}
+              onMouseLeave={() => onMeasurementHover?.(null)}
+            >
               <span className="field-label">
                 <span>{field.label}</span>
                 {field.unit ? (
@@ -94,6 +102,8 @@ export default function MeasurementForm({
                   name={field.name}
                   value={formState[field.name]}
                   onChange={onChange}
+                  onFocus={() => onMeasurementHover?.(field.name)}
+                  onBlur={() => onMeasurementHover?.(null)}
                 >
                   {field.options.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -108,7 +118,11 @@ export default function MeasurementForm({
                   inputMode="decimal"
                   value={formState[field.name]}
                   onChange={onChange}
-                  onBlur={() => onFieldBlur(field.name)}
+                  onFocus={() => onMeasurementHover?.(field.name)}
+                  onBlur={() => {
+                    onFieldBlur(field.name);
+                    onMeasurementHover?.(null);
+                  }}
                 />
               )}
 

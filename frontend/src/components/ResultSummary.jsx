@@ -1,6 +1,12 @@
 import SilhouetteView from "./SilhouetteView";
 
-export default function ResultSummary({ measurements, result, apiStatus }) {
+export default function ResultSummary({
+  measurements,
+  result,
+  apiStatus,
+  hoveredMeasurement,
+  onMeasurementHover
+}) {
   return (
     <section className="panel">
       <div className="panel-header">
@@ -13,7 +19,12 @@ export default function ResultSummary({ measurements, result, apiStatus }) {
       </div>
 
       <div className="result-grid">
-        <SilhouetteView label="Current profile" measurements={measurements} />
+        <SilhouetteView
+          label="Current profile"
+          measurements={measurements}
+          hoveredMeasurement={hoveredMeasurement}
+          onMeasurementHover={onMeasurementHover}
+        />
 
         <div className="result-copy">
           <div className="stat-block">

@@ -126,6 +126,16 @@ select {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin: -6px;
+  padding: 6px;
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.field.is-highlighted {
+  background: #fff6dc;
+  box-shadow: 0 0 0 2px rgba(168, 81, 26, 0.18), 0 0 18px rgba(168, 81, 26, 0.18);
 }
 
 .compact-field {
@@ -293,6 +303,58 @@ select {
   stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
+}
+
+.silhouette-anchor {
+  cursor: pointer;
+  outline: none;
+}
+
+.silhouette-anchor-hit {
+  stroke: transparent;
+  stroke-linecap: round;
+  stroke-width: 18;
+}
+
+.silhouette-anchor-line,
+.silhouette-anchor-point {
+  opacity: 0;
+  transition:
+    opacity 140ms ease,
+    stroke-width 140ms ease,
+    r 140ms ease;
+}
+
+.silhouette-anchor-line {
+  stroke: #a8511a;
+  stroke-width: 1.5;
+  stroke-dasharray: 3 5;
+}
+
+.silhouette-anchor-point {
+  fill: #fcfbf8;
+  stroke: #a8511a;
+  stroke-width: 2;
+}
+
+.silhouette-anchor:hover .silhouette-anchor-line,
+.silhouette-anchor:hover .silhouette-anchor-point,
+.silhouette-anchor:focus-visible .silhouette-anchor-line,
+.silhouette-anchor:focus-visible .silhouette-anchor-point,
+.silhouette-anchor.is-highlighted .silhouette-anchor-line,
+.silhouette-anchor.is-highlighted .silhouette-anchor-point {
+  opacity: 1;
+}
+
+.silhouette-anchor.is-highlighted .silhouette-anchor-point {
+  stroke-width: 2.4;
+}
+
+.silhouette-anchor-band {
+  pointer-events: none;
+  stroke: rgba(168, 81, 26, 0.2);
+  stroke-linecap: round;
+  stroke-width: 18;
 }
 
 .comparison-toolbar {
