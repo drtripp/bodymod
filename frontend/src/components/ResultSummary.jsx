@@ -36,8 +36,10 @@ export default function ResultSummary({
             <h3>Percentiles</h3>
             <ul className="plain-list">
               <li>Height: {result?.percentiles?.height ?? "--"}%</li>
-              <li>Waist: {result?.percentiles?.waist ?? "--"}%</li>
-              <li>Shoulders: {result?.percentiles?.shoulders ?? "--"}%</li>
+              <li>Waist: {result?.percentiles?.waistCircumference ?? "--"}%</li>
+              <li>
+                Bideltoid: {result?.percentiles?.bideltoidCircumference ?? "--"}%
+              </li>
             </ul>
           </div>
 

@@ -6,11 +6,13 @@ function formatTimestamp(timestamp) {
 }
 
 function formatMeasurements(measurements) {
+  const waist = measurements.waistCircumference ?? measurements.waist;
+
   return [
     `${measurements.height} cm`,
     `${measurements.weight} kg`,
     measurements.sex,
-    `waist ${measurements.waist}`
+    `waist ${waist}`
   ].join(" / ");
 }
 

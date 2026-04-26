@@ -118,16 +118,45 @@ select {
 
 .measurement-form {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.measurement-group {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 0 0;
+  border: 0;
+  border-top: 1px solid #d0d0cc;
+}
+
+.measurement-group:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.measurement-group legend {
+  padding: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.measurement-group-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 10px;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin: -6px;
-  padding: 6px;
+  gap: 4px;
+  min-width: 0;
+  margin: -5px;
+  padding: 5px;
   transition:
     background-color 140ms ease,
     box-shadow 140ms ease;
@@ -145,15 +174,30 @@ select {
 .field-label {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   align-items: start;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
+  line-height: 1.2;
+}
+
+.field-control-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.field-control-row input,
+.field-control-row select {
+  width: 100%;
+  min-width: 0;
 }
 
 .field-unit-group {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .field-unit-group.is-overridden .mini-unit-toggle {
@@ -166,9 +210,9 @@ select {
 }
 
 .mini-unit-toggle .button {
-  min-height: 24px;
-  padding: 2px 7px;
-  font-size: 0.82rem;
+  min-height: 22px;
+  padding: 2px 6px;
+  font-size: 0.76rem;
   line-height: 1.1;
 }
 
@@ -177,9 +221,9 @@ select {
 }
 
 .field-unit-reset {
-  width: 24px;
-  height: 24px;
-  min-height: 24px;
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
   padding: 0;
   border: 1px solid #1b1b1b;
   background: #fcfbf8;
@@ -194,7 +238,7 @@ select {
 
 .field-error {
   color: #8a1e12;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
 }
 
 .unit-toggle {
@@ -491,6 +535,7 @@ select {
   .panel-header-row,
   .result-grid,
   .measurement-form,
+  .measurement-group-fields,
   .workspace {
     grid-template-columns: 1fr;
     display: grid;

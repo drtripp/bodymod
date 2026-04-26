@@ -3,10 +3,23 @@ const PROFILE_DEFAULTS = {
     average: {
       height: 176,
       weight: 78,
-      shoulders: 118,
-      underbust: 94,
-      waist: 83,
-      hips: 97
+      headCircumference: 57,
+      neckCircumference: 39,
+      biacromialWidth: 40,
+      bideltoidWidth: 50,
+      bideltoidCircumference: 118,
+      armpitCircumference: 98,
+      nippleCircumference: 96,
+      underbustCircumference: 92,
+      waistCircumference: 80,
+      pantWaistCircumference: 86,
+      hipCircumference: 96,
+      upperThighCircumference: 58,
+      midThighCircumference: 50,
+      calfCircumference: 38,
+      bicepCircumference: 34,
+      upperForearmCircumference: 29,
+      wristCircumference: 17
     },
     widths: {
       neck: 18,
@@ -43,10 +56,23 @@ const PROFILE_DEFAULTS = {
     average: {
       height: 164,
       weight: 62,
-      shoulders: 104,
-      underbust: 78,
-      waist: 70,
-      hips: 100
+      headCircumference: 55,
+      neckCircumference: 32,
+      biacromialWidth: 35,
+      bideltoidWidth: 43,
+      bideltoidCircumference: 100,
+      armpitCircumference: 86,
+      nippleCircumference: 88,
+      underbustCircumference: 78,
+      waistCircumference: 70,
+      pantWaistCircumference: 77,
+      hipCircumference: 100,
+      upperThighCircumference: 56,
+      midThighCircumference: 48,
+      calfCircumference: 35,
+      bicepCircumference: 28,
+      upperForearmCircumference: 23,
+      wristCircumference: 15
     },
     widths: {
       neck: 16,
@@ -136,59 +162,110 @@ function buildHalfWidths(measurements, profile) {
   const averageBodyMassIndex = average.weight / Math.pow(average.height / 100, 2);
   const massScale = clamp(1 + (bodyMassIndex - averageBodyMassIndex) * 0.018, 0.8, 1.22);
 
-  const shoulderInfluence = measurementInfluence(
-    measurements.shoulders,
-    average.shoulders,
+  const neckInfluence = measurementInfluence(
+    measurements.neckCircumference,
+    average.neckCircumference,
     0.9
   );
+  const biacromialInfluence = measurementInfluence(
+    measurements.biacromialWidth,
+    average.biacromialWidth,
+    0.95
+  );
+  const bideltoidWidthInfluence = measurementInfluence(
+    measurements.bideltoidWidth,
+    average.bideltoidWidth,
+    0.95
+  );
+  const bideltoidCircumferenceInfluence = measurementInfluence(
+    measurements.bideltoidCircumference,
+    average.bideltoidCircumference,
+    0.82
+  );
+  const armpitInfluence = measurementInfluence(
+    measurements.armpitCircumference,
+    average.armpitCircumference,
+    0.9
+  );
+  const nippleInfluence = measurementInfluence(
+    measurements.nippleCircumference,
+    average.nippleCircumference,
+    0.94
+  );
   const underbustInfluence = measurementInfluence(
-    measurements.underbust,
-    average.underbust,
+    measurements.underbustCircumference,
+    average.underbustCircumference,
     0.92
   );
   const waistInfluence = measurementInfluence(
-    measurements.waist,
-    average.waist,
+    measurements.waistCircumference,
+    average.waistCircumference,
     1.08
   );
-  const hipInfluence = measurementInfluence(measurements.hips, average.hips, 0.96);
+  const pantWaistInfluence = measurementInfluence(
+    measurements.pantWaistCircumference,
+    average.pantWaistCircumference,
+    1
+  );
+  const hipInfluence = measurementInfluence(
+    measurements.hipCircumference,
+    average.hipCircumference,
+    0.96
+  );
+  const upperThighInfluence = measurementInfluence(
+    measurements.upperThighCircumference,
+    average.upperThighCircumference,
+    0.96
+  );
+  const midThighInfluence = measurementInfluence(
+    measurements.midThighCircumference,
+    average.midThighCircumference,
+    0.96
+  );
+  const calfInfluence = measurementInfluence(
+    measurements.calfCircumference,
+    average.calfCircumference,
+    0.96
+  );
 
-  const frameScale = heightScale * (0.72 + shoulderInfluence * 0.28);
+  const frameScale = heightScale * (0.72 + biacromialInfluence * 0.28);
   const torsoMassScale = 0.84 + massScale * 0.16;
   const lowerMassScale = 0.8 + massScale * 0.2;
 
   return {
-    neck: widths.neck * heightScale * (0.9 + massScale * 0.1),
-    shoulder: widths.shoulder * frameScale * shoulderInfluence,
+    neck: widths.neck * heightScale * neckInfluence,
+    shoulder: widths.shoulder * frameScale * biacromialInfluence,
     deltoid:
       widths.deltoid *
       frameScale *
-      (shoulderInfluence * 0.72 + underbustInfluence * 0.28),
+      (bideltoidWidthInfluence * 0.58 +
+        bideltoidCircumferenceInfluence * 0.28 +
+        armpitInfluence * 0.14),
     chest:
       widths.chest *
       heightScale *
       torsoMassScale *
-      (shoulderInfluence * 0.34 + underbustInfluence * 0.66),
+      (armpitInfluence * 0.24 + nippleInfluence * 0.46 + underbustInfluence * 0.3),
     underbust: widths.underbust * heightScale * torsoMassScale * underbustInfluence,
     waist: widths.waist * heightScale * torsoMassScale * waistInfluence,
     highHip:
       widths.highHip *
       heightScale *
       lowerMassScale *
-      (waistInfluence * 0.35 + hipInfluence * 0.65),
+      (pantWaistInfluence * 0.5 + hipInfluence * 0.5),
     hip: widths.hip * heightScale * lowerMassScale * hipInfluence,
     upperThigh:
       widths.upperThigh *
       heightScale *
       lowerMassScale *
-      (hipInfluence * 0.58 + massScale * 0.42),
+      (upperThighInfluence * 0.7 + hipInfluence * 0.3),
     midThigh:
       widths.midThigh *
       heightScale *
       lowerMassScale *
-      (hipInfluence * 0.44 + massScale * 0.56),
+      (midThighInfluence * 0.76 + upperThighInfluence * 0.24),
     knee: widths.knee * heightScale * (0.9 + massScale * 0.1),
-    calf: widths.calf * heightScale * (0.88 + massScale * 0.12),
+    calf: widths.calf * heightScale * calfInfluence,
     ankle: widths.ankle * heightScale
   };
 }
@@ -196,7 +273,12 @@ function buildHalfWidths(measurements, profile) {
 export function buildFrontSilhouette(measurements) {
   const profile = PROFILE_DEFAULTS[measurements.sex] || PROFILE_DEFAULTS.male;
   const centerX = 120;
-  const headRadius = clamp(17 + (measurements.height - 170) * 0.05, 15.5, 19.5);
+  const averageHead = profile.average.headCircumference;
+  const headRadius = clamp(
+    17 + (measurements.height - 170) * 0.035,
+    15.5,
+    19.5
+  ) * measurementInfluence(measurements.headCircumference, averageHead, 0.72);
   const headCenterY = 26;
   const bodyTopY = headCenterY + headRadius + 6;
   const bodyBottomY = 338;
@@ -229,23 +311,72 @@ export function buildFrontSilhouette(measurements) {
     ...rightSide
   ].map(roundPoint);
 
+  function sideSpan(key) {
+    return {
+      left: roundPoint(leftSide.find((point) => point.key === key)),
+      right: roundPoint(rightSide.find((point) => point.key === key))
+    };
+  }
+
+  function bodyY(proportion) {
+    return bodyTopY + bodyHeight * proportion;
+  }
+
+  function centeredSpan(y, halfWidth) {
+    return {
+      left: roundPoint({ x: centerX - halfWidth, y }),
+      right: roundPoint({ x: centerX + halfWidth, y })
+    };
+  }
+
+  function limbSpan(y, centerOffset, circumference, averageCircumference) {
+    const radius = clamp(
+      (circumference / averageCircumference) * 5.6,
+      3.8,
+      9.5
+    );
+    const x = centerX + centerOffset;
+
+    return {
+      left: roundPoint({ x: x - radius, y }),
+      right: roundPoint({ x: x + radius, y })
+    };
+  }
+
+  const armOffset = halfWidths.deltoid + 15;
   const anchors = {
-    shoulders: {
-      left: roundPoint(leftSide.find((point) => point.key === "shoulder")),
-      right: roundPoint(rightSide.find((point) => point.key === "shoulder"))
-    },
-    underbust: {
-      left: roundPoint(leftSide.find((point) => point.key === "underbust")),
-      right: roundPoint(rightSide.find((point) => point.key === "underbust"))
-    },
-    waist: {
-      left: roundPoint(leftSide.find((point) => point.key === "waist")),
-      right: roundPoint(rightSide.find((point) => point.key === "waist"))
-    },
-    hips: {
-      left: roundPoint(leftSide.find((point) => point.key === "hip")),
-      right: roundPoint(rightSide.find((point) => point.key === "hip"))
-    }
+    headCircumference: centeredSpan(headCenterY, headRadius),
+    neckCircumference: sideSpan("neck"),
+    biacromialWidth: sideSpan("shoulder"),
+    bideltoidWidth: sideSpan("deltoid"),
+    bideltoidCircumference: sideSpan("deltoid"),
+    armpitCircumference: centeredSpan(bodyY(0.135), halfWidths.chest * 0.96),
+    nippleCircumference: sideSpan("chest"),
+    underbustCircumference: sideSpan("underbust"),
+    waistCircumference: sideSpan("waist"),
+    pantWaistCircumference: sideSpan("highHip"),
+    hipCircumference: sideSpan("hip"),
+    upperThighCircumference: sideSpan("upperThigh"),
+    midThighCircumference: sideSpan("midThigh"),
+    calfCircumference: sideSpan("calf"),
+    bicepCircumference: limbSpan(
+      bodyY(0.24),
+      armOffset,
+      measurements.bicepCircumference,
+      profile.average.bicepCircumference
+    ),
+    upperForearmCircumference: limbSpan(
+      bodyY(0.39),
+      armOffset + 2,
+      measurements.upperForearmCircumference,
+      profile.average.upperForearmCircumference
+    ),
+    wristCircumference: limbSpan(
+      bodyY(0.54),
+      armOffset,
+      measurements.wristCircumference,
+      profile.average.wristCircumference
+    )
   };
 
   return {

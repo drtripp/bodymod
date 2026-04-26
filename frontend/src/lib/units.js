@@ -83,7 +83,27 @@ export function buildDisplayFormState(formState, globalUnitSystem, fieldUnitOver
   const nextState = {
     sex: formState.sex
   };
-  const numericFields = ["height", "weight", "shoulders", "underbust", "waist", "hips"];
+  const numericFields = [
+    "height",
+    "weight",
+    "headCircumference",
+    "neckCircumference",
+    "biacromialWidth",
+    "bideltoidWidth",
+    "bideltoidCircumference",
+    "armpitCircumference",
+    "nippleCircumference",
+    "underbustCircumference",
+    "waistCircumference",
+    "pantWaistCircumference",
+    "hipCircumference",
+    "upperThighCircumference",
+    "midThighCircumference",
+    "calfCircumference",
+    "bicepCircumference",
+    "upperForearmCircumference",
+    "wristCircumference"
+  ];
 
   for (const fieldName of numericFields) {
     const unitSystem = resolveFieldUnitSystem(

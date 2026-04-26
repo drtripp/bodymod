@@ -8,6 +8,7 @@ import { fetchHealth, fetchMatches, fetchTargets } from "./lib/api";
 import {
   coerceMeasurements,
   defaultMeasurements,
+  normalizeMeasurements,
   validateMeasurements
 } from "./lib/measurements";
 import { createSnapshot, loadSnapshots, persistSnapshots } from "./lib/storage";
@@ -40,9 +41,10 @@ export default function App() {
     setSnapshots(storedSnapshots);
 
     if (storedSnapshots.length) {
-      setFormState(storedSnapshots[0].measurements);
+      const measurements = normalizeMeasurements(storedSnapshots[0].measurements);
+      setFormState(measurements);
       setDisplayFormState(
-        buildDisplayFormState(storedSnapshots[0].measurements, "metric", {})
+        buildDisplayFormState(measurements, "metric", {})
       );
     } else {
       setDisplayFormState(buildDisplayFormState(defaultMeasurements, "metric", {}));
@@ -187,9 +189,10 @@ export default function App() {
       return;
     }
 
-    setFormState(snapshot.measurements);
+    const measurements = normalizeMeasurements(snapshot.measurements);
+    setFormState(measurements);
     setDisplayFormState(
-      buildDisplayFormState(snapshot.measurements, globalUnitSystem, fieldUnitOverrides)
+      buildDisplayFormState(measurements, globalUnitSystem, fieldUnitOverrides)
     );
     setErrors({});
   }

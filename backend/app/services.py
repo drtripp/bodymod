@@ -12,7 +12,26 @@ def score_match(current: MeasurementSet, target: TargetProfile) -> float:
 
     # Normalize by height so the first version is not purely absolute size.
     height = max(current.height, 1.0)
-    keys = ["weight", "shoulders", "underbust", "waist", "hips"]
+    keys = [
+        "weight",
+        "headCircumference",
+        "neckCircumference",
+        "biacromialWidth",
+        "bideltoidWidth",
+        "bideltoidCircumference",
+        "armpitCircumference",
+        "nippleCircumference",
+        "underbustCircumference",
+        "waistCircumference",
+        "pantWaistCircumference",
+        "hipCircumference",
+        "upperThighCircumference",
+        "midThighCircumference",
+        "calfCircumference",
+        "bicepCircumference",
+        "upperForearmCircumference",
+        "wristCircumference",
+    ]
 
     total = 0.0
     for key in keys:
@@ -27,13 +46,13 @@ def score_match(current: MeasurementSet, target: TargetProfile) -> float:
 def estimate_percentiles(current: MeasurementSet) -> PercentileSummary:
     # Placeholder percentile estimates for scaffold use only.
     height = min(99, max(1, int((current.height - 140) / 0.9)))
-    waist = min(99, max(1, int((current.waist - 45) / 1.3)))
-    shoulders = min(99, max(1, int((current.shoulders - 70) / 1.1)))
+    waist = min(99, max(1, int((current.waistCircumference - 45) / 1.3)))
+    shoulders = min(99, max(1, int((current.bideltoidCircumference - 70) / 1.1)))
 
     return PercentileSummary(
         height=height,
-        waist=waist,
-        shoulders=shoulders,
+        waistCircumference=waist,
+        bideltoidCircumference=shoulders,
     )
 
 
