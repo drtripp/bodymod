@@ -17,41 +17,11 @@ export default function ComparisonPanel({
   const targetSource = selectedTarget?.source_type
     ? selectedTarget.source_type.replace(/-/g, " ")
     : "target";
-  const overlapDiffRegions = targetComparison
-    .filter((item) => Math.abs(item.delta) >= 0.5)
-    .slice(0, 6);
-
-  const regionTops = {
-    Height: 8,
-    Weight: 48,
-    "Shoulder mass": 30,
-    Waist: 50,
-    Hip: 61,
-    "Upper thigh": 74,
-    Bicep: 39
-  };
 
   return (
     <section className="panel">
       {rankedMatches.length ? (
         <div className="comparison-toolbar">
-          <div className="button-row" role="tablist" aria-label="Comparison mode">
-            <button
-              className={`button ${mode === "side-by-side" ? "is-active" : ""}`}
-              type="button"
-              onClick={() => onModeChange("side-by-side")}
-            >
-              Side by side
-            </button>
-            <button
-              className={`button ${mode === "overlap" ? "is-active" : ""}`}
-              type="button"
-              onClick={() => onModeChange("overlap")}
-            >
-              Overlap
-            </button>
-          </div>
-
           <label className="field compact-field">
             <span className="field-label">Target</span>
             <select value={selectedTarget?.id || ""} onChange={onTargetChange}>
@@ -104,25 +74,22 @@ export default function ComparisonPanel({
                   measurements={selectedTarget.measurements}
                 />
               </div>
-              {mode === "overlap" ? (
-                <div className="overlap-diff-regions" aria-label="Overlap difference regions">
-                  {overlapDiffRegions.map((item) => (
-                    <span
-                      key={item.key}
-                      className={`overlap-region ${
-                        item.delta > 0 ? "region-plus" : "region-minus"
-                      }`}
-                      style={{
-                        top: `${regionTops[item.label] ?? 50}%`,
-                        width: `${Math.min(72, Math.max(24, Math.abs(item.delta) * 3.2))}%`
-                      }}
-                      title={`${item.label}: ${item.delta > 0 ? "+" : ""}${item.delta.toFixed(1)} ${item.unit}`}
-                    >
-                      {item.delta > 0 ? "+" : "-"} {item.label}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
+              <div className="comparison-mode-controls" role="tablist" aria-label="Comparison mode">
+                <button
+                  className={`button ${mode === "side-by-side" ? "is-active" : ""}`}
+                  type="button"
+                  onClick={() => onModeChange("side-by-side")}
+                >
+                  Side by side
+                </button>
+                <button
+                  className={`button ${mode === "overlap" ? "is-active" : ""}`}
+                  type="button"
+                  onClick={() => onModeChange("overlap")}
+                >
+                  Overlap
+                </button>
+              </div>
               <div className="legend">
                 <span className="legend-item">
                   <span className="legend-swatch legend-user" />
@@ -135,19 +102,31 @@ export default function ComparisonPanel({
               </div>
             </div>
             <div className="comparison-diff-card" aria-label="Target measurement difference">
-              <h3>Diff</h3>
-              <p className="muted-text">You - target</p>
-              <ul>
-                {targetComparison.map((item) => (
-                  <li key={item.key} className={`diff-row diff-${item.direction}`}>
-                    <span>{item.label}</span>
-                    <strong>
-                      {item.delta > 0 ? "+" : ""}
-                      {item.delta.toFixed(1)} {item.unit}
-                    </strong>
-                  </li>
-                ))}
-              </ul>
+              <table className="comparison-diff-table">
+                <thead>
+                  <tr>
+                    <th>Metric</th>
+                    <th>You</th>
+                    <th>Target</th>
+                    <th>Diff</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {targetComparison.map((item) => (
+                    <tr key={item.key} className={`diff-${item.direction}`}>
+                      <th scope="row">{item.label}</th>
+                      <td>{item.currentValue.toFixed(1)} {item.unit}</td>
+                      <td>{item.baselineValue.toFixed(1)} {item.unit}</td>
+                      <td>
+                        <strong>
+                          {item.delta > 0 ? "+" : ""}
+                          {item.delta.toFixed(1)} {item.unit}
+                        </strong>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
           {mode === "overlap" ? (
@@ -159,8 +138,7 @@ export default function ComparisonPanel({
         </>
       ) : (
         <p className="muted-text">
-          Target comparison is available once target profiles are loaded. Snapshot
-          comparison still works locally.
+          Target comparison is available once target profiles are loaded.
         </p>
       )}
 

@@ -107,11 +107,16 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.getByLabel("Target match explanation")).toContainText("waist: 4 below target");
   await expect(page.getByLabel("Target measurement difference")).toBeVisible();
   await expect(page.getByLabel("Target measurement difference").getByText("Weight")).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "You" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Target" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Diff" })).toBeVisible();
+  await expect(page.getByLabel("Target measurement difference").getByText("82.0 kg")).toBeVisible();
+  await expect(page.getByLabel("Target measurement difference").getByText("71.0 kg")).toBeVisible();
   await expect(page.getByLabel("Target measurement difference").getByText("+11.0 kg")).toBeVisible();
 
   await page.getByRole("button", { name: "Overlap" }).click();
   await expect(page.getByLabel("Overlap comparison")).toBeVisible();
-  await expect(page.getByLabel("Overlap difference regions")).toBeVisible();
+  await expect(page.getByLabel("Overlap difference regions")).toHaveCount(0);
   await expect(page.getByLabel("Target measurement difference")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Current vs target" })).toHaveCount(0);
   await expect
@@ -150,6 +155,8 @@ test("validates measurements and supports unit display changes", async ({ page }
 
   await height.fill("180");
   await height.blur();
+  await page.locator("label").filter({ hasText: "Height" }).locator(".field-info").hover();
+  await expect(page.getByRole("tooltip").getByText("Standing height without shoes.")).toBeVisible();
   await page.getByRole("button", { name: "Imperial" }).first().click();
   await expect(height).toHaveValue(/70\.9|71/);
 });
@@ -262,83 +269,10 @@ test("renders silhouettes for extreme but valid measurement profiles", async ({ 
   }
 });
 
-test("saves snapshots and compares the current profile against one", async ({ page }) => {
-  await page.getByLabel("Snapshot label").fill("Baseline");
-  await page.getByLabel("Snapshot note").fill("Starting measurement note");
-  await page.getByRole("button", { name: "Save current snapshot" }).click();
-
-  await expect(page.getByText("Baseline", { exact: true })).toBeVisible();
-  await expect(page.getByText("Starting measurement note")).toBeVisible();
-  await expect(page.getByLabel("Snapshot note")).toHaveValue("");
-
-  await page.locator('input[name="waistCircumference"]').fill("92");
-  await page.locator('input[name="waistCircumference"]').blur();
-  await page.getByLabel("Snapshot label").fill("Later");
-  await page.getByRole("button", { name: "Save current snapshot" }).click();
-
-  await expect(page.getByLabel("Snapshot trend summary")).toBeVisible();
-  await expect(page.getByLabel("Snapshot trend chart", { exact: true })).toBeVisible();
-  await expect(page.getByText("Weight: 82.0 kg")).toBeVisible();
-  await expect(page.getByText("Trend since Baseline")).toBeVisible();
-  await expect(page.getByLabel("Snapshot trend summary").getByText("+12.0 cm")).toBeVisible();
-
-  await page.locator(".snapshot-row").filter({ hasText: "Baseline" }).getByRole("button", { name: "Compare" }).click();
-
-  await page.getByRole("tab", { name: "vs Target" }).click();
-  await expect(page.getByLabel("Current vs selected snapshot silhouettes")).toBeVisible();
-  await expect(page.getByRole("img", { name: "Current snapshot comparison silhouette" })).toBeVisible();
-  await expect(page.getByRole("img", { name: "Baseline silhouette" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Current vs selected snapshot" })).toBeVisible();
-  await expect(page.locator(".snapshot-diff").getByText("Waist", { exact: true })).toBeVisible();
-
-  await page.locator(".snapshot-row").filter({ hasText: "Baseline" }).getByRole("button", { name: "Load" }).click();
-  await expect(page.locator('input[name="waistCircumference"]')).toHaveValue("80");
-});
-
-test("exports and imports local snapshots", async ({ page }) => {
-  await page.getByLabel("Snapshot label").fill("Export me");
-  await page.getByRole("button", { name: "Save current snapshot" }).click();
-
-  const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export", exact: true }).click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe("bodymod-snapshots.json");
-
-  await page.getByRole("button", { name: "Delete" }).click();
-  await expect(page.getByText("No saved snapshots yet.")).toBeVisible();
-
-  const imported = {
-    version: 1,
-    snapshots: [
-      {
-        id: "imported-baseline",
-        createdAt: "2026-05-03T12:00:00.000Z",
-        label: "Imported baseline",
-        note: "Imported snapshot note",
-        measurements: targetMeasurements
-      }
-    ]
-  };
-
-  await page.getByLabel("Import snapshots").setInputFiles({
-    name: "bodymod-snapshots.json",
-    mimeType: "application/json",
-    buffer: Buffer.from(JSON.stringify(imported))
-  });
-
-  await expect(page.getByText("Imported 1 snapshot(s).")).toBeVisible();
-  await expect(page.getByText("Imported baseline")).toBeVisible();
-  await expect(page.getByText("Imported snapshot note")).toBeVisible();
-
-  await page.getByLabel("Import snapshots").setInputFiles({
-    name: "bodymod-snapshots.json",
-    mimeType: "application/json",
-    buffer: Buffer.from(JSON.stringify(imported))
-  });
-
-  await expect(
-    page.getByText("Imported 0 snapshot(s). Skipped 1 duplicate snapshot(s).")
-  ).toBeVisible();
+test("keeps snapshots off the main Body view", async ({ page }) => {
+  await expect(page.getByRole("heading", { name: "Snapshots" })).toHaveCount(0);
+  await expect(page.getByLabel("Snapshot label")).toHaveCount(0);
+  await expect(page.getByLabel("Import snapshots")).toHaveCount(0);
 });
 
 test("shares measurements from the header icon and restores them from the URL", async ({ page, context }) => {
@@ -538,9 +472,7 @@ test("keeps local form usable when backend is unavailable", async ({ page }) => 
   await expect(
     page.getByText("Target comparison is available once target profiles are loaded.")
   ).toBeVisible();
-  await expect(page.getByText("Standing height without shoes.")).toBeVisible();
-
-  await page.getByLabel("Snapshot label").fill("Offline baseline");
-  await page.getByRole("button", { name: "Save current snapshot" }).click();
-  await expect(page.getByText("Offline baseline")).toBeVisible();
+  await page.locator("label").filter({ hasText: "Height" }).locator(".field-info").hover();
+  await expect(page.getByRole("tooltip").getByText("Standing height without shoes.")).toBeVisible();
+  await expect(page.getByLabel("Snapshot label")).toHaveCount(0);
 });

@@ -6,7 +6,6 @@ import MeasurementForm from "./components/MeasurementForm";
 import PopulationPanel from "./components/PopulationPanel";
 import ResultSummary from "./components/ResultSummary";
 import SiteHeader from "./components/SiteHeader";
-import SnapshotPanel from "./components/SnapshotPanel";
 import StrategyCorpus from "./components/StrategyCorpus";
 import { fetchHealth, fetchMatches, fetchTargets } from "./lib/api";
 import { summarizeMeasurementDiff } from "./lib/comparison";
@@ -480,21 +479,6 @@ export default function App() {
                 onMeasurementHover={setHoveredMeasurement}
               />
 
-              <SnapshotPanel
-                snapshotLabel={snapshotLabel}
-                onSnapshotLabelChange={setSnapshotLabel}
-                snapshotNote={snapshotNote}
-                onSnapshotNoteChange={setSnapshotNote}
-                snapshots={snapshots}
-                onSaveSnapshot={handleSaveSnapshot}
-                onLoadSnapshot={handleLoadSnapshot}
-                onDeleteSnapshot={handleDeleteSnapshot}
-                comparisonSnapshotId={comparisonSnapshotId}
-                onCompareSnapshot={handleCompareSnapshot}
-                onExportSnapshots={handleExportSnapshots}
-                onImportSnapshots={handleImportSnapshots}
-                importStatus={importStatus}
-              />
             </section>
           </main>
           <InfoFootnote />

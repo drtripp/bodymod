@@ -96,9 +96,8 @@ test("keeps the dense workflow usable on a phone viewport", async ({ page }) => 
   await page.getByRole("button", { name: "Imperial" }).first().click();
   await expect(height).toHaveValue(/71\.3|71/);
 
-  await page.getByLabel("Snapshot label").fill("Mobile baseline");
-  await page.getByRole("button", { name: "Save current snapshot" }).click();
-  await expect(page.getByText("Mobile baseline")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Snapshots" })).toHaveCount(0);
+  await expect(page.getByLabel("Snapshot label")).toHaveCount(0);
 
   await page.getByRole("tab", { name: "vs Target" }).click();
   await page.getByRole("button", { name: "Overlap" }).click();

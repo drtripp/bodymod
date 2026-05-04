@@ -75,7 +75,17 @@ export default function MeasurementForm({
                     onMouseLeave={() => onMeasurementHover?.(null)}
                   >
                     <span className="field-label">
-                      <span>{field.label}</span>
+                      <span>
+                        {field.label}
+                        {field.help ? (
+                          <span className="field-info">
+                            i
+                            <span className="field-tooltip" role="tooltip">
+                              {field.help}
+                            </span>
+                          </span>
+                        ) : null}
+                      </span>
                     </span>
 
                     <span className="field-control-row">
@@ -154,8 +164,6 @@ export default function MeasurementForm({
 
                     {errors[field.name] ? (
                       <span className="field-error">{errors[field.name]}</span>
-                    ) : field.help ? (
-                      <span className="field-help">{field.help}</span>
                     ) : null}
                   </label>
                 );
