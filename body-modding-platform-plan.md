@@ -1,257 +1,324 @@
-# Body Modding Platform
+# Bodymod Product Plan
 
-_Exploratory Planning Document_
+This document captures the broader roadmap. The current built product is smaller and more concrete than the original exploratory idea: it is a measurement-first comparison and local tracking tool.
 
-This document is a working sketch, not a spec. It tries to capture the shape of the product, the features that might belong in it, and the questions that still need thinking through. Nothing here is load-bearing yet; assume any piece might get reshaped as the idea matures.
+## Current Product
 
-## Concept
+Bodymod currently supports:
 
-A site where someone can enter their body measurements, pick a target physique (real person or fictional character), and receive a guide covering the interventions that might move them toward that target: training, nutrition, aesthetic procedures, compounds, and other areas that are typically scattered across hard-to-find corners of the internet.
+- expanded manual body measurement entry
+- deterministic front-view SVG silhouette rendering
+- backend target profile fetching
+- scaffold match ranking against placeholder targets
+- approximate adult-reference percentile output, explicitly labeled as not NHANES-calibrated
+- local browser snapshots with labels, compare, export, import, load, and delete
+- notes attached to snapshots
+- compact local snapshot trend summary
+- current-vs-prior snapshot silhouette comparison
+- metric and imperial display controls
+- side-by-side and overlap comparison against target profiles
+- result, vs Target, and vs US Population panes are tabbed in the main workspace
+- first-draft US population scatter and distribution plots
+- method and privacy content collapsed into a hover footnote
+- header share icon for encoded measurement links
+- local-only usage event logging
+- outcome-first informational strategy explorer opened as an overlay, with one efficacy/risk plot per desired outcome
 
-The idea leans on a few premises worth naming up front, since the whole thing rests on them:
+The app does not currently support:
 
-- People pursuing body modification goals tend to piece together information from dozens of forums, subreddits, and paywalled communities. A central, structured place might be valuable.
-- Measurement-driven comparison (percentiles, silhouette, closest-match celebrity) might work as a shareable hook that brings people to the deeper tooling.
-- Structured protocols with outcomes attached could eventually become more useful than any single expert's recommendations, if enough people contribute.
+- accounts
+- photo uploads
+- AI analysis
+- guidance or recommendation content
+- community protocols
+- production analytics
+- source-reviewed strategy entries
 
-Open question: Is the positioning "biohacking for physique" or "looksmaxxing meets fitness tracking" or something else? The name sets expectations about what kinds of interventions feel in-scope.
+## Product Principle
 
-## Who This Might Be For
+Keep the product useful as a private tool before adding public or social mechanics.
 
-Rough sketches of the people this could serve, listed loosely in order of how strongly the product seems to fit:
+The app should first be good at:
 
-- **Dedicated biohackers and looksmaxxers**: already deep in the space, already tracking measurements, already running self-experiments. This group probably feels the pain the product is solving most acutely.
-- **Serious lifters and physique athletes**: interested in aesthetic outcomes, comfortable with structured programming, possibly open to procedures and compounds though maybe less so than the first group.
-- **People considering aesthetic procedures**: researching surgery or non-invasive options, might find value in seeing procedures contextualized alongside training and nutrition rather than in isolation.
-- **Curious general fitness users**: drawn in by the silhouette / celebrity-match hook, might stick around for tracking even if they never touch the more advanced content.
+- entering measurements without friction
+- turning those measurements into a legible visual profile
+- comparing against target profiles
+- tracking changes over time on the same device
 
-Open question: Does the product try to serve all of these, or does it pick one and build around that group? The answer probably shapes tone, default content, and what gets surfaced on the landing page.
+## Near-Term Roadmap
 
-## MVP Scope
+### 1. Complete The Comparison Workflow
 
-The smallest version that still feels like the product. Decisions below are locked for v0; everything else in the document remains exploratory.
+Implemented:
 
-### Inputs
+- rendered comparison controls in the main page
+- selected target state
+- side-by-side comparison
+- simple overlap comparison
+- basic directionality copy
+- separate vs Target and vs US Population tabs
+- first-draft sex-colored US population scatter/distribution charts
+- target type, placeholder notes, and largest score-driver bullets in the vs Target pane
 
-- Height
-- Weight
-- Sex
-- Shoulders
-- Underbust
-- Waist
-- Hips
+Remaining work:
 
-### Outputs
+- visual QA across more body shapes and smaller screens
+- decide whether overlap should remain a simple silhouette overlay or become a measurement-band diff
+- replace population chart scaffold values with vetted reference tables
 
-- 2D front-on silhouette generated from the measurements
-- Percentile placement against a reference population
-- Ranked match list with a primary match plus secondaries
-- Toggle between overlap and side-by-side view for comparison against matched characters
+### 2. Improve Result Trust
 
-### Silhouette Rendering
+Current scoring and percentiles are scaffold logic.
 
-- Parametric SVG: measurements drive control points on bezier curves rather than stretching a fixed raster shape
-- Outline-only style with tasteful line-thickness variation
-- Front-on only for v0; side profile deferred
-- Non-input anchors (head size, limb length, limb thickness) derived from height with simple scaling
-- Same rendering pipeline used for both user and character silhouettes: same measurement schema in, same SVG out
+Planned work:
 
-### Comparison View
+- replace placeholder percentile formulas with reference-population calculations
+- improve target data quality
+- keep scoring tests aligned with matching changes
+- label estimated target profiles clearly
 
-- Side-by-side mode: both silhouettes drawn cleanly and uncolored
-- Overlap mode: user and character silhouettes overlaid with a diff visualization
-- Diff coloring in overlap mode: orange for areas the user needs to grow to match, blue for areas they need to shrink to match
-- Filled diff regions computed from polygon difference between the two outlines
-- Diff bands anchored to the measurement regions (shoulders, underbust, waist, hips, plus interpolated regions between) rather than arbitrary outline differences
-- Color intensity scales with magnitude of difference, with a small dead zone near zero to ignore measurement noise
-- Pair color with a secondary signal (opacity, labels, or legend) so the diff remains interpretable under colorblindness conditions
-- UI labeling makes clear the diff direction: user -> character ("grow to match" / "shrink to match")
+### 3. Make Local Tracking More Useful
 
-### Reference Population
+Current snapshots can be saved, labeled, loaded, compared, exported, imported, and deleted.
 
-- NHANES (CDC) as the reference dataset for percentile calculations
-- NHANES chosen over ANSUR for MVP because it uses conventional tape-measure landmarks, covers a broader US population across ages and ethnicities, and maps more naturally to eventual ethnicity/race filtering goals
-- Reference population noted in UI rather than presented as universal
+Remaining work:
 
-### Match Pool
+- richer longitudinal summaries
+- trend charts
+- richer trend charts if tracking becomes a core workflow
 
-- BG3 main cast
-- Original Avengers (actor/role combinations, since Hemsworth-Thor and Hemsworth-generally are different physiques)
-- Name-only presentation; no character imagery for MVP
-- BG3 character measurements estimated from front-on screenshots using horizontal bars for height and widths, rough circumference derivations, refined over time
-- Explicit framing that character stats are ballpark estimates, not canonical
+### 4. Add Basic Trust Pages
 
-### Match Logic
+Method and privacy components are visible through header navigation.
 
-- Ranked output: primary match plus secondaries
-- Distance function over the measurement vector for MVP; weighting refinements (absolute size vs. ratios, sex-expression filtering) deferred
+Remaining work:
 
-### Persistence
+- revise copy when production analytics or server-side sharing decisions are made
+- expand methodology once percentile and target data are production quality
 
-- Ephemeral by default; no account required, no signup wall between entering measurements and seeing a match
-- Browser cookie stores measurements for continuity on return visits within the same device
-- Auth and cross-device accounts deferred to post-MVP
+### 5. Launch Layer
 
-### Data Storage Format
+Only after the private-use loop works well:
 
-- Character data stored as JSON from day one
-- Measurement columns in the character file match the user input schema exactly: same names, same units, same order, so the matching logic is just distance between two rows with the same structure
+- decide whether encoded measurement share URLs are acceptable for launch
+- decide whether local-only analytics are enough or whether production analytics are justified
+- harden deployment beyond the prototype notes in `deployment.md`
+- larger target library
 
-### Explicitly Out of MVP
+The current public-launch gates are captured in `launch-decision-record.md`.
 
-- Hair, signature features, and other character-identifying overlays on silhouettes
-- Hair as a tracked user metric
-- 3D rendering
-- Photo-based measurement extraction
-- Guidance layer (exercises, procedures, compounds)
-- Protocols and community features
-- Accounts and cross-device tracking
-- Expanded measurement inputs beyond the seven listed
-- Any AI-driven features
-- Ethnicity/race filtering on reference populations
-- Side-profile silhouettes
-- Expanded match pool beyond BG3 main cast + original Avengers
+## Future Feature Areas
 
-## Feature Areas To Develop Over Time
+These are candidates, not commitments.
 
-Grouped loosely. None of these need to ship early, and some might never ship.
+### Expanded Target Library
 
-### Measurement and Visualization
+- more fictional and real-person target profiles
+- archetypes such as classic physique, swimmer, runner, or bodybuilder profiles
+- better metadata and uncertainty labels
+- optional target filtering
 
-- Expanded measurement inventory beyond the initial seven: limb circumferences, frame width, body fat estimate, facial measurements if the scope extends to looksmaxxing
-- Photo-based measurement extraction running client-side, so raw photos don't need to leave the device
-- A 3D progress renderer that updates as new measurements come in
-- Time-series visualization of how a user's silhouette has changed over weeks or months
-- Side-profile silhouette once depth measurements enter scope
-- Hair and signature-feature overlays on character silhouettes
+The target profile handoff rubric lives in `target-profile-curation.md`. The
+starter import shape lives in `target-profiles-template.json`.
 
-### Target Selection
+### Better Comparison Logic
 
-- Expanded library of physique targets: more real public figures, more fictional characters, archetypes like "classic physique" or "lean runner"
-- Stronger character-estimation pipeline to scale the match pool beyond hand-curated entries
-- Custom target creation, where a user describes a goal in their own terms and the system tries to translate that into measurement targets
-- A way to blend targets or set directional preferences like "shoulders of X, midsection of Y"
-- Match weighting refinements: absolute size alongside ratios, sex-expression-based filtering of the match pool
+Implemented in scaffold form:
+
+- weighting by measurement importance
+- ratio-aware scoring alongside absolute measurement distance
+
+Remaining work:
+
+- configurable match priorities
+- clearer explanation of what differs most from a target
 
 ### Reference Data
 
-- Ethnicity/race filtering on reference populations
-- Aggregating comparison data from multiple published sets and from users, working toward near-population-level statistics over time
+- NHANES or another reference population for percentiles
+- sex-specific percentile output
+- ANSUR, NHANES, or equivalent-backed scatter/distribution plots
+- age/race/ethnicity filtering only if the data and privacy stance justify it
+- careful language that these are reference comparisons, not universal rankings
 
-### Guidance Layer
+The replacement standard for production percentile data lives in
+`reference-data-curation.md`.
 
-- Generated guides that translate the gap between current and target measurements into suggested interventions
-- Specific exercise emphasis and de-emphasis, rather than a generic program
-- Information on aesthetic procedures relevant to the target: non-invasive, minimally invasive, surgical
-- Compound and peptide information framed as reference material rather than prescription
-- Nutrition framing, though this might intentionally stay lighter than full macro tracking since the rest of the internet handles that well
+### Strategy Information Corpus
 
-Open question: Where does the guidance sit on the spectrum between "here's what the research and community reports suggest" and "here's what you should do"? The first is safer and probably more honest; the second is what many users will want.
+This is a later manual research layer, not part of the current measurement MVP.
 
-### Community and Protocols
+The concept is a structured corpus of unorthodox looksmaxxing, physique-modification, and biohacking strategies organized around desired outcomes. The product should inform users about what people attempt, what evidence exists, what risks are known, and how uncertain the claims are. It should not coach a user into doing something.
 
-- User-submitted protocols as first-class objects, with starting state, interventions, and outcomes
-- A "copy trade" flow where a user can adopt a protocol someone else has run
-- Reverse search by starting measurements, so users can find protocols run by people who started where they are
-- Some mechanism for flagging dropped or abandoned protocols, so the outcome data doesn't skew toward survivorship
-- Commentary, discussion, and progress updates attached to protocols
+Candidate outcome categories:
 
-Open question: How are protocols verified, or are they not verified at all? Completely open submission maximizes data volume but lowers trust. Gating requires moderation effort.
+- gain weight
+- lose weight
+- increase a body measurement
+- decrease a body measurement
+- change a ratio or proportion
+- whiten teeth
+- alter skin appearance
+- alter hair density or presentation
+- alter facial soft tissue
+- alter perceived bone structure
+- change posture or apparent frame
+- recover, maintain, or preserve an aesthetic trait
+
+Each outcome page could eventually contain an efficacy/risk grid:
+
+- x-axis: estimated efficacy or magnitude of effect
+- y-axis: estimated risk or downside severity
+- plotted items: strategies, techniques, surgeries, devices, medications, supplements, habits, and cosmetic interventions
+- visual encoding for evidence quality, reversibility, cost, time horizon, legal/medical sensitivity, and permanence
+
+Each strategy entry should have structured fields:
+
+- target outcome
+- claimed mechanism
+- evidence level
+- expected magnitude range
+- time horizon
+- reversibility
+- cost range
+- risk profile
+- contraindication flags
+- legal or regulatory notes
+- source links
+- uncertainty notes
+- moderation/review status
+
+This corpus will likely be built manually first. The valuable work is taxonomy, source review, and careful framing, not automation.
+
+The current app has only seed entries. Those entries are useful as UI scaffolding, but they are not source-reviewed. A production corpus needs a repeatable review workflow:
+
+1. Define the outcome page and intervention category.
+2. Add candidate strategy entries with neutral naming.
+3. Record claimed mechanism, expected magnitude, time horizon, reversibility, cost, and permanence.
+4. Add source links and classify source type.
+5. Score efficacy, risk, and uncertainty separately.
+6. Mark contraindication, legal/regulatory, surgical, pharmaceutical, and medical-adjacent flags.
+7. Decide whether the entry can be shown generally, shown with stronger caution, or excluded entirely.
+8. Confirm copy remains informational and does not become a protocol, dose, coaching path, or personalized recommendation.
+
+The grid now starts with "desired outcome first" browsing because that matches user intent. Each outcome shows one efficacy/risk graph. Strategy dots open a synopsis modal, and the modal can open a dedicated strategy detail view. Intervention type remains useful as entry metadata and later safety-review filtering.
+
+The current frontend can export the seed corpus as JSON, import a manually curated corpus JSON for review, persist that imported corpus locally, and reset back to the seed corpus. That is a curation scaffold, not a production content system. A later version should move curated corpus data into a controlled source of truth with review history, source metadata, and moderation decisions.
+
+The manual review rubric lives in `strategy-corpus-curation.md`. The import
+shape lives in `strategy-corpus-template.json`.
 
 ### Personal Tracking
 
-- Longitudinal measurement tracking, ideally as the main stickiness feature
-- Progress photos, probably with client-side processing and maybe derived outline storage rather than raw images
-- Notes, subjective ratings, anything that captures what the measurements don't
-- Optionally, an export path so users don't feel locked in
+- longitudinal change summaries
+- simple progress charts
+- richer notes and annotations attached to snapshots
+- local export
 
-### AI-Assisted Layers
+### Shareability
 
-- Natural-language queries over the user's own history and the protocol corpus
-- Generated personalized guidance that updates as measurements change
-- Forecasting: given current state and a chosen protocol, what might outcomes look like over some timeframe
-- A way to compare forecasts against actuals once time passes, both for user feedback and for model improvement
+Possible approaches:
 
-## Tiering and Monetization
+- encoded measurement payload in URL
+- server-side snapshot ID
+- image export of silhouette and match summary
 
-The split between free and paid feels worth thinking about early, since it shapes what data the product collects and what the default experience is.
+Privacy needs to be settled before this ships. Raw body measurements in URLs may be too sensitive for a default flow.
 
-A loose sketch:
+### Accounts
 
-- **Free-tier candidates**: silhouette visualization, percentile placement, celebrity match, basic tracking, photo-based measurement extraction, access to read community protocols
-- **Paid-tier candidates**: AI-generated personalized guidance, 3D progress rendering, forecasting, deeper protocol analytics, possibly longer history retention
+Accounts are not needed for the current app.
 
-Open question: Does longitudinal tracking belong in free or paid? Paid increases lock-in but limits the user base; free maximizes data but removes one of the clearer reasons to pay.
+They may become useful later for:
 
-Open question: Is there a one-time purchase path for people who want a single guide rather than an ongoing subscription? The target audience might skew toward researchers who want a lot of information in one go rather than continuous tooling.
+- cross-device history
+- longer-term backups
+- private target libraries
+- share management
 
-## Considerations That Probably Shape Everything
+Do not add accounts just to create a signup funnel.
 
-Not design decisions, just realities the product has to live inside.
+### Photo-Assisted Measurement
 
-### Information Sensitivity
+Photo uploads are out of scope now.
 
-A lot of the content in scope: compounds, procedures, dosing, exists in an ambiguous zone. Some of it is legal reference material, some of it is actively practiced but medically unsupervised, some of it is illegal in various jurisdictions. The product probably needs a consistent stance on how this content is framed, even before deciding which specific content is in or out.
+A future version could explore client-side photo-assisted measurement, but this needs:
 
-Open question: What's the framing stance? "Educational reference," "community-reported experience," "harm reduction," and "do not attempt without medical supervision" are all real options, not mutually exclusive, and each has different implications for tone and moderation.
+- privacy review
+- model/license review
+- careful biometric-processing analysis
+- clear fallback to manual measurement entry
 
-### Data and Privacy
+The current `inference.js` file is only a placeholder for possible future local inference work.
 
-Body measurements, photos, and health-adjacent information are sensitive by most regulatory definitions. Even with client-side processing and derived-outline storage, the combination of measurements, timestamps, and any identifying metadata can narrow identity. Consent flows and data handling probably need to be thought through before there's any real data to worry about.
+### Guidance Layer
 
-Open question: How explicit does consent for training-data use need to be? There's a spectrum from buried in a privacy policy to an affirmative opt-in with clear language.
+Guidance is deliberately out of scope for the current product.
 
-### Celebrity and Character Matching
+If the app earns further investment, possible informational directions include:
 
-Measurements themselves aren't copyrightable, but likenesses, photographs, and in many cases names in commercial contexts carry real restrictions. Fictional characters add a layer because the rights-holders tend to be more litigious than the characters' human analogues.
+- general training emphasis categories
+- measurement literacy
+- non-prescriptive educational content
+- links to external resources
+- outcome-oriented strategy maps that compare efficacy, risk, uncertainty, reversibility, and cost
 
-The MVP sidesteps most of this by using names only and not displaying character imagery. Later features that bring visual character elements into the product will need to revisit these considerations.
+The line is important: the product may say "this category exists, these are the claimed effects, these are the known risks, and this is the evidence quality." It should not say "you should do this," generate protocols, personalize dosing, rank risky interventions as a best next step, or create a coaching loop.
 
-### Survivorship in User-Generated Data
+Avoid procedural, compound, dosing, or medical-adjacent recommendations unless there is a separate legal and safety review.
 
-Any protocol library built from voluntary submissions will skew toward people who saw results and felt motivated to share. Without some way of capturing failed or abandoned attempts, aggregate outcome data could systematically mislead.
+### Community And Protocols
 
-### Moderation and Trust
+Community features are speculative and should wait until the private tool has traction.
 
-User-submitted protocols that include compounds, procedures, or extreme interventions will attract both serious contributors and bad-faith ones. The product probably needs to think about what gets moderated, by whom, and on what timeline.
+Possible later ideas:
 
-## Larger Open Questions
+- user-submitted progress logs
+- anonymized aggregate measurement changes
+- protocol-style records with strong moderation
 
-Things worth sitting with rather than answering quickly.
+Risks:
 
-- Is the center of gravity training and nutrition with aesthetic procedures as a bonus, or aesthetic procedures with training and nutrition as a bonus?
-- How medical does the tone get?
-- Is there a version of this that includes non-aesthetic goals, or does scope discipline matter more than breadth?
-- What's the role of professional input?
-- At what point does the data collected become valuable enough to attract either partnerships or regulatory attention, and is the product ready for either?
+- sensitive health-adjacent data
+- survivorship bias
+- moderation burden
+- unsafe advice
 
-## Rough Sequencing
+## Monetization Thoughts
 
-Not a timeline, just an ordering sketch. The groupings matter more than anything else.
+No monetization is planned for the current build.
 
-### Earliest
+Possible later paid features:
 
-- MVP as scoped above: silhouette visualizer, measurement input, percentile placement, ranked match against BG3 + Avengers with overlap diff
-- Anonymous usage with cookie-based continuity
+- cross-device sync
+- larger private history
+- richer comparison reports
+- advanced target libraries
 
-### Soon After
+Keep core local tracking free if the product relies on repeat personal use.
 
-- Account-based tracking and history
-- Expanded measurement inputs
-- Early guidance content, likely hand-authored before any generation is involved
-- Expanded match pool and character-estimation pipeline
+## Open Questions
 
-### Once the Basics Are Proven
+- Is the app primarily a private tracking tool or a shareable comparison hook?
+- How much target data uncertainty should be visible in the UI?
+- Is encoded URL sharing acceptable for sensitive measurement data?
+- Which reference population is good enough for percentile output?
+- Does the expanded measurement schema create too much entry friction?
+- What is the minimum target library size that makes matches feel meaningful?
+- Should the future strategy corpus be organized by desired outcome first, intervention type first, or both?
+- What evidence scale is credible enough for niche strategies where formal research may be thin?
+- How should the product display high-efficacy/high-risk interventions without glamorizing them?
+- What content should be excluded entirely even if users search for it?
 
-- Photo-based measurement extraction
-- Protocol creation and browsing
-- First paid-tier features
-- Ethnicity/race filtering on reference populations
+## Product Guardrails
 
-### Further Out
-
-- 3D rendering and progress visualization
-- Forecasting models trained on accumulated data
-- Community features beyond the protocol layer
-
-Each group probably surfaces new questions that reshape what comes next. Treating the plan as directional rather than sequential seems closer to how this will actually unfold.
+- Keep manual measurement entry first-class.
+- Avoid medical or intervention guidance.
+- Avoid raw photo handling until privacy and licensing are solved.
+- Prefer local-first storage.
+- Label estimated and placeholder outputs plainly.
+- Do not add accounts before they solve a real user problem.
+- Separate informational content from personalized recommendations.
+- Never produce dosing, procedural instructions, evasion guidance, or individualized risk-taking plans.
+- Show evidence quality and uncertainty as first-class data, not footnotes.
+- Treat medical, surgical, pharmaceutical, and legally sensitive strategies as high-review content.

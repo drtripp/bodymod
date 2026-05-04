@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "outcomes": [
+    {
+      "id": "desired-outcome-slug",
+      "label": "Desired Outcome",
+      "description": "Neutral description of the appearance or measurement outcome being researched.",
+      "strategies": [
+        {
+          "name": "Strategy or Intervention Name",
+          "outcome": "desired outcome",
+          "interventionType": "training | nutrition | surgery | medication | supplement | device | cosmetic | habit | other",
+          "efficacy": 50,
+          "risk": 50,
+          "evidence": "unsupported",
+          "reviewStatus": "needs source review",
+          "sourceLinks": [
+            {
+              "title": "Source title",
+              "url": "https://example.com/source",
+              "sourceType": "paper | clinical guidance | product page | expert commentary | anecdote | other",
+              "reviewedAt": "2026-05-03"
+            }
+          ],
+          "sensitivity": "low | clinical | surgical | pharmaceutical | medical-adjacent",
+          "reversibility": "unknown",
+          "timeHorizon": "unknown",
+          "cost": "unknown",
+          "claimedMechanism": "Neutral summary of the claimed mechanism without protocol instructions.",
+          "expectedMagnitude": "Estimated effect size or range, if source-reviewed.",
+          "contraindicationFlags": [
+            "flag requiring review"
+          ],
+          "legalNotes": "Legal, regulatory, age-gating, prescription, or jurisdiction-specific note.",
+          "uncertaintyNotes": "What is uncertain, disputed, low-quality, or context-dependent.",
+          "excludedFromPersonalization": true,
+          "notes": "Informational framing only. Do not include dosing, procedural steps, or personalized advice."
+        }
+      ]
+    }
+  ]
+}

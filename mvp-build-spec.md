@@ -1,310 +1,282 @@
-# Body Modding Platform MVP
+# Bodymod Build Spec
 
-## Product Decision
+This document describes the product as it exists in the repo now, then lays out the next build targets. Current implementation is the source of truth.
 
-This MVP is a measurement-driven comparison and tracking tool, not a guidance platform.
+## Product Shape
 
-The build should optimize for two outcomes:
+Bodymod is a measurement-driven body comparison and tracking tool.
 
-- It is usable and personally valuable even if nobody else shows up.
-- It is simple enough to launch quickly and measure whether anyone actually wants it.
+The app currently lets a user:
 
-Anything that turns the product into a medical-adjacent recommendation engine stays out of the initial release.
+1. Enter an expanded set of body measurements.
+2. See a deterministic front-view SVG silhouette.
+3. Fetch a ranked list of curated target profiles from the backend.
+4. Compare the current profile against targets in side-by-side or overlap mode.
+5. Save, label, note, load, compare, export, import, and delete local measurement snapshots in the browser.
+6. Review a compact trend summary across saved local snapshots.
+7. Inspect a seed informational strategy explorer organized by desired outcome.
+8. Create a share URL that encodes the current measurement payload.
 
-## MVP Goal
+The product is intentionally not a guidance platform. It does not recommend procedures, compounds, dosing, medical decisions, or interventions.
 
-Ship a public web app where a user can:
+## Current Stack
 
-1. Enter a small set of body measurements.
-2. See a generated front-view silhouette.
-3. Compare that silhouette against a small curated target library.
-4. Save measurements locally and come back later.
+- Frontend: React 18, Vite, JavaScript
+- Styling: one plain global CSS file
+- Backend: FastAPI, Uvicorn, Pydantic
+- Persistence: `localStorage`
+- Rendering: SVG generated from measurement-derived geometry
 
-If outside users do not appear, the app should still work as a private self-tracking and comparison tool.
+Earlier planning recommended Next.js and TypeScript. That is no longer the current implementation.
 
-## Primary User
-
-The first user is you, plus people like you: users who already think in terms of body shape, proportions, and target physiques, and who want a fast visual/measurement comparison tool more than a generic fitness app.
-
-Do not optimize the first release for broad consumer onboarding. Optimize for a niche user who tolerates measurement entry in exchange for a better output.
-
-## Success Criteria
-
-Nominal traction means any of the following within the first few weeks after launch:
-
-- A small number of returning users without direct prompting.
-- Organic shares or direct links to specific comparison results.
-- Repeat use by you for actual tracking rather than one-time curiosity.
-
-Failure is not "few signups." Failure is "the tool is not useful enough for even one motivated user to keep using."
-
-## Explicit Scope
-
-### In Scope
-
-- Measurement entry form
-- Front-view parametric silhouette renderer
-- Match scoring against a curated target dataset
-- Side-by-side and overlap comparison modes
-- Local persistence in browser storage
-- Shareable result URL using encoded measurement payload or saved snapshot id
-- Lightweight analytics for page views, completed inputs, and shares
-
-### Out of Scope
-
-- AI-generated guidance
-- Procedure, compound, or dosing content
-- Community protocols
-- Accounts and authentication
-- Raw photo uploads
-- 3D rendering
-- Large-scale dataset aggregation from users
-- Character imagery
-- Extensive personalization logic
-
-## User Flow
+## Current User Flow
 
 ### First Visit
 
-1. Land on a simple page explaining the tool in one sentence.
-2. Enter seven measurements plus sex.
-3. Submit and immediately see:
-   - personal silhouette
-   - top match
-   - ranked alternatives
-   - percentile summary
-   - toggle for side-by-side vs overlap
-4. Optionally save locally for later comparison.
-5. Optionally copy a share link.
+1. User opens the single-page app.
+2. User edits the default measurement set.
+3. Results update after valid input once backend targets are available.
+4. The result panel shows:
+   - current silhouette
+   - backend connection status
+   - large top-match name
+   - placeholder similarity score
+   - runner-up match
+   - six metric blocks for height, BMI, estimated body fat, SHR, WHR, and SWR
+   - methodology note
+5. The vs Target tab shows target comparison controls and measurement deltas.
+6. User can select a target for comparison from the target selector.
+7. The vs US Population tab shows approximate sex-colored scatter and distribution plots.
+8. User can save the current measurement set locally.
 
 ### Return Visit
 
-1. Measurements reload from local storage.
-2. User can edit current stats or create a new dated snapshot.
-3. User can compare current snapshot against a prior personal snapshot or a target physique.
+1. Local snapshots load from browser storage.
+2. If at least one snapshot exists, the most recent snapshot populates the form.
+3. User can load or delete saved snapshots.
+4. User can compare the current measurement set against a saved snapshot.
 
-## Core Features
+## Current Measurement Schema
 
-### 1. Measurement Entry
+The implemented schema has expanded beyond the original seven fields.
 
-Required fields:
+Canonical fields:
 
-- height
-- weight
-- sex
-- shoulders
-- underbust
-- waist
-- hips
+- `height`
+- `weight`
+- `sex`
+- `headCircumference`
+- `neckCircumference`
+- `biacromialWidth`
+- `bideltoidWidth`
+- `bideltoidCircumference`
+- `armpitCircumference`
+- `nippleCircumference`
+- `underbustCircumference`
+- `waistCircumference`
+- `pantWaistCircumference`
+- `hipCircumference`
+- `upperThighCircumference`
+- `midThighCircumference`
+- `calfCircumference`
+- `bicepCircumference`
+- `upperForearmCircumference`
+- `wristCircumference`
 
-Requirements:
+The frontend schema lives in `frontend/src/lib/measurements.js`. The backend request model lives in `backend/app/models.py`. These should remain aligned.
 
-- Single unit system shown by default with an obvious unit toggle if supported
-- Inline measurement help text
-- Validation for missing values and implausible ranges
-- Mobile-friendly form layout
+Backend tests now compare frontend field names and numeric min/max bounds against the Pydantic request model so drift is caught during verification.
 
-### 2. Silhouette Renderer
+Legacy field names from the first MVP notes, such as `shoulders`, `underbust`, `waist`, and `hips`, are only used as compatibility aliases during normalization where applicable.
 
-Requirements:
+## Implemented Features
 
-- SVG-based, not raster
-- Front view only
-- Deterministic output from measurement inputs
-- Same renderer for users and targets
-- Fast enough to update instantly on input change or submit
+### Measurement Entry
 
-Quality bar:
+Implemented:
 
-- It does not need anatomical realism.
-- It does need to look consistent, legible, and intentional.
-- Small input changes should produce small visible changes.
+- grouped form sections
+- metric and imperial display conversion
+- per-field unit override controls
+- per-field measurement help text
+- frontend validation with range messages
+- cleared numeric fields are treated as required instead of being coerced to zero
+- backend validation through Pydantic
+- default male and female baseline values
+- phone-viewport Playwright coverage for dense workflow basics
+- Playwright coverage for decimal measurement values and paste-replacement entry
 
-### 3. Matching Engine
+### Silhouette Renderer
 
-Requirements:
+Implemented:
 
-- Small curated target dataset in JSON
-- Distance score over normalized measurements
-- Return top 1 primary match plus top N alternatives
-- Show enough explanation that the result does not feel arbitrary
+- front-view SVG renderer
+- deterministic output from measurements
+- shared renderer for user and target-like measurement sets
+- interactive measurement anchors
+- hover/focus coordination between form fields and silhouette anchors
+- SVG title/description and human-readable anchor labels with values
+- Playwright coverage for minimum and maximum valid measurement profiles
 
-Initial recommendation:
+Still needed:
 
-- Normalize by height where appropriate so the engine does not collapse into "closest body size wins."
-- Keep the first scoring model simple and inspectable.
-- Do not hide heuristic weighting behind fake precision.
+- manual visual QA across more real-world body shapes
+- comparison-specific rendering states
 
-### 4. Comparison View
+### Matching Engine
 
-Modes:
+Implemented:
 
-- Side-by-side
-- Overlap diff
+- backend target list
+- backend match endpoint
+- curated placeholder targets
+- target list search, source-type filtering, and score/name sorting
+- height-normalized absolute distance score plus shoulder/waist and waist/hip ratio terms
+- small sex mismatch penalty
+- explanation bullets based on largest measurement gaps
+- backend tests for ranking and API response shape
+- target-data integrity tests for schema validity, unique IDs, source types, and visible placeholder notes
+- target profile template and curation guide for future source-reviewed target data
 
-Requirements:
+Still needed:
 
-- Clear legend for growth vs shrink regions
-- Accessible secondary signal beyond color alone
-- Obvious explanation that the comparison is approximate
+- richer target dataset
+- stronger scoring calibration
 
-### 5. Local Tracking
+### Percentiles
 
-Requirements:
+Implemented:
 
-- Save latest measurement set locally
-- Support multiple dated snapshots
-- Let the user compare a current snapshot against an older one
+- approximate adult-reference percentile estimates for height, waist, and bideltoid circumference
+- explicit reference label noting the model is not NHANES-calibrated
+- percentile monotonicity and bounds tests
+- replacement data curation guide in `reference-data-curation.md`
 
-This is the part that makes the tool still valuable even with zero public adoption.
+Still needed:
 
-### 6. Shareability
+- vetted reference-population data
+- documented production percentile methodology
 
-Requirements:
+### Local Tracking
 
-- Copy-link button for current result
-- Basic social preview metadata if feasible
-- URL should recreate the result page without requiring login
+Implemented:
 
-If privacy concerns make raw measurements in the URL unacceptable, store a server-side snapshot id instead.
+- save current measurements as a snapshot
+- load a saved snapshot
+- compare current measurements against a prior snapshot
+- current-vs-prior silhouette comparison
+- compact newest-vs-oldest snapshot trend summary
+- delete a saved snapshot
+- versioned `localStorage` payload
+- optional snapshot labels
+- optional snapshot notes
+- JSON export/import
+- duplicate snapshot imports are skipped with an explicit skipped-count status
+- compact SVG trend chart for weight, waist, shoulder mass, and hip measurements
 
-## Technical Decisions
+### Comparison, Trust, Share, And Corpus
 
-### Recommended Stack
+Implemented:
 
-- `Next.js` for app shell and deployment simplicity
-- `TypeScript`
-- `SVG` rendering for silhouettes
-- JSON files for target data
-- Vercel or similar static/serverless host
-- Plausible or PostHog for lightweight analytics
+- side-by-side target comparison
+- simple overlap comparison
+- current-vs-target measurement difference table
+- target type, source/placeholder notes, and largest score-driver bullets in the vs Target pane
+- result, vs Target, and vs US Population panes are tabbed in the main visual column
+- first-draft US population scatter plots with sex-colored confidence bands
+- first-draft male/female normal distribution plots with a vertical user-score marker
+- method and privacy content collapsed into a hover/focus footnote
+- header share icon that copies a measurement-encoded URL without showing a share panel
+- local event logging for lightweight analytics
+- privacy control for local event count and clearing local events
+- outcome-first strategy explorer with one efficacy/risk plot per desired outcome
+- strategy explorer opens as an overlay from the main header action
+- clickable strategy dots with synopsis modal and dedicated detail view
+- corpus search/filter controls scoped to the selected outcome
+- corpus JSON export/import for future manual source review
+- corpus curation rubric in `strategy-corpus-curation.md`
+- imported corpus persistence in browser storage with reset-to-seed control
+- imported source links render inside corpus entries
+- safety flags, legal notes, cost, and personalization exclusion status are visible in corpus entries
+- Node tests cover corpus template parsing, normalization, bounds clamping, invalid evidence rejection, and export round trips
+- Playwright desktop and phone-viewport user-flow tests
+- graceful no-backend state for form and local snapshots
+- offline comparison copy separates backend target comparison from local snapshot comparison
 
-This is not because the stack is special. It is because it minimizes launch friction.
+Still needed:
 
-### Data Model
+- source-reviewed strategy corpus entries
+- controlled backend/source-of-truth decision for curated corpus beyond local import
+- vetted ANSUR, NHANES, or equivalent source tables for the population charts
+- production analytics decision
+- share-link privacy decision before public launch
+- launch gate decision record in `launch-decision-record.md`
 
-Use one canonical measurement schema everywhere:
+## Explicit Non-Goals For The Current App
 
-```ts
-type MeasurementSet = {
-  height: number;
-  weight: number;
-  sex: "male" | "female";
-  shoulders: number;
-  underbust: number;
-  waist: number;
-  hips: number;
-};
-```
+- accounts and authentication
+- cross-device history
+- raw photo uploads
+- AI-generated advice
+- procedure, compound, or dosing guidance
+- social feed or community protocols
+- 3D rendering
+- character imagery
 
-Target data should reuse the same schema plus metadata:
+## Near-Term Backlog
 
-```ts
-type TargetProfile = {
-  id: string;
-  label: string;
-  sourceType: "character" | "actor" | "archetype";
-  notes?: string;
-  measurements: MeasurementSet;
-};
-```
+### Phase 1: Harden Current UI
 
-For local history:
-
-```ts
-type Snapshot = {
-  id: string;
-  createdAt: string;
-  label?: string;
-  measurements: MeasurementSet;
-};
-```
-
-## Analytics To Add On Day One
-
-Track only a few events:
-
-- landing page view
-- measurement form completed
-- result viewed
-- share link copied
-- local snapshot saved
-- return visit with existing local data
-
-That is enough to tell whether the app is being used without building analytics debt.
-
-## Privacy Stance
-
-For MVP:
-
-- No account system
-- Local-first persistence
-- No raw photo handling
-- No training-data collection from user measurements by default
-- Clear copy stating what is stored locally vs on the server
-
-This is both simpler and more trustworthy.
-
-## Copy And Positioning
-
-Use plain positioning:
-
-> Compare your current measurements to a curated set of target physiques and track changes over time.
-
-Avoid claims that imply medical advice, optimization prescriptions, or objective attractiveness scoring.
-
-## Build Sequence
-
-### Phase 1: Working Single-User Tool
-
-- Create the measurement schema
-- Build the form
-- Build the silhouette generator
-- Build JSON-backed target data
-- Implement match scoring
-- Implement result page
-- Save latest measurements locally
+- improve dense-form mobile ergonomics
+- keep improving dense-form mobile ergonomics
+- continue no-backend/offline QA as new target-dependent features are added
 
 Exit condition:
 
-- You can use it end to end by yourself and the outputs are stable.
+- a user can complete the private tracking loop without fragile or unclear controls.
 
-### Phase 2: Launchable MVP
+### Phase 2: Make Results More Trustworthy
 
-- Add multiple local snapshots
-- Add overlap diff mode
-- Add share links
-- Add analytics
-- Tighten landing-page copy and disclaimers
-- Deploy publicly
+- replace approximate percentile logic with vetted population data
+- expand the target library beyond placeholder profiles
+- document scoring and percentile methodology
 
 Exit condition:
 
-- A stranger can land, complete the flow, and understand the output without explanation.
+- the app output is clearly labeled, stable, and not pretending scaffold math is finished.
 
-### Phase 3: Nominal Traction Check
+### Phase 3: Corpus Curation
 
-Watch for:
+- define evidence/risk/reversibility taxonomy
+- manually source strategy entries
+- add moderation/review status
+- decide what high-risk content is excluded entirely
 
-- completed result views
+Exit condition:
+
+- corpus entries are informational, sourced, and clearly separated from recommendations.
+
+### Phase 4: Launch Layer
+
+- decide whether encoded measurement URLs are acceptable for public launch or whether server-side snapshot IDs are needed
+- decide whether local-only analytics are sufficient or whether a production analytics provider is justified
+- harden deployment beyond the prototype notes in `deployment.md`
+- run a final copy pass
+
+Exit condition:
+
+- a new user can land, use the tool, understand what is approximate, and optionally share or return.
+
+## Success Criteria
+
+The practical success bar is repeat use, not signups.
+
+Signals worth tracking if production analytics are approved:
+
+- completed valid result views
+- saved local snapshots
+- return visits with existing local snapshots
+- selected target comparisons
 - copied share links
-- returning browsers
-- any inbound user feedback
 
-Do not add major scope before this check.
-
-## What To Build After MVP Only If It Earns It
-
-- Accounts for cross-device history
-- Larger target library
-- Better weighting and filtering logic
-- Photo-assisted measurement entry
-- Hand-authored guidance content
-
-Do not move into compounds, procedures, or user-submitted protocols unless the simpler product shows real pull first.
-
-## Bottom Line
-
-The first release should be a fast, visually interesting, private-by-default body comparison tool with local tracking.
-
-That version is buildable, launchable, and still useful if the only persistent user is you.
+Failure means the tool is not useful enough for a motivated user to revisit.

@@ -154,6 +154,8 @@ export default function MeasurementForm({
 
                     {errors[field.name] ? (
                       <span className="field-error">{errors[field.name]}</span>
+                    ) : field.help ? (
+                      <span className="field-help">{field.help}</span>
                     ) : null}
                   </label>
                 );

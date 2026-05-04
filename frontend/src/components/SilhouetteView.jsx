@@ -1,4 +1,24 @@
 import { buildFrontSilhouette } from "../lib/silhouette";
+import { measurementFields } from "../lib/measurements";
+
+const measurementLabels = Object.fromEntries(
+  measurementFields.map((field) => [field.name, field.label])
+);
+
+function formatMeasurementValue(name, measurements) {
+  if (name === "sex") {
+    return measurements.sex;
+  }
+
+  const value = measurements[name];
+  const unit = name === "weight" ? "kg" : "cm";
+
+  if (value === "" || value === null || value === undefined || Number.isNaN(Number(value))) {
+    return "not entered";
+  }
+
+  return `${Number(value).toFixed(1).replace(/\.0$/, "")} ${unit}`;
+}
 
 export default function SilhouetteView({
   measurements,
@@ -8,6 +28,8 @@ export default function SilhouetteView({
 }) {
   const silhouette = buildFrontSilhouette(measurements);
   const highlightedAnchor = silhouette.anchors[hoveredMeasurement];
+  const titleId = `${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-silhouette-title`;
+  const descriptionId = `${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-silhouette-description`;
 
   return (
     <figure className="silhouette-figure">
@@ -15,8 +37,13 @@ export default function SilhouetteView({
         className="silhouette-svg"
         viewBox="0 0 240 360"
         role="img"
-        aria-label={`${label} silhouette`}
+        aria-labelledby={`${titleId} ${descriptionId}`}
       >
+        <title id={titleId}>{label} silhouette</title>
+        <desc id={descriptionId}>
+          Front-view body outline generated from entered measurements. Focus a
+          measurement anchor to highlight the corresponding body span.
+        </desc>
         <line x1="120" y1="10" x2="120" y2="345" className="silhouette-axis" />
         <circle
           cx={silhouette.head.cx}
@@ -38,6 +65,8 @@ export default function SilhouetteView({
 
         {Object.entries(silhouette.anchors).map(([name, anchor]) => {
           const isHighlighted = hoveredMeasurement === name;
+          const anchorLabel = measurementLabels[name] || name;
+          const anchorValue = formatMeasurementValue(name, measurements);
 
           return (
             <g
@@ -50,7 +79,8 @@ export default function SilhouetteView({
               onFocus={() => onMeasurementHover?.(name)}
               onBlur={() => onMeasurementHover?.(null)}
               tabIndex="0"
-              aria-label={`${name} measurement point`}
+              role="button"
+              aria-label={`${anchorLabel}: ${anchorValue}`}
             >
               <line
                 x1={anchor.left.x}

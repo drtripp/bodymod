@@ -41,13 +41,17 @@ class MatchResult(BaseModel):
     id: str
     label: str
     score: float
+    notes: str | None = None
+    source_type: str
     measurements: MeasurementSet
+    explanation: list[str] = []
 
 
 class PercentileSummary(BaseModel):
     height: int
     waistCircumference: int
     bideltoidCircumference: int
+    reference: str = "Approximate adult reference model, not NHANES-calibrated"
 
 
 class MatchResponse(BaseModel):

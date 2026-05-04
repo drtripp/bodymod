@@ -10,6 +10,7 @@ export const measurementFields = [
     label: "Height",
     category: "Profile",
     unit: "cm",
+    help: "Standing height without shoes.",
     min: 120,
     max: 240
   },
@@ -18,6 +19,7 @@ export const measurementFields = [
     label: "Weight",
     category: "Profile",
     unit: "kg",
+    help: "Current body weight under consistent conditions.",
     min: 35,
     max: 250
   },
@@ -26,6 +28,7 @@ export const measurementFields = [
     label: "Sex",
     category: "Profile",
     type: "select",
+    help: "Used for defaults, silhouette assumptions, and approximate percentiles.",
     options: [
       { value: "male", label: "Male" },
       { value: "female", label: "Female" }
@@ -36,6 +39,7 @@ export const measurementFields = [
     label: "Head Circ",
     category: "Head",
     unit: "cm",
+    help: "Tape around the largest head circumference.",
     min: 45,
     max: 70
   },
@@ -44,6 +48,7 @@ export const measurementFields = [
     label: "Neck Circ",
     category: "Head",
     unit: "cm",
+    help: "Tape around the lower neck without compressing tissue.",
     min: 25,
     max: 65
   },
@@ -52,6 +57,7 @@ export const measurementFields = [
     label: "Biacromial Width",
     category: "Shoulders",
     unit: "cm",
+    help: "Straight-line shoulder bone width, acromion to acromion.",
     min: 28,
     max: 65
   },
@@ -60,6 +66,7 @@ export const measurementFields = [
     label: "Bideltoid Width",
     category: "Shoulders",
     unit: "cm",
+    help: "Straight-line maximum shoulder width across the deltoids.",
     min: 34,
     max: 85
   },
@@ -68,6 +75,7 @@ export const measurementFields = [
     label: "Bideltoid Circ",
     category: "Shoulders",
     unit: "cm",
+    help: "Tape around the shoulders at the widest deltoid line.",
     min: 70,
     max: 180
   },
@@ -76,6 +84,7 @@ export const measurementFields = [
     label: "Armpit Circ",
     category: "Chest",
     unit: "cm",
+    help: "Upper chest circumference near the armpit line.",
     min: 50,
     max: 190
   },
@@ -84,6 +93,7 @@ export const measurementFields = [
     label: "Nipple Circ",
     category: "Chest",
     unit: "cm",
+    help: "Chest circumference across the nipple line.",
     min: 50,
     max: 190
   },
@@ -92,6 +102,7 @@ export const measurementFields = [
     label: "Underbust",
     category: "Chest",
     unit: "cm",
+    help: "Circumference directly under the chest.",
     min: 50,
     max: 180
   },
@@ -100,6 +111,7 @@ export const measurementFields = [
     label: "Waist",
     category: "Lower Body",
     unit: "cm",
+    help: "Narrowest relaxed torso circumference.",
     min: 45,
     max: 180
   },
@@ -108,6 +120,7 @@ export const measurementFields = [
     label: "Pant Waist",
     category: "Lower Body",
     unit: "cm",
+    help: "Circumference where pants normally sit.",
     min: 45,
     max: 190
   },
@@ -116,6 +129,7 @@ export const measurementFields = [
     label: "Hip/Buttock Circ",
     category: "Lower Body",
     unit: "cm",
+    help: "Largest circumference around hips and buttocks.",
     min: 60,
     max: 200
   },
@@ -124,6 +138,7 @@ export const measurementFields = [
     label: "Upper Thigh Circ",
     category: "Legs",
     unit: "cm",
+    help: "Upper thigh circumference near the glute fold.",
     min: 30,
     max: 110
   },
@@ -132,6 +147,7 @@ export const measurementFields = [
     label: "Mid Thigh Circ",
     category: "Legs",
     unit: "cm",
+    help: "Thigh circumference halfway between hip and knee.",
     min: 25,
     max: 95
   },
@@ -140,6 +156,7 @@ export const measurementFields = [
     label: "Calf Circ",
     category: "Legs",
     unit: "cm",
+    help: "Largest calf circumference.",
     min: 20,
     max: 70
   },
@@ -148,6 +165,7 @@ export const measurementFields = [
     label: "Bicep Circ",
     category: "Arms",
     unit: "cm",
+    help: "Upper-arm circumference at the largest point.",
     min: 18,
     max: 75
   },
@@ -156,6 +174,7 @@ export const measurementFields = [
     label: "Upper Forearm Circ",
     category: "Arms",
     unit: "cm",
+    help: "Forearm circumference near the largest upper forearm point.",
     min: 15,
     max: 55
   },
@@ -164,6 +183,7 @@ export const measurementFields = [
     label: "Wrist Circ",
     category: "Arms",
     unit: "cm",
+    help: "Wrist circumference at the narrowest point.",
     min: 11,
     max: 30
   }
@@ -285,6 +305,11 @@ export function validateMeasurements(
     }
 
     const numericValue = Number(value);
+
+    if (value === "" || value === null || value === undefined) {
+      errors[field.name] = "Required";
+      continue;
+    }
 
     if (Number.isNaN(numericValue)) {
       errors[field.name] = "Enter a number";

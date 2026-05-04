@@ -1,4 +1,5 @@
 const STORAGE_KEY = "bodymod:snapshots:v1";
+const STORAGE_VERSION = 1;
 
 function canUseStorage() {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
@@ -36,10 +37,41 @@ export function persistSnapshots(snapshots) {
   );
 }
 
-export function createSnapshot(measurements) {
+export function serializeSnapshots(snapshots) {
+  return JSON.stringify(
+    {
+      version: STORAGE_VERSION,
+      exportedAt: new Date().toISOString(),
+      snapshots
+    },
+    null,
+    2
+  );
+}
+
+export function parseSnapshotExport(rawValue) {
+  const parsed = JSON.parse(rawValue);
+  const snapshots = Array.isArray(parsed)
+    ? parsed
+    : Array.isArray(parsed.snapshots)
+      ? parsed.snapshots
+      : null;
+
+  if (!snapshots) {
+    throw new Error("Snapshot export must contain a snapshots array.");
+  }
+
+  return snapshots.filter(
+    (snapshot) => snapshot?.id && snapshot?.createdAt && snapshot?.measurements
+  );
+}
+
+export function createSnapshot(measurements, label = "", note = "") {
   return {
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
+    label: label.trim() || undefined,
+    note: note.trim() || undefined,
     measurements
   };
 }

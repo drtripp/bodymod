@@ -1,0 +1,32 @@
+{
+  "targets": [
+    {
+      "id": "target-profile-slug",
+      "label": "Target Profile Name",
+      "source_type": "character",
+      "notes": "Estimated placeholder profile. Replace with source notes, uncertainty, and review status before production use.",
+      "measurements": {
+        "height": 180,
+        "weight": 82,
+        "sex": "male",
+        "headCircumference": 57,
+        "neckCircumference": 39,
+        "biacromialWidth": 40,
+        "bideltoidWidth": 50,
+        "bideltoidCircumference": 118,
+        "armpitCircumference": 98,
+        "nippleCircumference": 96,
+        "underbustCircumference": 92,
+        "waistCircumference": 80,
+        "pantWaistCircumference": 86,
+        "hipCircumference": 96,
+        "upperThighCircumference": 58,
+        "midThighCircumference": 50,
+        "calfCircumference": 38,
+        "bicepCircumference": 34,
+        "upperForearmCircumference": 29,
+        "wristCircumference": 17
+      }
+    }
+  ]
+}
