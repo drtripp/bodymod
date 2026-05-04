@@ -108,23 +108,37 @@ export default function DietDashboard() {
     setIsScanning(false);
   }
 
-  async function handleScanBarcode() {
-    if (!("BarcodeDetector" in window) || !navigator.mediaDevices?.getUserMedia) {
-      setStatus("Camera barcode scanning is not available in this browser. Enter the barcode manually.");
-      return;
+  async function requestCameraStream() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error("Camera access is not available in this browser.");
     }
 
+    const coarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches;
+    const videoConstraints = coarsePointer
+      ? { facingMode: "environment" }
+      : true;
+
+    return navigator.mediaDevices.getUserMedia({
+      video: videoConstraints
+    });
+  }
+
+  async function handleScanBarcode() {
     try {
-      const detector = new window.BarcodeDetector({
-        formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"]
-      });
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" }
-      });
+      const stream = await requestCameraStream();
       streamRef.current = stream;
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
       setIsScanning(true);
+
+      if (!("BarcodeDetector" in window)) {
+        setStatus("Camera access granted. This browser cannot decode barcodes natively, so enter the barcode manually.");
+        return;
+      }
+
+      const detector = new window.BarcodeDetector({
+        formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"]
+      });
       setStatus("Point the camera at a barcode.");
 
       const scan = async () => {

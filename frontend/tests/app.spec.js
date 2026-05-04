@@ -404,8 +404,18 @@ test("searches food data, looks up barcodes, and logs diet totals", async ({ pag
   await page.getByRole("button", { name: "Lookup barcode" }).click();
   await expect(page.getByText("Barcode matched Mock Skyr.")).toBeVisible();
 
+  await page.evaluate(() => {
+    navigator.mediaDevices = {
+      getUserMedia: async () => ({
+        getTracks: () => [{ stop: () => {} }]
+      })
+    };
+    HTMLMediaElement.prototype.play = async () => {};
+  });
   await page.getByRole("button", { name: "Scan" }).click();
-  await expect(page.getByText(/barcode scanning is not available|Point the camera at a barcode|Camera barcode scan failed/)).toBeVisible();
+  await expect(
+    page.getByText(/Camera access granted|Point the camera at a barcode|Camera barcode scan failed/)
+  ).toBeVisible();
 });
 
 test("exposes method, privacy, and strategy corpus content", async ({ page }) => {
