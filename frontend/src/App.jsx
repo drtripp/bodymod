@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import ComparisonPanel from "./components/ComparisonPanel";
+import DietDashboard from "./components/DietDashboard";
 import InfoFootnote from "./components/InfoFootnote";
 import MeasurementForm from "./components/MeasurementForm";
 import PopulationPanel from "./components/PopulationPanel";
@@ -58,6 +59,7 @@ export default function App() {
   const [fieldUnitOverrides, setFieldUnitOverrides] = useState({});
   const [hoveredMeasurement, setHoveredMeasurement] = useState(null);
   const [insightTab, setInsightTab] = useState("result");
+  const [activeSection, setActiveSection] = useState("body");
   const [isStrategyExplorerOpen, setIsStrategyExplorerOpen] = useState(false);
 
   useEffect(() => {
@@ -395,103 +397,111 @@ export default function App() {
   return (
     <div className="app-shell">
       <SiteHeader
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
         onOpenStrategies={() => setIsStrategyExplorerOpen(true)}
         onShare={handleCopyShareLink}
         shareStatus={shareStatus}
       />
 
-      <main className="workspace">
-        <section className="visual-column">
-          <div className="insight-tabs panel">
-            <div className="tab-bar" role="tablist" aria-label="Result and comparison views">
-              <button
-                className={`button ${insightTab === "result" ? "is-active" : ""}`}
-                type="button"
-                role="tab"
-                aria-selected={insightTab === "result"}
-                onClick={() => setInsightTab("result")}
-              >
-                Result
-              </button>
-              <button
-                className={`button ${insightTab === "target" ? "is-active" : ""}`}
-                type="button"
-                role="tab"
-                aria-selected={insightTab === "target"}
-                onClick={() => setInsightTab("target")}
-              >
-                vs Target
-              </button>
-              <button
-                className={`button ${insightTab === "population" ? "is-active" : ""}`}
-                type="button"
-                role="tab"
-                aria-selected={insightTab === "population"}
-                onClick={() => setInsightTab("population")}
-              >
-                vs US Population
-              </button>
-            </div>
+      {activeSection === "body" ? (
+        <>
+          <main className="workspace">
+            <section className="visual-column">
+              <div className="insight-tabs panel">
+                <div className="tab-bar" role="tablist" aria-label="Result and comparison views">
+                  <button
+                    className={`button ${insightTab === "result" ? "is-active" : ""}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={insightTab === "result"}
+                    onClick={() => setInsightTab("result")}
+                  >
+                    Result
+                  </button>
+                  <button
+                    className={`button ${insightTab === "target" ? "is-active" : ""}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={insightTab === "target"}
+                    onClick={() => setInsightTab("target")}
+                  >
+                    vs Target
+                  </button>
+                  <button
+                    className={`button ${insightTab === "population" ? "is-active" : ""}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={insightTab === "population"}
+                    onClick={() => setInsightTab("population")}
+                  >
+                    vs US Population
+                  </button>
+                </div>
 
-            {insightTab === "result" ? (
-              <ResultSummary
-                measurements={currentMeasurements}
-                result={result}
-                apiStatus={apiStatus}
+                {insightTab === "result" ? (
+                  <ResultSummary
+                    measurements={currentMeasurements}
+                    result={result}
+                    apiStatus={apiStatus}
+                    hoveredMeasurement={hoveredMeasurement}
+                    onMeasurementHover={setHoveredMeasurement}
+                  />
+                ) : insightTab === "target" ? (
+                  <ComparisonPanel
+                    mode={comparisonMode}
+                    onModeChange={handleComparisonModeChange}
+                    selectedTarget={selectedTarget}
+                    onTargetChange={handleTargetChange}
+                    rankedMatches={rankedMatches}
+                    currentMeasurements={currentMeasurements}
+                    snapshotComparison={snapshotComparison}
+                    comparisonSnapshot={comparisonSnapshot}
+                  />
+                ) : (
+                  <PopulationPanel measurements={currentMeasurements} />
+                )}
+              </div>
+            </section>
+
+            <section className="control-column">
+              <MeasurementForm
+                formState={displayFormState}
+                errors={errors}
+                onChange={handleChange}
+                onSubmit={handleSubmit}
+                onFieldBlur={handleFieldBlur}
+                globalUnitSystem={globalUnitSystem}
+                fieldUnitOverrides={fieldUnitOverrides}
+                onGlobalUnitChange={handleGlobalUnitChange}
+                onFieldUnitChange={handleFieldUnitChange}
+                onFieldUnitReset={handleFieldUnitReset}
                 hoveredMeasurement={hoveredMeasurement}
                 onMeasurementHover={setHoveredMeasurement}
               />
-            ) : insightTab === "target" ? (
-              <ComparisonPanel
-                mode={comparisonMode}
-                onModeChange={handleComparisonModeChange}
-                selectedTarget={selectedTarget}
-                onTargetChange={handleTargetChange}
-                rankedMatches={rankedMatches}
-                currentMeasurements={currentMeasurements}
-                snapshotComparison={snapshotComparison}
-                comparisonSnapshot={comparisonSnapshot}
+
+              <SnapshotPanel
+                snapshotLabel={snapshotLabel}
+                onSnapshotLabelChange={setSnapshotLabel}
+                snapshotNote={snapshotNote}
+                onSnapshotNoteChange={setSnapshotNote}
+                snapshots={snapshots}
+                onSaveSnapshot={handleSaveSnapshot}
+                onLoadSnapshot={handleLoadSnapshot}
+                onDeleteSnapshot={handleDeleteSnapshot}
+                comparisonSnapshotId={comparisonSnapshotId}
+                onCompareSnapshot={handleCompareSnapshot}
+                onExportSnapshots={handleExportSnapshots}
+                onImportSnapshots={handleImportSnapshots}
+                importStatus={importStatus}
               />
-            ) : (
-              <PopulationPanel measurements={currentMeasurements} />
-            )}
-          </div>
-        </section>
-
-        <section className="control-column">
-          <MeasurementForm
-            formState={displayFormState}
-            errors={errors}
-            onChange={handleChange}
-            onSubmit={handleSubmit}
-            onFieldBlur={handleFieldBlur}
-            globalUnitSystem={globalUnitSystem}
-            fieldUnitOverrides={fieldUnitOverrides}
-            onGlobalUnitChange={handleGlobalUnitChange}
-            onFieldUnitChange={handleFieldUnitChange}
-            onFieldUnitReset={handleFieldUnitReset}
-            hoveredMeasurement={hoveredMeasurement}
-            onMeasurementHover={setHoveredMeasurement}
-          />
-
-          <SnapshotPanel
-            snapshotLabel={snapshotLabel}
-            onSnapshotLabelChange={setSnapshotLabel}
-            snapshotNote={snapshotNote}
-            onSnapshotNoteChange={setSnapshotNote}
-            snapshots={snapshots}
-            onSaveSnapshot={handleSaveSnapshot}
-            onLoadSnapshot={handleLoadSnapshot}
-            onDeleteSnapshot={handleDeleteSnapshot}
-            comparisonSnapshotId={comparisonSnapshotId}
-            onCompareSnapshot={handleCompareSnapshot}
-            onExportSnapshots={handleExportSnapshots}
-            onImportSnapshots={handleImportSnapshots}
-            importStatus={importStatus}
-          />
-        </section>
-      </main>
-      <InfoFootnote />
+            </section>
+          </main>
+          <InfoFootnote />
+        </>
+      ) : (
+        <DietDashboard />
+      )}
 
       {isStrategyExplorerOpen ? (
         <div className="strategy-explorer-overlay" role="presentation">

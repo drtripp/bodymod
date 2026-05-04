@@ -83,6 +83,8 @@ Implemented now:
 - target type, placeholder notes, and largest score-driver bullets in the vs Target pane
 - result, vs Target, and vs US Population panes are presented as tabs
 - first-draft US population scatter and distribution plots with sex-colored reference bands
+- Body/Diet top-level switcher
+- Diet tracker with Open Food Facts search, barcode lookup, optional browser barcode scanner, local food log, macro totals, and micronutrient totals
 - method/privacy content collapsed into a hover footnote
 - header share icon that copies an encoded measurement URL without showing a share panel
 - local-only lightweight usage event logging
@@ -112,6 +114,7 @@ Not implemented yet:
 - production-quality target dataset
 - accounts or cross-device history
 - photo upload, Hugging Face, ONNX, or other inference work
+- first-party food database ownership; Diet currently depends on Open Food Facts and local browser storage
 
 ## Current Measurement Schema
 
@@ -172,7 +175,7 @@ Remaining non-code inputs are tracked in `manual-work-queue.md`.
 - `body-modding-platform-plan.docx`: original archival planning document
 - `deployment.md`: prototype deployment notes and launch caveats
 - `reference-data-curation.md`: replacement standard for production percentile data
-- `review-screenshots/README.md`: screenshot capture and local Qwen visual-review notes
+- `review-screenshots/README.md`: screenshot capture and manual visual-review notes
 - `strategy-corpus-template.json`: starter JSON shape for manually sourced corpus entries
 - `strategy-corpus-curation.md`: manual review rubric for corpus entries
 - `target-profiles-template.json`: starter JSON shape for curated target profiles

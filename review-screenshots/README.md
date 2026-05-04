@@ -1,6 +1,6 @@
 # Visual Review Notes
 
-This directory stores screenshots used for manual and local-model visual review.
+This directory stores screenshots used for manual visual review.
 
 ## Captures
 
@@ -19,38 +19,9 @@ The capture script stubs backend responses, fills the app with representative
 measurement and match data, waits for the top match to render, opens the
 vs Target tab, enables overlap comparison mode, then captures the full page.
 
-## Local Qwen Review
-
-The local model file exists at:
-
-```text
-../local_inference/models/Qwen3.5-9B-UD-Q4_K_XL.gguf
-```
-
-The model was hosted through the local inference runner using the `qwen35`
-preset in `../local_inference/run_model.py`, then prompted against the
-desktop and mobile screenshots. The latest raw output is stored in
-`qwen35-current-review.md`.
-
-Outcome:
-
-- The model could inspect the screenshots through the local vision path.
-- Its responses repeatedly described UI that was not present in the screenshots,
-  including signup, gallery, carousel, footer, "About", "Add", and body-selection
-  controls.
-- Those findings were treated as unreliable and were not used as product issues.
-- Manual screenshot review found one real capture issue: the screenshot harness
-  could capture before match data loaded. The harness now waits for the top-match
-  block to contain `Astarion` before taking screenshots.
-- Manual screenshot review after the vs Target / vs US Population tab changes
-  found one real mobile polish issue: the "Side by side" button wrapped
-  awkwardly. Button labels now use `white-space: nowrap` while button rows still
-  wrap.
-
 ## Current Review Status
 
-No additional actionable visual or mechanical issue was accepted from the Qwen
-pass. The trusted checks remain:
+The trusted checks are:
 
 - Playwright user-flow tests
 - backend pytest coverage

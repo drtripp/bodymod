@@ -13,6 +13,7 @@ try {
   Push-Location "frontend"
   try {
     npm run test:corpus
+    npm run test:diet
     npm run test:population
     npm run build
     npm run test:e2e

@@ -16,6 +16,7 @@ The app currently lets a user:
 6. Review a compact trend summary across saved local snapshots.
 7. Inspect a seed informational strategy explorer organized by desired outcome.
 8. Create a share URL that encodes the current measurement payload.
+9. Switch from Body to Diet for food search, barcode lookup, and local nutrition logging.
 
 The product is intentionally not a guidance platform. It does not recommend procedures, compounds, dosing, medical decisions, or interventions.
 
@@ -202,6 +203,22 @@ Implemented:
 - Playwright desktop and phone-viewport user-flow tests
 - graceful no-backend state for form and local snapshots
 - offline comparison copy separates backend target comparison from local snapshot comparison
+
+### Diet Tracker
+
+Implemented:
+
+- Body/Diet top-level switcher
+- Open Food Facts text search for food database lookup
+- barcode number lookup against Open Food Facts
+- browser `BarcodeDetector` scanner path when available, with manual-entry fallback
+- local food log stored in browser storage
+- serving multiplier
+- macro totals for calories, protein, carbs, and fat
+- micronutrient totals for fiber, sugar, sodium, calcium, and iron
+- local sample foods when remote lookup is unavailable
+- Node tests for nutrition normalization, serving scaling, and totals
+- Playwright user-flow coverage for search, barcode lookup, logging, and totals
 
 Still needed:
 

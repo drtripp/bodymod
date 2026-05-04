@@ -1,4 +1,5 @@
 const STORAGE_KEY = "bodymod:snapshots:v1";
+const DIET_STORAGE_KEY = "bodymod:diet-log:v1";
 const STORAGE_VERSION = 1;
 
 function canUseStorage() {
@@ -74,4 +75,36 @@ export function createSnapshot(measurements, label = "", note = "") {
     note: note.trim() || undefined,
     measurements
   };
+}
+
+export function loadDietLog() {
+  if (!canUseStorage()) {
+    return [];
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(DIET_STORAGE_KEY);
+    if (!rawValue) {
+      return [];
+    }
+
+    const parsed = JSON.parse(rawValue);
+    return Array.isArray(parsed.entries) ? parsed.entries : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+export function persistDietLog(entries) {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  window.localStorage.setItem(
+    DIET_STORAGE_KEY,
+    JSON.stringify({
+      version: STORAGE_VERSION,
+      entries
+    })
+  );
 }

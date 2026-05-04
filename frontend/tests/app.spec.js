@@ -355,6 +355,59 @@ test("shares measurements from the header icon and restores them from the URL", 
   await expect(page).toHaveURL(/m=/);
 });
 
+test("searches food data, looks up barcodes, and logs diet totals", async ({ page }) => {
+  await page.route("https://world.openfoodfacts.org/**", async (route) => {
+    const url = route.request().url();
+    const product = {
+      code: "1234567890123",
+      product_name: "Mock Skyr",
+      brands: "Test Dairy",
+      serving_size: "150 g",
+      nutriments: {
+        "energy-kcal_serving": 140,
+        proteins_serving: 20,
+        carbohydrates_serving: 10,
+        fat_serving: 1,
+        fiber_serving: 0,
+        sugars_serving: 7,
+        sodium_serving: 0.06,
+        calcium_serving: 0.18,
+        iron_serving: 0.0002
+      }
+    };
+
+    if (url.includes("/api/v2/product/")) {
+      await route.fulfill({ json: { code: "1234567890123", product } });
+      return;
+    }
+
+    await route.fulfill({ json: { products: [product] } });
+  });
+
+  await page.getByRole("tab", { name: "Diet" }).click();
+  await expect(page.getByRole("heading", { name: "Diet" })).toBeVisible();
+  await expect(page.getByLabel("Diet macro totals")).toBeVisible();
+
+  await page.getByRole("textbox", { name: "Food search" }).fill("skyr");
+  await page.getByRole("button", { name: "Search foods" }).click();
+  await expect(page.getByText("Found 1 food(s).")).toBeVisible();
+  await expect(page.getByLabel("Food search results").getByText("Mock Skyr")).toBeVisible();
+
+  await page.getByLabel("Servings").fill("2");
+  await page.getByRole("button", { name: "Add selected" }).click();
+  await expect(page.getByLabel("Diet log entries").getByText("Mock Skyr")).toBeVisible();
+  await expect(page.getByLabel("Diet macro totals").getByText("280")).toBeVisible();
+  await expect(page.getByLabel("Diet macro totals").getByText("40")).toBeVisible();
+  await expect(page.getByLabel("Diet micronutrient totals").getByText("Calcium")).toBeVisible();
+
+  await page.getByRole("textbox", { name: "Barcode" }).fill("1234567890123");
+  await page.getByRole("button", { name: "Lookup barcode" }).click();
+  await expect(page.getByText("Barcode matched Mock Skyr.")).toBeVisible();
+
+  await page.getByRole("button", { name: "Scan" }).click();
+  await expect(page.getByText(/barcode scanning is not available|Point the camera at a barcode|Camera barcode scan failed/)).toBeVisible();
+});
+
 test("exposes method, privacy, and strategy corpus content", async ({ page }) => {
   await page.getByRole("button", { name: "Method / privacy" }).hover();
   await expect(page.getByRole("heading", { name: "Method" })).toBeVisible();
