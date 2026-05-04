@@ -103,8 +103,9 @@ test("keeps the dense workflow usable on a phone viewport", async ({ page }) => 
   await page.getByRole("button", { name: "Overlap" }).click();
   await expect(page.getByLabel("Overlap comparison")).toBeVisible();
 
-  await page.getByRole("tab", { name: "vs US Population" }).click();
-  await expect(page.getByLabel("US population scatter plot")).toBeVisible();
+  await page.getByRole("tab", { name: "Gender" }).click();
+  await expect(page.getByLabel("Gender score distribution")).toBeVisible();
+  await expect(page.getByLabel("Gender measurement scores")).toBeVisible();
 
   await page.getByRole("button", { name: "Build Plan" }).click();
   await expect(page.getByRole("heading", { name: "Strategy explorer" })).toBeVisible();

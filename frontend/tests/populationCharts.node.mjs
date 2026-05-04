@@ -2,9 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   POPULATION_METRICS,
+  aggregateGenderScore,
+  buildGenderScoreRows,
   buildScatterPoints,
   clampMetricValue,
+  genderScoreLabel,
   getPopulationMetric,
+  metricSexScore,
   normalPdf
 } from "../src/lib/populationCharts.js";
 
@@ -45,4 +49,30 @@ test("normal density peaks at the mean", () => {
 
   assert.ok(peak > offMean);
   assert.ok(peak > 0);
+});
+
+test("computes signed gender score rows", () => {
+  const rows = buildGenderScoreRows({
+    height: 176,
+    weight: 84,
+    waistCircumference: 99,
+    bideltoidCircumference: 116,
+    hipCircumference: 106
+  });
+
+  assert.equal(rows.length, POPULATION_METRICS.length);
+  assert.ok(metricSexScore(116, getPopulationMetric("bideltoidCircumference")) < 0);
+  assert.ok(metricSexScore(106, getPopulationMetric("hipCircumference")) > 0);
+  assert.ok(
+    aggregateGenderScore({
+      height: 176,
+      weight: 84,
+      waistCircumference: 99,
+      bideltoidCircumference: 116,
+      hipCircumference: 102
+    }) < 0
+  );
+  assert.equal(genderScoreLabel(0), "Androgynous range");
+  assert.equal(genderScoreLabel(1), "Female-leaning");
+  assert.equal(genderScoreLabel(-1), "Male-leaning");
 });

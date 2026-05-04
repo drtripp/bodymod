@@ -1024,6 +1024,11 @@ textarea {
   stroke-width: 1.4;
 }
 
+.chart-grid-line {
+  stroke: rgba(82, 97, 112, 0.36);
+  stroke-width: 1;
+}
+
 .chart-axis-label,
 .chart-sex-label,
 .chart-user-label {
@@ -1051,6 +1056,96 @@ textarea {
   stroke: #f2c94c;
   stroke-width: 3;
   stroke-dasharray: 7 5;
+}
+
+.gender-toolbar {
+  align-items: end;
+}
+
+.dataset-field {
+  min-width: 150px;
+  max-width: 190px;
+}
+
+.gender-score-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.gender-score-card {
+  position: relative;
+  border: 1px solid #526170;
+  background: #080c11;
+}
+
+.gender-score-chart {
+  border: 0;
+  background: transparent;
+}
+
+.gender-user-line {
+  stroke: #f2f0e8;
+}
+
+.gender-score-readout {
+  position: absolute;
+  top: 28px;
+  right: 18px;
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  color: #f2f0e8;
+  padding: 4px 0 4px 12px;
+  background: linear-gradient(90deg, rgba(8, 12, 17, 0), #080c11 34%);
+}
+
+.gender-score-readout span {
+  color: #8da9c4;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+.gender-score-readout strong {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 0.96;
+}
+
+.gender-score-readout em {
+  color: #c7d0d9;
+  font-size: 0.82rem;
+  font-style: normal;
+}
+
+.gender-measurement-table {
+  border-top: 1px solid #344454;
+}
+
+.gender-measurement-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.gender-measurement-table th,
+.gender-measurement-table td {
+  border-bottom: 1px solid #243342;
+  padding: 8px 8px;
+  text-align: right;
+}
+
+.gender-measurement-table th:first-child,
+.gender-measurement-table td:first-child {
+  text-align: left;
+}
+
+.gender-measurement-table thead th {
+  color: #c7d0d9;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+.gender-measurement-table tbody th {
+  font-weight: 700;
 }
 
 .population-legend {

@@ -434,7 +434,7 @@ export default function App() {
                     aria-selected={insightTab === "population"}
                     onClick={() => setInsightTab("population")}
                   >
-                    vs US Population
+                    Gender
                   </button>
                 </div>
 

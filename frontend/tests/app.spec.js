@@ -134,8 +134,12 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "Matches" })).toHaveCount(0);
 
-  await page.getByRole("tab", { name: "vs US Population" }).click();
-  await expect(page.getByRole("heading", { name: "vs US Population" })).toHaveCount(0);
+  await page.getByRole("tab", { name: "Gender" }).click();
+  await expect(page.getByRole("heading", { name: "Gender" })).toHaveCount(0);
+  await expect(page.getByLabel("Gender score distribution")).toBeVisible();
+  await expect(page.getByLabel("Gender score readout")).toBeVisible();
+  await expect(page.getByLabel("Gender measurement scores").getByText("Shoulder mass")).toBeVisible();
+  await page.getByRole("button", { name: "Scatter" }).click();
   await expect(page.getByLabel("US population scatter plot")).toBeVisible();
   await expect(page.getByLabel("Population chart legend")).toBeVisible();
   await page.getByRole("button", { name: "Distributions" }).click();
@@ -162,9 +166,13 @@ test("validates measurements and supports unit display changes", async ({ page }
 });
 
 test("supports population chart axis and distribution controls", async ({ page }) => {
-  await page.getByRole("tab", { name: "vs US Population" }).click();
+  await page.getByRole("tab", { name: "Gender" }).click();
   await expect(page.getByRole("img", { name: /silhouette/i })).toHaveCount(0);
+  await expect(page.getByLabel("Gender score distribution")).toBeVisible();
+  await expect(page.getByLabel("Gender measurement scores")).toContainText("include");
+  await expect(page.getByLabel("Gender measurement scores")).toContainText("5 of 5 measurements");
 
+  await page.getByRole("button", { name: "Scatter" }).click();
   const chart = page.locator(".population-chart");
   await expect(page.getByLabel("US population scatter plot")).toBeVisible();
   await expect(chart.getByText("Height (cm)")).toBeVisible();

@@ -87,3 +87,42 @@ export function normalPdf(x, mean, sd) {
   const variance = sd * sd;
   return Math.exp(-((x - mean) * (x - mean)) / (2 * variance)) / (sd * Math.sqrt(2 * Math.PI));
 }
+
+export function metricSexScore(value, metric) {
+  const clamped = clampMetricValue(Number(value), metric);
+  const midpoint = (metric.male.mean + metric.female.mean) / 2;
+  const femaleDirection = (metric.female.mean - metric.male.mean) / 2;
+
+  if (!Number.isFinite(clamped) || femaleDirection === 0) {
+    return 0;
+  }
+
+  return Math.max(-3, Math.min(3, (clamped - midpoint) / femaleDirection));
+}
+
+export function buildGenderScoreRows(measurements) {
+  return POPULATION_METRICS.map((metric) => ({
+    key: metric.key,
+    label: metric.label,
+    unit: metric.unit,
+    value: clampMetricValue(Number(measurements[metric.key]), metric),
+    score: metricSexScore(measurements[metric.key], metric)
+  }));
+}
+
+export function aggregateGenderScore(measurements) {
+  const rows = buildGenderScoreRows(measurements);
+  const total = rows.reduce((sum, row) => sum + row.score, 0);
+
+  return rows.length ? total / rows.length : 0;
+}
+
+export function genderScoreLabel(score) {
+  const absScore = Math.abs(score);
+
+  if (absScore < 0.35) {
+    return "Androgynous range";
+  }
+
+  return score > 0 ? "Female-leaning" : "Male-leaning";
+}
