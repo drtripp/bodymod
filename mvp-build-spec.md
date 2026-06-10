@@ -128,11 +128,16 @@ Implemented:
 - hover/focus coordination between form fields and silhouette anchors
 - SVG title/description and human-readable anchor labels with values
 - Playwright coverage for minimum and maximum valid measurement profiles
+- 10 schema-complete silhouette QA profiles covering realistic body-shape
+  variants, validated in Node projection tests and filled through the browser
+  form
+- comparison variant coverage for side-by-side, overlap, morph, and target
+  difference calculations
 
 Still needed:
 
-- manual visual QA across more real-world body shapes
-- comparison-specific rendering states
+- manual visual QA against production target data once sourced profiles replace
+  placeholders
 
 ### Matching Engine
 

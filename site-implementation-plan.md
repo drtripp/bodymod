@@ -179,6 +179,7 @@ Source files:
 
 - `frontend/src/components/SilhouetteView.jsx`
 - `frontend/src/lib/silhouette.js`
+- `frontend/src/lib/silhouetteQaProfiles.js`
 
 Status:
 
@@ -191,14 +192,19 @@ Status:
   component without changing the projection geometry
 - measurement anchors are interactive
 - SVG title/description and human-readable anchor labels are exposed for assistive technology
-- Playwright covers minimum and maximum valid measurement profiles plus the
-  front/side view toggle and themed line-art layer
+- 10 schema-complete QA profiles cover compact, broad, curvy, lean,
+  high-BMI, lower-body, upper-body, return-to-form, and transition-tracking
+  shapes
+- Node projection tests assert every QA profile renders front and side paths,
+  heads, and anchors inside the SVG viewBox
+- Playwright covers minimum/maximum valid measurement profiles, the QA profile
+  set through the real form, the front/side view toggle, and the themed
+  line-art layer
 
 Next:
 
-- continue manual visual QA across more real-world body shapes
-- keep refining comparison rendering variants as more real-world profiles are
-  tested
+- continue manual visual QA when production target data introduces new real
+  profiles or sourced population shapes
 
 ### Matching Engine
 

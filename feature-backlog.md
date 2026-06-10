@@ -223,8 +223,10 @@ Protocol Tracker → Diet upgrades → Native app.
 - [x] Measurement-band diff: upgrade overlap mode from silhouette overlay to
       per-region band diff showing where and how much bodies differ (decision
       flagged in `site-implementation-plan.md` — resolve it as: build it).
-- [ ] Comparison rendering variants and silhouette QA across more real-world
-      body shapes (incl. extreme valid values).
+- [x] Comparison rendering variants and silhouette QA across more real-world
+      body shapes (incl. extreme valid values): side-by-side, overlap, morph,
+      and target-diff paths are covered, with 10 schema-complete QA profiles
+      exercised through Node projection/comparison tests and the browser form.
 - [x] Side-view silhouette **(new)**: second deterministic projection now
       estimates profile depth from circumference relative to available width,
       shares the front/side toggle across result/comparison/account views, and

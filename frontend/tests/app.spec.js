@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { Buffer } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import { DEFAULT_CLOTHING_SIZE_TABLES } from "../src/lib/clothingSizes.js";
+import { silhouetteQaProfiles } from "../src/lib/silhouetteQaProfiles.js";
 
 const targetMeasurements = {
   height: 178,
@@ -965,65 +966,91 @@ test("handles decimal and pasted measurement values", async ({ page, context }) 
   await expect(page.getByRole("button", { name: "Waist: 79.5 cm" }).first()).toBeVisible();
 });
 
-test("renders silhouettes for extreme but valid measurement profiles", async ({ page }) => {
-  const profiles = [
+test("renders silhouettes for extreme and real-world QA measurement profiles", async ({ page }) => {
+  const extremeProfiles = [
     {
-      height: 120,
-      weight: 35,
-      headCircumference: 45,
-      neckCircumference: 25,
-      biacromialWidth: 28,
-      bideltoidWidth: 34,
-      bideltoidCircumference: 70,
-      armpitCircumference: 50,
-      nippleCircumference: 50,
-      underbustCircumference: 50,
-      waistCircumference: 45,
-      pantWaistCircumference: 45,
-      hipCircumference: 60,
-      upperThighCircumference: 30,
-      midThighCircumference: 25,
-      calfCircumference: 20,
-      ankleCircumference: 14,
-      bicepCircumference: 18,
-      upperForearmCircumference: 15,
-      wristCircumference: 11
+      id: "minimum-valid",
+      measurements: {
+        sex: "female",
+        height: 120,
+        weight: 35,
+        headCircumference: 45,
+        neckCircumference: 25,
+        biacromialWidth: 28,
+        bideltoidWidth: 34,
+        bideltoidCircumference: 70,
+        armpitCircumference: 50,
+        nippleCircumference: 50,
+        underbustCircumference: 50,
+        waistCircumference: 45,
+        pantWaistCircumference: 45,
+        hipCircumference: 60,
+        upperThighCircumference: 30,
+        midThighCircumference: 25,
+        calfCircumference: 20,
+        ankleCircumference: 14,
+        bicepCircumference: 18,
+        upperForearmCircumference: 15,
+        wristCircumference: 11
+      }
     },
     {
-      height: 240,
-      weight: 250,
-      headCircumference: 70,
-      neckCircumference: 65,
-      biacromialWidth: 65,
-      bideltoidWidth: 85,
-      bideltoidCircumference: 180,
-      armpitCircumference: 190,
-      nippleCircumference: 190,
-      underbustCircumference: 180,
-      waistCircumference: 180,
-      pantWaistCircumference: 190,
-      hipCircumference: 200,
-      upperThighCircumference: 110,
-      midThighCircumference: 95,
-      calfCircumference: 70,
-      ankleCircumference: 40,
-      bicepCircumference: 75,
-      upperForearmCircumference: 55,
-      wristCircumference: 30
+      id: "maximum-valid",
+      measurements: {
+        sex: "male",
+        height: 240,
+        weight: 250,
+        headCircumference: 70,
+        neckCircumference: 65,
+        biacromialWidth: 65,
+        bideltoidWidth: 85,
+        bideltoidCircumference: 180,
+        armpitCircumference: 190,
+        nippleCircumference: 190,
+        underbustCircumference: 180,
+        waistCircumference: 180,
+        pantWaistCircumference: 190,
+        hipCircumference: 200,
+        upperThighCircumference: 110,
+        midThighCircumference: 95,
+        calfCircumference: 70,
+        ankleCircumference: 40,
+        bicepCircumference: 75,
+        upperForearmCircumference: 55,
+        wristCircumference: 30
+      }
     }
+  ];
+  const profiles = [
+    ...extremeProfiles,
+    ...silhouetteQaProfiles.map((profile) => ({
+      id: profile.id,
+      measurements: profile.measurements
+    }))
   ];
 
   for (const profile of profiles) {
-    for (const [field, value] of Object.entries(profile)) {
+    await page.locator('select[name="sex"]').selectOption(profile.measurements.sex);
+
+    for (const [field, value] of Object.entries(profile.measurements)) {
+      if (field === "sex") {
+        continue;
+      }
+
       await page.locator(`input[name="${field}"]`).fill(String(value));
     }
     await page.locator('input[name="ankleCircumference"]').blur();
 
     await expect(page.locator(".field-error")).toHaveCount(0);
     await expect(page.getByRole("img", { name: "Current profile silhouette" })).toBeVisible();
+    await expect(page.locator(".visual-column .silhouette-line-art-front")).toHaveCount(1);
     await expect(
-      page.getByRole("button", { name: `Waist: ${profile.waistCircumference} cm` }).first()
+      page.getByRole("button", { name: `Waist: ${profile.measurements.waistCircumference} cm` }).first()
     ).toBeVisible();
+    await page.getByRole("button", { name: "Side view" }).click();
+    await expect(page.getByRole("img", { name: "Current profile side silhouette" })).toBeVisible();
+    await expect(page.locator(".visual-column .silhouette-line-art-side")).toHaveCount(1);
+    await page.getByRole("button", { name: "Front view" }).click();
   }
 });
 

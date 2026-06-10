@@ -107,6 +107,7 @@ Implemented now:
 - current-vs-selected-snapshot silhouette comparison
 - side-by-side and overlap comparison modes
 - animated current-to-target morph mode with an SVG morph share-card download
+- reusable 10-profile silhouette QA fixture set covering compact, broad, curvy, lean, high-BMI, lower-body, upper-body, return-to-form, and transition-tracking shapes
 - current-vs-target measurement difference table in the comparison panel
 - overlap-mode measurement-band diff for current-vs-target region gaps
 - saved snapshots usable as local "past self" comparison and goal targets
