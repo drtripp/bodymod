@@ -1,12 +1,40 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  activityLevelOptions,
+  calculateMacroTargets,
+  calculateFluidTarget,
+  cloneDietEntries,
+  createFluidEntry,
+  createMealLogEntries,
+  dietGoalOptions,
+  foodMatchesQuery,
+  fluidPresetOptions,
+  fluidProgress,
+  latestLoggedDayEntries,
   lookupBarcode,
+  macroTargetRows,
+  mealSummary,
+  mergeFoodLists,
+  normalizeCustomFood,
+  normalizeMealTemplate,
+  removeMeal,
+  removeFood,
   sampleFoods,
   scaleFood,
   searchFoods,
-  sumNutrition
+  sumNutrition,
+  upsertFood,
+  upsertMeal
 } from "../lib/diet";
-import { loadDietLog, persistDietLog } from "../lib/storage";
+import { defaultMeasurements } from "../lib/measurements";
+import {
+  loadDietFoodLibrary,
+  loadDietLog,
+  loadFluidLog,
+  persistDietFoodLibrary,
+  persistDietLog,
+  persistFluidLog
+} from "../lib/storage";
 
 function formatNumber(value, digits = 0) {
   return Number(value || 0).toFixed(digits);
@@ -14,6 +42,15 @@ function formatNumber(value, digits = 0) {
 
 function macroLine(food) {
   return `${formatNumber(food.macros.calories)} kcal / P ${formatNumber(food.macros.protein)}g / C ${formatNumber(food.macros.carbs)}g / F ${formatNumber(food.macros.fat)}g`;
+}
+
+function mealLine(meal) {
+  const summary = mealSummary(meal);
+  return `${summary.itemCount} item(s) / ${formatNumber(summary.macros.calories)} kcal / P ${formatNumber(summary.macros.protein)}g / C ${formatNumber(summary.macros.carbs)}g / F ${formatNumber(summary.macros.fat)}g`;
+}
+
+function targetLine(row) {
+  return `Target ${formatNumber(row.target)} ${row.unit} / ${row.percent}%`;
 }
 
 function createLogEntry(food, servings) {
@@ -26,31 +63,93 @@ function createLogEntry(food, servings) {
   };
 }
 
-export default function DietDashboard() {
+export default function DietDashboard({ currentMeasurements = defaultMeasurements }) {
   const [query, setQuery] = useState("");
   const [barcode, setBarcode] = useState("");
   const [servings, setServings] = useState(1);
   const [results, setResults] = useState(sampleFoods);
   const [selectedFood, setSelectedFood] = useState(sampleFoods[0]);
+  const [customFoodForm, setCustomFoodForm] = useState({
+    name: "",
+    brand: "",
+    serving: "",
+    calories: "",
+    protein: "",
+    carbs: "",
+    fat: ""
+  });
+  const [mealName, setMealName] = useState("");
+  const [fluidAmount, setFluidAmount] = useState("500");
+  const [fluidLabel, setFluidLabel] = useState("Water");
   const [status, setStatus] = useState("");
   const [entries, setEntries] = useState([]);
+  const [fluidEntries, setFluidEntries] = useState([]);
+  const [foodLibrary, setFoodLibrary] = useState({
+    customFoods: [],
+    favoriteFoods: [],
+    recentFoods: [],
+    mealTemplates: []
+  });
   const [isSearching, setIsSearching] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [dietGoalId, setDietGoalId] = useState("maintenance");
+  const [activityLevelId, setActivityLevelId] = useState("moderate");
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const totals = useMemo(() => sumNutrition(entries), [entries]);
+  const macroTargets = useMemo(
+    () => calculateMacroTargets(currentMeasurements, dietGoalId, activityLevelId),
+    [activityLevelId, currentMeasurements, dietGoalId]
+  );
+  const macroRows = useMemo(
+    () => macroTargetRows(totals.macros, macroTargets),
+    [macroTargets, totals.macros]
+  );
+  const fluidTarget = useMemo(
+    () => calculateFluidTarget(currentMeasurements),
+    [currentMeasurements]
+  );
+  const fluidTotals = useMemo(
+    () => fluidProgress(fluidEntries, fluidTarget),
+    [fluidEntries, fluidTarget]
+  );
 
   useEffect(() => {
     setEntries(loadDietLog());
+    setFluidEntries(loadFluidLog());
+    const storedLibrary = loadDietFoodLibrary();
+    setFoodLibrary(storedLibrary);
+    setResults(mergeFoodLists(storedLibrary.customFoods, sampleFoods));
+    setSelectedFood(storedLibrary.customFoods[0] || sampleFoods[0]);
   }, []);
-
-  useEffect(() => {
-    persistDietLog(entries);
-  }, [entries]);
 
   useEffect(() => {
     return () => stopScanner();
   }, []);
+
+  function updateEntries(updater) {
+    setEntries((current) => {
+      const nextEntries = typeof updater === "function" ? updater(current) : updater;
+      persistDietLog(nextEntries);
+      return nextEntries;
+    });
+  }
+
+  function updateFluidEntries(updater) {
+    setFluidEntries((current) => {
+      const nextEntries = typeof updater === "function" ? updater(current) : updater;
+      persistFluidLog(nextEntries);
+      return nextEntries;
+    });
+  }
+
+  function updateFoodLibrary(updater) {
+    setFoodLibrary((current) => {
+      const nextLibrary = typeof updater === "function" ? updater(current) : updater;
+      persistDietFoodLibrary(nextLibrary);
+      return nextLibrary;
+    });
+  }
 
   async function handleSearch(event) {
     event.preventDefault();
@@ -59,12 +158,18 @@ export default function DietDashboard() {
 
     try {
       const foods = await searchFoods(query);
-      setResults(foods.length ? foods : []);
-      setSelectedFood(foods[0] || null);
-      setStatus(foods.length ? `Found ${foods.length} food(s).` : "No foods found.");
+      const localFoods = foodLibrary.customFoods.filter((food) => foodMatchesQuery(food, query));
+      const mergedFoods = mergeFoodLists(localFoods, foods);
+      setResults(mergedFoods);
+      setSelectedFood(mergedFoods[0] || null);
+      setStatus(mergedFoods.length ? `Found ${mergedFoods.length} food(s).` : "No foods found.");
     } catch (error) {
-      setResults(sampleFoods);
-      setSelectedFood(sampleFoods[0]);
+      const fallbackFoods = mergeFoodLists(
+        foodLibrary.customFoods.filter((food) => foodMatchesQuery(food, query)),
+        sampleFoods
+      );
+      setResults(fallbackFoods);
+      setSelectedFood(fallbackFoods[0] || null);
       setStatus("Food database unavailable. Showing sample foods.");
     } finally {
       setIsSearching(false);
@@ -93,13 +198,145 @@ export default function DietDashboard() {
       return;
     }
 
-    const nextEntries = [createLogEntry(food, servings), ...entries];
-    setEntries(nextEntries);
+    updateEntries((current) => [createLogEntry(food, servings), ...current]);
+    updateFoodLibrary((current) => ({
+      ...current,
+      recentFoods: upsertFood(current.recentFoods, food, 8)
+    }));
     setStatus(`Logged ${food.name}.`);
   }
 
   function handleDeleteEntry(entryId) {
-    setEntries(entries.filter((entry) => entry.id !== entryId));
+    updateEntries((current) => current.filter((entry) => entry.id !== entryId));
+  }
+
+  function handleLogFluid(amount = fluidAmount, label = fluidLabel) {
+    const fluidEntry = createFluidEntry(amount, label);
+    if (!fluidEntry.amountMl) {
+      setStatus("Enter a fluid amount before logging it.");
+      return;
+    }
+
+    updateFluidEntries((current) => [fluidEntry, ...current]);
+    setStatus(`Logged ${fluidEntry.amountMl} ml ${fluidEntry.label}.`);
+  }
+
+  function handleDeleteFluid(entryId) {
+    updateFluidEntries((current) => current.filter((entry) => entry.id !== entryId));
+  }
+
+  function handleSaveMealTemplate(event) {
+    event.preventDefault();
+
+    if (!entries.length) {
+      setStatus("Log foods before saving a meal.");
+      return;
+    }
+
+    const meal = normalizeMealTemplate({
+      name: mealName,
+      foods: entries
+    });
+
+    if (!mealName.trim()) {
+      setStatus("Name the meal before saving it.");
+      return;
+    }
+
+    updateFoodLibrary((current) => ({
+      ...current,
+      mealTemplates: upsertMeal(current.mealTemplates, meal, 12)
+    }));
+    setMealName("");
+    setStatus(`Saved meal ${meal.name}.`);
+  }
+
+  function handleAddMeal(meal) {
+    const mealEntries = createMealLogEntries(meal);
+    if (!mealEntries.length) {
+      setStatus("That meal has no foods saved.");
+      return;
+    }
+
+    updateEntries((current) => [...mealEntries, ...current]);
+    setStatus(`Logged meal ${meal.name} (${mealEntries.length} item(s)).`);
+  }
+
+  function handleDeleteMeal(mealId) {
+    updateFoodLibrary((current) => ({
+      ...current,
+      mealTemplates: removeMeal(current.mealTemplates, mealId)
+    }));
+    setStatus("Meal template deleted.");
+  }
+
+  function handleCopyLatestDay() {
+    const latestEntries = latestLoggedDayEntries(entries);
+    if (!latestEntries.length) {
+      setStatus("No logged day to copy yet.");
+      return;
+    }
+
+    const copiedEntries = cloneDietEntries(latestEntries);
+    updateEntries((current) => [...copiedEntries, ...current]);
+    setStatus(`Copied latest logged day (${copiedEntries.length} item(s)).`);
+  }
+
+  function handleCustomFoodFieldChange(event) {
+    const { name, value } = event.target;
+    setCustomFoodForm((current) => ({
+      ...current,
+      [name]: value
+    }));
+  }
+
+  function handleSaveCustomFood(event) {
+    event.preventDefault();
+    const customFood = normalizeCustomFood(customFoodForm);
+
+    if (!customFood.name || customFood.name === "Custom food") {
+      setStatus("Name the custom food before saving it.");
+      return;
+    }
+
+    updateFoodLibrary((current) => ({
+      ...current,
+      customFoods: upsertFood(current.customFoods, customFood, 24),
+      recentFoods: upsertFood(current.recentFoods, customFood, 8)
+    }));
+    setResults((current) => mergeFoodLists([customFood], current));
+    setSelectedFood(customFood);
+    setCustomFoodForm({
+      name: "",
+      brand: "",
+      serving: "",
+      calories: "",
+      protein: "",
+      carbs: "",
+      fat: ""
+    });
+    setStatus(`Saved custom food ${customFood.name}.`);
+  }
+
+  function isFavorite(foodId) {
+    return foodLibrary.favoriteFoods.some((food) => food.id === foodId);
+  }
+
+  function handleToggleFavorite(food) {
+    if (!food?.id) {
+      return;
+    }
+
+    updateFoodLibrary((current) => {
+      const favorite = current.favoriteFoods.some((item) => item.id === food.id);
+      return {
+        ...current,
+        favoriteFoods: favorite
+          ? removeFood(current.favoriteFoods, food.id)
+          : upsertFood(current.favoriteFoods, food, 12)
+      };
+    });
+    setStatus(isFavorite(food.id) ? `Removed ${food.name} from favorites.` : `Saved ${food.name} as a favorite.`);
   }
 
   function stopScanner() {
@@ -170,12 +407,12 @@ export default function DietDashboard() {
         <div>
           <h2>Diet</h2>
           <p>
-            Search Open Food Facts, scan or enter barcodes, and build a local macro and micronutrient log.
+            Search Open Food Facts, save custom foods, scan or enter barcodes, and build a local macro and micronutrient log.
           </p>
         </div>
         <div className="diet-source-note">
           <strong>Database</strong>
-          <span>Open Food Facts lookup plus local sample foods when offline.</span>
+          <span>Open Food Facts lookup plus custom, favorite, and recent foods stored locally.</span>
         </div>
       </section>
 
@@ -230,8 +467,148 @@ export default function DietDashboard() {
         <div className="panel">
           <div className="panel-header">
             <h2>Food Database</h2>
-            <p>Select a food, adjust servings, then log it.</p>
+            <p>Select a food, adjust servings, then log it. Custom foods stay in this browser.</p>
           </div>
+          <form className="custom-food-form" aria-label="Custom food form" onSubmit={handleSaveCustomFood}>
+            <label className="field">
+              <span className="field-label">Custom food name</span>
+              <input
+                aria-label="Custom food name"
+                name="name"
+                value={customFoodForm.name}
+                placeholder="Tofu bowl"
+                onChange={handleCustomFoodFieldChange}
+              />
+            </label>
+            <label className="field">
+              <span className="field-label">Brand / note</span>
+              <input
+                aria-label="Custom food brand"
+                name="brand"
+                value={customFoodForm.brand}
+                placeholder="Home recipe"
+                onChange={handleCustomFoodFieldChange}
+              />
+            </label>
+            <label className="field">
+              <span className="field-label">Serving</span>
+              <input
+                aria-label="Custom food serving"
+                name="serving"
+                value={customFoodForm.serving}
+                placeholder="1 bowl"
+                onChange={handleCustomFoodFieldChange}
+              />
+            </label>
+            {[
+              ["calories", "Calories"],
+              ["protein", "Protein"],
+              ["carbs", "Carbs"],
+              ["fat", "Fat"]
+            ].map(([name, label]) => (
+              <label key={name} className="field compact-field">
+                <span className="field-label">{label}</span>
+                <input
+                  aria-label={`Custom food ${label.toLowerCase()}`}
+                  name={name}
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={customFoodForm[name]}
+                  onChange={handleCustomFoodFieldChange}
+                />
+              </label>
+            ))}
+            <button className="button" type="submit">
+              Save custom food
+            </button>
+          </form>
+
+          <form className="meal-template-form" aria-label="Meal template form" onSubmit={handleSaveMealTemplate}>
+            <label className="field">
+              <span className="field-label">Meal name</span>
+              <input
+                aria-label="Meal name"
+                value={mealName}
+                placeholder="Training breakfast"
+                onChange={(event) => setMealName(event.target.value)}
+              />
+            </label>
+            <button className="button" type="submit">
+              Save current log as meal
+            </button>
+            <button className="button" type="button" onClick={handleCopyLatestDay}>
+              Copy latest day
+            </button>
+          </form>
+
+          <div className="meal-template-list" aria-label="Saved meals">
+            <h3>Saved meals</h3>
+            {foodLibrary.mealTemplates.length ? (
+              <ul>
+                {foodLibrary.mealTemplates.map((meal) => (
+                  <li key={meal.id}>
+                    <div>
+                      <strong>{meal.name}</strong>
+                      <span>{mealLine(meal)}</span>
+                    </div>
+                    <div className="food-row-actions">
+                      <button className="button" type="button" onClick={() => handleAddMeal(meal)}>
+                        Add meal
+                      </button>
+                      <button className="button" type="button" onClick={() => handleDeleteMeal(meal.id)}>
+                        Delete meal
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted-text">No saved meals yet.</p>
+            )}
+          </div>
+
+          <div className="quick-foods" aria-label="Quick diet foods">
+            <div>
+              <h3>Favorites</h3>
+              {foodLibrary.favoriteFoods.length ? (
+                <ul className="quick-food-list">
+                  {foodLibrary.favoriteFoods.map((food) => (
+                    <li key={food.id}>
+                      <button type="button" onClick={() => setSelectedFood(food)}>
+                        {food.name}
+                      </button>
+                      <button className="button" type="button" onClick={() => handleAddFood(food)}>
+                        Add
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted-text">No favorites yet.</p>
+              )}
+            </div>
+            <div>
+              <h3>Recents</h3>
+              {foodLibrary.recentFoods.length ? (
+                <ul className="quick-food-list">
+                  {foodLibrary.recentFoods.map((food) => (
+                    <li key={food.id}>
+                      <button type="button" onClick={() => setSelectedFood(food)}>
+                        {food.name}
+                      </button>
+                      <button className="button" type="button" onClick={() => handleAddFood(food)}>
+                        Add
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted-text">No recent foods yet.</p>
+              )}
+            </div>
+          </div>
+
           <div className="serving-row">
             <label className="field compact-field">
               <span className="field-label">Servings</span>
@@ -257,9 +634,18 @@ export default function DietDashboard() {
                   <span>{food.brand} / {food.serving}</span>
                   <small>{macroLine(food)}</small>
                 </button>
-                <button className="button" type="button" onClick={() => handleAddFood(food)}>
-                  Add
-                </button>
+                <div className="food-row-actions">
+                  <button
+                    className="button"
+                    type="button"
+                    onClick={() => handleToggleFavorite(food)}
+                  >
+                    {isFavorite(food.id) ? "Unfavorite" : "Favorite"}
+                  </button>
+                  <button className="button" type="button" onClick={() => handleAddFood(food)}>
+                    Add
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -270,27 +656,69 @@ export default function DietDashboard() {
             <h2>Daily Totals</h2>
             <p>Stored locally in this browser.</p>
           </div>
+          <div className="macro-target-panel" aria-label="Diet macro targets">
+            <div className="macro-target-controls">
+              <label className="field compact-field">
+                <span className="field-label">Diet goal</span>
+                <select
+                  aria-label="Diet goal"
+                  value={dietGoalId}
+                  onChange={(event) => setDietGoalId(event.target.value)}
+                >
+                  {dietGoalOptions.map((goal) => (
+                    <option key={goal.id} value={goal.id}>
+                      {goal.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field compact-field">
+                <span className="field-label">Activity</span>
+                <select
+                  aria-label="Activity"
+                  value={activityLevelId}
+                  onChange={(event) => setActivityLevelId(event.target.value)}
+                >
+                  {activityLevelOptions.map((activity) => (
+                    <option key={activity.id} value={activity.id}>
+                      {activity.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="macro-target-summary">
+              <article>
+                <span>Calories</span>
+                <strong>{formatNumber(macroTargets.calories)}</strong>
+                <small>{macroTargets.goal.rateLabel}</small>
+              </article>
+              <article>
+                <span>Protein</span>
+                <strong>{formatNumber(macroTargets.protein)}g</strong>
+                <small>{macroTargets.goal.proteinPerKg}g/kg</small>
+              </article>
+              <article>
+                <span>TDEE</span>
+                <strong>{formatNumber(macroTargets.tdee)}</strong>
+                <small>{macroTargets.activity.label}</small>
+              </article>
+            </div>
+            <p className="muted-text">
+              Formula estimate only: Mifflin-St Jeor with age {macroTargets.ageAssumption} placeholder. Adaptive TDEE comes later after enough logged days.
+            </p>
+          </div>
           <div className="macro-total-grid" aria-label="Diet macro totals">
-            <article>
-              <span>Calories</span>
-              <strong>{formatNumber(totals.macros.calories)}</strong>
-              <small>kcal</small>
-            </article>
-            <article>
-              <span>Protein</span>
-              <strong>{formatNumber(totals.macros.protein)}</strong>
-              <small>g</small>
-            </article>
-            <article>
-              <span>Carbs</span>
-              <strong>{formatNumber(totals.macros.carbs)}</strong>
-              <small>g</small>
-            </article>
-            <article>
-              <span>Fat</span>
-              <strong>{formatNumber(totals.macros.fat)}</strong>
-              <small>g</small>
-            </article>
+            {macroRows.map((row) => (
+              <article key={row.id}>
+                <span>{row.label}</span>
+                <strong>{formatNumber(row.actual)}</strong>
+                <small>{targetLine(row)}</small>
+                <div className="macro-progress-track" aria-hidden="true">
+                  <i style={{ width: `${Math.min(100, row.percent)}%` }} />
+                </div>
+              </article>
+            ))}
           </div>
 
           <div className="micro-total-grid" aria-label="Diet micronutrient totals">
@@ -299,6 +727,69 @@ export default function DietDashboard() {
             <span>Sodium <strong>{formatNumber(totals.micros.sodium)} mg</strong></span>
             <span>Calcium <strong>{formatNumber(totals.micros.calcium)} mg</strong></span>
             <span>Iron <strong>{formatNumber(totals.micros.iron, 1)} mg</strong></span>
+          </div>
+
+          <div className="fluid-panel" aria-label="Fluid log">
+            <div className="fluid-summary">
+              <article>
+                <span>Fluids</span>
+                <strong>{formatNumber(fluidTotals.totalMl)} ml</strong>
+                <small>Target {formatNumber(fluidTotals.targetMl)} ml / {fluidTotals.percent}%</small>
+                <div className="macro-progress-track" aria-hidden="true">
+                  <i style={{ width: `${Math.min(100, fluidTotals.percent)}%` }} />
+                </div>
+              </article>
+            </div>
+            <div className="fluid-controls">
+              <label className="field compact-field">
+                <span className="field-label">Fluid amount</span>
+                <input
+                  aria-label="Fluid amount"
+                  type="number"
+                  min="0"
+                  step="50"
+                  value={fluidAmount}
+                  onChange={(event) => setFluidAmount(event.target.value)}
+                />
+              </label>
+              <label className="field compact-field">
+                <span className="field-label">Fluid label</span>
+                <input
+                  aria-label="Fluid label"
+                  value={fluidLabel}
+                  onChange={(event) => setFluidLabel(event.target.value)}
+                />
+              </label>
+              <button className="button" type="button" onClick={() => handleLogFluid()}>
+                Log fluid
+              </button>
+            </div>
+            <div className="fluid-preset-row" aria-label="Fluid presets">
+              {fluidPresetOptions.map((preset) => (
+                <button
+                  key={preset.id}
+                  className="button"
+                  type="button"
+                  onClick={() => handleLogFluid(preset.amountMl, "Water")}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          <ul className="fluid-log-list" aria-label="Recent fluid entries">
+              {fluidEntries.length ? (
+                fluidEntries.slice(0, 5).map((entry) => (
+                  <li key={entry.id}>
+                    <span>{entry.label}: {formatNumber(entry.amountMl)} ml</span>
+                    <button className="button" type="button" onClick={() => handleDeleteFluid(entry.id)}>
+                      Delete fluid
+                    </button>
+                  </li>
+                ))
+              ) : (
+                <li className="empty-row">No fluids logged yet.</li>
+              )}
+            </ul>
           </div>
 
           <ul className="diet-log-list" aria-label="Diet log entries">

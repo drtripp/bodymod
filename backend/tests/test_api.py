@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TEMPLATES
 from app.data.targets import TARGETS
 from app.main import allowed_cors_origins, app
@@ -79,3 +80,24 @@ def test_planning_data_references_are_consistent() -> None:
 
     for goal in GOAL_PRESETS:
         assert set(goal["suggestedProtocols"]).issubset(protocol_ids)
+
+
+def test_clothing_size_endpoint_returns_placeholder_tables() -> None:
+    response = client.get("/api/clothing-sizes")
+
+    assert response.status_code == 200
+    payload = response.json()
+    garment_ids = {garment["id"] for garment in payload["garments"]}
+
+    assert payload["version"] == CLOTHING_SIZE_TABLES["version"]
+    assert "placeholder adult size bands" in payload["reference"]
+    assert {
+        "men-tops",
+        "women-tops",
+        "men-pants",
+        "women-pants",
+        "dresses",
+        "hats",
+        "rings",
+    }.issubset(garment_ids)
+    assert all(garment["bands"] for garment in payload["garments"])

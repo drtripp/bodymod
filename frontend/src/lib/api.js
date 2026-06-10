@@ -34,3 +34,7 @@ export function fetchMatches(payload) {
 export function fetchPlanningData() {
   return request("/api/planning");
 }
+
+export function fetchClothingSizeTables() {
+  return request("/api/clothing-sizes");
+}

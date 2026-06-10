@@ -1,5 +1,7 @@
 const STORAGE_KEY = "bodymod:snapshots:v1";
 const DIET_STORAGE_KEY = "bodymod:diet-log:v1";
+const DIET_FOOD_LIBRARY_KEY = "bodymod:diet-food-library:v1";
+const DIET_FLUID_STORAGE_KEY = "bodymod:diet-fluid-log:v1";
 const STORAGE_VERSION = 1;
 
 function canUseStorage() {
@@ -105,6 +107,93 @@ export function persistDietLog(entries) {
     JSON.stringify({
       version: STORAGE_VERSION,
       entries
+    })
+  );
+}
+
+export function loadFluidLog() {
+  if (!canUseStorage()) {
+    return [];
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(DIET_FLUID_STORAGE_KEY);
+    if (!rawValue) {
+      return [];
+    }
+
+    const parsed = JSON.parse(rawValue);
+    return Array.isArray(parsed.entries) ? parsed.entries : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+export function persistFluidLog(entries) {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  window.localStorage.setItem(
+    DIET_FLUID_STORAGE_KEY,
+    JSON.stringify({
+      version: STORAGE_VERSION,
+      entries
+    })
+  );
+}
+
+export function loadDietFoodLibrary() {
+  if (!canUseStorage()) {
+    return {
+      customFoods: [],
+      favoriteFoods: [],
+      recentFoods: [],
+      mealTemplates: []
+    };
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(DIET_FOOD_LIBRARY_KEY);
+    if (!rawValue) {
+      return {
+        customFoods: [],
+        favoriteFoods: [],
+        recentFoods: [],
+        mealTemplates: []
+      };
+    }
+
+    const parsed = JSON.parse(rawValue);
+    return {
+      customFoods: Array.isArray(parsed.customFoods) ? parsed.customFoods : [],
+      favoriteFoods: Array.isArray(parsed.favoriteFoods) ? parsed.favoriteFoods : [],
+      recentFoods: Array.isArray(parsed.recentFoods) ? parsed.recentFoods : [],
+      mealTemplates: Array.isArray(parsed.mealTemplates) ? parsed.mealTemplates : []
+    };
+  } catch (error) {
+    return {
+      customFoods: [],
+      favoriteFoods: [],
+      recentFoods: [],
+      mealTemplates: []
+    };
+  }
+}
+
+export function persistDietFoodLibrary(library) {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  window.localStorage.setItem(
+    DIET_FOOD_LIBRARY_KEY,
+    JSON.stringify({
+      version: STORAGE_VERSION,
+      customFoods: Array.isArray(library.customFoods) ? library.customFoods : [],
+      favoriteFoods: Array.isArray(library.favoriteFoods) ? library.favoriteFoods : [],
+      recentFoods: Array.isArray(library.recentFoods) ? library.recentFoods : [],
+      mealTemplates: Array.isArray(library.mealTemplates) ? library.mealTemplates : []
     })
   );
 }

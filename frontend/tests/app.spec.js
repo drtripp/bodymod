@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { DEFAULT_CLOTHING_SIZE_TABLES } from "../src/lib/clothingSizes.js";
 
 const targetMeasurements = {
   height: 178,
@@ -284,6 +285,10 @@ async function mockApi(page) {
     await route.fulfill({ json: planningData });
   });
 
+  await page.route("**/api/clothing-sizes", async (route) => {
+    await route.fulfill({ json: DEFAULT_CLOTHING_SIZE_TABLES });
+  });
+
   await page.route("**/api/targets", async (route) => {
     await route.fulfill({
       json: {
@@ -328,6 +333,14 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.getByText("SHR")).toBeVisible();
   await expect(page.getByText("WHR")).toBeVisible();
   await expect(page.getByText("SWR")).toBeVisible();
+  await expect(page.getByText("WHTR")).toBeVisible();
+  await expect(page.getByLabel("Clothing size estimates")).toContainText("Fit estimates");
+  await expect(page.getByLabel("Clothing size estimates")).toContainText("Shirt");
+  await expect(page.getByLabel("Clothing size estimates")).toContainText("US M / EU 48 / UK 38");
+  await expect(page.getByLabel("Clothing size estimates")).toContainText("Pants");
+  await expect(page.getByLabel("Clothing size estimates")).toContainText("US W34 / EU 50 / UK W34");
+  await expect(page.getByLabel("Clothing size estimates")).toContainText("Hat");
+  await expect(page.getByLabel("Clothing size estimates")).toContainText("Weak wrist proxy");
   await expect(page.getByText("Sexed measurements")).not.toBeVisible();
   await page.getByRole("tab", { name: "vs Target" }).click();
   await expect(page.getByRole("heading", { name: "vs Target" })).toHaveCount(0);
@@ -718,6 +731,8 @@ test("searches food data, looks up barcodes, and logs diet totals", async ({ pag
 
   await page.getByRole("tab", { name: "Diet" }).click();
   await expect(page.getByRole("heading", { name: "Diet" })).toBeVisible();
+  await expect(page.getByLabel("Diet macro targets")).toContainText("2790");
+  await expect(page.getByLabel("Diet macro targets")).toContainText("0 kg/week");
   await expect(page.getByLabel("Diet macro totals")).toBeVisible();
 
   await page.getByRole("textbox", { name: "Food search" }).fill("skyr");
@@ -730,7 +745,59 @@ test("searches food data, looks up barcodes, and logs diet totals", async ({ pag
   await expect(page.getByLabel("Diet log entries").getByText("Mock Skyr")).toBeVisible();
   await expect(page.getByLabel("Diet macro totals").getByText("280")).toBeVisible();
   await expect(page.getByLabel("Diet macro totals").getByText("40")).toBeVisible();
+  await expect(page.getByLabel("Diet macro totals")).toContainText("Target 2790 kcal / 10%");
+  await page.getByLabel("Diet goal").selectOption("standard-loss");
+  await expect(page.getByLabel("Diet macro targets")).toContainText("2290");
+  await expect(page.getByLabel("Diet macro targets")).toContainText("about -0.45 kg/week");
+  await expect(page.getByLabel("Diet macro totals")).toContainText("Target 2290 kcal / 12%");
   await expect(page.getByLabel("Diet micronutrient totals").getByText("Calcium")).toBeVisible();
+
+  await page.getByLabel("Custom food name").fill("Tofu bowl");
+  await page.getByLabel("Custom food brand").fill("Home recipe");
+  await page.getByLabel("Custom food serving").fill("1 bowl");
+  await page.getByLabel("Custom food calories").fill("520");
+  await page.getByLabel("Custom food protein").fill("34");
+  await page.getByLabel("Custom food carbs").fill("54");
+  await page.getByLabel("Custom food fat").fill("18");
+  await page.getByRole("button", { name: "Save custom food" }).click();
+  await expect(page.getByText("Saved custom food Tofu bowl.")).toBeVisible();
+  const tofuRow = page.getByLabel("Food search results").locator("li").filter({ hasText: "Tofu bowl" });
+  await expect(tofuRow).toContainText("520 kcal / P 34g / C 54g / F 18g");
+  await tofuRow.getByRole("button", { name: "Favorite" }).click();
+  await expect(page.getByLabel("Quick diet foods")).toContainText("Tofu bowl");
+  await page
+    .getByLabel("Quick diet foods")
+    .locator("li")
+    .filter({ hasText: "Tofu bowl" })
+    .first()
+    .getByRole("button", { name: "Add" })
+    .click();
+  await expect(page.getByLabel("Diet log entries").getByText("Tofu bowl")).toBeVisible();
+  await page.reload();
+  await page.getByRole("tab", { name: "Diet" }).click();
+  await expect(page.getByLabel("Quick diet foods")).toContainText("Tofu bowl");
+  await expect(page.getByLabel("Food search results")).toContainText("Tofu bowl");
+  await page.getByLabel("Meal name").fill("Training breakfast");
+  await page.getByRole("button", { name: "Save current log as meal" }).click();
+  await expect(page.getByLabel("Saved meals")).toContainText("Training breakfast");
+  await expect(page.getByLabel("Saved meals")).toContainText("2 item(s)");
+  await page.getByLabel("Saved meals").getByRole("button", { name: "Add meal" }).click();
+  await expect(page.getByText("Logged meal Training breakfast (2 item(s)).")).toBeVisible();
+  await page.getByRole("button", { name: "Copy latest day" }).click();
+  await expect(page.getByText(/Copied latest logged day/)).toBeVisible();
+  await expect(page.getByLabel("Fluid log")).toContainText("Target 2850 ml / 0%");
+  await page.getByLabel("Fluid amount").fill("600");
+  await page.getByLabel("Fluid label").fill("Electrolytes");
+  await page.getByRole("button", { name: "Log fluid" }).click();
+  await expect(page.getByLabel("Fluid log")).toContainText("Electrolytes: 600 ml");
+  await page.getByLabel("Fluid presets").getByRole("button", { name: "500 ml" }).click();
+  await expect(page.getByLabel("Fluid log")).toContainText("Target 2850 ml / 39%");
+  await expect(page.getByLabel("Fluid log")).toContainText("Water: 500 ml");
+  await page.reload();
+  await page.getByRole("tab", { name: "Diet" }).click();
+  await expect(page.getByLabel("Saved meals")).toContainText("Training breakfast");
+  await expect(page.getByLabel("Fluid log")).toContainText("Electrolytes: 600 ml");
+  await expect(page.getByLabel("Fluid log")).toContainText("Target 2850 ml / 39%");
 
   await page.getByRole("textbox", { name: "Barcode" }).fill("1234567890123");
   await page.getByRole("button", { name: "Lookup barcode" }).click();

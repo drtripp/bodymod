@@ -96,3 +96,26 @@ class PlanningData(BaseModel):
     personas: list[PersonaProfile]
     goalPresets: list[GoalPreset]
     protocolTemplates: list[ProtocolTemplate]
+
+
+class ClothingSizeBand(BaseModel):
+    id: str
+    label: str
+    min: float
+    max: float
+    equivalents: dict[str, str] = {}
+
+
+class ClothingGarmentTable(BaseModel):
+    id: str
+    label: str
+    measurementStrategy: str
+    fit: str
+    bands: list[ClothingSizeBand]
+
+
+class ClothingSizeTables(BaseModel):
+    version: int
+    reference: str
+    notes: list[str] = []
+    garments: list[ClothingGarmentTable]

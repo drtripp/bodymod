@@ -509,6 +509,109 @@ textarea {
   flex-wrap: wrap;
 }
 
+.custom-food-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+  border-bottom: 1px solid #344454;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+}
+
+.custom-food-form .button {
+  min-height: 31px;
+}
+
+.meal-template-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  gap: 8px;
+  align-items: end;
+  border-bottom: 1px solid #344454;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+}
+
+.meal-template-list {
+  border-bottom: 1px solid #344454;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+}
+
+.meal-template-list h3 {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+}
+
+.meal-template-list ul {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+
+.meal-template-list li {
+  border: 1px solid #344454;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+}
+
+.meal-template-list li > div:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.meal-template-list span {
+  color: #c7d0d9;
+  font-size: 0.78rem;
+}
+
+.quick-foods {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  border-bottom: 1px solid #344454;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+}
+
+.quick-foods h3 {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+}
+
+.quick-food-list {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+
+.quick-food-list li {
+  border: 1px solid #344454;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+  padding: 6px;
+}
+
+.quick-food-list li > button:first-child {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
 .food-result-list,
 .diet-log-list {
   list-style: none;
@@ -531,6 +634,20 @@ textarea {
 .food-result-list li.is-selected {
   border-color: #8da9c4;
   background: #1d2a38;
+}
+
+.diet-log-list li > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.food-row-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .food-result-list li > button:first-child {
@@ -559,6 +676,50 @@ textarea {
   margin-bottom: 10px;
 }
 
+.macro-target-panel {
+  display: grid;
+  gap: 10px;
+  border-bottom: 1px solid #344454;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+}
+
+.macro-target-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.macro-target-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.macro-target-summary article {
+  border: 1px solid #344454;
+  background: #111922;
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+}
+
+.macro-target-summary span {
+  color: #c7d0d9;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.macro-target-summary strong {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.macro-target-summary small {
+  color: #c7d0d9;
+  font-size: 0.76rem;
+}
+
 .macro-total-grid article {
   border: 1px solid #344454;
   padding: 8px;
@@ -569,6 +730,19 @@ textarea {
 .macro-total-grid strong {
   font-size: 1.55rem;
   line-height: 1;
+}
+
+.macro-progress-track {
+  height: 5px;
+  border: 1px solid #344454;
+  background: #0d151d;
+  overflow: hidden;
+}
+
+.macro-progress-track i {
+  display: block;
+  height: 100%;
+  background: #8da9c4;
 }
 
 .micro-total-grid {
@@ -585,6 +759,71 @@ textarea {
   display: flex;
   justify-content: space-between;
   gap: 8px;
+}
+
+.fluid-panel {
+  display: grid;
+  gap: 8px;
+  border-bottom: 1px solid #344454;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+}
+
+.fluid-summary article {
+  border: 1px solid #344454;
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+}
+
+.fluid-summary span {
+  color: #c7d0d9;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.fluid-summary strong {
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.fluid-summary small {
+  color: #c7d0d9;
+  font-size: 0.78rem;
+}
+
+.fluid-controls {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.35fr) minmax(120px, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.fluid-preset-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.fluid-log-list {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+
+.fluid-log-list li {
+  border: 1px solid #344454;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px;
+}
+
+.fluid-log-list span {
+  color: #c7d0d9;
 }
 
 .diet-log-list .empty-row {
@@ -1117,6 +1356,68 @@ textarea {
   color: #c7d0d9;
   font-size: 0.78rem;
   line-height: 1.25;
+}
+
+.fit-panel {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #344454;
+  background: #111922;
+  padding: 10px;
+}
+
+.fit-panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.fit-panel-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.fit-panel-header span {
+  color: #c7d0d9;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.fit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.fit-card {
+  display: grid;
+  gap: 3px;
+  border: 1px solid #344454;
+  background: #0f1821;
+  padding: 8px;
+  min-height: 88px;
+}
+
+.fit-card span {
+  color: #c7d0d9;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.fit-card strong {
+  font-size: 1.08rem;
+  line-height: 1.2;
+}
+
+.fit-card small {
+  color: #c7d0d9;
+  font-size: 0.76rem;
+  line-height: 1.25;
+}
+
+.fit-card.is-low-confidence {
+  border-style: dashed;
 }
 
 .plain-list {
@@ -2125,6 +2426,8 @@ textarea {
   .account-header,
   .diet-hero,
   .diet-search-grid,
+  .custom-food-form,
+  .meal-template-form,
   .diet-grid,
   .result-grid,
   .comparison-grid,
@@ -2198,6 +2501,11 @@ textarea {
   }
 
   .metric-block-grid,
+  .fit-grid,
+  .macro-target-controls,
+  .macro-target-summary,
+  .fluid-controls,
+  .quick-foods,
   .macro-total-grid,
   .micro-total-grid,
   .snapshot-silhouette-grid,

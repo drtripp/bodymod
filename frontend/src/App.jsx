@@ -8,9 +8,10 @@ import PopulationPanel from "./components/PopulationPanel";
 import ResultSummary from "./components/ResultSummary";
 import SiteHeader from "./components/SiteHeader";
 import StrategyCorpus from "./components/StrategyCorpus";
-import { fetchHealth, fetchMatches, fetchTargets } from "./lib/api";
+import { fetchClothingSizeTables, fetchHealth, fetchMatches, fetchTargets } from "./lib/api";
 import { summarizeMeasurementDiff } from "./lib/comparison";
 import { trackEvent } from "./lib/analytics";
+import { DEFAULT_CLOTHING_SIZE_TABLES } from "./lib/clothingSizes";
 import {
   coerceMeasurements,
   defaultMeasurements,
@@ -62,6 +63,7 @@ export default function App() {
   const [activeSection, setActiveSection] = useState("body");
   const [isAccountPanelOpen, setIsAccountPanelOpen] = useState(false);
   const [isStrategyExplorerOpen, setIsStrategyExplorerOpen] = useState(false);
+  const [clothingSizeTables, setClothingSizeTables] = useState(DEFAULT_CLOTHING_SIZE_TABLES);
 
   useEffect(() => {
     trackEvent("app_loaded");
@@ -96,6 +98,10 @@ export default function App() {
         setSelectedTargetId((current) => current || response.targets[0]?.id || "");
       })
       .catch(() => setTargets([]));
+
+    fetchClothingSizeTables()
+      .then((response) => setClothingSizeTables(response))
+      .catch(() => setClothingSizeTables(DEFAULT_CLOTHING_SIZE_TABLES));
   }, []);
 
   useEffect(() => {
@@ -455,6 +461,7 @@ export default function App() {
                     measurements={currentMeasurements}
                     result={result}
                     apiStatus={apiStatus}
+                    clothingSizeTables={clothingSizeTables}
                     hoveredMeasurement={hoveredMeasurement}
                     onMeasurementHover={setHoveredMeasurement}
                   />
@@ -496,7 +503,7 @@ export default function App() {
           <InfoFootnote />
         </>
       ) : (
-        <DietDashboard />
+        <DietDashboard currentMeasurements={currentMeasurements} />
       )}
 
       {isStrategyExplorerOpen ? (

@@ -1,4 +1,55 @@
 import { chromium } from "@playwright/test";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { DEFAULT_CLOTHING_SIZE_TABLES } from "../src/lib/clothingSizes.js";
+
+const APP_URL = "http://127.0.0.1:5173";
+
+async function isServerReady() {
+  try {
+    const response = await fetch(APP_URL);
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function startViteServer() {
+  if (await isServerReady()) {
+    return null;
+  }
+
+  const viteBin = fileURLToPath(new URL("../node_modules/vite/bin/vite.js", import.meta.url));
+  const server = spawn(process.execPath, [viteBin, "--host", "127.0.0.1"], {
+    cwd: fileURLToPath(new URL("..", import.meta.url)),
+    stdio: ["ignore", "pipe", "pipe"],
+    windowsHide: true
+  });
+  let output = "";
+
+  server.stdout.on("data", (chunk) => {
+    output += chunk.toString();
+  });
+  server.stderr.on("data", (chunk) => {
+    output += chunk.toString();
+  });
+
+  const deadline = Date.now() + 30000;
+  while (Date.now() < deadline) {
+    if (server.exitCode !== null) {
+      throw new Error(`Vite exited before screenshots could run.\n${output}`);
+    }
+
+    if (await isServerReady()) {
+      return server;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+
+  server.kill();
+  throw new Error(`Vite did not become ready before timeout.\n${output}`);
+}
 
 const targetMeasurements = {
   height: 178,
@@ -52,49 +103,67 @@ const targets = [
   }
 ];
 
-const browser = await chromium.launch();
+let server = null;
+let browser = null;
+try {
+  server = await startViteServer();
+  browser = await chromium.launch();
 
-for (const [name, viewport] of [
-  ["desktop", { width: 1440, height: 1200 }],
-  ["mobile", { width: 390, height: 900 }]
-]) {
-  const page = await browser.newPage({ viewport });
-  await page.route("**/api/health", (route) =>
-    route.fulfill({ json: { status: "ok" } })
-  );
-  await page.route("**/api/targets", (route) =>
-    route.fulfill({
-      json: {
-        targets: targets.map(({ score, similarity, explanation, ...target }) => target)
-      }
-    })
-  );
-  await page.route("**/api/match", (route) =>
-    route.fulfill({
-      json: {
-        top_match: targets[0],
-        matches: targets,
-        percentiles: {
-          height: 44,
-          waistCircumference: 26,
-          bideltoidCircumference: 43,
-          reference: "Approximate adult reference model, not NHANES-calibrated"
+  for (const [name, viewport] of [
+    ["desktop", { width: 1440, height: 1200 }],
+    ["mobile", { width: 390, height: 900 }]
+  ]) {
+    const page = await browser.newPage({ viewport });
+    await page.route("**/api/health", (route) =>
+      route.fulfill({ json: { status: "ok" } })
+    );
+    await page.route("**/api/clothing-sizes", (route) =>
+      route.fulfill({ json: DEFAULT_CLOTHING_SIZE_TABLES })
+    );
+    await page.route("**/api/targets", (route) =>
+      route.fulfill({
+        json: {
+          targets: targets.map(({ score, similarity, explanation, ...target }) => target)
         }
-      }
-    })
-  );
+      })
+    );
+    await page.route("**/api/match", (route) =>
+      route.fulfill({
+        json: {
+          top_match: targets[0],
+          matches: targets,
+          percentiles: {
+            height: 44,
+            waistCircumference: 26,
+            bideltoidCircumference: 43,
+            reference: "Approximate adult reference model, not NHANES-calibrated"
+          }
+        }
+      })
+    );
 
-  await page.goto("http://127.0.0.1:5173");
-  await page.getByRole("heading", { name: "Top match" }).waitFor();
-  await page.locator(".top-match-block").getByText("Astarion").waitFor();
-  await page.getByRole("tab", { name: "vs Target" }).click();
-  await page.getByRole("button", { name: "Overlap" }).click();
-  await page.waitForTimeout(650);
-  await page.screenshot({
-    path: `../review-screenshots/${name}.png`,
-    fullPage: true
-  });
-  await page.close();
+    await page.goto(APP_URL);
+    await page.getByRole("heading", { name: "Top match" }).waitFor();
+    await page.locator(".top-match-block").getByText("Astarion").waitFor();
+    await page.getByRole("tab", { name: "vs Target" }).click();
+    await page.getByRole("button", { name: "Overlap" }).click();
+    await page.waitForTimeout(650);
+    await page.screenshot({
+      path: `../review-screenshots/${name}.png`,
+      fullPage: true
+    });
+    await page.close();
+  }
+} finally {
+  if (browser) {
+    await browser.close();
+  }
+
+  if (server) {
+    server.kill();
+    await Promise.race([
+      new Promise((resolve) => server.once("exit", resolve)),
+      new Promise((resolve) => setTimeout(resolve, 2000))
+    ]);
+  }
 }
-
-await browser.close();

@@ -225,11 +225,11 @@ Protocol Tracker → Diet upgrades → Native app.
       fluctuation instead of reading it as fat change. Strictly local-first,
       off by default, exportable/deletable — this is maximally sensitive data
       and a genuine differentiator for the female demo done right.
-- [ ] Clothing size mapping **(confirmed)**: measurements → US/EU/UK garment
-      sizes (pants, shirts, dresses; ring/hat from existing fields),
-      brand-level tables later. Daily practical value, naturally shareable,
-      and especially valuable for transition users shopping unfamiliar
-      sections.
+- [x] Clothing size mapping **(confirmed)**: generic placeholder measurements
+      to US/EU/UK garment sizes (pants, shirts, dresses; hat from head
+      circumference; weak ring proxy from wrist circumference) now renders in
+      the Result tab with backend dummy tables and helper tests. Brand-level
+      source-reviewed tables remain later.
 - [ ] Virtual try-on: parked **(new)**. Image-edit try-on is viable only via
       hosted APIs (~$0.02-0.08/image — workable later as a metered Pro
       feature); browser-local image editing (transformers.js/WebGPU) cannot
@@ -237,8 +237,8 @@ Protocol Tracker → Diet upgrades → Native app.
       Deliberately out of initial scope: it drifts toward a general styling
       app. Sequence if demand shows: size mapping → fit-focused clothing
       recommendations → API try-on.
-- [ ] Waist-to-height ratio **(new)** in the ratio block — better-evidenced
-      health context than BMI; reference framing, not advice.
+- [x] Waist-to-height ratio **(new)** in the ratio block: renders as WHTR
+      with reference framing, not advice.
 - [ ] Bloodwork log **(new)** — **[human]** gate on data scope: manual
       lab-result entry (hormone panels, lipids, metabolic markers) with
       reference ranges, trend charts, and protocol linkage; informational
@@ -262,15 +262,18 @@ Protocol Tracker → Diet upgrades → Native app.
 
 ## 8. Diet
 
-- [ ] Goal-derived macro targets: TDEE estimate (formula now, adaptive engine
-      later) + goal rate → daily calorie/protein/carb/fat targets; log view
-      shows targets vs actuals.
-- [ ] Custom foods + recents + favorites (currently every log is a fresh
-      search).
-- [ ] Meals/recipes: save multi-food combos, log in one tap; copy-yesterday.
+- [x] Goal-derived macro targets: formula TDEE estimate plus selectable goal
+      rate now produces daily calorie/protein/carb/fat targets, and the log
+      view shows targets vs actuals. Adaptive engine remains later.
+- [x] Custom foods + recents + favorites: Diet now stores custom food rows,
+      recent foods, and favorite foods locally so repeat logs do not require a
+      fresh search.
+- [x] Meals/recipes: save multi-food combos as local meal templates, log them
+      in one tap, and copy the latest logged day.
 - [ ] USDA FoodData Central as a second lookup source **(new)** (OFF is weak
       on US generic/raw foods; FDC is public domain).
-- [ ] Water/fluid logging **(new)** (cheap, expected by trackers).
+- [x] Water/fluid logging **(new)**: Diet has local fluid entries, quick ml
+      presets, manual labels, and target-vs-actual progress.
 - [ ] Micronutrient panel expansion beyond the current five, with %-of-target
       display.
 - [ ] Diet day import **(new)**: accept MFP/Cronometer CSV exports for

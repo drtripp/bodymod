@@ -1,4 +1,5 @@
 import SilhouetteView from "./SilhouetteView";
+import { estimateClothingSizes } from "../lib/clothingSizes";
 import { calculateRatios } from "../lib/ratios";
 
 function formatScore(similarity) {
@@ -13,10 +14,12 @@ export default function ResultSummary({
   measurements,
   result,
   apiStatus,
+  clothingSizeTables,
   hoveredMeasurement,
   onMeasurementHover
 }) {
   const ratios = calculateRatios(measurements);
+  const clothingSizes = estimateClothingSizes(measurements, clothingSizeTables);
   const ratioById = Object.fromEntries(ratios.map((ratio) => [ratio.id, ratio]));
   const runnerUp = result?.matches?.[1] || null;
   const metricBlocks = [
@@ -55,6 +58,12 @@ export default function ResultSummary({
       label: "SWR",
       value: ratioById.shoulderWaist?.value ?? "--",
       note: `${ratioById.shoulderWaist?.note}. Shoulder pct ${result?.percentiles?.bideltoidCircumference ?? "--"}`
+    },
+    {
+      id: "waistHeight",
+      label: "WHTR",
+      value: ratioById.waistHeight?.value ?? "--",
+      note: `${ratioById.waistHeight?.note}. Reference framing only`
     }
   ];
 
@@ -90,6 +99,25 @@ export default function ResultSummary({
                 <small>{metric.note}</small>
               </article>
             ))}
+          </div>
+
+          <div className="fit-panel" aria-label="Clothing size estimates">
+            <div className="fit-panel-header">
+              <h3>Fit estimates</h3>
+              <span>Generic US/EU/UK bands</span>
+            </div>
+            <div className="fit-grid">
+              {clothingSizes.map((item) => (
+                <article key={item.id} className={`fit-card ${item.confidence === "low" ? "is-low-confidence" : ""}`}>
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                  <small>{item.note}</small>
+                </article>
+              ))}
+            </div>
+            <p className="muted-text">
+              Approximate only. Brand cut, fabric, and fit preference can move the answer by several sizes.
+            </p>
           </div>
 
           <div className="stat-block">

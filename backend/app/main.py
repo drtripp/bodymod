@@ -3,7 +3,9 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TEMPLATES
+from app.models import ClothingSizeTables
 from app.models import MeasurementSet
 from app.models import PlanningData
 from app.services import build_match_response, get_targets
@@ -59,3 +61,8 @@ def planning_data() -> dict:
             "protocolTemplates": PROTOCOL_TEMPLATES,
         }
     ).model_dump()
+
+
+@app.get("/api/clothing-sizes")
+def clothing_size_tables() -> dict:
+    return ClothingSizeTables.model_validate(CLOTHING_SIZE_TABLES).model_dump()

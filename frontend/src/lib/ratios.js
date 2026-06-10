@@ -48,6 +48,12 @@ export function calculateRatios(measurements) {
       label: "WHR",
       value: hip > 0 ? round(waist / hip) : null,
       note: "Waist-to-hip ratio"
+    },
+    {
+      id: "waistHeight",
+      label: "WHTR",
+      value: Number(measurements.height) > 0 ? round(waist / Number(measurements.height)) : null,
+      note: "Waist-to-height ratio"
     }
   ];
 }
