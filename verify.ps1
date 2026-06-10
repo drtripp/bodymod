@@ -28,6 +28,7 @@ try {
     Invoke-Checked { npm run test:diet }
     Invoke-Checked { npm run test:diet-import }
     Invoke-Checked { npm run test:adaptive-tdee }
+    Invoke-Checked { npm run test:accessibility }
     Invoke-Checked { npm run test:ratios }
     Invoke-Checked { npm run test:body-composition }
     Invoke-Checked { npm run test:comparison }

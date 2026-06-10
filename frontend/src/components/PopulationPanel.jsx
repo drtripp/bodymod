@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import {
   POPULATION_METRICS,
   aggregateGenderScore,
@@ -51,6 +51,8 @@ function formatScore(score) {
 }
 
 function GenderScoreChart({ score }) {
+  const titleId = useId();
+  const descriptionId = useId();
   const width = 720;
   const height = 330;
   const bounds = { left: 48, right: 684, top: 42, bottom: 282 };
@@ -58,6 +60,8 @@ function GenderScoreChart({ score }) {
   const maxDensity = normalPdf(-1, -1, 0.42);
   const yForDensity = (density) => scale(density, 0, maxDensity, bounds.bottom, bounds.top + 10);
   const userX = xFor(Math.max(-3, Math.min(3, score)));
+  const formattedScore = formatScore(score);
+  const scoreLabel = genderScoreLabel(score);
 
   const buildPath = (mean) => {
     const steps = 96;
@@ -73,8 +77,14 @@ function GenderScoreChart({ score }) {
       className="population-chart gender-score-chart"
       viewBox={`0 0 ${width} ${height}`}
       role="img"
-      aria-label="Gender score distribution"
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
     >
+      <title id={titleId}>Gender score distribution</title>
+      <desc id={descriptionId}>
+        Measurement-pattern score {formattedScore}, labeled {scoreLabel}. The chart compares the current
+        measurement pattern with draft male and female reference distributions.
+      </desc>
       <rect x="0" y="0" width={width} height={height} className="chart-bg" />
       {[-3, -2, -1, 0, 1, 2, 3].map((tick) => (
         <g key={tick}>
@@ -97,6 +107,8 @@ function GenderScoreChart({ score }) {
 }
 
 function ScatterPlot({ measurements, xMetric, yMetric }) {
+  const titleId = useId();
+  const descriptionId = useId();
   const points = useMemo(
     () => buildScatterPoints(xMetric.key, yMetric.key),
     [xMetric.key, yMetric.key]
@@ -106,16 +118,24 @@ function ScatterPlot({ measurements, xMetric, yMetric }) {
   const bounds = { left: 58, right: 522, top: 28, bottom: 288 };
   const xFor = (value) => scale(value, xMetric.min, xMetric.max, bounds.left, bounds.right);
   const yFor = (value) => scale(value, yMetric.min, yMetric.max, bounds.bottom, bounds.top);
-  const userX = xFor(clampMetricValue(populationMetricValue(measurements, xMetric), xMetric));
-  const userY = yFor(clampMetricValue(populationMetricValue(measurements, yMetric), yMetric));
+  const userXValue = clampMetricValue(populationMetricValue(measurements, xMetric), xMetric);
+  const userYValue = clampMetricValue(populationMetricValue(measurements, yMetric), yMetric);
+  const userX = xFor(userXValue);
+  const userY = yFor(userYValue);
 
   return (
     <svg
       className="population-chart"
       viewBox={`0 0 ${width} ${height}`}
       role="img"
-      aria-label="US population scatter plot"
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
     >
+      <title id={titleId}>US population scatter plot</title>
+      <desc id={descriptionId}>
+        Scatter plot comparing {xMetric.label} and {yMetric.label}. Your current point is
+        {formatMetricValue(userXValue, xMetric)} by {formatMetricValue(userYValue, yMetric)}.
+      </desc>
       <rect x="0" y="0" width={width} height={height} className="chart-bg" />
       <line x1={bounds.left} y1={bounds.bottom} x2={bounds.right} y2={bounds.bottom} className="chart-axis" />
       <line x1={bounds.left} y1={bounds.top} x2={bounds.left} y2={bounds.bottom} className="chart-axis" />
@@ -155,6 +175,8 @@ function ScatterPlot({ measurements, xMetric, yMetric }) {
 }
 
 function DistributionPlot({ measurements, metric }) {
+  const titleId = useId();
+  const descriptionId = useId();
   const width = 560;
   const height = 340;
   const bounds = { left: 58, right: 522, top: 32, bottom: 288 };
@@ -181,8 +203,13 @@ function DistributionPlot({ measurements, metric }) {
       className="population-chart"
       viewBox={`0 0 ${width} ${height}`}
       role="img"
-      aria-label="US population distribution plot"
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
     >
+      <title id={titleId}>US population distribution plot</title>
+      <desc id={descriptionId}>
+        Distribution plot for {metric.label}. Your current value is {formatMetricValue(userValue, metric)}.
+      </desc>
       <rect x="0" y="0" width={width} height={height} className="chart-bg" />
       <line x1={bounds.left} y1={bounds.bottom} x2={bounds.right} y2={bounds.bottom} className="chart-axis" />
       {["female", "male"].map((sex) => (

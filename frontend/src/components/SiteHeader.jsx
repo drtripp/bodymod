@@ -52,7 +52,11 @@ export default function SiteHeader({
         <button className="button build-plan-button" type="button" onClick={onOpenStrategies}>
           Build Plan
         </button>
-        {shareStatus ? <span className="header-status">{shareStatus}</span> : null}
+        {shareStatus ? (
+          <span className="header-status" role="status" aria-live="polite">
+            {shareStatus}
+          </span>
+        ) : null}
       </nav>
     </header>
   );

@@ -131,6 +131,26 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      if (isStrategyExplorerOpen) {
+        setIsStrategyExplorerOpen(false);
+        return;
+      }
+
+      if (isAccountPanelOpen) {
+        setIsAccountPanelOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isAccountPanelOpen, isStrategyExplorerOpen]);
+
+  useEffect(() => {
     trackEvent("app_loaded");
     const storedSnapshots = loadSnapshots();
     setSnapshots(storedSnapshots);
@@ -652,8 +672,18 @@ export default function App() {
     }
   }
 
+  function handleSkipToMain(event) {
+    event.preventDefault();
+    const main = document.getElementById("main-content");
+    main?.focus();
+    main?.scrollIntoView();
+  }
+
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content" onClick={handleSkipToMain}>
+        Skip to main content
+      </a>
       <SiteHeader
         activeSection={activeSection}
         theme={theme}
@@ -667,7 +697,7 @@ export default function App() {
 
       {activeSection === "body" ? (
         <>
-          <main className="workspace">
+          <main id="main-content" className="workspace" tabIndex="-1">
             <section className="visual-column">
               <div className="insight-tabs panel">
                 <div className="tab-bar" role="tablist" aria-label="Result and comparison views">
@@ -770,12 +800,19 @@ export default function App() {
           <InfoFootnote />
         </>
       ) : (
-        <DietDashboard currentMeasurements={currentMeasurements} />
+        <main id="main-content" tabIndex="-1">
+          <DietDashboard currentMeasurements={currentMeasurements} />
+        </main>
       )}
 
       {isStrategyExplorerOpen ? (
         <div className="strategy-explorer-overlay" role="presentation">
-          <div className="strategy-explorer-shell">
+          <div
+            className="strategy-explorer-shell"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Strategy corpus explorer"
+          >
             <button
               className="modal-close strategy-explorer-close"
               type="button"

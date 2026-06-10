@@ -518,7 +518,11 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
           ) : null}
         </div>
 
-        {status ? <p className="muted-text">{status}</p> : null}
+        {status ? (
+          <p className="muted-text" role="status" aria-live="polite">
+            {status}
+          </p>
+        ) : null}
 
         <form className="diet-import-card" aria-label="Diet CSV import" onSubmit={handleDietCsvImport}>
           <label className="field">

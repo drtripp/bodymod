@@ -50,7 +50,11 @@ export default function InfoFootnote() {
             <a href="/legal/terms.html">Terms</a>
             <a href="/legal/medical-disclaimer.html">Medical disclaimer</a>
           </nav>
-          {status ? <p className="muted-text">{status}</p> : null}
+          {status ? (
+            <p className="muted-text" role="status" aria-live="polite">
+              {status}
+            </p>
+          ) : null}
         </div>
       </div>
     </footer>

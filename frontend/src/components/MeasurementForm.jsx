@@ -69,10 +69,10 @@ export default function MeasurementForm({
   }, [defaultGuideField, guideOptions, guidesByField, selectedGuideField]);
 
   return (
-    <section className="panel">
+    <section id="measurement-form" className="panel" aria-labelledby="measurement-form-heading">
       <div className="panel-header panel-header-row">
         <div>
-          <h2>Measurements</h2>
+          <h2 id="measurement-form-heading">Measurements</h2>
           <p>Enter the core values for the current comparison. Results update live.</p>
         </div>
 
@@ -184,6 +184,8 @@ export default function MeasurementForm({
                 );
                 const hasOverride = Boolean(fieldUnitOverrides[field.name]);
                 const isHighlighted = hoveredMeasurement === field.name;
+                const errorId = `${field.name}-error`;
+                const hasError = Boolean(errors[field.name]);
 
                 return (
                   <label
@@ -214,6 +216,8 @@ export default function MeasurementForm({
                           onChange={onChange}
                           onFocus={() => onMeasurementHover?.(field.name)}
                           onBlur={() => onMeasurementHover?.(null)}
+                          aria-invalid={hasError ? "true" : undefined}
+                          aria-describedby={hasError ? errorId : undefined}
                         >
                           {field.options.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -233,6 +237,8 @@ export default function MeasurementForm({
                             onFieldBlur(field.name);
                             onMeasurementHover?.(null);
                           }}
+                          aria-invalid={hasError ? "true" : undefined}
+                          aria-describedby={hasError ? errorId : undefined}
                         />
                       )}
 
@@ -280,8 +286,10 @@ export default function MeasurementForm({
                       ) : null}
                     </span>
 
-                    {errors[field.name] ? (
-                      <span className="field-error">{errors[field.name]}</span>
+                    {hasError ? (
+                      <span id={errorId} className="field-error" role="alert">
+                        {errors[field.name]}
+                      </span>
                     ) : null}
                   </label>
                 );

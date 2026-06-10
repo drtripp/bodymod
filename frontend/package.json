@@ -12,6 +12,7 @@
     "test:diet": "node --test tests/diet.node.mjs",
     "test:diet-import": "node --test tests/dietImport.node.mjs",
     "test:adaptive-tdee": "node --test tests/adaptiveTdee.node.mjs",
+    "test:accessibility": "node --test tests/accessibility.node.mjs",
     "test:ratios": "node --test tests/ratios.node.mjs",
     "test:body-composition": "node --test tests/bodyComposition.node.mjs",
     "test:comparison": "node --test tests/comparison.node.mjs",

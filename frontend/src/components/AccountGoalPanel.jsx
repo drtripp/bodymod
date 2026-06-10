@@ -1343,17 +1343,24 @@ export default function AccountGoalPanel({
 
   return (
     <div className="account-overlay" role="presentation">
-      <section className="account-panel panel" role="dialog" aria-modal="true" aria-label="Account, logs, and goals">
+      <section
+        className="account-panel panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="account-panel-heading"
+      >
         <button className="modal-close account-close" type="button" aria-label="Close account panel" onClick={onClose}>
           x
         </button>
 
         <div className="panel-header account-header">
           <div>
-            <h2>Account, logs, and goals</h2>
+            <h2 id="account-panel-heading">Account, logs, and goals</h2>
             <p>Local-first profile tools for persona walkthroughs, snapshots, and build plans.</p>
           </div>
-          <span className="account-status">{planningStatus}</span>
+          <span className="account-status" role="status" aria-live="polite">
+            {planningStatus}
+          </span>
         </div>
 
         {!account ? (
@@ -1437,7 +1444,9 @@ export default function AccountGoalPanel({
                 Download JSON export
               </button>
               {jsonExportStatus ? (
-                <small className="local-json-export-status">{jsonExportStatus}</small>
+                <small className="local-json-export-status" role="status" aria-live="polite">
+                  {jsonExportStatus}
+                </small>
               ) : null}
             </section>
           </div>
@@ -1503,7 +1512,9 @@ export default function AccountGoalPanel({
                     Join Pro waitlist
                   </button>
                   {proWaitlistStatus ? (
-                    <small className="pro-waitlist-status">{proWaitlistStatus}</small>
+                    <small className="pro-waitlist-status" role="status" aria-live="polite">
+                      {proWaitlistStatus}
+                    </small>
                   ) : null}
                 </form>
               </div>
@@ -1538,7 +1549,9 @@ export default function AccountGoalPanel({
                 Download JSON export
               </button>
               {jsonExportStatus ? (
-                <small className="local-json-export-status">{jsonExportStatus}</small>
+                <small className="local-json-export-status" role="status" aria-live="polite">
+                  {jsonExportStatus}
+                </small>
               ) : null}
             </section>
 
@@ -1576,7 +1589,9 @@ export default function AccountGoalPanel({
                 </label>
               </div>
               {backupStatus ? (
-                <small className="encrypted-backup-status">{backupStatus}</small>
+                <small className="encrypted-backup-status" role="status" aria-live="polite">
+                  {backupStatus}
+                </small>
               ) : null}
             </section>
 
@@ -1746,7 +1761,9 @@ export default function AccountGoalPanel({
                   Log limb symmetry
                 </button>
                 {limbSplitErrors.form ? (
-                  <small className="history-import-status">{limbSplitErrors.form}</small>
+                  <small className="history-import-status" role="alert">
+                    {limbSplitErrors.form}
+                  </small>
                 ) : null}
                 {latestLimbSymmetry ? (
                   <div className="limb-symmetry-summary" aria-label="Latest limb symmetry">
@@ -1928,7 +1945,9 @@ export default function AccountGoalPanel({
                   </label>
                 </div>
                 {historyImportStatus ? (
-                  <small className="history-import-status">{historyImportStatus}</small>
+                  <small className="history-import-status" role="status" aria-live="polite">
+                    {historyImportStatus}
+                  </small>
                 ) : null}
               </form>
               <div className="guided-checkin-card" aria-label="Guided weekly check-in">
@@ -3081,7 +3100,11 @@ export default function AccountGoalPanel({
           </section>
         ) : null}
 
-        {status ? <p className="account-status-line">{status}</p> : null}
+        {status ? (
+          <p className="account-status-line" role="status" aria-live="polite">
+            {status}
+          </p>
+        ) : null}
       </section>
     </div>
   );

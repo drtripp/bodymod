@@ -169,7 +169,11 @@ export default function ResultSummary({
             <button className="button result-card-button" type="button" onClick={handleDownloadResultCard}>
               Download result card
             </button>
-            {shareStatus ? <small className="muted-text">{shareStatus}</small> : null}
+            {shareStatus ? (
+              <small className="muted-text" role="status" aria-live="polite">
+                {shareStatus}
+              </small>
+            ) : null}
           </div>
 
           <div className="metric-block-grid" aria-label="Result metric blocks">
@@ -242,7 +246,9 @@ export default function ResultSummary({
           <div className="stat-block">
             <h3>Note</h3>
             {apiStatus !== "online" ? (
-              <p className="result-status">Backend unavailable. Results are limited.</p>
+              <p className="result-status" role="status" aria-live="polite">
+                Backend unavailable. Results are limited.
+              </p>
             ) : null}
             <p>
               Similarity: 100 means identical measurements, 95+ is within typical

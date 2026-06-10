@@ -122,6 +122,7 @@ Implemented now:
 - header share icon that copies an encoded measurement URL without showing a share panel
 - local-only lightweight usage event logging
 - privacy control to inspect and clear local usage events
+- accessibility baseline with skip-to-main navigation, visible focus rings, live status messages, form error associations, and chart descriptions
 - backend-served free/pro entitlement config, with all current tracking/data/export tools free
 - local-only Pro waitlist capture and blurred Pro preview cards in the account panel
 - outcome-first strategy explorer with one efficacy/risk graph per desired outcome
@@ -140,6 +141,7 @@ Implemented now:
 - shared measurement schema file for frontend field metadata and backend Pydantic validation
 - backend and Node schema tests for frontend/backend measurement alignment
 - backend and Node entitlement tests proving current data tools stay non-paywalled
+- Node accessibility contrast tests for cafe/graphite theme tokens and Playwright keyboard/accessibility semantics coverage
 - backend target-data and SQLite repository tests for IDs, schemas, and placeholder uncertainty notes
 - target profile template and curation guide for future production target data
 - graceful no-backend state for local form and snapshots

@@ -510,6 +510,9 @@ Next:
 - placeholder math is clearly labeled
 - local analytics and the share icon are implemented, with public-launch privacy decisions documented
 - cafe and graphite themes are available, persisted locally, and covered by tests
+- accessibility baseline is covered by skip-to-main navigation, visible focus
+  rings, live status regions, form error associations, SVG chart descriptions,
+  Escape-to-close dialogs, and contrast tests for both themes
 - free/pro entitlement config is served by the backend, current data tools are
   tested as non-paywalled, and the local Pro waitlist is visible in the account panel
 - launch gates are tracked in `launch-decision-record.md`

@@ -279,6 +279,9 @@ Still needed:
 - improve dense-form mobile ergonomics
 - keep improving dense-form mobile ergonomics
 - continue no-backend/offline QA as new target-dependent features are added
+- maintain the implemented accessibility baseline: skip-to-main navigation,
+  visible focus rings, live status regions, form error associations, chart
+  descriptions, Escape-to-close dialogs, and both-theme contrast tests
 
 Exit condition:
 

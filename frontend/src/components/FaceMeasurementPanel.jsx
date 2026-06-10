@@ -211,7 +211,9 @@ export default function FaceMeasurementPanel({ faceMeasurements, onSaveFaceMeasu
           >
             Save face metrics
           </button>
-          <p className="muted-text">{status}</p>
+          <p className="muted-text" role="status" aria-live="polite">
+            {status}
+          </p>
         </div>
 
         <div className="face-preview-panel" aria-label="Face scan preview">

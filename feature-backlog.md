@@ -521,9 +521,12 @@ land. No social features, no marketplace.
 - [ ] Store rating set accordingly before native submission. **[human]**
 - [x] Methodology page: scoring, similarity, percentile sources, gender score
       math — public and indexable (trust + SEO).
-- [ ] Accessibility pass **(new)**: keyboard navigation, contrast in both
+- [x] Accessibility pass **(new)**: keyboard navigation, contrast in both
       themes, screen-reader flows for the form and charts (builds on the
-      existing ARIA/anchor work).
+      existing ARIA/anchor work). Implemented with skip-to-main focus,
+      Escape-to-close dialogs, visible focus rings, live status regions,
+      form error associations, SVG chart titles/descriptions, and contrast
+      tests for cafe/graphite theme tokens.
 - [ ] Deployment hardening beyond `deployment.md`: HTTPS, rate limiting on
       `/api/match`, dependency pinning/updates, backup strategy for the
       backend DB.

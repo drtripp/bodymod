@@ -1117,6 +1117,40 @@ test("shares measurements from the header icon and restores them from the URL", 
   await expect(page).toHaveURL(/m=/);
 });
 
+test("supports keyboard landmarks, live statuses, chart descriptions, and dialog escape", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: "http://127.0.0.1:5173" });
+
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#main-content")).toBeFocused();
+
+  await page.getByRole("button", { name: "Share current measurements" }).click();
+  await expect(page.getByRole("status").filter({ hasText: /Share link copied|Copy failed/ })).toBeVisible();
+
+  await page.getByRole("tab", { name: "Gender" }).click();
+  const genderChart = page.getByRole("img", { name: "Gender score distribution" });
+  await expect(genderChart.locator("title")).toHaveText("Gender score distribution");
+  await expect(genderChart.locator("desc")).toContainText("Measurement-pattern score");
+
+  await page.getByRole("button", { name: "Scatter" }).click();
+  const scatterChart = page.getByRole("img", { name: "US population scatter plot" });
+  await expect(scatterChart.locator("desc")).toContainText("Your current point");
+
+  await page.getByRole("button", { name: "Build Plan" }).click();
+  const strategyDialog = page.getByRole("dialog", { name: "Strategy corpus explorer" });
+  await expect(strategyDialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(strategyDialog).not.toBeVisible();
+
+  await page.getByRole("button", { name: "User profile" }).click();
+  const accountDialog = page.getByRole("dialog", { name: "Account, logs, and goals" });
+  await expect(accountDialog).toBeVisible();
+  await expect(accountDialog.getByRole("status").first()).toContainText("Loaded 10 personas");
+  await page.keyboard.press("Escape");
+  await expect(accountDialog).not.toBeVisible();
+});
+
 test("creates a local account, logs a snapshot, sets a goal, and logs back in", async ({ page }) => {
   await page.getByRole("button", { name: "User profile" }).click();
   const accountDialog = page.getByRole("dialog", { name: "Account, logs, and goals" });
