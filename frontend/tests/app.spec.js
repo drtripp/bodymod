@@ -1124,6 +1124,31 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(accountDialog).toContainText("Limb symmetry split logged.");
   await expect(page.getByLabel("Latest limb symmetry")).toContainText("Bicep right +2.0 cm (5.7%)");
   await expect(page.getByLabel("Check-in history")).toContainText("Limb symmetry: Bicep right +2.0 cm");
+  await page.getByLabel("Cycle phase").selectOption("luteal");
+  await page.getByLabel("Cycle day").fill("24");
+  await page.getByLabel("Cycle flow").selectOption("none");
+  await page.getByLabel("Cycle symptoms").fill("bloating");
+  await page.getByLabel("Cycle note").fill("Water retention likely.");
+  await page.getByRole("button", { name: "Log cycle context" }).click();
+  await expect(accountDialog).toContainText("Cycle context logged locally.");
+  await expect(page.getByLabel("Latest cycle context")).toContainText("Luteal day 24");
+  await expect(page.getByLabel("Latest cycle context")).toContainText("included in encrypted backup check-ins until deleted");
+  await expect(page.getByLabel("Insight drops")).toContainText("Cycle context: luteal phase");
+  await expect(page.getByLabel("Check-in history")).toContainText("Cycle context: Luteal day 24, flow none");
+  let cycleLogCount = await page.evaluate(() => {
+    const stored = JSON.parse(window.localStorage.getItem("bodymod:checkins:v1"));
+    return stored.checkIns.filter((checkIn) => checkIn.type === "cycle-phase").length;
+  });
+  expect(cycleLogCount).toBe(1);
+  await page.getByRole("button", { name: "Delete cycle logs" }).click();
+  await expect(accountDialog).toContainText("Cycle logs deleted from this browser account.");
+  await expect(page.getByLabel("Latest cycle context")).toContainText("Cycle context off");
+  cycleLogCount = await page.evaluate(() => {
+    const stored = JSON.parse(window.localStorage.getItem("bodymod:checkins:v1"));
+    return stored.checkIns.filter((checkIn) => checkIn.type === "cycle-phase").length;
+  });
+  expect(cycleLogCount).toBe(0);
+  await expect(page.getByLabel("Check-in history")).toContainText("Limb symmetry: Bicep right +2.0 cm");
   await page.getByRole("button", { name: "Finish guided weekly check-in" }).click();
   await expect(page.getByLabel("Check-in history")).toContainText("Guided weekly measurements: waist 86.0 cm");
   await expect(accountDialog.locator(".snapshot-row").getByText("Weekly check-in")).toBeVisible();

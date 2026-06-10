@@ -259,11 +259,12 @@ Protocol Tracker → Diet upgrades → Native app.
       local adaptive kcal/day estimate with confidence bands after enough
       reliable daily weight+calorie logs; reliability-window exclusions are
       respected.
-- [ ] Cycle-aware tracking **(new)**: optional menstrual-cycle phase logging
+- [x] Cycle-aware tracking **(new)**: optional menstrual-cycle phase logging
       so weight/waist trend interpretation can flag cycle-correlated
       fluctuation instead of reading it as fat change. Strictly local-first,
-      off by default, exportable/deletable — this is maximally sensitive data
-      and a genuine differentiator for the female demo done right.
+      off by default, exportable/deletable — implemented as account-scoped
+      local check-ins with encrypted-backup inclusion and a dedicated delete
+      action for cycle logs.
 - [x] Clothing size mapping **(confirmed)**: generic placeholder measurements
       to US/EU/UK garment sizes (pants, shirts, dresses; hat from head
       circumference; weak ring proxy from wrist circumference) now renders in

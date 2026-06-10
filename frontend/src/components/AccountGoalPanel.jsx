@@ -14,6 +14,7 @@ import {
   calculateTrendWeight,
   clearSession,
   createLocalAccount,
+  deleteUserCheckInsByType,
   deleteUserPhoto,
   loadAccounts,
   loadUserCheckIns,
@@ -44,6 +45,14 @@ import {
   limbSplitFields,
   summarizeLimbSymmetrySplits
 } from "../lib/limbSymmetry";
+import {
+  buildCycleCheckIn,
+  buildCycleTrendContext,
+  cycleFlowOptions,
+  cyclePhaseOptions,
+  formatCycleCheckIn,
+  latestCycleCheckIn
+} from "../lib/cycleTracking";
 import {
   parseHistoricalWeightCsv,
   summarizeHistoricalWeightImport
@@ -177,6 +186,10 @@ function formatCheckIn(checkIn) {
     return `Limb symmetry: ${summaryText || "split log"}`;
   }
 
+  if (checkIn.type === "cycle-phase") {
+    return `Cycle context: ${formatCycleCheckIn(checkIn)}`;
+  }
+
   const prefix = checkIn.source === "guided" ? "Guided weekly measurements" : "Weekly measurements";
   return `${prefix}: waist ${Number(checkIn.measurements?.waistCircumference).toFixed(1)} cm`;
 }
@@ -301,6 +314,12 @@ export default function AccountGoalPanel({
   const [limbSplitValues, setLimbSplitValues] = useState({});
   const [limbSplitNote, setLimbSplitNote] = useState("");
   const [limbSplitErrors, setLimbSplitErrors] = useState({});
+  const [cyclePhase, setCyclePhase] = useState("");
+  const [cycleDay, setCycleDay] = useState("");
+  const [cycleFlow, setCycleFlow] = useState("not-tracked");
+  const [cycleSymptoms, setCycleSymptoms] = useState("");
+  const [cycleNote, setCycleNote] = useState("");
+  const [cycleErrors, setCycleErrors] = useState({});
   const [historyImportText, setHistoryImportText] = useState("");
   const [historyImportStatus, setHistoryImportStatus] = useState("");
   const [backupPassphrase, setBackupPassphrase] = useState("");
@@ -469,6 +488,11 @@ export default function AccountGoalPanel({
   const latestLimbSymmetrySummary = useMemo(
     () => summarizeLimbSymmetrySplits(latestLimbSymmetry?.splits),
     [latestLimbSymmetry]
+  );
+  const latestCycleContext = useMemo(() => latestCycleCheckIn(checkIns), [checkIns]);
+  const cycleTrendContext = useMemo(
+    () => buildCycleTrendContext(checkIns),
+    [checkIns]
   );
   const weeklyStreak = useMemo(() => buildWeeklyStreak(checkIns), [checkIns]);
   const checkInHeatmap = useMemo(() => buildCheckInHeatmap(checkIns), [checkIns]);
@@ -785,6 +809,47 @@ export default function AccountGoalPanel({
     setLimbSplitValues({});
     setLimbSplitNote("");
     setStatus("Limb symmetry split logged.");
+  }
+
+  function handleCycleCheckIn(event) {
+    event.preventDefault();
+    if (!account) {
+      return;
+    }
+
+    const result = buildCycleCheckIn({
+      phase: cyclePhase,
+      cycleDay,
+      flow: cycleFlow,
+      symptoms: cycleSymptoms,
+      note: cycleNote
+    });
+    setCycleErrors(result.errors);
+
+    if (!result.checkIn) {
+      setStatus(result.errors.phase || result.errors.cycleDay || "Fix the cycle context values.");
+      return;
+    }
+
+    const nextCheckIn = persistUserCheckIn(account.id, result.checkIn);
+    setCheckIns([nextCheckIn, ...checkIns]);
+    setCyclePhase("");
+    setCycleDay("");
+    setCycleFlow("not-tracked");
+    setCycleSymptoms("");
+    setCycleNote("");
+    setStatus("Cycle context logged locally.");
+  }
+
+  function handleDeleteCycleLogs() {
+    if (!account) {
+      return;
+    }
+
+    const nextCheckIns = deleteUserCheckInsByType(account.id, "cycle-phase");
+    setCheckIns(nextCheckIns);
+    setCycleErrors({});
+    setStatus("Cycle logs deleted from this browser account.");
   }
 
   function importHistoricalWeightCsv(rawValue) {
@@ -1626,6 +1691,130 @@ export default function AccountGoalPanel({
                     tracking matters for your current goal.
                   </p>
                 )}
+              </form>
+              <form
+                className="cycle-context-card"
+                aria-label="Cycle-aware tracking"
+                onSubmit={handleCycleCheckIn}
+              >
+                <div className="cycle-context-copy">
+                  <strong>Optional cycle context</strong>
+                  <p>
+                    Strictly local phase labels for interpreting short-term
+                    weight or waist noise. Leave it off if it is not relevant.
+                  </p>
+                </div>
+                <label className="field">
+                  <span className="field-label">Cycle phase</span>
+                  <select
+                    aria-label="Cycle phase"
+                    value={cyclePhase}
+                    onChange={(event) => {
+                      setCyclePhase(event.target.value);
+                      setCycleErrors((current) => {
+                        const nextErrors = { ...current };
+                        delete nextErrors.phase;
+                        return nextErrors;
+                      });
+                    }}
+                  >
+                    <option value="">Off / not logging</option>
+                    {cyclePhaseOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  {cycleErrors.phase ? (
+                    <span className="field-error">{cycleErrors.phase}</span>
+                  ) : null}
+                </label>
+                <label className="field">
+                  <span className="field-label">Cycle day optional</span>
+                  <input
+                    aria-label="Cycle day"
+                    inputMode="numeric"
+                    value={cycleDay}
+                    onChange={(event) => {
+                      setCycleDay(event.target.value);
+                      setCycleErrors((current) => {
+                        const nextErrors = { ...current };
+                        delete nextErrors.cycleDay;
+                        return nextErrors;
+                      });
+                    }}
+                    placeholder="21"
+                  />
+                  {cycleErrors.cycleDay ? (
+                    <span className="field-error">{cycleErrors.cycleDay}</span>
+                  ) : null}
+                </label>
+                <label className="field">
+                  <span className="field-label">Flow optional</span>
+                  <select
+                    aria-label="Cycle flow"
+                    value={cycleFlow}
+                    onChange={(event) => setCycleFlow(event.target.value)}
+                  >
+                    {cycleFlowOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field cycle-symptoms-field">
+                  <span className="field-label">Symptoms optional</span>
+                  <input
+                    aria-label="Cycle symptoms"
+                    value={cycleSymptoms}
+                    onChange={(event) => setCycleSymptoms(event.target.value)}
+                    placeholder="bloating, cramps"
+                  />
+                </label>
+                <label className="field cycle-note-field">
+                  <span className="field-label">Cycle note</span>
+                  <textarea
+                    aria-label="Cycle note"
+                    value={cycleNote}
+                    onChange={(event) => setCycleNote(event.target.value)}
+                    placeholder="Expect water retention this week."
+                  />
+                </label>
+                <div className="cycle-actions">
+                  <button className="button" type="submit">
+                    Log cycle context
+                  </button>
+                  <button
+                    className="button"
+                    type="button"
+                    onClick={handleDeleteCycleLogs}
+                    disabled={!latestCycleContext}
+                  >
+                    Delete cycle logs
+                  </button>
+                </div>
+                <div className="cycle-context-summary" aria-label="Latest cycle context">
+                  <strong>{cycleTrendContext.label}</strong>
+                  <span>{cycleTrendContext.insight}</span>
+                  {latestCycleContext ? (
+                    <>
+                      <small>
+                        Latest saved {formatDate(latestCycleContext.createdAt)}; included
+                        in encrypted backup check-ins until deleted.
+                      </small>
+                      {latestCycleContext.symptoms ? (
+                        <small>Symptoms: {latestCycleContext.symptoms}</small>
+                      ) : null}
+                      {latestCycleContext.note ? <p>{latestCycleContext.note}</p> : null}
+                    </>
+                  ) : (
+                    <small>
+                      No cycle logs saved. This feature is off by default and
+                      never leaves this browser unless you export a backup.
+                    </small>
+                  )}
+                </div>
               </form>
               <form
                 className="history-import-card"

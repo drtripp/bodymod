@@ -96,6 +96,7 @@ Implemented now:
 - adaptive TDEE estimate from reliable daily weight and calorie logs, with reliability-window exclusions
 - guided weekly check-in flow with snapshot save, streak/grace state, heatmap, milestones, insight drops, and weekly digest
 - maintenance drift alerts for saved goals once an at-target snapshot exists
+- optional local cycle phase logs that add weight/waist fluctuation context, remain off by default, and can be deleted separately
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
 - reliability events pause affected weight and tape trend inference during healing or disruption windows
 - projected silhouettes for calorie-target protocol planning bands, with uncertainty copy

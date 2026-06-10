@@ -1,6 +1,9 @@
 import {
   isFieldPausedAt
 } from "./reliabilityEvents.js";
+import {
+  buildCycleTrendContext
+} from "./cycleTracking.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEK_MS = 7 * DAY_MS;
@@ -312,6 +315,11 @@ export function buildCheckInInsights({
   const activeProtocols = protocols.filter((protocol) => protocol.status !== "archived");
   if (activeProtocols.length) {
     insights.push(`${activeProtocols.length} active protocol(s) need adherence review.`);
+  }
+
+  const cycleContext = buildCycleTrendContext(checkIns);
+  if (cycleContext.status !== "off") {
+    insights.push(cycleContext.insight);
   }
 
   if (goals.length) {

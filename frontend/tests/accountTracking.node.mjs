@@ -22,6 +22,12 @@ import {
   summarizeLimbSymmetrySplits
 } from "../src/lib/limbSymmetry.js";
 import {
+  buildCycleCheckIn,
+  buildCycleTrendContext,
+  formatCycleCheckIn,
+  latestCycleCheckIn
+} from "../src/lib/cycleTracking.js";
+import {
   buildMeasurementCadenceGroups,
   buildMeasurementDueState,
   getMeasurementCadence
@@ -145,6 +151,45 @@ test("builds dated limb symmetry check-ins without making split fields required"
   assert.equal(latest.id, "newer");
 });
 
+test("builds local-only cycle context logs and trend interpretation copy", () => {
+  const missing = buildCycleCheckIn({});
+  const invalidDay = buildCycleCheckIn({ phase: "luteal", cycleDay: "72" });
+  const valid = buildCycleCheckIn({
+    phase: "luteal",
+    cycleDay: "24",
+    flow: "none",
+    symptoms: "bloating",
+    note: "Waist may be noisy."
+  });
+  const checkIns = [
+    {
+      id: "older-cycle",
+      type: "cycle-phase",
+      phase: "follicular",
+      cycleDay: 8,
+      createdAt: "2026-06-01T00:00:00.000Z"
+    },
+    {
+      id: "latest-cycle",
+      createdAt: "2026-06-10T00:00:00.000Z",
+      ...valid.checkIn
+    }
+  ];
+  const latest = latestCycleCheckIn(checkIns);
+  const context = buildCycleTrendContext(checkIns, Date.parse("2026-06-11T00:00:00.000Z"));
+
+  assert.equal(missing.checkIn, null);
+  assert.equal(missing.errors.phase, "Choose a cycle phase.");
+  assert.equal(invalidDay.checkIn, null);
+  assert.equal(invalidDay.errors.cycleDay, "Expected day 1-60.");
+  assert.equal(valid.checkIn.localOnlySensitive, true);
+  assert.equal(formatCycleCheckIn(valid.checkIn), "Luteal day 24, flow none");
+  assert.equal(latest.id, "latest-cycle");
+  assert.equal(context.status, "noisy");
+  assert.equal(context.label, "Luteal day 24");
+  assert.ok(context.insight.includes("short-term weight or waist changes noisy"));
+});
+
 test("pauses affected trend inference inside reliability event windows", () => {
   const checkIns = [
     {
@@ -252,6 +297,23 @@ test("builds weekly streak, heatmap, milestones, insights, and digest", () => {
   assert.ok(insights.some((insight) => insight.includes("Weekly deltas")));
   assert.ok(insights.some((insight) => insight.includes("Snapshot comparison unlocked")));
   assert.ok(digest.some((line) => line.startsWith("Tea: trend weight")));
+});
+
+test("adds cycle-aware context to insight drops when a phase is logged", () => {
+  const insights = buildCheckInInsights({
+    checkIns: [
+      {
+        id: "cycle",
+        type: "cycle-phase",
+        phase: "menstruation",
+        cycleDay: 2,
+        createdAt: "2026-06-10T12:00:00.000Z"
+      }
+    ]
+  });
+
+  assert.ok(insights.some((insight) => insight.includes("Cycle context")));
+  assert.ok(insights.some((insight) => insight.includes("water-retention context")));
 });
 
 test("suppresses affected weekly deltas during reliability windows", () => {

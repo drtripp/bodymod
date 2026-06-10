@@ -317,6 +317,10 @@ Status:
   calf split logs through `frontend/src/lib/limbSymmetry.js`; the single
   measurement value remains the default for matching while dated split logs
   show symmetry deltas for physique tracking
+- account check-ins support optional local cycle phase logs through
+  `frontend/src/lib/cycleTracking.js`; the feature is off by default, flags
+  noisy weight/waist interpretation windows in insight drops, is included in
+  encrypted backup check-ins, and has a dedicated delete-cycle-logs action
 - account workspace supports passphrase-encrypted backup/restore through
   `frontend/src/lib/localBackup.js`; photos are exported as metadata manifests
   rather than image payloads

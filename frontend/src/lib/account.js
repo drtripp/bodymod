@@ -268,6 +268,21 @@ export function persistUserCheckIns(accountId, importedCheckIns = []) {
   return mergedCheckIns.filter((checkIn) => checkIn.accountId === accountId);
 }
 
+export function deleteUserCheckInsByType(accountId, type) {
+  const parsed = readStorage(CHECKINS_KEY, { checkIns: [] });
+  const checkIns = Array.isArray(parsed.checkIns) ? parsed.checkIns : [];
+  const nextCheckIns = checkIns.filter(
+    (checkIn) => checkIn.accountId !== accountId || checkIn.type !== type
+  );
+
+  writeStorage(CHECKINS_KEY, {
+    version: STORAGE_VERSION,
+    checkIns: nextCheckIns
+  });
+
+  return nextCheckIns.filter((checkIn) => checkIn.accountId === accountId);
+}
+
 function mergeAccountCollection({
   storageKey,
   collectionKey,

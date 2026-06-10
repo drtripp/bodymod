@@ -607,6 +607,47 @@ textarea {
   padding: 5px 7px;
 }
 
+.cycle-context-card {
+  border: 1px solid var(--color-border);
+  background: var(--color-page);
+  display: grid;
+  grid-template-columns: minmax(180px, 0.34fr) minmax(150px, 0.22fr) minmax(120px, 0.16fr) minmax(130px, 0.18fr) minmax(180px, 0.28fr) minmax(190px, 0.32fr);
+  gap: 10px;
+  align-items: end;
+  margin-top: 10px;
+  padding: 10px;
+}
+
+.cycle-context-copy,
+.cycle-actions,
+.cycle-context-summary {
+  display: grid;
+  gap: 4px;
+}
+
+.cycle-context-copy p,
+.cycle-context-summary span,
+.cycle-context-summary small,
+.cycle-context-summary p {
+  color: var(--color-muted);
+}
+
+.cycle-note-field textarea {
+  min-height: 74px;
+  resize: vertical;
+}
+
+.cycle-actions {
+  align-self: stretch;
+  align-content: end;
+}
+
+.cycle-context-summary {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--color-border);
+  padding-top: 8px;
+}
+
 .checkin-summary {
   display: flex;
   gap: 12px;
@@ -4170,6 +4211,7 @@ textarea {
   .checkin-form,
   .limb-symmetry-card,
   .limb-split-row,
+  .cycle-context-card,
   .history-import-card,
   .guided-checkin-card,
   .streak-panel,

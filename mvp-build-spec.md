@@ -183,6 +183,9 @@ Implemented:
 - compact SVG trend chart for weight, waist, shoulder mass, and hip measurements
 - optional local account left/right bicep, forearm, thigh, and calf split logs
   with side-delta symmetry summaries
+- optional local account cycle phase logs that label noisy weight/waist
+  interpretation windows, export in encrypted check-in backups, and can be
+  deleted separately
 
 ### Comparison, Trust, Share, And Corpus
 

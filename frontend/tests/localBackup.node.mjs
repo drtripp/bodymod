@@ -78,6 +78,15 @@ function sampleBundle() {
         type: "daily-weight",
         createdAt: "2026-06-04T00:00:00.000Z",
         weight: 82
+      },
+      {
+        id: "cycle-1",
+        accountId: "old-account",
+        type: "cycle-phase",
+        createdAt: "2026-06-04T12:00:00.000Z",
+        phase: "luteal",
+        cycleDay: 24,
+        localOnlySensitive: true
       }
     ],
     workoutSessions: [
@@ -122,7 +131,7 @@ test("builds backup bundles with photo manifests instead of image payloads", () 
     snapshots: 1,
     goals: 1,
     protocols: 1,
-    checkIns: 1,
+    checkIns: 2,
     workoutSessions: 1,
     faceMeasurements: 1,
     photoManifest: 1
@@ -139,6 +148,8 @@ test("encrypts and decrypts local backup bundles with a passphrase", async () =>
   const decrypted = await decryptLocalBackup(encrypted, "correct horse battery staple");
   assert.equal(decrypted.account.email, "taylor@example.com");
   assert.equal(decrypted.checkIns[0].weight, 82);
+  assert.equal(decrypted.checkIns[1].type, "cycle-phase");
+  assert.equal(decrypted.checkIns[1].localOnlySensitive, true);
 });
 
 test("rejects short or incorrect backup passphrases", async () => {
@@ -159,10 +170,11 @@ test("restores account-scoped backup data into the active account without duplic
   const restored = restoreUserBackupData("new-account", bundle);
   const restoredAgain = restoreUserBackupData("new-account", bundle);
 
-  assert.equal(restored.imported.checkIns, 1);
+  assert.equal(restored.imported.checkIns, 2);
   assert.equal(restored.imported.photoManifest, 1);
   assert.equal(restoredAgain.imported.checkIns, 0);
   assert.deepEqual(loadUserCheckIns("new-account").map((item) => item.accountId), [
+    "new-account",
     "new-account"
   ]);
   assert.equal(loadUserGoals("new-account")[0].label, "Shoulder goal");
