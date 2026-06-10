@@ -126,6 +126,9 @@ Implemented now:
 - header share icon that copies an encoded measurement URL without showing a share panel
 - local-only lightweight usage event logging
 - privacy control to inspect and clear local usage events
+- privacy-preserving browser error event ring plus optional opt-in backend
+  upload to `/api/client-errors`; reports contain fingerprints and source
+  metadata, not raw messages, stacks, measurements, or form payloads
 - accessibility baseline with skip-to-main navigation, visible focus rings, live status messages, form error associations, and chart descriptions
 - backend-served free/pro entitlement config, with all current tracking/data/export tools free
 - local-only Pro waitlist capture and blurred Pro preview cards in the account panel
@@ -169,6 +172,8 @@ Not implemented yet:
 - hosted photo/body inference work; current face scans are browser-local only
 - production FoodData Central import/API ownership; Diet currently has dummy backend USDA-style seed rows plus Open Food Facts lookup
 - full public measurement-guide coverage with reviewed illustrations and final copy
+- production error monitoring provider/enablement decision; sanitized first-party
+  wiring exists but upload is disabled unless configured at build time
 - human/legal review of draft privacy, terms, and medical disclaimer pages
 
 ## Current Measurement Schema

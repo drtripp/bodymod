@@ -8,7 +8,7 @@ from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TEMPLATES
 from app.data.strategy_corpus import STRATEGY_CORPUS
 from app.main import allowed_cors_origins, app
-from app.repositories import load_target_seed
+from app.repositories import ClientErrorRepository, load_target_seed
 
 
 client = TestClient(app)
@@ -284,6 +284,62 @@ def test_food_search_endpoint_filters_without_external_api() -> None:
 
     assert [food["name"] for food in payload["foods"]] == ["Salmon, cooked"]
     assert payload["foods"][0]["micros"]["vitaminD"] > 0
+
+
+def client_error_payload() -> dict:
+    return {
+        "event": {
+            "id": "client-error:test-1",
+            "type": "error",
+            "errorName": "TypeError",
+            "messageFingerprint": "a1b2c3d4",
+            "stackFingerprint": "d4c3b2a1",
+            "source": "/assets/index.js",
+            "line": 42,
+            "column": 7,
+            "route": "/workspace",
+            "severity": "error",
+            "release": "test",
+            "userAgentFamily": "Chrome",
+            "createdAt": "2026-06-10T12:00:00.000Z",
+        }
+    }
+
+
+def test_client_error_endpoint_stores_sanitized_envelope() -> None:
+    response = client.post("/api/client-errors", json=client_error_payload())
+
+    assert response.status_code == 202
+    assert response.json() == {"status": "accepted", "stored": True}
+
+    stored_events = ClientErrorRepository().list_event_dicts()
+    assert len(stored_events) == 1
+    assert stored_events[0]["id"] == "client-error:test-1"
+    assert stored_events[0]["messageFingerprint"] == "a1b2c3d4"
+    assert "message" not in stored_events[0]
+    assert "stack" not in stored_events[0]
+    assert "measurements" not in stored_events[0]
+
+
+def test_client_error_endpoint_rejects_raw_error_payload_fields() -> None:
+    payload = client_error_payload()
+    payload["event"]["message"] = "height 182 weight 74 raw note"
+    payload["event"]["stack"] = "TypeError: height 182\n at App"
+    payload["event"]["measurements"] = {"height": 182, "weight": 74}
+
+    response = client.post("/api/client-errors", json=payload)
+
+    assert response.status_code == 422
+
+
+def test_client_error_endpoint_rejects_unsanitized_source_paths() -> None:
+    payload = client_error_payload()
+    payload["event"]["source"] = "/assets/index.js?m=encoded-measurements"
+    payload["event"]["route"] = "/profile/dawson@example.com"
+
+    response = client.post("/api/client-errors", json=payload)
+
+    assert response.status_code == 422
 
 
 def share_dashboard_payload(title: str = "Mason bodymod dashboard") -> dict:

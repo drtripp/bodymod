@@ -26,6 +26,20 @@ set VITE_API_BASE_URL=https://api.example.com
 npm run build
 ```
 
+Browser error capture stores a sanitized local ring buffer by default. It does
+not upload unless enabled at build time:
+
+```bash
+set VITE_ERROR_MONITORING_UPLOAD_ENABLED=true
+set VITE_ERROR_MONITORING_ENDPOINT=https://api.example.com/api/client-errors
+npm run build
+```
+
+The first-party `/api/client-errors` sink accepts only the sanitized envelope:
+fingerprints, source path, route path, line/column, release, and browser family.
+Do not point the frontend at a third-party endpoint until a human monitoring
+provider decision has been made.
+
 ## Backend
 
 Install and run the API:

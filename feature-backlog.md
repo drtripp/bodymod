@@ -43,7 +43,11 @@ Protocol Tracker → Diet upgrades → Native app.
       Playwright, and screenshot capture.
 - [ ] Error monitoring decision + wiring (privacy-conscious, e.g. self-hosted
       Sentry/GlitchTip; no measurement values in payloads). **[human]** for the
-      provider decision, agent for the wiring.
+      provider decision, agent for the wiring. Agent wiring is in place:
+      `frontend/src/lib/errorMonitoring.js` installs sanitized browser error
+      capture, keeps a local ring buffer, and can opt in to the first-party
+      `POST /api/client-errors` sink without raw messages, stacks, or
+      measurement payloads. Human provider/enablement decision remains open.
 - [x] Schema single-source: `shared/measurement_schema.json` now defines
       field order, labels, categories, bounds, select options, and defaults;
       the frontend measurement helpers import it directly and the backend

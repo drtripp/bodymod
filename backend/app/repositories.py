@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from app.models import ShareDashboardPayload, TargetProfile
+from app.models import ClientErrorEvent, ShareDashboardPayload, TargetProfile
 
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
@@ -318,3 +318,82 @@ class ShareDashboardRepository:
             "updatedAt": row["updated_at"],
             "dashboard": json.loads(row["payload_json"]),
         }
+
+
+class ClientErrorRepository:
+    def __init__(self, db_path: Path | str | None = None) -> None:
+        self.db_path = Path(db_path) if db_path is not None else configured_database_path()
+
+    def record_event(self, event: ClientErrorEvent) -> dict[str, Any]:
+        payload_json = json.dumps(
+            event.model_dump(mode="json"),
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            with connection:
+                connection.execute(
+                    """
+                    INSERT OR IGNORE INTO client_error_events (
+                        client_event_id,
+                        event_type,
+                        error_name,
+                        message_fingerprint,
+                        source,
+                        route,
+                        payload_json,
+                        received_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        event.id,
+                        event.type,
+                        event.errorName,
+                        event.messageFingerprint,
+                        event.source,
+                        event.route,
+                        payload_json,
+                        utc_timestamp(),
+                    ),
+                )
+
+        return {"status": "accepted", "stored": True}
+
+    def list_event_dicts(self) -> list[dict[str, Any]]:
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            rows = connection.execute(
+                """
+                SELECT payload_json
+                FROM client_error_events
+                ORDER BY received_at ASC, client_event_id ASC
+                """
+            ).fetchall()
+
+        return [json.loads(row["payload_json"]) for row in rows]
+
+    def _connect(self) -> sqlite3.Connection:
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        connection = sqlite3.connect(self.db_path)
+        connection.row_factory = sqlite3.Row
+        return connection
+
+    def _ensure_schema(self, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS client_error_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                client_event_id TEXT NOT NULL UNIQUE,
+                event_type TEXT NOT NULL,
+                error_name TEXT NOT NULL,
+                message_fingerprint TEXT NOT NULL,
+                source TEXT NOT NULL,
+                route TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                received_at TEXT NOT NULL
+            )
+            """
+        )

@@ -1,4 +1,7 @@
-from pydantic import BaseModel, Field
+import re
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .measurement_schema import build_measurement_model
 
@@ -322,6 +325,44 @@ class FoodSearchResponse(BaseModel):
     source: str
     notes: list[str] = []
     foods: list[FoodSearchItem]
+
+
+class ClientErrorEvent(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9:_-]+$")
+    type: Literal["error", "unhandledrejection", "resource-error", "manual"]
+    errorName: str = Field(default="Error", max_length=80, pattern=r"^[A-Za-z]{0,64}Error$")
+    messageFingerprint: str = Field(min_length=8, max_length=24, pattern=r"^[a-f0-9]+$")
+    stackFingerprint: str = Field(default="", max_length=24, pattern=r"^[a-f0-9]*$")
+    source: str = Field(default="", max_length=160)
+    line: int | None = Field(default=None, ge=0, le=10_000_000)
+    column: int | None = Field(default=None, ge=0, le=10_000_000)
+    route: str = Field(default="/", max_length=160)
+    severity: Literal["error", "warning"] = "error"
+    release: str = Field(default="", max_length=80)
+    userAgentFamily: str = Field(default="Unknown", max_length=40)
+    createdAt: str = Field(min_length=1, max_length=40)
+
+    @field_validator("source", "route")
+    @classmethod
+    def reject_query_or_hash(cls, value: str) -> str:
+        if "?" in value or "#" in value:
+            raise ValueError("Client error source fields must not include query strings.")
+        if value and (not value.startswith("/") or not re.fullmatch(r"/[A-Za-z0-9._/:-]*", value)):
+            raise ValueError("Client error source fields must be sanitized paths.")
+        return value
+
+
+class ClientErrorReportRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event: ClientErrorEvent
+
+
+class ClientErrorReportResponse(BaseModel):
+    status: str = "accepted"
+    stored: bool = True
 
 
 class ShareDashboardSnapshot(BaseModel):

@@ -11,6 +11,8 @@ from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TAXONOMY, PROTOCOL_TEMPLATES
 from app.data.strategy_corpus import STRATEGY_CORPUS
 from app.models import ClothingSizeTables
+from app.models import ClientErrorReportRequest
+from app.models import ClientErrorReportResponse
 from app.models import EntitlementConfig
 from app.models import ExerciseLibrary
 from app.models import FoodSearchResponse
@@ -24,7 +26,7 @@ from app.models import ShareDashboardRevokeRequest
 from app.models import ShareDashboardUpdateRequest
 from app.models import StrategyCorpusSeed
 from app.rate_limit import enforce_match_rate_limit
-from app.repositories import ShareDashboardRepository
+from app.repositories import ClientErrorRepository, ShareDashboardRepository
 from app.services import build_match_response, get_match_priorities, get_targets
 
 app = FastAPI(title="bodymod api", version="0.1.0")
@@ -126,6 +128,15 @@ def food_search(query: str = "") -> dict:
             "foods": search_usda_foods(query),
         }
     ).model_dump()
+
+
+@app.post(
+    "/api/client-errors",
+    response_model=ClientErrorReportResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def report_client_error(request: ClientErrorReportRequest) -> dict:
+    return ClientErrorRepository().record_event(request.event)
 
 
 @app.post(

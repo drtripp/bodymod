@@ -32,6 +32,7 @@ frontend/
       analytics.js
       api.js
       comparison.js
+      errorMonitoring.js
       populationCharts.js
       inference.js
       measurements.js
@@ -109,9 +110,13 @@ Implemented endpoints:
 - `GET /api/targets`
 - `POST /api/match`
 - `GET /api/entitlements`
+- `POST /api/client-errors`
 
 The backend seeds target data from `backend/app/data/targets.seed.json` into
 SQLite through `backend/app/repositories.py`.
+Client error reports are stored through `ClientErrorRepository` as sanitized
+envelopes only; the model forbids raw message, stack, measurement, and form
+payload fields.
 
 ## Visual Direction
 
