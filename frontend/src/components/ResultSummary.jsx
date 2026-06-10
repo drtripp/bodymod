@@ -1,6 +1,8 @@
+import { useState } from "react";
 import SilhouetteView from "./SilhouetteView";
 import { estimateClothingSizes } from "../lib/clothingSizes";
 import { calculateRatios } from "../lib/ratios";
+import { downloadResultCard } from "../lib/resultCard";
 
 function formatScore(similarity) {
   if (typeof similarity !== "number") {
@@ -18,6 +20,7 @@ export default function ResultSummary({
   hoveredMeasurement,
   onMeasurementHover
 }) {
+  const [shareStatus, setShareStatus] = useState("");
   const ratios = calculateRatios(measurements);
   const clothingSizes = estimateClothingSizes(measurements, clothingSizeTables);
   const ratioById = Object.fromEntries(ratios.map((ratio) => [ratio.id, ratio]));
@@ -67,6 +70,11 @@ export default function ResultSummary({
     }
   ];
 
+  function handleDownloadResultCard() {
+    downloadResultCard(measurements, result);
+    setShareStatus("Result card downloaded.");
+  }
+
   return (
     <section className="panel">
       <div className="result-grid">
@@ -89,6 +97,10 @@ export default function ResultSummary({
                 <small>Similarity score: {formatScore(runnerUp.similarity)}</small>
               </div>
             ) : null}
+            <button className="button result-card-button" type="button" onClick={handleDownloadResultCard}>
+              Download result card
+            </button>
+            {shareStatus ? <small className="muted-text">{shareStatus}</small> : null}
           </div>
 
           <div className="metric-block-grid" aria-label="Result metric blocks">

@@ -3,6 +3,8 @@ const SESSION_KEY = "bodymod:session:v1";
 const GOALS_KEY = "bodymod:goals:v1";
 const PROTOCOLS_KEY = "bodymod:protocols:v1";
 const CHECKINS_KEY = "bodymod:checkins:v1";
+const WORKOUTS_KEY = "bodymod:workouts:v1";
+const PHOTOS_KEY = "bodymod:photos:v1";
 const STORAGE_VERSION = 1;
 
 function canUseStorage() {
@@ -138,6 +140,26 @@ export function loadUserCheckIns(accountId) {
   return checkIns.filter((checkIn) => checkIn.accountId === accountId);
 }
 
+export function loadUserWorkoutSessions(accountId) {
+  if (!accountId) {
+    return [];
+  }
+
+  const parsed = readStorage(WORKOUTS_KEY, { workouts: [] });
+  const workouts = Array.isArray(parsed.workouts) ? parsed.workouts : [];
+  return workouts.filter((workout) => workout.accountId === accountId);
+}
+
+export function loadUserPhotos(accountId) {
+  if (!accountId) {
+    return [];
+  }
+
+  const parsed = readStorage(PHOTOS_KEY, { photos: [] });
+  const photos = Array.isArray(parsed.photos) ? parsed.photos : [];
+  return photos.filter((photo) => photo.accountId === accountId);
+}
+
 export function calculateTrendWeight(checkIns, alpha = 0.25) {
   const dailyWeights = checkIns
     .filter((checkIn) => checkIn.type === "daily-weight" && Number.isFinite(Number(checkIn.weight)))
@@ -198,6 +220,57 @@ export function persistUserCheckIn(accountId, checkIn) {
   });
 
   return nextCheckIn;
+}
+
+export function persistUserWorkoutSession(accountId, workout) {
+  const parsed = readStorage(WORKOUTS_KEY, { workouts: [] });
+  const workouts = Array.isArray(parsed.workouts) ? parsed.workouts : [];
+  const nextWorkout = {
+    id: crypto.randomUUID(),
+    accountId,
+    createdAt: new Date().toISOString(),
+    ...workout
+  };
+
+  writeStorage(WORKOUTS_KEY, {
+    version: STORAGE_VERSION,
+    workouts: [nextWorkout, ...workouts]
+  });
+
+  return nextWorkout;
+}
+
+export function persistUserPhoto(accountId, photo) {
+  const parsed = readStorage(PHOTOS_KEY, { photos: [] });
+  const photos = Array.isArray(parsed.photos) ? parsed.photos : [];
+  const nextPhoto = {
+    id: crypto.randomUUID(),
+    accountId,
+    createdAt: new Date().toISOString(),
+    ...photo
+  };
+
+  writeStorage(PHOTOS_KEY, {
+    version: STORAGE_VERSION,
+    photos: [nextPhoto, ...photos]
+  });
+
+  return nextPhoto;
+}
+
+export function deleteUserPhoto(accountId, photoId) {
+  const parsed = readStorage(PHOTOS_KEY, { photos: [] });
+  const photos = Array.isArray(parsed.photos) ? parsed.photos : [];
+  const nextPhotos = photos.filter(
+    (photo) => photo.accountId !== accountId || photo.id !== photoId
+  );
+
+  writeStorage(PHOTOS_KEY, {
+    version: STORAGE_VERSION,
+    photos: nextPhotos
+  });
+
+  return nextPhotos.filter((photo) => photo.accountId === accountId);
 }
 
 export function appendGoalCheckIn(accountId, goalId, checkIn) {

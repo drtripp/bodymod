@@ -1,6 +1,8 @@
 from fastapi.testclient import TestClient
 
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
+from app.data.exercises import EXERCISE_LIBRARY
+from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TEMPLATES
 from app.data.targets import TARGETS
 from app.main import allowed_cors_origins, app
@@ -101,3 +103,49 @@ def test_clothing_size_endpoint_returns_placeholder_tables() -> None:
         "rings",
     }.issubset(garment_ids)
     assert all(garment["bands"] for garment in payload["garments"])
+
+
+def test_exercise_library_endpoint_returns_seeded_programs() -> None:
+    response = client.get("/api/exercise-library")
+
+    assert response.status_code == 200
+    payload = response.json()
+    exercise_ids = {exercise["id"] for exercise in payload["exercises"]}
+    program_ids = {program["id"] for program in payload["programTemplates"]}
+
+    assert payload["version"] == EXERCISE_LIBRARY["version"]
+    assert "Dummy workout seed data" in payload["reference"]
+    assert {"dumbbell-lateral-raise", "lat-pulldown", "romanian-deadlift"}.issubset(
+        exercise_ids
+    )
+    assert {"upper-lower-foundation", "shape-recomp-starter"}.issubset(program_ids)
+
+    for target in payload["muscleTargets"]:
+        assert set(target["exerciseIds"]).issubset(exercise_ids)
+
+    for program in payload["programTemplates"]:
+        for day in program["days"]:
+            assert day["exercises"]
+            assert {item["exerciseId"] for item in day["exercises"]}.issubset(
+                exercise_ids
+            )
+
+
+def test_measurement_guides_endpoint_returns_field_guides() -> None:
+    response = client.get("/api/measurement-guides")
+
+    assert response.status_code == 200
+    payload = response.json()
+    guide_fields = {guide["field"] for guide in payload["guides"]}
+
+    assert payload["version"] == MEASUREMENT_GUIDES["version"]
+    assert "Dummy measurement how-to guide copy" in payload["reference"]
+    assert {
+        "height",
+        "weight",
+        "waistCircumference",
+        "bideltoidCircumference",
+        "hipCircumference",
+    }.issubset(guide_fields)
+    assert all(guide["steps"] for guide in payload["guides"])
+    assert all(guide["illustration"] for guide in payload["guides"])

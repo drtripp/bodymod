@@ -4,8 +4,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
+from app.data.exercises import EXERCISE_LIBRARY
+from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TEMPLATES
 from app.models import ClothingSizeTables
+from app.models import ExerciseLibrary
+from app.models import MeasurementGuideLibrary
 from app.models import MeasurementSet
 from app.models import PlanningData
 from app.services import build_match_response, get_targets
@@ -66,3 +70,13 @@ def planning_data() -> dict:
 @app.get("/api/clothing-sizes")
 def clothing_size_tables() -> dict:
     return ClothingSizeTables.model_validate(CLOTHING_SIZE_TABLES).model_dump()
+
+
+@app.get("/api/exercise-library")
+def exercise_library() -> dict:
+    return ExerciseLibrary.model_validate(EXERCISE_LIBRARY).model_dump()
+
+
+@app.get("/api/measurement-guides")
+def measurement_guides() -> dict:
+    return MeasurementGuideLibrary.model_validate(MEASUREMENT_GUIDES).model_dump()

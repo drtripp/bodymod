@@ -4,6 +4,7 @@ import ComparisonPanel from "./components/ComparisonPanel";
 import DietDashboard from "./components/DietDashboard";
 import InfoFootnote from "./components/InfoFootnote";
 import MeasurementForm from "./components/MeasurementForm";
+import OnboardingPanel from "./components/OnboardingPanel";
 import PopulationPanel from "./components/PopulationPanel";
 import ResultSummary from "./components/ResultSummary";
 import SiteHeader from "./components/SiteHeader";
@@ -29,6 +30,10 @@ import {
   persistSnapshots,
   serializeSnapshots
 } from "./lib/storage";
+import {
+  loadOnboardingProfile,
+  persistOnboardingProfile
+} from "./lib/onboarding";
 import {
   buildDisplayFormState,
   displayToMetricValue,
@@ -64,6 +69,7 @@ export default function App() {
   const [isAccountPanelOpen, setIsAccountPanelOpen] = useState(false);
   const [isStrategyExplorerOpen, setIsStrategyExplorerOpen] = useState(false);
   const [clothingSizeTables, setClothingSizeTables] = useState(DEFAULT_CLOTHING_SIZE_TABLES);
+  const [onboardingProfile, setOnboardingProfile] = useState(() => loadOnboardingProfile());
 
   useEffect(() => {
     trackEvent("app_loaded");
@@ -237,6 +243,38 @@ export default function App() {
     trackEvent("snapshot_saved", { count: nextSnapshots.length });
   }
 
+  function handleSaveFirstSnapshot() {
+    const nextErrors = validateMeasurements(
+      formState,
+      globalUnitSystem,
+      fieldUnitOverrides
+    );
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length) {
+      return false;
+    }
+
+    const nextSnapshots = [
+      createSnapshot(coerceMeasurements(formState), "Snapshot #1", "First onboarding snapshot."),
+      ...snapshots
+    ];
+
+    setSnapshots(nextSnapshots);
+    persistSnapshots(nextSnapshots);
+    trackEvent("snapshot_saved", { count: nextSnapshots.length, source: "onboarding" });
+
+    if (
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      window.Notification.permission === "default"
+    ) {
+      void window.Notification.requestPermission();
+    }
+
+    return true;
+  }
+
   function handleLoadSnapshot(snapshotId) {
     const snapshot = snapshots.find((item) => item.id === snapshotId);
     if (!snapshot) {
@@ -374,6 +412,46 @@ export default function App() {
     setErrors({});
   }
 
+  function updateOnboardingProfile(patch) {
+    setOnboardingProfile((current) => {
+      const nextProfile = {
+        ...current,
+        ...patch
+      };
+      persistOnboardingProfile(nextProfile);
+      return nextProfile;
+    });
+
+  }
+
+  function setOnboardingMeasurement(name, value) {
+    const unitSystem = resolveFieldUnitSystem(
+      name,
+      globalUnitSystem,
+      fieldUnitOverrides
+    );
+
+    setDisplayFormState((current) => ({
+      ...current,
+      [name]: value
+    }));
+
+    setFormState((current) => ({
+      ...current,
+      [name]: name === "sex" ? value : displayToMetricValue(name, value, unitSystem)
+    }));
+
+    setErrors((current) => {
+      if (!current[name]) {
+        return current;
+      }
+
+      const nextErrors = { ...current };
+      delete nextErrors[name];
+      return nextErrors;
+    });
+  }
+
   const currentMeasurements = coerceMeasurements(formState);
   const rankedMatches = result.matches.length ? result.matches : targets;
   const selectedTarget =
@@ -483,6 +561,16 @@ export default function App() {
             </section>
 
             <section className="control-column">
+              <OnboardingPanel
+                profile={onboardingProfile}
+                measurements={currentMeasurements}
+                result={result}
+                onProfileChange={updateOnboardingProfile}
+                onSetMeasurement={setOnboardingMeasurement}
+                onApplyDemo={applyMeasurementSet}
+                onSaveFirstSnapshot={handleSaveFirstSnapshot}
+              />
+
               <MeasurementForm
                 formState={displayFormState}
                 errors={errors}

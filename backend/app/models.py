@@ -119,3 +119,71 @@ class ClothingSizeTables(BaseModel):
     reference: str
     notes: list[str] = []
     garments: list[ClothingGarmentTable]
+
+
+class ExerciseSeed(BaseModel):
+    id: str
+    label: str
+    category: str
+    equipment: str
+    primaryMuscles: list[str]
+    secondaryMuscles: list[str] = []
+    measurementTargets: list[str] = []
+    difficulty: str
+    instructions: list[str] = []
+    riskNotes: str
+    source: str
+
+
+class ExerciseMuscleTarget(BaseModel):
+    id: str
+    label: str
+    measurementTargets: list[str]
+    muscleGroups: list[str]
+    exerciseIds: list[str]
+    rationale: str
+
+
+class ProgramExerciseSeed(BaseModel):
+    exerciseId: str
+    sets: int
+    reps: str
+
+
+class ProgramDaySeed(BaseModel):
+    label: str
+    exercises: list[ProgramExerciseSeed]
+
+
+class ProgramTemplateSeed(BaseModel):
+    id: str
+    label: str
+    goalIds: list[str] = []
+    summary: str
+    days: list[ProgramDaySeed]
+
+
+class ExerciseLibrary(BaseModel):
+    version: int
+    reference: str
+    notes: list[str] = []
+    exercises: list[ExerciseSeed]
+    muscleTargets: list[ExerciseMuscleTarget]
+    programTemplates: list[ProgramTemplateSeed]
+
+
+class MeasurementGuide(BaseModel):
+    field: str
+    label: str
+    cadence: str
+    illustration: str
+    summary: str
+    steps: list[str]
+    commonMistakes: list[str] = []
+
+
+class MeasurementGuideLibrary(BaseModel):
+    version: int
+    reference: str
+    notes: list[str] = []
+    guides: list[MeasurementGuide]

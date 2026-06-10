@@ -198,6 +198,8 @@ textarea {
 .goal-builder,
 .goal-list-section,
 .protocol-tracker,
+.workout-library-section,
+.photo-log-section,
 .persona-walkthrough {
   border: 1px solid #344454;
   background: #182430;
@@ -215,6 +217,8 @@ textarea {
 .goal-builder h3,
 .goal-list-section h3,
 .protocol-tracker h3,
+.workout-library-section h3,
+.photo-log-section h3,
 .persona-walkthrough h3 {
   margin: 0 0 4px;
   font-size: 1rem;
@@ -231,6 +235,26 @@ textarea {
 }
 
 .account-summary p {
+  color: #c7d0d9;
+}
+
+.progress-report-section {
+  border: 1px solid #344454;
+  background: #101923;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+}
+
+.progress-report-section h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.progress-report-section p,
+.progress-report-section span {
   color: #c7d0d9;
 }
 
@@ -420,6 +444,276 @@ textarea {
 
 .protocol-row--archived {
   opacity: 0.68;
+}
+
+.exercise-map-grid,
+.workout-history-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.exercise-map-card,
+.program-template-preview,
+.workout-session-list li,
+.workout-pr-list li {
+  border: 1px solid #344454;
+  background: #101923;
+  padding: 10px;
+}
+
+.exercise-map-card,
+.program-template-preview,
+.workout-session-list li,
+.workout-pr-list li,
+.workout-session-list li > div {
+  display: grid;
+  gap: 5px;
+}
+
+.exercise-map-card span,
+.exercise-map-card small,
+.workout-session-list span,
+.workout-pr-list span,
+.workout-pr-list small {
+  color: #c7d0d9;
+  font-size: 0.86rem;
+}
+
+.program-template-grid {
+  border-top: 1px solid #344454;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(220px, 0.35fr) minmax(0, 1fr);
+  padding-top: 12px;
+}
+
+.program-template-preview ul,
+.workout-session-list,
+.workout-pr-list,
+.workout-chart-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.workout-log-form {
+  border-top: 1px solid #344454;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(180px, 1.4fr) repeat(4, minmax(80px, 0.6fr));
+  padding-top: 12px;
+}
+
+.workout-note {
+  grid-column: 1 / -2;
+}
+
+.workout-note textarea {
+  min-height: 66px;
+}
+
+.workout-chart-panel {
+  grid-column: 1 / -1;
+}
+
+.workout-chart-list li {
+  border: 1px solid #344454;
+  background: #101923;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.workout-chart-header,
+.workout-chart-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.workout-chart-header span,
+.workout-chart-legend span {
+  color: #c7d0d9;
+  font-size: 0.86rem;
+}
+
+.workout-chart {
+  width: 100%;
+  height: 78px;
+  border: 1px solid #344454;
+  background: #0f1822;
+  display: block;
+}
+
+.workout-chart line {
+  stroke: #344454;
+  stroke-width: 1;
+}
+
+.workout-chart polyline {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.workout-chart-volume {
+  stroke: #8da9c4;
+}
+
+.workout-chart-load {
+  stroke: #f2f0e8;
+}
+
+.photo-controls,
+.photo-compare-controls {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(160px, 0.3fr) minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.photo-note-field textarea {
+  min-height: 58px;
+}
+
+.photo-import-button {
+  min-height: 58px;
+}
+
+.photo-stream-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px solid #344454;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.photo-ghost-panel,
+.photo-compare-panel,
+.photo-silhouette-pair {
+  border: 1px solid #344454;
+  background: #101923;
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px;
+}
+
+.photo-ghost-panel {
+  grid-template-columns: minmax(160px, 0.45fr) minmax(180px, 1fr) minmax(120px, 0.35fr) minmax(140px, 0.45fr);
+  align-items: start;
+}
+
+.photo-ghost-panel h4,
+.photo-compare-panel h4 {
+  margin: 0;
+}
+
+.photo-ghost-panel p {
+  color: #c7d0d9;
+}
+
+.photo-ghost-frame,
+.photo-compare-frame,
+.photo-silhouette-pair figure {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #344454;
+  background: #0f1822;
+}
+
+.photo-ghost-frame {
+  aspect-ratio: 3 / 4;
+  min-height: 150px;
+}
+
+.photo-ghost-frame img,
+.photo-compare-frame img,
+.photo-silhouette-pair img,
+.photo-gallery-list img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-ghost-frame span {
+  position: absolute;
+  inset: 12%;
+  border: 1px dashed #f2f0e8;
+  opacity: 0.75;
+}
+
+.photo-compare-frame {
+  aspect-ratio: 16 / 10;
+  min-height: 240px;
+}
+
+.photo-compare-after {
+  position: absolute;
+  inset: 0;
+}
+
+.photo-compare-frame i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #f2f0e8;
+  transform: translateX(-1px);
+}
+
+.photo-silhouette-pair {
+  grid-template-columns: minmax(220px, 0.7fr) minmax(220px, 0.55fr);
+}
+
+.photo-silhouette-pair figure {
+  display: grid;
+  margin: 0;
+  min-height: 260px;
+}
+
+.photo-silhouette-pair figcaption {
+  border-top: 1px solid #344454;
+  color: #c7d0d9;
+  padding: 8px;
+}
+
+.photo-gallery-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.photo-gallery-list li {
+  border: 1px solid #344454;
+  background: #101923;
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+}
+
+.photo-gallery-list img {
+  aspect-ratio: 1;
+}
+
+.photo-gallery-list div {
+  display: grid;
+  gap: 2px;
+}
+
+.photo-gallery-list span {
+  color: #c7d0d9;
 }
 
 .persona-walkthrough ol {
@@ -850,6 +1144,92 @@ textarea {
   border: 1px solid #526170;
   background: #16212c;
   padding: 12px;
+}
+
+.onboarding-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.onboarding-goals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.onboarding-main {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(220px, 0.75fr);
+  gap: 12px;
+}
+
+.core-flow,
+.onboarding-payoff {
+  border: 1px solid #344454;
+  background: #101923;
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+}
+
+.completion-meter {
+  display: grid;
+  gap: 6px;
+}
+
+.completion-track {
+  height: 8px;
+  border: 1px solid #526170;
+  background: #0f1822;
+  overflow: hidden;
+}
+
+.completion-track i {
+  display: block;
+  height: 100%;
+  background: #8da9c4;
+}
+
+.optional-unlocks {
+  border-top: 1px solid #344454;
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.optional-unlocks h3 {
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.optional-unlocks ul {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.optional-unlocks li {
+  border: 1px solid #344454;
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+}
+
+.optional-unlocks span,
+.payoff-copy span {
+  color: #c7d0d9;
+}
+
+.onboarding-payoff .silhouette-figure {
+  min-height: 260px;
+}
+
+.payoff-copy,
+.onboarding-actions {
+  display: grid;
+  gap: 8px;
 }
 
 .panel-header {
@@ -1323,6 +1703,11 @@ textarea {
 
 .runner-up-block small {
   color: #c7d0d9;
+}
+
+.result-card-button {
+  margin-top: 10px;
+  width: 100%;
 }
 
 .metric-block-grid {
@@ -2450,10 +2835,33 @@ textarea {
   .checkin-form,
   .goal-form,
   .protocol-form,
+  .workout-log-form,
+  .program-template-grid,
+  .exercise-map-grid,
+  .workout-history-grid,
+  .photo-controls,
+  .photo-compare-controls,
+  .photo-ghost-panel,
+  .photo-silhouette-pair,
+  .photo-gallery-list li,
+  .progress-report-section,
   .persona-loader,
   .protocol-row,
   .goal-row {
     grid-template-columns: 1fr;
+  }
+
+  .workout-note {
+    grid-column: auto;
+  }
+
+  .photo-compare-frame {
+    aspect-ratio: 4 / 3;
+    min-height: 0;
+  }
+
+  .photo-ghost-frame {
+    min-height: 220px;
   }
 
   .account-status {
@@ -2508,6 +2916,7 @@ textarea {
   .quick-foods,
   .macro-total-grid,
   .micro-total-grid,
+  .onboarding-main,
   .snapshot-silhouette-grid,
   .strategy-detail-grid,
   .strategy-modal dl,

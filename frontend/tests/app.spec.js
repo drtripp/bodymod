@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { Buffer } from "node:buffer";
+import { readFile } from "node:fs/promises";
 import { DEFAULT_CLOTHING_SIZE_TABLES } from "../src/lib/clothingSizes.js";
 
 const targetMeasurements = {
@@ -276,6 +278,161 @@ const planningData = {
   ]
 };
 
+const exerciseLibrary = {
+  version: 1,
+  reference: "Dummy workout seed data for tests.",
+  notes: ["Replace with open-licensed imports before production."],
+  exercises: [
+    {
+      id: "dumbbell-lateral-raise",
+      label: "Dumbbell lateral raise",
+      category: "Hypertrophy",
+      equipment: "Dumbbells",
+      primaryMuscles: ["side delts"],
+      secondaryMuscles: ["upper traps"],
+      measurementTargets: ["bideltoidCircumference", "bideltoidWidth"],
+      difficulty: "beginner",
+      instructions: ["Raise to shoulder height.", "Lower with control."],
+      riskNotes: "Avoid painful shoulder ranges.",
+      source: "dummy-validation-seed"
+    },
+    {
+      id: "lat-pulldown",
+      label: "Lat pulldown",
+      category: "Hypertrophy",
+      equipment: "Cable machine",
+      primaryMuscles: ["lats"],
+      secondaryMuscles: ["biceps"],
+      measurementTargets: ["bideltoidCircumference", "armpitCircumference"],
+      difficulty: "beginner",
+      instructions: ["Pull elbows toward ribs."],
+      riskNotes: "Avoid jerking from the shoulders.",
+      source: "dummy-validation-seed"
+    },
+    {
+      id: "romanian-deadlift",
+      label: "Romanian deadlift",
+      category: "Strength",
+      equipment: "Barbell or dumbbells",
+      primaryMuscles: ["hamstrings", "glutes"],
+      secondaryMuscles: ["spinal erectors"],
+      measurementTargets: ["hipCircumference", "upperThighCircumference"],
+      difficulty: "intermediate",
+      instructions: ["Hinge at the hips."],
+      riskNotes: "Stop if low-back pain changes form.",
+      source: "dummy-validation-seed"
+    },
+    {
+      id: "split-squat",
+      label: "Rear-foot elevated split squat",
+      category: "Hypertrophy",
+      equipment: "Bench and dumbbells",
+      primaryMuscles: ["quads", "glutes"],
+      secondaryMuscles: ["adductors"],
+      measurementTargets: ["upperThighCircumference", "hipCircumference"],
+      difficulty: "intermediate",
+      instructions: ["Lower under control."],
+      riskNotes: "Scale range of motion for knee or hip irritation.",
+      source: "dummy-validation-seed"
+    },
+    {
+      id: "incline-press",
+      label: "Incline dumbbell press",
+      category: "Hypertrophy",
+      equipment: "Incline bench and dumbbells",
+      primaryMuscles: ["upper chest"],
+      secondaryMuscles: ["front delts", "triceps"],
+      measurementTargets: ["nippleCircumference", "armpitCircumference"],
+      difficulty: "beginner",
+      instructions: ["Press over the upper chest."],
+      riskNotes: "Use a neutral grip if shoulders feel pinchy.",
+      source: "dummy-validation-seed"
+    },
+    {
+      id: "calf-raise",
+      label: "Standing calf raise",
+      category: "Hypertrophy",
+      equipment: "Machine or dumbbells",
+      primaryMuscles: ["calves"],
+      secondaryMuscles: ["foot intrinsics"],
+      measurementTargets: ["calfCircumference"],
+      difficulty: "beginner",
+      instructions: ["Use a full pain-free range."],
+      riskNotes: "Progress slowly if Achilles tendon history exists.",
+      source: "dummy-validation-seed"
+    }
+  ],
+  muscleTargets: [
+    {
+      id: "shoulder-width",
+      label: "Shoulder width / delts",
+      measurementTargets: ["bideltoidCircumference", "bideltoidWidth"],
+      muscleGroups: ["side delts", "lats", "upper back"],
+      exerciseIds: ["dumbbell-lateral-raise", "lat-pulldown"],
+      rationale: "Deltoid and upper-back work are trainable inputs for visual shoulder width."
+    },
+    {
+      id: "waist-contrast",
+      label: "Waist contrast support",
+      measurementTargets: ["waistCircumference", "bideltoidCircumference"],
+      muscleGroups: ["side delts", "lats"],
+      exerciseIds: ["dumbbell-lateral-raise", "lat-pulldown"],
+      rationale: "Shoulder and back work can support shoulder-to-waist contrast."
+    },
+    {
+      id: "hip-thigh-shape",
+      label: "Hip and thigh shape",
+      measurementTargets: ["hipCircumference", "upperThighCircumference"],
+      muscleGroups: ["glutes", "hamstrings", "quads"],
+      exerciseIds: ["romanian-deadlift", "split-squat"],
+      rationale: "Glute and leg training are trainable contributors to these circumference changes."
+    }
+  ],
+  programTemplates: [
+    {
+      id: "upper-lower-foundation",
+      label: "Upper/lower foundation",
+      goalIds: ["shoulder-waist-ratio"],
+      summary: "Four-day seed template for delts, back, legs, and repeatable progression logs.",
+      days: [
+        {
+          label: "Upper A",
+          exercises: [
+            { exerciseId: "incline-press", sets: 3, reps: "8-12" },
+            { exerciseId: "lat-pulldown", sets: 3, reps: "8-12" },
+            { exerciseId: "dumbbell-lateral-raise", sets: 4, reps: "12-20" }
+          ]
+        }
+      ]
+    },
+    {
+      id: "shape-recomp-starter",
+      label: "Shape recomp starter",
+      goalIds: ["waist-hip-ratio", "weekly-check-in"],
+      summary: "Three-session seed template for waist trend tracking and shape work.",
+      days: [
+        {
+          label: "Full body A",
+          exercises: [
+            { exerciseId: "split-squat", sets: 3, reps: "8-12" },
+            { exerciseId: "lat-pulldown", sets: 3, reps: "8-12" }
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+function progressPhotoFile(name, color = "#8da9c4") {
+  return {
+    name,
+    mimeType: "image/svg+xml",
+    buffer: Buffer.from(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="160"><rect width="120" height="160" fill="#101923"/><circle cx="60" cy="42" r="20" fill="${color}"/><rect x="34" y="70" width="52" height="70" rx="18" fill="${color}"/></svg>`
+    )
+  };
+}
+
 async function mockApi(page) {
   await page.route("**/api/health", async (route) => {
     await route.fulfill({ json: { status: "ok" } });
@@ -287,6 +444,10 @@ async function mockApi(page) {
 
   await page.route("**/api/clothing-sizes", async (route) => {
     await route.fulfill({ json: DEFAULT_CLOTHING_SIZE_TABLES });
+  });
+
+  await page.route("**/api/exercise-library", async (route) => {
+    await route.fulfill({ json: exerciseLibrary });
   });
 
   await page.route("**/api/targets", async (route) => {
@@ -329,11 +490,20 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.locator(".runner-up-block small")).toHaveText("Similarity score: 77%");
   await expect(page.locator(".top-match-block")).not.toContainText("TBD");
   await expect(page.getByLabel("Result metric blocks")).toBeVisible();
-  await expect(page.getByText("Est BF%")).toBeVisible();
-  await expect(page.getByText("SHR")).toBeVisible();
-  await expect(page.getByText("WHR")).toBeVisible();
-  await expect(page.getByText("SWR")).toBeVisible();
-  await expect(page.getByText("WHTR")).toBeVisible();
+  const metricBlocks = page.getByLabel("Result metric blocks");
+  await expect(metricBlocks.getByText("Est BF%")).toBeVisible();
+  await expect(metricBlocks.getByText("SHR")).toBeVisible();
+  await expect(metricBlocks.getByText("WHR")).toBeVisible();
+  await expect(metricBlocks.getByText("SWR")).toBeVisible();
+  await expect(metricBlocks.getByText("WHTR")).toBeVisible();
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download result card" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("bodymod-result-card.svg");
+  const downloadedSvg = await readFile(await download.path(), "utf8");
+  expect(downloadedSvg).toContain("bodymod");
+  expect(downloadedSvg).toContain("Astarion");
+  expect(downloadedSvg).toContain("SWR");
   await expect(page.getByLabel("Clothing size estimates")).toContainText("Fit estimates");
   await expect(page.getByLabel("Clothing size estimates")).toContainText("Shirt");
   await expect(page.getByLabel("Clothing size estimates")).toContainText("US M / EU 48 / UK 38");
@@ -411,7 +581,7 @@ test("validates measurements and supports unit display changes", async ({ page }
 
 test("supports population chart axis and distribution controls", async ({ page }) => {
   await page.getByRole("tab", { name: "Gender" }).click();
-  await expect(page.getByRole("img", { name: /silhouette/i })).toHaveCount(0);
+  await expect(page.locator(".visual-column").getByRole("img", { name: /silhouette/i })).toHaveCount(0);
   await expect(page.getByLabel("Gender score distribution")).toBeVisible();
   await expect(page.getByLabel("Gender measurement scores")).toContainText("include");
   await expect(page.getByLabel("Gender measurement scores")).toContainText("5 of 5 measurements");
@@ -527,6 +697,49 @@ test("keeps snapshots off the main Body view", async ({ page }) => {
   await expect(page.getByLabel("Import snapshots")).toHaveCount(0);
 });
 
+test("supports first-run onboarding and snapshot kickoff", async ({ page }) => {
+  await expect(page.getByLabel("First run onboarding")).toBeVisible();
+  await page.getByRole("button", { name: "Lose fat" }).click();
+  await expect(page.getByLabel("Selected onboarding intent")).toContainText("Trend weight");
+
+  const storedGoal = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("bodymod:onboarding-profile:v1"))
+  );
+  expect(storedGoal.goalId).toBe("lose-fat");
+  expect(storedGoal.defaultTab).toBe("diet");
+
+  await page.getByLabel("Onboarding Sex").selectOption("female");
+  await page.getByRole("button", { name: "Confirm field" }).click();
+  await page.getByLabel("Onboarding Height").fill("166");
+  await page.getByRole("button", { name: "Confirm field" }).click();
+  await page.getByLabel("Onboarding Weight").fill("62");
+  await page.getByRole("button", { name: "Confirm field" }).click();
+  await page.getByLabel("Onboarding Waist").fill("68");
+  await page.getByRole("button", { name: "Confirm field" }).click();
+  await page.getByLabel("Onboarding Bideltoid Circ").fill("96");
+  await page.getByRole("button", { name: "Confirm field" }).click();
+
+  await expect(page.getByLabel("Completion meter")).toContainText("5 of 5 core fields confirmed");
+  await expect(page.getByLabel("Optional field unlocks")).toContainText("Hip");
+  await expect(page.getByLabel("Instant payoff")).toContainText("Astarion");
+  await expect(page.getByLabel("Instant payoff")).toContainText("Height 44th pct");
+  await page.getByRole("button", { name: "Save Snapshot #1" }).click();
+  await expect(page.getByRole("button", { name: /Snapshot #1 saved/ })).toBeVisible();
+});
+
+test("loads the demo profile from the first-run screen", async ({ page }) => {
+  await page.getByRole("button", { name: "Explore with a sample profile" }).click();
+  await expect(page.locator('input[name="height"]')).toHaveValue("173");
+  await expect(page.locator('input[name="waistCircumference"]')).toHaveValue("72");
+  await expect(page.getByLabel("Completion meter")).toContainText("5 of 5 core fields confirmed");
+
+  const storedProfile = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("bodymod:onboarding-profile:v1"))
+  );
+  expect(storedProfile.demoMode).toBe(true);
+  expect(storedProfile.goalId).toBe("just-curious");
+});
+
 test("shares measurements from the header icon and restores them from the URL", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: "http://127.0.0.1:5173" });
   await expect(page.getByLabel("Share URL")).toHaveCount(0);
@@ -604,6 +817,53 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await page.getByRole("button", { name: "Archive protocol" }).click();
   await expect(page.getByLabel("Active protocols")).toContainText("archived");
 
+  await expect(page.getByLabel("Workout library")).toContainText("Loaded 6 exercise seeds and 2 programs.");
+  await expect(page.getByLabel("Aesthetic movement mapping")).toContainText("Shoulder width / delts");
+  await expect(page.getByLabel("Program templates")).toContainText("Upper/lower foundation");
+  await page.getByLabel("Exercise").selectOption("dumbbell-lateral-raise");
+  await page.getByLabel("Workout sets").fill("3");
+  await page.getByLabel("Workout reps").fill("12");
+  await page.getByLabel("Workout load").fill("8");
+  await page.getByLabel("Workout RPE").fill("8");
+  await page.getByLabel("Workout note").fill("Strict reps.");
+  await page.getByRole("button", { name: "Log workout" }).click();
+  await expect(page.getByLabel("Recent workout sessions")).toContainText("Dumbbell lateral raise: 3 x 12 x 8 kg");
+  await expect(page.getByLabel("Lift PRs")).toContainText("8 kg best");
+  await expect(page.getByLabel("Lift history charts")).toContainText("Volume PR 288 kg");
+  await expect(page.getByRole("img", { name: "Dumbbell lateral raise load and volume progression" })).toBeVisible();
+  await page.getByRole("button", { name: "Repeat latest workout" }).click();
+  await expect(page.getByLabel("Lift PRs")).toContainText("2 session(s)");
+  await expect(page.getByLabel("Lift history charts")).toContainText("2 session(s)");
+
+  await page.getByLabel("Photo category").selectOption("body");
+  await page.getByLabel("Photo note").fill("Baseline front pose.");
+  await page.getByLabel("Import progress photo").setInputFiles(
+    progressPhotoFile("baseline-body.svg", "#8da9c4")
+  );
+  await expect(accountDialog).toContainText("Saved body photo locally.");
+  await expect(page.getByLabel("Progress photo gallery")).toContainText("Baseline front pose.");
+  await expect(page.getByLabel("Pose ghost overlay")).toBeVisible();
+  await page.getByLabel("Photo note").fill("Week 1 front pose.");
+  await page.getByLabel("Import progress photo").setInputFiles(
+    progressPhotoFile("week-1-body.svg", "#f2f0e8")
+  );
+  await expect(page.getByLabel("Photo comparison slider")).toBeVisible();
+  await page.getByLabel("Photo comparison position").fill("65");
+  await expect(page.getByLabel("Photo stream counts")).toContainText("Body 2");
+  await expect(page.getByLabel("Photo beside silhouette")).toContainText("body");
+
+  await expect(page.getByLabel("Progress report")).toContainText("1 snapshot(s)");
+  const reportDownloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download progress report" }).click();
+  const reportDownload = await reportDownloadPromise;
+  expect(reportDownload.suggestedFilename()).toBe("bodymod-progress-report.html");
+  const reportHtml = await readFile(await reportDownload.path(), "utf8");
+  expect(reportHtml).toContain("bodymod progress report");
+  expect(reportHtml).toContain("Mason");
+  expect(reportHtml).toContain("Progressive resistance training");
+  expect(reportHtml).toContain("Dumbbell lateral raise");
+  expect(reportHtml).toContain("Photo manifest");
+
   await page.getByRole("button", { name: "Log out" }).click();
   await expect(accountDialog).toContainText("Logged out of this browser profile.");
   await page.getByLabel("Login email").fill("mason@example.com");
@@ -612,6 +872,9 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Saved goals")).toContainText("Improve shoulder-to-waist ratio");
   await expect(page.getByLabel("Active protocols")).toContainText("Progressive resistance training");
   await expect(page.getByLabel("Active protocols")).toContainText("1 adherence check-in(s)");
+  await expect(page.getByLabel("Recent workout sessions")).toContainText("Dumbbell lateral raise");
+  await expect(page.getByLabel("Progress photo gallery")).toContainText("Week 1 front pose.");
+  await expect(page.getByLabel("Photo comparison slider")).toBeVisible();
   await expect(page.getByLabel("Check-in history")).toContainText("Weekly measurements: waist 86.0 cm");
   await expect(page.getByLabel("Check-in summary")).toContainText("2 log(s)");
 
@@ -680,6 +943,29 @@ test("roleplays all persona samples through account logging, goals, and learning
       await page.getByRole("button", { name: "Protocol missed" }).click();
       await expect(page.getByLabel("Active protocols")).toContainText("1 adherence check-in(s)");
     }
+
+    await expect(page.getByLabel("Workout library")).toBeVisible();
+    await page.getByLabel("Exercise").selectOption("dumbbell-lateral-raise");
+    await page.getByLabel("Workout sets").fill("2");
+    await page.getByLabel("Workout reps").fill("10");
+    await page.getByLabel("Workout load").fill("6");
+    await page.getByRole("button", { name: "Log workout" }).click();
+    await expect(page.getByLabel("Recent workout sessions")).toContainText("Dumbbell lateral raise");
+    await expect(page.getByLabel("Lift PRs")).toContainText("6 kg best");
+    await expect(page.getByLabel("Lift history charts")).toContainText("Volume PR 120 kg");
+
+    const photoCategory =
+      persona.id === "face-metric-curious"
+        ? "face"
+        : persona.id === "glow-up-planner"
+          ? "hair"
+          : "body";
+    await page.getByLabel("Photo category").selectOption(photoCategory);
+    await page.getByLabel("Photo note").fill(`${persona.segment} day-0 photo.`);
+    await page.getByLabel("Import progress photo").setInputFiles(
+      progressPhotoFile(`${persona.id}-${photoCategory}.svg`)
+    );
+    await expect(page.getByLabel("Progress photo gallery")).toContainText(`${persona.segment} day-0 photo.`);
 
     await page.getByLabel("Signed-in persona sample").selectOption(persona.id);
     await page.getByRole("button", { name: "Load persona measurements" }).click();

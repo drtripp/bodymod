@@ -12,6 +12,11 @@
     "test:diet": "node --test tests/diet.node.mjs",
     "test:ratios": "node --test tests/ratios.node.mjs",
     "test:sizes": "node --test tests/clothingSizes.node.mjs",
+    "test:workouts": "node --test tests/workouts.node.mjs",
+    "test:photos": "node --test tests/photos.node.mjs",
+    "test:onboarding": "node --test tests/onboarding.node.mjs",
+    "test:result-card": "node --test tests/resultCard.node.mjs",
+    "test:progress-report": "node --test tests/progressReport.node.mjs",
     "test:population": "node --test tests/populationCharts.node.mjs",
     "test:e2e": "playwright test"
   },

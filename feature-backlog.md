@@ -286,52 +286,51 @@ Hevy/Strong, but so users who don't already have a logger never need a second
 app, and so exercise suggestions tied to aesthetic goals have somewhere to
 land. No social features, no marketplace.
 
-- [ ] Exercise database seeded from an open-licensed dataset (e.g. wger or
-      free-exercise-db), tagged by muscle group and equipment.
-- [ ] Aesthetics→exercise mapping: target measurement deltas → muscle groups
-      → suggested exercises (lateral delts → bideltoid width, lats → V-taper,
-      glutes → hip). Training-level suggestions only; this mapping is what
-      makes the logger ours.
-- [ ] Session logger: sets/reps/load with quick-repeat of last session, rest
-      timer, notes.
-- [ ] Program templates: simple builder plus a handful of seeded templates; a
-      program is an intervention — running one auto-derives protocol
-      adherence (section 5) from logged sessions.
-- [ ] PR tracking and per-lift history charts.
+- [x] Exercise database seed scaffold: backend serves dummy validation
+      exercises tagged by muscle group, equipment, difficulty, risk notes, and
+      measurement target. Production still needs replacement with an
+      open-licensed dataset such as wger or free-exercise-db.
+- [x] Aesthetics→exercise mapping: target measurement deltas → muscle groups
+      → suggested exercises/programs, with conservative training-level copy.
+- [x] Session logger: local-first sets/reps/load/RPE/notes with quick-repeat of
+      the latest session.
+- [x] Program templates: seeded upper/lower and shape-recomp templates wired
+      into goal-specific workout discovery.
+- [x] PR tracking and per-lift history charts: local sessions now produce
+      per-exercise best load/volume summaries and compact progression charts.
 - [ ] HealthKit/Health Connect workout write-back once native ships.
 
 ## 10. Photos
 
-- [ ] Local-only progress photos: capture/import, stored on device via the
-      storage adapter; gallery by date; revise the photo gate in
-      `launch-decision-record.md` to permit local-only capture. **[human]**
-      for the gate decision (recommended: approve local-only).
-- [ ] Pose/alignment ghost overlay at capture (previous photo as ghost) for
-      consistent framing.
-- [ ] Photo comparison slider (before/after wipe) and photo-beside-silhouette
+- [x] Local-only progress photos: account-scoped capture/import stored in this
+      browser, with a dated gallery. Launch-decision photo gate still needs
+      **[human]** review before production.
+- [x] Pose/alignment ghost overlay at capture/import using a previous stream
+      photo as the framing reference.
+- [x] Photo comparison slider (before/after wipe) and photo-beside-silhouette
       view.
-- [ ] Photo categories **(new)**: body / face / hair streams in the gallery
+- [x] Photo categories **(new)**: body / face / hair streams in the gallery
       with per-category ghost overlays; face and hair streams serve the
       looksmaxxing and glow-up audiences without any inference.
-- [ ] Day-0 photo step in onboarding, framed as commitment, never measurement.
+- [x] Day-0 photo step in onboarding, framed as commitment, never measurement.
 - [ ] ML measurement estimation: parked indefinitely — licensing is the
       blocker (Sapiens2 biometric restriction noted in README; SMPL-family
       needs commercial licenses). Revisit only with **[human]** legal review.
 
 ## 11. Onboarding & First Run
 
-- [ ] Goal question (one tap): Build muscle / Lose fat / Change shape / Track
+- [x] Goal question (one tap): Build muscle / Lose fat / Change shape / Track
       transition / Just curious → sets default tab, copy tone, notification
       framing; stored as a local profile attribute.
-- [ ] Core-five progressive flow: sex, height, weight, waist, bideltoid; one
+- [x] Core-five progressive flow: sex, height, weight, waist, bideltoid; one
       field per screen on mobile; instant payoff screen (silhouette + top
       match + two percentiles) in under 60 seconds.
-- [ ] Completion meter: remaining fields are optional forever; each added
+- [x] Completion meter: remaining fields are optional forever; each added
       field states what it unlocks (WHR, better matching, etc.).
-- [ ] First snapshot framed as streak start ("Snapshot #1 saved. Next
+- [x] First snapshot framed as streak start ("Snapshot #1 saved. Next
       check-in: <date>"); notification permission asked here only.
-- [ ] Demo mode: "explore with a sample profile" on the first screen.
-- [ ] Dense form retained as the post-onboarding power-user editing surface.
+- [x] Demo mode: "explore with a sample profile" on the first screen.
+- [x] Dense form retained as the post-onboarding power-user editing surface.
 
 ## 12. Brand & Theming
 
@@ -349,7 +348,7 @@ land. No social features, no marketplace.
 
 ## 13. Sharing & Growth
 
-- [ ] Shareable result card: rendered image export (silhouette + key stats +
+- [x] Shareable result card: rendered image export (silhouette + key stats +
       percentiles + branding), theme-aware, Pinterest-friendly aspect ratios.
       The acquisition loop — screenshots in Discords/group chats.
 - [ ] Share URL decision: keep encoded-measurement URLs or move to server-side
@@ -361,7 +360,7 @@ land. No social features, no marketplace.
 - [ ] Public SEO pages **(new)**: the measurement how-to guides and
       methodology pages rendered as indexable public routes; this niche
       searches "how to measure bideltoid" and nobody serves it well.
-- [ ] PDF progress report **(new)**: printable summary of trends,
+- [x] PDF progress report **(new)**: printable summary of trends,
       measurements, and protocol adherence — for trainers and doctors;
       endocrinologist visits are a recurring real use for the transition
       audience.

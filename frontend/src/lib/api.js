@@ -38,3 +38,7 @@ export function fetchPlanningData() {
 export function fetchClothingSizeTables() {
   return request("/api/clothing-sizes");
 }
+
+export function fetchExerciseLibrary() {
+  return request("/api/exercise-library");
+}

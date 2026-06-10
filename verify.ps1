@@ -28,6 +28,11 @@ try {
     Invoke-Checked { npm run test:diet }
     Invoke-Checked { npm run test:ratios }
     Invoke-Checked { npm run test:sizes }
+    Invoke-Checked { npm run test:workouts }
+    Invoke-Checked { npm run test:photos }
+    Invoke-Checked { npm run test:onboarding }
+    Invoke-Checked { npm run test:result-card }
+    Invoke-Checked { npm run test:progress-report }
     Invoke-Checked { npm run test:population }
     Invoke-Checked { npm run build }
     Invoke-Checked { npm run test:e2e }

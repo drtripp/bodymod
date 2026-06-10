@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import SilhouetteView from "./SilhouetteView";
 import SnapshotPanel from "./SnapshotPanel";
-import { fetchPlanningData } from "../lib/api";
+import { fetchExerciseLibrary, fetchPlanningData } from "../lib/api";
 import {
   appendGoalCheckIn,
   appendProtocolCheckIn,
@@ -8,16 +9,40 @@ import {
   calculateTrendWeight,
   clearSession,
   createLocalAccount,
+  deleteUserPhoto,
   loadAccounts,
   loadUserCheckIns,
   loadSessionAccount,
   loadUserGoals,
+  loadUserPhotos,
   loadUserProtocols,
+  loadUserWorkoutSessions,
   loginLocalAccount,
   persistUserCheckIn,
   persistUserGoal,
-  persistUserProtocol
+  persistUserPhoto,
+  persistUserProtocol,
+  persistUserWorkoutSession
 } from "../lib/account";
+import {
+  createPhotoRecord,
+  defaultPhotoComparison,
+  photoCategoryCounts,
+  photoCategoryOptions,
+  photosForCategory
+} from "../lib/photos";
+import { downloadProgressReport } from "../lib/progressReport";
+import {
+  buildWorkoutHistories,
+  calculateWorkoutPrs,
+  createWorkoutSession,
+  emptyExerciseLibrary,
+  exerciseById,
+  formatWorkoutSession,
+  normalizeExerciseLibrary,
+  programsForGoal,
+  suggestedExerciseTargets
+} from "../lib/workouts";
 
 const emptyPlanningData = {
   personas: [],
@@ -87,6 +112,19 @@ function formatCheckIn(checkIn) {
   }
 
   return `Weekly measurements: waist ${Number(checkIn.measurements?.waistCircumference).toFixed(1)} cm`;
+}
+
+function formatLoad(value) {
+  const load = Number(value || 0);
+  return load.toFixed(load % 1 ? 1 : 0);
+}
+
+function photoOptionLabel(photo) {
+  return `${photo.category} / ${formatDate(photo.createdAt)} / ${photo.fileName}`;
+}
+
+function findPhoto(photos, photoId) {
+  return photos.find((photo) => photo.id === photoId) || null;
 }
 
 function clampProgress(value) {
@@ -176,12 +214,18 @@ export default function AccountGoalPanel({
 }) {
   const [planningData, setPlanningData] = useState(emptyPlanningData);
   const [planningStatus, setPlanningStatus] = useState("Loading planning data...");
+  const [exerciseLibrary, setExerciseLibrary] = useState(emptyExerciseLibrary);
+  const [exerciseStatus, setExerciseStatus] = useState("Loading workout library...");
   const [accounts, setAccounts] = useState(() => loadAccounts());
   const initialAccount = loadSessionAccount();
   const [account, setAccount] = useState(() => initialAccount);
   const [goals, setGoals] = useState(() => loadUserGoals(initialAccount?.id));
   const [protocols, setProtocols] = useState(() => loadUserProtocols(initialAccount?.id));
   const [checkIns, setCheckIns] = useState(() => loadUserCheckIns(initialAccount?.id));
+  const [workoutSessions, setWorkoutSessions] = useState(() =>
+    loadUserWorkoutSessions(initialAccount?.id)
+  );
+  const [photos, setPhotos] = useState(() => loadUserPhotos(initialAccount?.id));
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
@@ -195,6 +239,21 @@ export default function AccountGoalPanel({
   const [protocolStartDate, setProtocolStartDate] = useState("");
   const [protocolEndDate, setProtocolEndDate] = useState("");
   const [protocolConfounders, setProtocolConfounders] = useState("");
+  const [selectedExerciseId, setSelectedExerciseId] = useState("");
+  const [selectedProgramId, setSelectedProgramId] = useState("");
+  const [workoutSets, setWorkoutSets] = useState("3");
+  const [workoutReps, setWorkoutReps] = useState("10");
+  const [workoutLoad, setWorkoutLoad] = useState("");
+  const [workoutRpe, setWorkoutRpe] = useState("");
+  const [workoutNote, setWorkoutNote] = useState("");
+  const [photoCategory, setPhotoCategory] = useState("body");
+  const [photoFilter, setPhotoFilter] = useState("all");
+  const [photoNote, setPhotoNote] = useState("");
+  const [photoGhostId, setPhotoGhostId] = useState("");
+  const [photoBeforeId, setPhotoBeforeId] = useState("");
+  const [photoAfterId, setPhotoAfterId] = useState("");
+  const [photoSlider, setPhotoSlider] = useState("50");
+  const [ghostOpacity, setGhostOpacity] = useState("35");
   const [dailyWeight, setDailyWeight] = useState("");
   const [dailyCalories, setDailyCalories] = useState("");
   const [checkInNote, setCheckInNote] = useState("");
@@ -230,6 +289,34 @@ export default function AccountGoalPanel({
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchExerciseLibrary()
+      .then((data) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const normalized = normalizeExerciseLibrary(data);
+        setExerciseLibrary(normalized);
+        setExerciseStatus(
+          `Loaded ${normalized.exercises.length} exercise seeds and ${normalized.programTemplates.length} programs.`
+        );
+        setSelectedExerciseId((current) => current || normalized.exercises[0]?.id || "");
+        setSelectedProgramId((current) => current || normalized.programTemplates[0]?.id || "");
+      })
+      .catch(() => {
+        if (isMounted) {
+          setExerciseStatus("Workout library unavailable. Local protocol logs still work.");
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const selectedPersona = planningData.personas.find(
     (persona) => persona.id === selectedPersonaId
   );
@@ -237,6 +324,37 @@ export default function AccountGoalPanel({
   const selectedProtocolTemplate = planningData.protocolTemplates.find(
     (protocol) => protocol.id === selectedProtocolTemplateId
   );
+  const selectedExercise = exerciseById(exerciseLibrary, selectedExerciseId);
+  const goalPrograms = useMemo(
+    () => programsForGoal(selectedGoal, exerciseLibrary),
+    [exerciseLibrary, selectedGoal]
+  );
+  const visiblePrograms = goalPrograms.length ? goalPrograms : exerciseLibrary.programTemplates;
+  const selectedProgram =
+    visiblePrograms.find((program) => program.id === selectedProgramId) ||
+    exerciseLibrary.programTemplates.find((program) => program.id === selectedProgramId);
+  const exerciseTargets = useMemo(
+    () => suggestedExerciseTargets(selectedGoal, exerciseLibrary),
+    [exerciseLibrary, selectedGoal]
+  );
+  const workoutPrs = useMemo(() => calculateWorkoutPrs(workoutSessions), [workoutSessions]);
+  const workoutHistories = useMemo(
+    () => buildWorkoutHistories(workoutSessions),
+    [workoutSessions]
+  );
+  const photoCounts = useMemo(() => photoCategoryCounts(photos), [photos]);
+  const visiblePhotos = useMemo(
+    () => photosForCategory(photos, photoFilter),
+    [photoFilter, photos]
+  );
+  const categoryPhotos = useMemo(
+    () => photosForCategory(photos, photoCategory),
+    [photoCategory, photos]
+  );
+  const ghostPhoto = findPhoto(photos, photoGhostId) || categoryPhotos[0] || null;
+  const beforePhoto = findPhoto(photos, photoBeforeId);
+  const afterPhoto = findPhoto(photos, photoAfterId) || visiblePhotos[0] || null;
+  const latestPhoto = visiblePhotos[0] || photosForCategory(photos, "all")[0] || null;
   const trendWeight = useMemo(() => calculateTrendWeight(checkIns), [checkIns]);
   const insightDrops = useMemo(
     () => buildInsightDrops({ checkIns, trendWeight, goals, protocols }),
@@ -250,6 +368,43 @@ export default function AccountGoalPanel({
   useEffect(() => {
     setSelectedProtocolIds(selectedGoal?.suggestedProtocols || []);
   }, [selectedGoal?.id]);
+
+  useEffect(() => {
+    setSelectedProgramId((current) => {
+      if (visiblePrograms.some((program) => program.id === current)) {
+        return current;
+      }
+
+      return visiblePrograms[0]?.id || "";
+    });
+  }, [visiblePrograms]);
+
+  useEffect(() => {
+    setSelectedExerciseId((current) => {
+      if (exerciseLibrary.exercises.some((exercise) => exercise.id === current)) {
+        return current;
+      }
+
+      return exerciseLibrary.exercises[0]?.id || "";
+    });
+  }, [exerciseLibrary.exercises]);
+
+  useEffect(() => {
+    const defaults = defaultPhotoComparison(photos, photoFilter);
+    if (!findPhoto(photos, photoBeforeId)) {
+      setPhotoBeforeId(defaults.beforeId);
+    }
+    if (!findPhoto(photos, photoAfterId)) {
+      setPhotoAfterId(defaults.afterId);
+    }
+  }, [photoAfterId, photoBeforeId, photoFilter, photos]);
+
+  useEffect(() => {
+    const defaults = defaultPhotoComparison(photos, photoCategory);
+    if (!findPhoto(photos, photoGhostId)) {
+      setPhotoGhostId(defaults.ghostId);
+    }
+  }, [photoCategory, photoGhostId, photos]);
 
   const suggestedProtocols = useMemo(() => {
     if (!selectedProtocolIds.length) {
@@ -267,6 +422,8 @@ export default function AccountGoalPanel({
     setGoals(loadUserGoals(nextAccount?.id));
     setProtocols(loadUserProtocols(nextAccount?.id));
     setCheckIns(loadUserCheckIns(nextAccount?.id));
+    setWorkoutSessions(loadUserWorkoutSessions(nextAccount?.id));
+    setPhotos(loadUserPhotos(nextAccount?.id));
   }
 
   function handleCreateAccount(event) {
@@ -437,6 +594,118 @@ export default function AccountGoalPanel({
     setStatus("Protocol archived.");
   }
 
+  function persistWorkoutFromInput(event) {
+    event.preventDefault();
+    if (!account) {
+      return;
+    }
+
+    try {
+      const workout = createWorkoutSession({
+        exercise: selectedExercise,
+        programId: selectedProgramId,
+        sets: workoutSets,
+        reps: workoutReps,
+        loadKg: workoutLoad || 0,
+        rpe: workoutRpe,
+        note: workoutNote
+      });
+      const nextWorkout = persistUserWorkoutSession(account.id, workout);
+      setWorkoutSessions([nextWorkout, ...workoutSessions]);
+      setWorkoutNote("");
+      setStatus(`Workout logged: ${formatWorkoutSession(nextWorkout)}.`);
+    } catch (error) {
+      setStatus(error.message);
+    }
+  }
+
+  function handleRepeatWorkout(session) {
+    if (!account) {
+      return;
+    }
+
+    const exercise = exerciseById(exerciseLibrary, session.exerciseId) || {
+      id: session.exerciseId,
+      label: session.exerciseLabel,
+      measurementTargets: session.measurementTargets,
+      primaryMuscles: session.primaryMuscles
+    };
+    const workout = createWorkoutSession({
+      exercise,
+      programId: session.programId,
+      sets: session.sets,
+      reps: session.reps,
+      loadKg: session.loadKg,
+      rpe: session.rpe ?? "",
+      note: session.note
+    });
+    const nextWorkout = persistUserWorkoutSession(account.id, workout);
+    setWorkoutSessions([nextWorkout, ...workoutSessions]);
+    setStatus(`Repeated workout: ${formatWorkoutSession(nextWorkout)}.`);
+  }
+
+  function handlePhotoImport(event) {
+    const [file] = event.target.files || [];
+    if (!account || !file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setStatus("Choose an image file for the photo log.");
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const record = createPhotoRecord({
+          dataUrl: reader.result,
+          fileName: file.name,
+          mimeType: file.type,
+          size: file.size,
+          category: photoCategory,
+          note: photoNote
+        });
+        const nextPhoto = persistUserPhoto(account.id, record);
+        const nextPhotos = [nextPhoto, ...photos];
+        setPhotos(nextPhotos);
+        setPhotoNote("");
+        setPhotoAfterId(nextPhoto.id);
+        setPhotoGhostId(nextPhoto.id);
+        if (!photoBeforeId && photos[0]) {
+          setPhotoBeforeId(photos[0].id);
+        }
+        setStatus(`Saved ${record.category} photo locally.`);
+      } catch (error) {
+        setStatus(error.message);
+      }
+    };
+    reader.onerror = () => setStatus("Photo import failed.");
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  }
+
+  function handleDeletePhoto(photoId) {
+    const nextPhotos = deleteUserPhoto(account.id, photoId);
+    setPhotos(nextPhotos);
+    setStatus("Photo deleted from this browser profile.");
+  }
+
+  function handleDownloadProgressReport() {
+    downloadProgressReport({
+      account,
+      measurements: currentMeasurements,
+      snapshots: snapshotProps.snapshots,
+      goals,
+      protocols,
+      checkIns,
+      workoutSessions,
+      photos
+    });
+    setStatus("Progress report downloaded.");
+  }
+
   return (
     <div className="account-overlay" role="presentation">
       <section className="account-panel panel" role="dialog" aria-modal="true" aria-label="Account, logs, and goals">
@@ -529,6 +798,22 @@ export default function AccountGoalPanel({
               </div>
               <button className="button" type="button" onClick={handleLogout}>
                 Log out
+              </button>
+            </section>
+
+            <section className="progress-report-section" aria-label="Progress report">
+              <div>
+                <h3>Progress report</h3>
+                <p>
+                  Printable local summary of measurements, snapshots, goals,
+                  protocol adherence, workout PRs, and the photo manifest.
+                </p>
+                <span>
+                  {snapshotProps.snapshots.length} snapshot(s) / {protocols.length} protocol(s) / {workoutSessions.length} workout(s) / {photos.length} photo(s)
+                </span>
+              </div>
+              <button className="button" type="button" onClick={handleDownloadProgressReport}>
+                Download progress report
               </button>
             </section>
 
@@ -892,6 +1177,426 @@ export default function AccountGoalPanel({
                   </ul>
                 ) : (
                   <p className="muted-text">No protocols started yet.</p>
+                )}
+              </div>
+            </section>
+
+            <section className="workout-library-section" aria-label="Workout library">
+              <div className="panel-header">
+                <h3>Workout library</h3>
+                <p>{exerciseStatus}</p>
+              </div>
+
+              {exerciseTargets.length ? (
+                <div className="exercise-map-grid" aria-label="Aesthetic movement mapping">
+                  {exerciseTargets.map((target) => (
+                    <article key={target.id} className="exercise-map-card">
+                      <strong>{target.label}</strong>
+                      <span>{target.muscleGroups.join(", ")}</span>
+                      <p>{target.rationale}</p>
+                      <small>
+                        {target.exerciseIds
+                          .map((id) => exerciseById(exerciseLibrary, id)?.label || id)
+                          .join(", ")}
+                      </small>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="program-template-grid" aria-label="Program templates">
+                <label className="field">
+                  <span className="field-label">Program template</span>
+                  <select
+                    aria-label="Workout program template"
+                    value={selectedProgramId}
+                    onChange={(event) => setSelectedProgramId(event.target.value)}
+                  >
+                    {visiblePrograms.map((program) => (
+                      <option key={program.id} value={program.id}>
+                        {program.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {selectedProgram ? (
+                  <div className="program-template-preview">
+                    <strong>{selectedProgram.label}</strong>
+                    <p>{selectedProgram.summary}</p>
+                    <ul>
+                      {selectedProgram.days.map((day) => (
+                        <li key={day.label}>
+                          {day.label}:{" "}
+                          {day.exercises
+                            .map((item) => {
+                              const exercise = exerciseById(exerciseLibrary, item.exerciseId);
+                              return `${exercise?.label || item.exerciseId} ${item.sets}x${item.reps}`;
+                            })
+                            .join("; ")}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <p className="muted-text">No seeded program matches this goal yet.</p>
+                )}
+              </div>
+
+              <form className="workout-log-form" onSubmit={persistWorkoutFromInput}>
+                <label className="field">
+                  <span className="field-label">Exercise</span>
+                  <select
+                    aria-label="Exercise"
+                    value={selectedExerciseId}
+                    onChange={(event) => setSelectedExerciseId(event.target.value)}
+                  >
+                    {exerciseLibrary.exercises.map((exercise) => (
+                      <option key={exercise.id} value={exercise.id}>
+                        {exercise.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  <span className="field-label">Sets</span>
+                  <input
+                    aria-label="Workout sets"
+                    inputMode="numeric"
+                    value={workoutSets}
+                    onChange={(event) => setWorkoutSets(event.target.value)}
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">Reps</span>
+                  <input
+                    aria-label="Workout reps"
+                    inputMode="numeric"
+                    value={workoutReps}
+                    onChange={(event) => setWorkoutReps(event.target.value)}
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">Load kg</span>
+                  <input
+                    aria-label="Workout load"
+                    inputMode="decimal"
+                    value={workoutLoad}
+                    onChange={(event) => setWorkoutLoad(event.target.value)}
+                    placeholder="20"
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">RPE</span>
+                  <input
+                    aria-label="Workout RPE"
+                    inputMode="decimal"
+                    value={workoutRpe}
+                    onChange={(event) => setWorkoutRpe(event.target.value)}
+                    placeholder="8"
+                  />
+                </label>
+                <label className="field workout-note">
+                  <span className="field-label">Workout note</span>
+                  <textarea
+                    aria-label="Workout note"
+                    value={workoutNote}
+                    onChange={(event) => setWorkoutNote(event.target.value)}
+                  />
+                </label>
+                <button className="button" type="submit" disabled={!exerciseLibrary.exercises.length}>
+                  Log workout
+                </button>
+              </form>
+
+              <div className="workout-history-grid">
+                <div aria-label="Recent workout sessions">
+                  <h4>Workout sessions</h4>
+                  {workoutSessions.length ? (
+                    <ul className="workout-session-list">
+                      {workoutSessions.slice(0, 5).map((session, index) => (
+                        <li key={session.id}>
+                          <div>
+                            <strong>{formatWorkoutSession(session)}</strong>
+                            <span>
+                              Volume {formatLoad(session.volumeKg)} kg / {formatDate(session.createdAt)}
+                            </span>
+                            {session.rpe ? <span>RPE {session.rpe}</span> : null}
+                            {session.note ? <p>{session.note}</p> : null}
+                          </div>
+                          {index === 0 ? (
+                            <button
+                              className="button"
+                              type="button"
+                              onClick={() => handleRepeatWorkout(session)}
+                            >
+                              Repeat latest workout
+                            </button>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="muted-text">No workout sessions logged yet.</p>
+                  )}
+                </div>
+
+                <div aria-label="Lift PRs">
+                  <h4>Lift PRs</h4>
+                  {workoutPrs.length ? (
+                    <ul className="workout-pr-list">
+                      {workoutPrs.map((record) => (
+                        <li key={record.exerciseId}>
+                          <strong>{record.exerciseLabel}</strong>
+                          <span>
+                            {formatLoad(record.maxLoadKg)} kg best / {formatLoad(record.maxVolumeKg)} kg volume
+                          </span>
+                          <small>{record.sessionCount} session(s)</small>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="muted-text">Log a session to build lift history.</p>
+                  )}
+                </div>
+
+                <div className="workout-chart-panel" aria-label="Lift history charts">
+                  <h4>Lift history</h4>
+                  {workoutHistories.length ? (
+                    <ul className="workout-chart-list">
+                      {workoutHistories.map((history) => (
+                        <li key={history.exerciseId}>
+                          <div className="workout-chart-header">
+                            <strong>{history.exerciseLabel}</strong>
+                            <span>
+                              {history.sessionCount} session(s), latest {formatDate(history.latestAt)}
+                            </span>
+                          </div>
+                          <svg
+                            className="workout-chart"
+                            role="img"
+                            aria-label={`${history.exerciseLabel} load and volume progression`}
+                            viewBox="0 0 100 36"
+                            preserveAspectRatio="none"
+                          >
+                            <line x1="4" y1="32" x2="96" y2="32" />
+                            <polyline className="workout-chart-volume" points={history.volumeSparkline} />
+                            <polyline className="workout-chart-load" points={history.loadSparkline} />
+                          </svg>
+                          <div className="workout-chart-legend">
+                            <span>Load PR {formatLoad(history.maxLoadKg)} kg</span>
+                            <span>Volume PR {formatLoad(history.maxVolumeKg)} kg</span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="muted-text">Log multiple sessions to see per-lift charts.</p>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            <section className="photo-log-section" aria-label="Photo log">
+              <div className="panel-header">
+                <h3>Photo log</h3>
+                <p>Local-only progress photos for body, face, and hair streams. No photo leaves this browser.</p>
+              </div>
+
+              <div className="photo-controls">
+                <label className="field">
+                  <span className="field-label">Photo category</span>
+                  <select
+                    aria-label="Photo category"
+                    value={photoCategory}
+                    onChange={(event) => setPhotoCategory(event.target.value)}
+                  >
+                    {photoCategoryOptions.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field photo-note-field">
+                  <span className="field-label">Photo note</span>
+                  <textarea
+                    aria-label="Photo note"
+                    value={photoNote}
+                    onChange={(event) => setPhotoNote(event.target.value)}
+                    placeholder="Day-0 front pose, same lighting."
+                  />
+                </label>
+                <label className="button file-button photo-import-button">
+                  Capture / import
+                  <input
+                    aria-label="Import progress photo"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handlePhotoImport}
+                  />
+                </label>
+              </div>
+
+              {!photos.length ? (
+                <p className="muted-text">
+                  Add a day-0 photo when ready. It is a commitment marker, not a measurement.
+                </p>
+              ) : null}
+
+              <div className="photo-stream-tabs" aria-label="Photo stream counts">
+                {photoCounts.map((category) => (
+                  <button
+                    key={category.id}
+                    className={`button ${photoFilter === category.id ? "is-active" : ""}`}
+                    type="button"
+                    onClick={() => setPhotoFilter(category.id)}
+                  >
+                    {category.label} {category.count}
+                  </button>
+                ))}
+                <button
+                  className={`button ${photoFilter === "all" ? "is-active" : ""}`}
+                  type="button"
+                  onClick={() => setPhotoFilter("all")}
+                >
+                  All {photos.length}
+                </button>
+              </div>
+
+              {ghostPhoto ? (
+                <div className="photo-ghost-panel" aria-label="Pose ghost overlay">
+                  <div>
+                    <h4>Pose ghost</h4>
+                    <p>Use the selected previous {photoCategory} photo as a framing reference before the next import.</p>
+                  </div>
+                  <label className="field">
+                    <span className="field-label">Ghost reference</span>
+                    <select
+                      aria-label="Ghost reference photo"
+                      value={photoGhostId || ghostPhoto.id}
+                      onChange={(event) => setPhotoGhostId(event.target.value)}
+                    >
+                      {categoryPhotos.map((photo) => (
+                        <option key={photo.id} value={photo.id}>
+                          {photoOptionLabel(photo)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="field">
+                    <span className="field-label">Ghost opacity</span>
+                    <input
+                      aria-label="Ghost opacity"
+                      type="range"
+                      min="15"
+                      max="70"
+                      value={ghostOpacity}
+                      onChange={(event) => setGhostOpacity(event.target.value)}
+                    />
+                  </label>
+                  <div className="photo-ghost-frame">
+                    <img
+                      src={ghostPhoto.dataUrl}
+                      alt={`${ghostPhoto.category} ghost reference`}
+                      style={{ opacity: Number(ghostOpacity) / 100 }}
+                    />
+                    <span />
+                  </div>
+                </div>
+              ) : null}
+
+              {photos.length >= 2 ? (
+                <div className="photo-compare-panel" aria-label="Photo comparison slider">
+                  <div className="photo-compare-controls">
+                    <label className="field">
+                      <span className="field-label">Before photo</span>
+                      <select
+                        aria-label="Before photo"
+                        value={photoBeforeId}
+                        onChange={(event) => setPhotoBeforeId(event.target.value)}
+                      >
+                        {visiblePhotos.map((photo) => (
+                          <option key={photo.id} value={photo.id}>
+                            {photoOptionLabel(photo)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="field">
+                      <span className="field-label">After photo</span>
+                      <select
+                        aria-label="After photo"
+                        value={photoAfterId}
+                        onChange={(event) => setPhotoAfterId(event.target.value)}
+                      >
+                        {visiblePhotos.map((photo) => (
+                          <option key={photo.id} value={photo.id}>
+                            {photoOptionLabel(photo)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="field">
+                      <span className="field-label">Wipe</span>
+                      <input
+                        aria-label="Photo comparison position"
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={photoSlider}
+                        onChange={(event) => setPhotoSlider(event.target.value)}
+                      />
+                    </label>
+                  </div>
+                  {beforePhoto && afterPhoto ? (
+                    <div className="photo-compare-frame">
+                      <img src={beforePhoto.dataUrl} alt="Before progress" />
+                      <img
+                        className="photo-compare-after"
+                        src={afterPhoto.dataUrl}
+                        alt="After progress"
+                        style={{ clipPath: `inset(0 ${100 - Number(photoSlider)}% 0 0)` }}
+                      />
+                      <i style={{ left: `${photoSlider}%` }} />
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {latestPhoto ? (
+                <div className="photo-silhouette-pair" aria-label="Photo beside silhouette">
+                  <figure>
+                    <img src={latestPhoto.dataUrl} alt={`${latestPhoto.category} progress`} />
+                    <figcaption>{photoOptionLabel(latestPhoto)}</figcaption>
+                  </figure>
+                  <SilhouetteView measurements={currentMeasurements} label="Photo reference profile" />
+                </div>
+              ) : null}
+
+              <div aria-label="Progress photo gallery">
+                {visiblePhotos.length ? (
+                  <ul className="photo-gallery-list">
+                    {visiblePhotos.map((photo) => (
+                      <li key={photo.id}>
+                        <img src={photo.dataUrl} alt={`${photo.category} progress thumbnail`} />
+                        <div>
+                          <strong>{photo.fileName}</strong>
+                          <span>{photo.category} / {formatDate(photo.createdAt)}</span>
+                          {photo.note ? <p>{photo.note}</p> : null}
+                        </div>
+                        <button
+                          className="button"
+                          type="button"
+                          onClick={() => handleDeletePhoto(photo.id)}
+                        >
+                          Delete photo
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="muted-text">No photos in this stream yet.</p>
                 )}
               </div>
             </section>
