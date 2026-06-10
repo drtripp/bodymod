@@ -207,11 +207,12 @@ Protocol Tracker → Diet upgrades → Native app.
       piercings, tattoos as first-class intervention types with healing
       timelines, photo streams, and case-log output. Deferred until
       protocols + corpus are mature.
-- [ ] Life-event modes **(new)**: pregnancy/postpartum, injury, illness —
+- [x] Life-event modes **(new)**: pregnancy/postpartum, injury, illness —
       pause goals and fat-change inference, annotate the trend timeline.
-      Matters for the female demo and for honest data. **First pass:** local
-      event annotations exist for procedure, postpartum, injury, and illness;
-      affected-field trend pausing now works; goal pausing remains open.
+      Matters for the female demo and for honest data. Local event
+      annotations exist for procedure, postpartum, injury, and illness;
+      affected-field trend pausing works, and saved goals pause while active
+      reliability windows affect their target metrics.
 
 ## 6. Targets & Comparison
 

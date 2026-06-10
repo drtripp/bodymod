@@ -1167,8 +1167,18 @@ textarea {
   padding-left: 10px;
 }
 
+.goal-pause-alert {
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-panel);
+  display: grid;
+  gap: 4px;
+  margin: 2px 0 8px;
+  padding: 8px 10px;
+}
+
 .maintenance-alerts span,
-.maintenance-alerts li {
+.maintenance-alerts li,
+.goal-pause-alert span {
   color: var(--color-muted);
 }
 

@@ -182,6 +182,8 @@ Implemented:
 - duplicate snapshot imports are skipped with an explicit skipped-count status
 - readable local JSON export remains available without an account and expands
   to account-scoped logs after local sign-in
+- local life-event windows pause goal progress and maintenance alerts when
+  they affect a saved goal's target metrics
 - compact SVG trend chart for weight, waist, shoulder mass, and hip measurements
 - optional local account left/right bicep, forearm, thigh, and calf split logs
   with side-delta symmetry summaries

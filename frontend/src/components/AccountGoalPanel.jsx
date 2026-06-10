@@ -94,6 +94,7 @@ import {
 import {
   buildMaintenanceDriftAlerts,
   buildGoalProgress,
+  buildGoalPauseSummary,
   CUSTOM_GOAL_TARGET_ID,
   customGoalMetricOptions,
   goalTargetSourceLabel,
@@ -2226,6 +2227,7 @@ export default function AccountGoalPanel({
                     <li key={goal.id} className="goal-row">
                       <div>
                         {(() => {
+                          const pauseSummary = buildGoalPauseSummary(goal, checkIns);
                           const progress = buildGoalProgress(goal, currentMeasurements);
                           const driftAlerts = buildMaintenanceDriftAlerts(
                             goal,
@@ -2234,7 +2236,18 @@ export default function AccountGoalPanel({
                           );
                           return (
                             <>
-                              {progress ? (
+                              {pauseSummary ? (
+                                <div
+                                  className="goal-pause-alert"
+                                  aria-label={`${goal.label} pause status`}
+                                >
+                                  <strong>Goal paused</strong>
+                                  <span>
+                                    {pauseSummary.message} Resume after {formatDate(pauseSummary.latestEndAt)} or delete/update the reliability event.
+                                  </span>
+                                </div>
+                              ) : null}
+                              {progress && !pauseSummary ? (
                                 <div className="goal-progress" aria-label={`${goal.label} progress`}>
                                   <strong>Progress: {Math.round(progress.average)}%</strong>
                                   <div className="goal-progress-track">
@@ -2249,7 +2262,7 @@ export default function AccountGoalPanel({
                                   </ul>
                                 </div>
                               ) : null}
-                              {driftAlerts ? (
+                              {driftAlerts && !pauseSummary ? (
                                 <div
                                   className="maintenance-alerts"
                                   aria-label={`${goal.label} maintenance drift alerts`}

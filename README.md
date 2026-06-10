@@ -98,7 +98,7 @@ Implemented now:
 - maintenance drift alerts for saved goals once an at-target snapshot exists
 - optional local cycle phase logs that add weight/waist fluctuation context, remain off by default, and can be deleted separately
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
-- reliability events pause affected weight and tape trend inference during healing or disruption windows
+- reliability events pause affected weight and tape trend inference during healing or disruption windows, and pause saved goals whose target metrics are affected
 - projected silhouettes for calorie-target protocol planning bands, with uncertainty copy
 - local goals can target preset deltas, custom deltas, target profiles, or saved past-self snapshots
 - readable local JSON export for snapshots and diet data without an account, plus account-scoped logs when signed in

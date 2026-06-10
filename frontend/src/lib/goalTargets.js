@@ -1,3 +1,7 @@
+import {
+  buildReliabilityWindows
+} from "./reliabilityEvents.js";
+
 export const CUSTOM_GOAL_TARGET_ID = "custom-deltas";
 
 export const goalMetricLabels = {
@@ -76,6 +80,19 @@ function formatSigned(value) {
 function timestampMs(value) {
   const parsed = new Date(value || 0).getTime();
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function uniqueWindows(windows = []) {
+  const seen = new Set();
+  return windows.filter((window) => {
+    const key = window.id || `${window.eventMode}-${window.startAt}-${window.endAt}`;
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
 }
 
 export function parseCustomGoalMetrics(values = {}) {
@@ -173,6 +190,54 @@ export function buildMaintenanceDriftAlerts(
     reachedAt: reachedSnapshot.createdAt,
     reachedLabel: reachedSnapshot.label,
     alerts
+  };
+}
+
+export function buildGoalPauseSummary(goal, checkIns = [], now = Date.now()) {
+  const metrics = Object.keys(goal?.targetMetrics || {});
+  if (!metrics.length) {
+    return null;
+  }
+
+  const affected = metrics
+    .map((metric) => {
+      const activeWindows = buildReliabilityWindows(checkIns, metric, now).filter(
+        (window) => window.isActive
+      );
+
+      if (!activeWindows.length) {
+        return null;
+      }
+
+      const [label, unit] = goalMetricLabels[metric] || [metric, ""];
+      return {
+        metric,
+        label,
+        unit,
+        activeWindows
+      };
+    })
+    .filter(Boolean);
+
+  if (!affected.length) {
+    return null;
+  }
+
+  const windows = uniqueWindows(affected.flatMap((item) => item.activeWindows)).sort(
+    (left, right) => timestampMs(left.endAt) - timestampMs(right.endAt)
+  );
+  const latestEndAt = windows[windows.length - 1]?.endAt || null;
+  const eventModes = [...new Set(windows.map((window) => window.eventMode))];
+  const labels = affected.map((item) => item.label);
+
+  return {
+    goalId: goal.id,
+    affectedMetrics: affected.map((item) => item.metric),
+    affectedLabels: labels,
+    windows,
+    eventModes,
+    latestEndAt,
+    message: `Goal paused for ${labels.join(", ")} while ${eventModes.join(", ")} reliability window is active.`
   };
 }
 

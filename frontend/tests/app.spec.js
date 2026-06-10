@@ -1291,6 +1291,10 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await page.getByRole("button", { name: "Log reliability event" }).click();
   await expect(page.getByLabel("Reliability events")).toContainText("injury");
   await expect(page.getByLabel("Check-in history")).toContainText("Reliability event: injury / 21 day window");
+  await expect(page.getByLabel("Saved goals")).toContainText("Goal paused");
+  await expect(page.getByLabel("Saved goals").locator(".goal-pause-alert").first()).toContainText(
+    "Goal paused for Waist"
+  );
   await page.getByRole("button", { name: "Archive protocol" }).click();
   await expect(page.getByLabel("Active protocols")).toContainText("archived");
   await expect(page.getByLabel("Progressive resistance training plan retro")).toContainText("Actual");

@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   buildMaintenanceDriftAlerts,
   buildGoalProgress,
+  buildGoalPauseSummary,
   goalTargetSourceLabel,
   parseCustomGoalMetrics
 } from "../src/lib/goalTargets.js";
@@ -154,6 +155,49 @@ test("does not alert while current measurements remain inside the maintenance ba
 
   assert.equal(
     buildMaintenanceDriftAlerts(goal, { weight: 86.5 }, snapshots),
+    null
+  );
+});
+
+test("pauses goals while active life-event windows affect target metrics", () => {
+  const goal = {
+    id: "goal-1",
+    targetMetrics: {
+      waistCircumference: -4,
+      bideltoidCircumference: 3
+    }
+  };
+  const checkIns = [
+    {
+      id: "injury-1",
+      type: "life-event",
+      eventMode: "injury",
+      affectedFields: ["waistCircumference"],
+      durationDays: 21,
+      createdAt: "2026-06-01T00:00:00.000Z"
+    },
+    {
+      id: "procedure-1",
+      type: "life-event",
+      eventMode: "procedure",
+      affectedFields: ["all"],
+      durationDays: 3,
+      createdAt: "2026-05-01T00:00:00.000Z"
+    }
+  ];
+  const paused = buildGoalPauseSummary(
+    goal,
+    checkIns,
+    Date.parse("2026-06-10T00:00:00.000Z")
+  );
+
+  assert.equal(paused.goalId, "goal-1");
+  assert.deepEqual(paused.affectedLabels, ["Waist"]);
+  assert.deepEqual(paused.eventModes, ["injury"]);
+  assert.equal(paused.latestEndAt, "2026-06-22T00:00:00.000Z");
+  assert.ok(paused.message.includes("Goal paused for Waist"));
+  assert.equal(
+    buildGoalPauseSummary(goal, checkIns, Date.parse("2026-06-30T00:00:00.000Z")),
     null
   );
 });
