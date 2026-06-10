@@ -177,6 +177,27 @@ class StrategySourceLink(BaseModel):
     reviewedAt: str = ""
 
 
+class StrategyCaseLog(BaseModel):
+    id: str
+    protocolId: str
+    label: str
+    strategyName: str
+    category: str
+    status: str
+    dose: str
+    frequency: str
+    window: str
+    adherenceCount: int = Field(ge=0)
+    averageScore: float | None = Field(default=None, ge=0, le=5)
+    snapshotCount: int = Field(ge=0)
+    outcomeSummary: str
+    projectionSummary: str
+    sourceType: str = "seeded"
+    reviewStatus: str = "needs source review"
+    notes: str
+    limitations: list[str] = Field(default_factory=list)
+
+
 class StrategySeed(BaseModel):
     name: str
     outcome: str
@@ -196,6 +217,7 @@ class StrategySeed(BaseModel):
     legalNotes: str
     uncertaintyNotes: str
     excludedFromPersonalization: bool = False
+    caseLogIds: list[str] = Field(default_factory=list)
     notes: str
 
 
@@ -211,6 +233,7 @@ class StrategyCorpusSeed(BaseModel):
     source: str
     notes: list[str] = Field(default_factory=list)
     outcomes: list[StrategyOutcomeSeed]
+    caseLogs: list[StrategyCaseLog] = Field(default_factory=list)
 
 
 class MeasurementGuide(BaseModel):

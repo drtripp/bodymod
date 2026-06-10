@@ -44,6 +44,7 @@ function strategy({
   contraindicationFlags = [],
   legalNotes = "No specific legal note captured.",
   uncertaintyNotes,
+  caseLogIds = [],
   notes
 }) {
   return {
@@ -68,6 +69,7 @@ function strategy({
     excludedFromPersonalization:
       reviewStatus === "exclude from personalization" ||
       highRiskSensitivityLevels.includes(sensitivity),
+    caseLogIds,
     notes
   };
 }
@@ -94,6 +96,61 @@ function stringArray(value) {
   return Array.isArray(value)
     ? value.filter((item) => typeof item === "string" && item.trim()).map((item) => item.trim())
     : [];
+}
+
+function numberField(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function nullableNumberField(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function normalizeStrategyCaseLogs(rawCaseLogs) {
+  if (!Array.isArray(rawCaseLogs)) {
+    return [];
+  }
+
+  return rawCaseLogs.map((rawCaseLog) => {
+    if (!isObject(rawCaseLog)) {
+      throw new Error("Each case log must be an object.");
+    }
+
+    const id = stringField(rawCaseLog.id);
+    const strategyName = stringField(rawCaseLog.strategyName);
+    const label = stringField(rawCaseLog.label);
+
+    if (!id || !strategyName || !label) {
+      throw new Error("Each case log needs id, strategyName, and label.");
+    }
+
+    return {
+      id,
+      protocolId: stringField(rawCaseLog.protocolId, id),
+      label,
+      strategyName,
+      category: stringField(rawCaseLog.category, "unspecified"),
+      status: stringField(rawCaseLog.status, "unknown"),
+      dose: stringField(rawCaseLog.dose, "Not captured."),
+      frequency: stringField(rawCaseLog.frequency, "Not captured."),
+      window: stringField(rawCaseLog.window, "open"),
+      adherenceCount: Math.max(0, Math.round(numberField(rawCaseLog.adherenceCount))),
+      averageScore: nullableNumberField(rawCaseLog.averageScore),
+      snapshotCount: Math.max(0, Math.round(numberField(rawCaseLog.snapshotCount))),
+      outcomeSummary: stringField(rawCaseLog.outcomeSummary, "No outcome summary captured."),
+      projectionSummary: stringField(rawCaseLog.projectionSummary, "No defensible projection configured."),
+      sourceType: stringField(rawCaseLog.sourceType, "seeded"),
+      reviewStatus: stringField(rawCaseLog.reviewStatus, "needs source review"),
+      notes: stringField(rawCaseLog.notes, "No notes captured."),
+      limitations: stringArray(rawCaseLog.limitations)
+    };
+  });
 }
 
 function normalizeStrategy(rawStrategy) {
@@ -154,6 +211,7 @@ function normalizeStrategy(rawStrategy) {
       Boolean(rawStrategy.excludedFromPersonalization) ||
       reviewStatus === "exclude from personalization" ||
       highRiskSensitivityLevels.includes(sensitivity),
+    caseLogIds: stringArray(rawStrategy.caseLogIds),
     notes: stringField(rawStrategy.notes, "No notes captured.")
   };
 }
@@ -187,23 +245,39 @@ export function normalizeStrategyOutcomes(rawOutcomes) {
   });
 }
 
-export function parseStrategyCorpusExport(rawValue) {
-  const parsed = JSON.parse(rawValue);
-  const outcomes = Array.isArray(parsed)
-    ? parsed
-    : Array.isArray(parsed?.outcomes)
-      ? parsed.outcomes
+export function normalizeStrategyCorpus(rawCorpus) {
+  const rawOutcomes = Array.isArray(rawCorpus)
+    ? rawCorpus
+    : Array.isArray(rawCorpus?.outcomes)
+      ? rawCorpus.outcomes
       : null;
 
-  return normalizeStrategyOutcomes(outcomes);
+  return {
+    version: Number(rawCorpus?.version) || STRATEGY_CORPUS_VERSION,
+    source: stringField(rawCorpus?.source, "Bundled strategy corpus seed."),
+    notes: stringArray(rawCorpus?.notes),
+    outcomes: normalizeStrategyOutcomes(rawOutcomes),
+    caseLogs: normalizeStrategyCaseLogs(rawCorpus?.caseLogs)
+  };
 }
 
-export function serializeStrategyCorpus(outcomes) {
+export function parseStrategyCorpusExport(rawValue) {
+  const parsed = JSON.parse(rawValue);
+
+  return normalizeStrategyCorpus(parsed).outcomes;
+}
+
+export function parseStrategyCorpusBundleExport(rawValue) {
+  return normalizeStrategyCorpus(JSON.parse(rawValue));
+}
+
+export function serializeStrategyCorpus(outcomes, caseLogs = []) {
   return JSON.stringify(
     {
       version: STRATEGY_CORPUS_VERSION,
       exportedAt: new Date().toISOString(),
-      outcomes: normalizeStrategyOutcomes(outcomes)
+      outcomes: normalizeStrategyOutcomes(outcomes),
+      caseLogs: normalizeStrategyCaseLogs(caseLogs)
     },
     null,
     2
@@ -214,26 +288,46 @@ export function loadStrategyCorpus() {
   return loadStrategyCorpusOverride() || strategyOutcomes;
 }
 
+export function loadStrategyCorpusBundle(adapter) {
+  return (
+    loadStrategyCorpusBundleOverride(adapter) || {
+      version: STRATEGY_CORPUS_VERSION,
+      source: "Bundled strategy corpus seed.",
+      notes: [],
+      outcomes: strategyOutcomes,
+      caseLogs: strategyCaseLogs
+    }
+  );
+}
+
 export function loadStrategyCorpusOverride(adapter) {
+  return loadStrategyCorpusBundleOverride(adapter)?.outcomes || null;
+}
+
+export function loadStrategyCorpusBundleOverride(adapter) {
   try {
     const parsed = readJsonSync(STRATEGY_CORPUS_STORAGE_KEY, null, adapter);
-    return parsed ? normalizeStrategyOutcomes(parsed.outcomes || parsed) : null;
+    return parsed ? normalizeStrategyCorpus(parsed) : null;
   } catch (error) {
     return null;
   }
 }
 
 export function hasStrategyCorpusOverride(adapter) {
-  return Boolean(loadStrategyCorpusOverride(adapter));
+  return Boolean(loadStrategyCorpusBundleOverride(adapter));
 }
 
-export function persistStrategyCorpus(outcomes, adapter) {
+export function persistStrategyCorpus(outcomes, caseLogsOrAdapter, maybeAdapter) {
+  const caseLogs = Array.isArray(caseLogsOrAdapter) ? caseLogsOrAdapter : [];
+  const adapter = Array.isArray(caseLogsOrAdapter) ? maybeAdapter : caseLogsOrAdapter;
+
   writeJsonSync(
     STRATEGY_CORPUS_STORAGE_KEY,
     {
       version: STRATEGY_CORPUS_VERSION,
       exportedAt: new Date().toISOString(),
-      outcomes: normalizeStrategyOutcomes(outcomes)
+      outcomes: normalizeStrategyOutcomes(outcomes),
+      caseLogs: normalizeStrategyCaseLogs(caseLogs)
     },
     adapter
   );
@@ -288,6 +382,7 @@ export const strategyOutcomes = [
         claimedMechanism: "Positive energy balance plus progressive overload supports muscle and body-mass gain.",
         expectedMagnitude: "Gradual change over months; magnitude depends on training history and adherence.",
         uncertaintyNotes: "Outcome quality varies with program, sleep, appetite, genetics, and surplus size.",
+        caseLogIds: ["case-surplus-resistance-12-week"],
         notes: "Best-supported route for adding body mass, with outcome quality dependent on programming, recovery, and consistency."
       }),
       strategy({
@@ -326,6 +421,7 @@ export const strategyOutcomes = [
         claimedMechanism: "Sustained energy deficit reduces body mass while protein helps preserve lean tissue.",
         expectedMagnitude: "Gradual weight reduction while the deficit is maintained.",
         uncertaintyNotes: "Adherence, hunger, activity compensation, and baseline health change results.",
+        caseLogIds: ["case-protein-deficit-10-week"],
         notes: "Strong evidence for weight reduction; risk increases with aggressive deficits or poor nutrient coverage."
       }),
       strategy({
@@ -368,6 +464,7 @@ export const strategyOutcomes = [
         claimedMechanism: "Targeted hypertrophy can increase visible shoulder muscle mass.",
         expectedMagnitude: "Visible but bounded by frame width and training response.",
         uncertaintyNotes: "Genetics, exercise selection, and injury history matter.",
+        caseLogIds: ["case-deltoid-block-16-week"],
         notes: "Can alter shoulder-to-waist appearance, bounded by frame width and training response."
       }),
       strategy({
@@ -525,6 +622,7 @@ export const strategyOutcomes = [
         claimedMechanism: "Motor control, mobility, and strength changes can alter resting presentation.",
         expectedMagnitude: "Small to moderate presentation change, not skeletal remodeling.",
         uncertaintyNotes: "Effect depends on baseline posture, symptoms, adherence, and expectations.",
+        caseLogIds: ["case-posture-mobility-8-week"],
         notes: "Can change presentation and comfort, but does not remodel bone structure."
       }),
       strategy({
@@ -566,3 +664,102 @@ export const strategyOutcomes = [
     ]
   }
 ];
+
+export const strategyCaseLogs = normalizeStrategyCaseLogs([
+  {
+    id: "case-surplus-resistance-12-week",
+    protocolId: "seed-protocol-surplus-resistance",
+    label: "12-week surplus plus progressive lifting",
+    strategyName: "Calorie surplus with resistance training",
+    category: "training and nutrition",
+    status: "completed",
+    dose: "Moderate calorie surplus with four resistance sessions weekly",
+    frequency: "12 weeks",
+    window: "2026-01-08 - 2026-04-02",
+    adherenceCount: 11,
+    averageScore: 4.1,
+    snapshotCount: 4,
+    outcomeSummary: "Weight +3.8 kg, waist +1.2 cm, bideltoid Circ +2.0 cm",
+    projectionSummary: "NIDDK/Hall-inspired dynamic planning band: +3.1 kg over 84 days",
+    sourceType: "seeded completed protocol",
+    reviewStatus: "dummy data for product validation",
+    notes: "Prototype case log showing how a completed local protocol can attach to a strategy without exposing photos or raw account data.",
+    limitations: [
+      "Single-person report, not generalizable.",
+      "Diet adherence and training progression are self-reported.",
+      "No clinical or coaching recommendation is implied."
+    ]
+  },
+  {
+    id: "case-protein-deficit-10-week",
+    protocolId: "seed-protocol-protein-deficit",
+    label: "10-week protein-supported deficit",
+    strategyName: "Calorie deficit with protein target",
+    category: "nutrition",
+    status: "completed",
+    dose: "Conservative calorie deficit with a daily protein target",
+    frequency: "10 weeks",
+    window: "2026-02-03 - 2026-04-14",
+    adherenceCount: 9,
+    averageScore: 3.8,
+    snapshotCount: 3,
+    outcomeSummary: "Weight -4.4 kg, waist -5.1 cm, hip -1.3 cm",
+    projectionSummary: "NIDDK/Hall-inspired dynamic planning band: -3.7 kg over 70 days",
+    sourceType: "seeded completed protocol",
+    reviewStatus: "dummy data for product validation",
+    notes: "Example of a defensible-projection case log where the observed weight change can be compared with a planning band.",
+    limitations: [
+      "Single-person report, not a prediction for another user.",
+      "Calorie intake and body measurements are self-logged.",
+      "Does not assess medical appropriateness of dieting."
+    ]
+  },
+  {
+    id: "case-deltoid-block-16-week",
+    protocolId: "seed-protocol-deltoid-block",
+    label: "16-week deltoid specialization block",
+    strategyName: "Deltoid hypertrophy block",
+    category: "training",
+    status: "completed",
+    dose: "Two direct deltoid sessions plus normal upper-body training weekly",
+    frequency: "16 weeks",
+    window: "2025-11-10 - 2026-03-02",
+    adherenceCount: 14,
+    averageScore: 4.3,
+    snapshotCount: 5,
+    outcomeSummary: "Bideltoid Circ +2.7 cm, waist +0.3 cm, weight +1.1 kg",
+    projectionSummary: "No defensible projection configured.",
+    sourceType: "seeded completed protocol",
+    reviewStatus: "dummy data for product validation",
+    notes: "Training-focused case log for the shoulder-ratio outcome; it records measured changes without claiming a guaranteed hypertrophy response.",
+    limitations: [
+      "Self-selected training history and genetics heavily affect results.",
+      "Circumference changes can include measurement noise and non-muscle tissue.",
+      "Exercise selection is informational, not programming advice."
+    ]
+  },
+  {
+    id: "case-posture-mobility-8-week",
+    protocolId: "seed-protocol-posture-mobility",
+    label: "8-week posture and mobility practice",
+    strategyName: "Posture and mobility work",
+    category: "movement practice",
+    status: "completed",
+    dose: "Short mobility and motor-control practice most days",
+    frequency: "8 weeks",
+    window: "2026-03-01 - 2026-04-26",
+    adherenceCount: 8,
+    averageScore: 3.6,
+    snapshotCount: 3,
+    outcomeSummary: "No skeletal measurements changed meaningfully; user-reported presentation improved.",
+    projectionSummary: "No defensible projection configured.",
+    sourceType: "seeded completed protocol",
+    reviewStatus: "dummy data for product validation",
+    notes: "Example non-curved case log for a strategy where the app should show observations rather than forecasting measurements.",
+    limitations: [
+      "Presentation changes are hard to measure with tape data.",
+      "Pain or mobility issues require qualified assessment.",
+      "The entry is not evidence of skeletal remodeling."
+    ]
+  }
+]);

@@ -6,11 +6,12 @@ import {
   hasStrategyCorpusOverride,
   isHighRiskStrategy,
   isStrategyCorpusAgeAccepted,
-  loadStrategyCorpus,
-  normalizeStrategyOutcomes,
-  parseStrategyCorpusExport,
+  loadStrategyCorpusBundle,
+  normalizeStrategyCorpus,
+  parseStrategyCorpusBundleExport,
   persistStrategyCorpus,
   serializeStrategyCorpus,
+  strategyCaseLogs,
   strategyEvidenceLevels,
   strategyOutcomes
 } from "../lib/strategyCorpus";
@@ -50,9 +51,19 @@ function findStrategy(outcomes, slug) {
   return null;
 }
 
+function caseLogsForStrategy(strategy, caseLogs) {
+  const linkedIds = new Set(strategy.caseLogIds || []);
+
+  return caseLogs.filter((caseLog) =>
+    linkedIds.size ? linkedIds.has(caseLog.id) : caseLog.strategyName === strategy.name
+  );
+}
+
 export default function StrategyCorpus() {
-  const [corpusOutcomes, setCorpusOutcomes] = useState(() => loadStrategyCorpus());
+  const [corpusOutcomes, setCorpusOutcomes] = useState(() => loadStrategyCorpusBundle().outcomes);
+  const [corpusCaseLogs, setCorpusCaseLogs] = useState(() => loadStrategyCorpusBundle().caseLogs);
   const [seedOutcomes, setSeedOutcomes] = useState(strategyOutcomes);
+  const [seedCaseLogs, setSeedCaseLogs] = useState(strategyCaseLogs);
   const [corpusStatus, setCorpusStatus] = useState("");
   const [selectedOutcomeId, setSelectedOutcomeId] = useState(() => corpusOutcomes[0]?.id || "");
   const [query, setQuery] = useState("");
@@ -67,20 +78,22 @@ export default function StrategyCorpus() {
 
     fetchStrategyCorpus()
       .then((response) => {
-        const backendOutcomes = normalizeStrategyOutcomes(response.outcomes);
+        const backendCorpus = normalizeStrategyCorpus(response);
 
         if (!isMounted) {
           return;
         }
 
-        setSeedOutcomes(backendOutcomes);
+        setSeedOutcomes(backendCorpus.outcomes);
+        setSeedCaseLogs(backendCorpus.caseLogs);
 
         if (!hasStrategyCorpusOverride()) {
-          setCorpusOutcomes(backendOutcomes);
+          setCorpusOutcomes(backendCorpus.outcomes);
+          setCorpusCaseLogs(backendCorpus.caseLogs);
           setSelectedOutcomeId((current) =>
-            backendOutcomes.some((outcome) => outcome.id === current)
+            backendCorpus.outcomes.some((outcome) => outcome.id === current)
               ? current
-              : backendOutcomes[0]?.id || ""
+              : backendCorpus.outcomes[0]?.id || ""
           );
           setCorpusStatus("Backend seed corpus loaded for this browser.");
         }
@@ -95,6 +108,16 @@ export default function StrategyCorpus() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!detailStrategySlug) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      document.querySelector(".strategy-explorer-overlay")?.scrollTo({ top: 0, left: 0 });
+    });
+  }, [detailStrategySlug]);
 
   const selectedOutcome =
     corpusOutcomes.find((outcome) => outcome.id === selectedOutcomeId) ||
@@ -148,7 +171,7 @@ export default function StrategyCorpus() {
   );
 
   function handleExportCorpus() {
-    const blob = new Blob([serializeStrategyCorpus(corpusOutcomes)], {
+    const blob = new Blob([serializeStrategyCorpus(corpusOutcomes, corpusCaseLogs)], {
       type: "application/json"
     });
     const url = window.URL.createObjectURL(blob);
@@ -170,15 +193,18 @@ export default function StrategyCorpus() {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const importedOutcomes = parseStrategyCorpusExport(String(reader.result || ""));
-        setCorpusOutcomes(importedOutcomes);
-        persistStrategyCorpus(importedOutcomes);
-        setSelectedOutcomeId(importedOutcomes[0]?.id || "");
+        const importedCorpus = parseStrategyCorpusBundleExport(String(reader.result || ""));
+        setCorpusOutcomes(importedCorpus.outcomes);
+        setCorpusCaseLogs(importedCorpus.caseLogs);
+        persistStrategyCorpus(importedCorpus.outcomes, importedCorpus.caseLogs);
+        setSelectedOutcomeId(importedCorpus.outcomes[0]?.id || "");
         setSelectedStrategySlug("");
         setDetailStrategySlug("");
         setQuery("");
         setEvidenceFilter("all");
-        setCorpusStatus(`Imported ${importedOutcomes.length} outcome(s).`);
+        setCorpusStatus(
+          `Imported ${importedCorpus.outcomes.length} outcome(s) and ${importedCorpus.caseLogs.length} case log(s).`
+        );
       } catch (error) {
         setCorpusStatus("Import failed. Choose a valid bodymod strategy corpus JSON file.");
       } finally {
@@ -191,6 +217,7 @@ export default function StrategyCorpus() {
   function handleResetCorpus() {
     clearStrategyCorpusOverride();
     setCorpusOutcomes(seedOutcomes);
+    setCorpusCaseLogs(seedCaseLogs);
     setSelectedOutcomeId(seedOutcomes[0]?.id || "");
     setSelectedStrategySlug("");
     setDetailStrategySlug("");
@@ -249,6 +276,7 @@ export default function StrategyCorpus() {
 
   if (detailStrategyResult) {
     const { outcome, strategy } = detailStrategyResult;
+    const linkedCaseLogs = caseLogsForStrategy(strategy, corpusCaseLogs);
 
     return (
       <section className="panel anchor-panel" id="strategy-corpus">
@@ -342,6 +370,63 @@ export default function StrategyCorpus() {
           </ul>
         ) : (
           <p className="muted-text">No reviewed source links yet.</p>
+        )}
+
+        {linkedCaseLogs.length ? (
+          <div className="case-log-section" aria-label={`${strategy.name} linked case logs`}>
+            <div className="fit-panel-header">
+              <h3>Linked case logs</h3>
+              <span>n=1 reports, not recommendations</span>
+            </div>
+            <div className="case-log-grid">
+              {linkedCaseLogs.map((caseLog) => (
+                <article className="case-log-card" key={caseLog.id}>
+                  <div>
+                    <span>{caseLog.sourceType}</span>
+                    <strong>{caseLog.label}</strong>
+                  </div>
+                  <dl>
+                    <div>
+                      <dt>Window</dt>
+                      <dd>{caseLog.window}</dd>
+                    </div>
+                    <div>
+                      <dt>Adherence</dt>
+                      <dd>
+                        {caseLog.averageScore === null
+                          ? `${caseLog.adherenceCount} check-ins`
+                          : `${caseLog.averageScore.toFixed(1)}/5 over ${caseLog.adherenceCount} check-ins`}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Snapshots</dt>
+                      <dd>{caseLog.snapshotCount}</dd>
+                    </div>
+                    <div>
+                      <dt>Review</dt>
+                      <dd>{caseLog.reviewStatus}</dd>
+                    </div>
+                  </dl>
+                  <p>
+                    <strong>Outcome:</strong> {caseLog.outcomeSummary}
+                  </p>
+                  <p>
+                    <strong>Projection:</strong> {caseLog.projectionSummary}
+                  </p>
+                  <p>{caseLog.notes}</p>
+                  {caseLog.limitations.length ? (
+                    <ul>
+                      {caseLog.limitations.map((limitation) => (
+                        <li key={limitation}>{limitation}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="muted-text">No linked case logs yet.</p>
         )}
       </section>
     );
@@ -475,7 +560,7 @@ export default function StrategyCorpus() {
 
       <p className="muted-text">
         Loaded {corpusOutcomes.length} outcome(s) with {sourceCount} reviewed
-        source link(s).
+        source link(s) and {corpusCaseLogs.length} case log(s).
       </p>
 
       {selectedStrategyResult ? (
@@ -509,6 +594,11 @@ export default function StrategyCorpus() {
               </div>
             </dl>
             <p>{selectedStrategyResult.strategy.notes}</p>
+            {caseLogsForStrategy(selectedStrategyResult.strategy, corpusCaseLogs).length ? (
+              <p className="muted-text">
+                {caseLogsForStrategy(selectedStrategyResult.strategy, corpusCaseLogs).length} linked case log(s).
+              </p>
+            ) : null}
             <button
               className="button"
               type="button"

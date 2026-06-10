@@ -100,6 +100,23 @@ Useful `sourceType` examples:
 
 Source type should describe the source, not endorse it.
 
+## Case Logs
+
+Case logs are n=1 reports linked from strategy entries by `caseLogIds`. They
+must use the completed-protocol summary shape in `strategy-corpus-template.json`
+so user-generated protocol retros and curated corpus examples stay compatible.
+
+Every case log needs:
+
+- a stable `id` referenced by at least one strategy
+- the strategy name it belongs to
+- a completed protocol window, adherence count, snapshot count, outcome summary, and projection summary
+- source/review status and explicit limitations
+
+Do not use case logs as proof that another user should expect the same result.
+For clinical, surgical, pharmaceutical, or medical-adjacent entries, keep case
+logs out of personalization and require human/clinical review before publishing.
+
 ## Copy Guardrails
 
 Allowed:
@@ -136,6 +153,6 @@ Then import the JSON in the app and inspect:
 - source links
 - flags and legal notes
 - personalization exclusion state
+- linked case-log limitations and completed-protocol fields
 - search and filters
 - mobile layout if the entry text is long
-

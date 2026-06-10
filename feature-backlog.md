@@ -61,8 +61,11 @@ Protocol Tracker → Diet upgrades → Native app.
       vetted tables; update copy and reference labels.
 - [ ] Sex-specific percentile output for every schema field the data supports
       (currently only height/waist/bideltoid).
-- [ ] Calibrated similarity score per `similarity-score-spec.md` (mapping,
-      API field, frontend display, calibration script, tests).
+- [x] Calibrated similarity score per `similarity-score-spec.md` (mapping,
+      API field, frontend display, calibration script, tests). Implemented as
+      backend `similarity_from_distance`, API `similarity` fields, frontend
+      result-card/display copy, calibration script, and backend/browser
+      regression coverage.
 - [ ] Recalibrate scoring weights once real target data exists. **[human]**
       sign-off on weight changes.
 - [x] Configurable match priorities: backend-served weighting presets now
@@ -504,8 +507,11 @@ land. No social features, no marketplace.
 - [ ] Admin curation tool **(new)**: minimal internal CRUD UI (or structured
       git workflow) for corpus entries, targets, and case logs with validation
       against the templates — beats hand-editing JSON/Python for every entry.
-- [ ] Case-log content type linked from corpus entries (schema shared with
-      the protocol tracker's completed protocols).
+- [x] Case-log content type linked from corpus entries (schema shared with
+      the protocol tracker's completed protocols). Backend corpus seed now
+      carries dummy completed-protocol case logs linked by `caseLogIds`; the
+      strategy detail UI renders them with n=1 limitations, import/export
+      preserves them, and backend/Node/browser tests cover the content type.
 - [x] High-risk display friction: corpus entries flagged
       surgical/pharma/medical-adjacent get an extra acknowledgment step and
       are excluded from any personalization.

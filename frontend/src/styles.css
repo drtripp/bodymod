@@ -4323,6 +4323,63 @@ textarea {
   color: var(--color-muted);
 }
 
+.case-log-section {
+  margin-top: 16px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 14px;
+}
+
+.case-log-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.case-log-card {
+  border: 1px solid var(--color-border);
+  background: var(--color-page);
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.case-log-card > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.case-log-card span,
+.case-log-card dt {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+}
+
+.case-log-card dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+
+.case-log-card dl div {
+  border-top: 1px solid var(--color-border);
+  padding-top: 5px;
+}
+
+.case-log-card dd {
+  margin: 0;
+}
+
+.case-log-card p,
+.case-log-card ul {
+  margin: 0;
+}
+
+.case-log-card ul {
+  padding-left: 18px;
+  color: var(--color-muted);
+}
+
 @media (max-width: 760px) {
   .app-shell {
     padding: 16px 12px 36px;
@@ -4480,7 +4537,9 @@ textarea {
   .snapshot-silhouette-grid,
   .strategy-detail-grid,
   .strategy-modal dl,
-  .strategy-detail-facts {
+  .strategy-detail-facts,
+  .case-log-grid,
+  .case-log-card dl {
     grid-template-columns: 1fr;
   }
 

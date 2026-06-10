@@ -465,12 +465,17 @@ Status:
 - imported corpus can persist locally as an override and be reset to the
   backend seed when loaded, or to the bundled seed offline
 - imported source links render inside strategy entries
+- linked completed-protocol case logs render inside strategy detail pages with
+  n=1 limitation copy and the same summary fields used by the protocol tracker
 - safety flags, legal notes, cost, and personalization exclusion status are visible
 - a local 18+ gate appears before corpus content is shown
 - high-risk entries require a separate informational acknowledgment before opening
-- backend tests validate the strategy corpus API seed, score bounds, and
-  high-risk personalization exclusions
-- Node tests cover corpus template parsing, normalization, bounds clamping, local age-gate storage, local override storage, high-risk classification, invalid evidence rejection, and export round trips
+- backend tests validate the strategy corpus API seed, score bounds, linked
+  case-log references, completed-protocol summary fields, and high-risk
+  personalization exclusions
+- Node tests cover corpus template parsing, normalization, case-log bundle
+  parsing, bounds clamping, local age-gate storage, local override storage,
+  high-risk classification, invalid evidence rejection, and export round trips
 - entries are illustrative and not yet source-reviewed
 - copy explicitly separates information from advice
 
@@ -479,7 +484,7 @@ Next:
 - manually source entries
 - add evidence and risk taxonomy
 - finalize exclusion/moderation policy for sourced production entries
-- build admin or structured git workflow for reviewed corpus edits
+- build admin or structured git workflow for reviewed corpus and case-log edits
 
 ## Engineering Backlog
 

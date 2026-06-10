@@ -3,7 +3,7 @@ import { Buffer } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import { DEFAULT_CLOTHING_SIZE_TABLES } from "../src/lib/clothingSizes.js";
 import { silhouetteQaProfiles } from "../src/lib/silhouetteQaProfiles.js";
-import { strategyOutcomes } from "../src/lib/strategyCorpus.js";
+import { strategyCaseLogs, strategyOutcomes } from "../src/lib/strategyCorpus.js";
 
 const targetMeasurements = {
   height: 178,
@@ -638,7 +638,8 @@ async function mockApi(page) {
         version: 1,
         source: "Mock backend strategy corpus seed.",
         notes: ["Mocked Playwright strategy corpus source."],
-        outcomes: strategyOutcomes
+        outcomes: strategyOutcomes,
+        caseLogs: strategyCaseLogs
       }
     });
   });
@@ -1830,6 +1831,21 @@ test("exposes method, privacy, and strategy corpus content", async ({ page }) =>
   await expect(page.getByText("This is not advice")).toBeVisible();
   await expect(page.getByLabel("Filter selected outcome confidence")).toBeVisible();
   await expect(page.getByText("Loaded 8 outcome(s) with 0 reviewed")).toBeVisible();
+  await expect(page.getByText(/Loaded 8 outcome\(s\).*4 case log\(s\)/)).toBeVisible();
+
+  await page.getByRole("button", { name: /Calorie surplus with resistance training: efficacy/ }).click();
+  let strategyDialog = page.getByRole("dialog", { name: "Strategy synopsis" });
+  await expect(strategyDialog).toBeVisible();
+  await expect(strategyDialog).toContainText("1 linked case log(s).");
+  await page.getByRole("button", { name: "Open strategy page" }).click();
+  await expect(page.getByRole("heading", { name: "Calorie surplus with resistance training" })).toBeVisible();
+  await expect(page.getByLabel("Calorie surplus with resistance training linked case logs")).toContainText(
+    "12-week surplus plus progressive lifting"
+  );
+  await expect(page.getByLabel("Calorie surplus with resistance training linked case logs")).toContainText(
+    "n=1 reports, not recommendations"
+  );
+  await page.getByRole("button", { name: "Back to outcome map" }).click();
 
   const corpusDownloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export corpus JSON" }).click();
@@ -1843,7 +1859,7 @@ test("exposes method, privacy, and strategy corpus content", async ({ page }) =>
   await expect(highRiskDialog).toBeVisible();
   await expect(highRiskDialog).toContainText("excluded from personalization");
   await page.getByRole("button", { name: "Show informational entry" }).click();
-  const strategyDialog = page.getByRole("dialog", { name: "Strategy synopsis" });
+  strategyDialog = page.getByRole("dialog", { name: "Strategy synopsis" });
   await expect(strategyDialog).toBeVisible();
   await expect(strategyDialog.getByText("higher confidence")).toBeVisible();
   await page.getByRole("button", { name: "Open strategy page" }).click();
@@ -1890,9 +1906,32 @@ test("exposes method, privacy, and strategy corpus content", async ({ page }) =>
             contraindicationFlags: ["manual review flag"],
             legalNotes: "Imported legal note.",
             uncertaintyNotes: "Imported entries preserve uncertainty notes.",
+            caseLogIds: ["reviewed-case-log"],
             notes: "Imported entries can replace the seed corpus."
           }
         ]
+      }
+    ],
+    caseLogs: [
+      {
+        id: "reviewed-case-log",
+        protocolId: "reviewed-protocol",
+        label: "Reviewed imported case log",
+        strategyName: "Reviewed source entry",
+        category: "manual research",
+        status: "completed",
+        dose: "Imported neutral exposure summary.",
+        frequency: "4 weeks",
+        window: "2026-05-01 - 2026-05-29",
+        adherenceCount: 4,
+        averageScore: 4,
+        snapshotCount: 2,
+        outcomeSummary: "Imported waist -1.2 cm",
+        projectionSummary: "No defensible projection configured.",
+        sourceType: "curator-entered",
+        reviewStatus: "needs source review",
+        notes: "Imported case-log note.",
+        limitations: ["Imported n=1 limitation"]
       }
     ]
   };
@@ -1903,13 +1942,17 @@ test("exposes method, privacy, and strategy corpus content", async ({ page }) =>
     buffer: Buffer.from(JSON.stringify(reviewedCorpus))
   });
 
-  await expect(page.getByText("Imported 1 outcome(s).")).toBeVisible();
+  await expect(page.getByText("Imported 1 outcome(s) and 1 case log(s).")).toBeVisible();
   await expect(page.getByText("Reviewed source entry")).toBeVisible();
   await expect(page.getByText("Loaded 1 outcome(s) with 1 reviewed")).toBeVisible();
+  await expect(page.getByText(/Loaded 1 outcome\(s\).*1 case log\(s\)/)).toBeVisible();
   await page.getByRole("button", { name: /Reviewed source entry: efficacy/ }).click();
   await page.getByRole("button", { name: "Open strategy page" }).click();
   await expect(page.getByText("Flags: manual review flag")).toBeVisible();
   await expect(page.getByText("Legal/regulatory: Imported legal note.")).toBeVisible();
+  await expect(page.getByLabel("Reviewed source entry linked case logs")).toContainText(
+    "Reviewed imported case log"
+  );
   await expect(page.getByRole("link", { name: "Example source" })).toHaveAttribute(
     "href",
     "https://example.com/source"

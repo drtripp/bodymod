@@ -176,10 +176,29 @@ def test_strategy_corpus_endpoint_returns_backend_seed() -> None:
         for outcome in payload["outcomes"]
         for strategy in outcome["strategies"]
     ]
+    case_log_ids = {case_log["id"] for case_log in payload["caseLogs"]}
+    linked_case_log_ids = {
+        case_log_id
+        for strategy in all_strategies
+        for case_log_id in strategy.get("caseLogIds", [])
+    }
 
     assert payload["version"] == STRATEGY_CORPUS["version"]
     assert "Backend dummy strategy corpus seed" in payload["source"]
     assert len(payload["outcomes"]) == 8
+    assert len(payload["caseLogs"]) == 4
+    assert linked_case_log_ids
+    assert linked_case_log_ids.issubset(case_log_ids)
+    assert all(
+        {
+            "protocolId",
+            "strategyName",
+            "adherenceCount",
+            "outcomeSummary",
+            "projectionSummary",
+        }.issubset(case_log.keys())
+        for case_log in payload["caseLogs"]
+    )
     assert {
         "gain-weight",
         "lose-weight",

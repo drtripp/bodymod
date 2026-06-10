@@ -131,14 +131,15 @@ Implemented now:
 - strategy explorer opens as an overlay from the main header action
 - clickable strategy dots with synopsis modal and dedicated strategy detail view
 - backend-served strategy corpus seed at `/api/strategy-corpus`
-- strategy corpus JSON export/import with validation for manually curated entries
+- strategy corpus JSON export/import with validation for manually curated entries and linked n=1 case logs
 - imported strategy corpus persists locally as an override with a reset-to-backend-seed control
 - imported corpus source links render in strategy entries
+- strategy detail pages render linked completed-protocol case logs with limitations and no recommendation framing
 - corpus entries display safety flags, legal notes, cost, and personalization exclusion status
 - strategy corpus is behind a local 18+ age gate
 - high-risk corpus entries require an extra informational acknowledgment before opening
 - importable corpus template in `strategy-corpus-template.json`
-- backend and Node corpus validation tests for API seed bounds, import/export normalization, local overrides, safety gating, and rejected evidence levels
+- backend and Node corpus validation tests for API seed bounds, case-log links, import/export normalization, local overrides, safety gating, and rejected evidence levels
 - Playwright desktop and phone-viewport frontend user-flow tests
 - pytest backend API/service tests
 - shared measurement schema file for frontend field metadata and backend Pydantic validation

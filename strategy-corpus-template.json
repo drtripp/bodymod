@@ -34,8 +34,36 @@
           "legalNotes": "Legal, regulatory, age-gating, prescription, or jurisdiction-specific note.",
           "uncertaintyNotes": "What is uncertain, disputed, low-quality, or context-dependent.",
           "excludedFromPersonalization": true,
+          "caseLogIds": [
+            "case-log-slug"
+          ],
           "notes": "Informational framing only. Do not include dosing, procedural steps, or personalized advice."
         }
+      ]
+    }
+  ],
+  "caseLogs": [
+    {
+      "id": "case-log-slug",
+      "protocolId": "completed-protocol-slug",
+      "label": "Human-readable case-log title",
+      "strategyName": "Strategy or Intervention Name",
+      "category": "training | nutrition | surgery | medication | supplement | device | cosmetic | habit | other",
+      "status": "completed",
+      "dose": "Neutral summary of the tracked exposure, without dosing advice.",
+      "frequency": "Tracked cadence or duration.",
+      "window": "YYYY-MM-DD - YYYY-MM-DD",
+      "adherenceCount": 0,
+      "averageScore": null,
+      "snapshotCount": 0,
+      "outcomeSummary": "Completed-protocol outcome summary, matching the app's protocol case-log shape.",
+      "projectionSummary": "Projected band vs actual summary, or no defensible projection configured.",
+      "sourceType": "seeded | user-submitted | curator-entered | literature case",
+      "reviewStatus": "needs source review",
+      "notes": "What this n=1 log can and cannot show.",
+      "limitations": [
+        "Single-person report, not generalizable.",
+        "Not advice, coaching, dosing, or a protocol recommendation."
       ]
     }
   ]
