@@ -1,6 +1,7 @@
 from math import exp
 
-from app.models import MatchResponse, MatchResult, MeasurementSet, TargetProfile
+from app.data.match_priorities import MATCH_PRIORITY_PRESETS
+from app.models import MatchPriorityPreset, MatchResponse, MatchResult, MeasurementSet, TargetProfile
 from app.percentiles import estimate_percentiles
 from app.repositories import TargetRepository
 
@@ -45,6 +46,22 @@ SCORING_RATIOS = [
     ),
 ]
 
+DEFAULT_MATCH_PRIORITY_ID = "balanced"
+
+
+def get_match_priorities() -> list[MatchPriorityPreset]:
+    return [MatchPriorityPreset.model_validate(preset) for preset in MATCH_PRIORITY_PRESETS]
+
+
+def resolve_match_priority(priority_id: str | None = None) -> MatchPriorityPreset:
+    requested_id = priority_id or DEFAULT_MATCH_PRIORITY_ID
+    priorities = get_match_priorities()
+
+    return next(
+        (priority for priority in priorities if priority.id == requested_id),
+        priorities[0],
+    )
+
 
 def get_targets(repository: TargetRepository | None = None) -> list[TargetProfile]:
     target_repository = repository or TargetRepository()
@@ -55,16 +72,24 @@ def ratio_value(values: dict, numerator_key: str, denominator_key: str) -> float
     return values[numerator_key] / max(values[denominator_key], 0.001)
 
 
-def score_parts(current: MeasurementSet, target: TargetProfile) -> list[tuple[str, float, float]]:
+def score_parts(
+    current: MeasurementSet,
+    target: TargetProfile,
+    priority_id: str | None = None,
+) -> list[tuple[str, float, float]]:
     current_values = current.model_dump()
     target_values = target.measurements.model_dump()
     height = max(current.height, 1.0)
+    priority = resolve_match_priority(priority_id)
 
     absolute_parts = [
         (
             label,
             current_values[key] - target_values[key],
-            abs(current_values[key] - target_values[key]) * weight / height,
+            abs(current_values[key] - target_values[key])
+            * weight
+            * priority.fieldMultipliers.get(key, 1.0)
+            / height,
         )
         for key, weight, label in SCORING_KEYS
     ]
@@ -78,7 +103,8 @@ def score_parts(current: MeasurementSet, target: TargetProfile) -> list[tuple[st
                 ratio_value(current_values, numerator_key, denominator_key)
                 - ratio_value(target_values, numerator_key, denominator_key)
             )
-            * weight,
+            * weight
+            * priority.ratioMultipliers.get(label, 1.0),
         )
         for label, numerator_key, denominator_key, weight in SCORING_RATIOS
     ]
@@ -86,11 +112,16 @@ def score_parts(current: MeasurementSet, target: TargetProfile) -> list[tuple[st
     return absolute_parts + ratio_parts
 
 
-def score_match(current: MeasurementSet, target: TargetProfile) -> float:
-    total = sum(part[2] for part in score_parts(current, target))
+def score_match(
+    current: MeasurementSet,
+    target: TargetProfile,
+    priority_id: str | None = None,
+) -> float:
+    priority = resolve_match_priority(priority_id)
+    total = sum(part[2] for part in score_parts(current, target, priority.id))
 
     if current.sex != target.measurements.sex:
-        total += 0.12
+        total += 0.12 * priority.sexMismatchMultiplier
 
     return round(total, 4)
 
@@ -104,8 +135,17 @@ def similarity_from_distance(distance: float) -> float:
     )
 
 
-def explain_match(current: MeasurementSet, target: TargetProfile) -> list[str]:
-    largest_gaps = sorted(score_parts(current, target), key=lambda item: item[2], reverse=True)[:3]
+def explain_match(
+    current: MeasurementSet,
+    target: TargetProfile,
+    priority_id: str | None = None,
+) -> list[str]:
+    priority = resolve_match_priority(priority_id)
+    largest_gaps = sorted(
+        score_parts(current, target, priority.id),
+        key=lambda item: item[2],
+        reverse=True,
+    )[:3]
     explanations = []
 
     for label, signed_delta, _score_part in largest_gaps:
@@ -130,12 +170,16 @@ def explain_match(current: MeasurementSet, target: TargetProfile) -> list[str]:
     return explanations
 
 
-def build_match_response(current: MeasurementSet) -> MatchResponse:
+def build_match_response(
+    current: MeasurementSet,
+    priority_id: str | None = None,
+) -> MatchResponse:
+    priority = resolve_match_priority(priority_id)
     targets = get_targets()
     matches = []
 
     for target in targets:
-        distance = score_match(current, target)
+        distance = score_match(current, target, priority.id)
         matches.append(
             MatchResult(
                 id=target.id,
@@ -145,7 +189,7 @@ def build_match_response(current: MeasurementSet) -> MatchResponse:
                 notes=target.notes,
                 source_type=target.source_type,
                 measurements=target.measurements,
-                explanation=explain_match(current, target),
+                explanation=explain_match(current, target, priority.id),
             )
         )
 
@@ -158,4 +202,5 @@ def build_match_response(current: MeasurementSet) -> MatchResponse:
         top_match=ranked[0] if ranked else None,
         matches=ranked,
         percentiles=estimate_percentiles(current),
+        priority=priority.id,
     )

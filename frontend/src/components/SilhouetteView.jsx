@@ -1,4 +1,4 @@
-import { buildFrontSilhouette } from "../lib/silhouette";
+import { buildSilhouette, silhouetteViewOptions } from "../lib/silhouette";
 import { measurementFields } from "../lib/measurements";
 
 const measurementLabels = Object.fromEntries(
@@ -24,12 +24,19 @@ export default function SilhouetteView({
   measurements,
   label,
   hoveredMeasurement,
-  onMeasurementHover
+  onMeasurementHover,
+  view = "front"
 }) {
-  const silhouette = buildFrontSilhouette(measurements);
+  const viewId = view === "side" ? "side" : "front";
+  const silhouette = buildSilhouette(measurements, viewId);
   const highlightedAnchor = silhouette.anchors[hoveredMeasurement];
   const titleId = `${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-silhouette-title`;
   const descriptionId = `${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-silhouette-description`;
+  const title = viewId === "side" ? `${label} side silhouette` : `${label} silhouette`;
+  const description =
+    viewId === "side"
+      ? "Side-view body outline generated from entered measurements by estimating profile depth from circumference and width fields. Focus a measurement anchor to highlight the corresponding body span."
+      : "Front-view body outline generated from entered measurements. Focus a measurement anchor to highlight the corresponding body span.";
 
   return (
     <figure className="silhouette-figure">
@@ -39,18 +46,19 @@ export default function SilhouetteView({
         role="img"
         aria-labelledby={`${titleId} ${descriptionId}`}
       >
-        <title id={titleId}>{label} silhouette</title>
-        <desc id={descriptionId}>
-          Front-view body outline generated from entered measurements. Focus a
-          measurement anchor to highlight the corresponding body span.
-        </desc>
+        <title id={titleId}>{title}</title>
+        <desc id={descriptionId}>{description}</desc>
         <line x1="120" y1="10" x2="120" y2="345" className="silhouette-axis" />
-        <circle
-          cx={silhouette.head.cx}
-          cy={silhouette.head.cy}
-          r={silhouette.head.r}
-          className="silhouette-head"
-        />
+        {silhouette.head.path ? (
+          <path d={silhouette.head.path} className="silhouette-head silhouette-head-profile" />
+        ) : (
+          <circle
+            cx={silhouette.head.cx}
+            cy={silhouette.head.cy}
+            r={silhouette.head.r}
+            className="silhouette-head"
+          />
+        )}
         <path d={silhouette.path} className="silhouette-body" />
 
         {highlightedAnchor ? (
@@ -111,5 +119,22 @@ export default function SilhouetteView({
       </svg>
       <figcaption>{label}</figcaption>
     </figure>
+  );
+}
+
+export function SilhouetteViewToggle({ view, onViewChange, label = "Silhouette view" }) {
+  return (
+    <div className="silhouette-view-toggle" role="group" aria-label={label}>
+      {silhouetteViewOptions.map((option) => (
+        <button
+          key={option.id}
+          className={`button ${view === option.id ? "is-active" : ""}`}
+          type="button"
+          onClick={() => onViewChange?.(option.id)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
   );
 }

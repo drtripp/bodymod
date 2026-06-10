@@ -25,7 +25,8 @@ export default function OnboardingPanel({
   onProfileChange,
   onSetMeasurement,
   onApplyDemo,
-  onSaveFirstSnapshot
+  onSaveFirstSnapshot,
+  silhouetteView = "front"
 }) {
   const selectedGoal = goalById(profile.goalId);
   const completion = coreCompletion(profile);
@@ -151,7 +152,11 @@ export default function OnboardingPanel({
         </div>
 
         <div className="onboarding-payoff" aria-label="Instant payoff">
-          <SilhouetteView measurements={measurements} label="Onboarding profile" />
+          <SilhouetteView
+            measurements={measurements}
+            label="Onboarding profile"
+            view={silhouetteView}
+          />
           <div className="payoff-copy">
             <strong>{topMatch}</strong>
             <span>Height {formatPercentile(result.percentiles?.height)}</span>

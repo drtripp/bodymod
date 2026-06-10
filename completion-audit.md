@@ -14,11 +14,11 @@ User request:
 | --- | --- | --- |
 | Read and reconcile `body-modding-platform-plan.md` | `body-modding-platform-plan.md` now separates current product, near-term roadmap, future feature areas, guardrails, and open questions. | Done |
 | Rewrite docs using current repo state as truth | `README.md`, `mvp-build-spec.md`, `site-implementation-plan.md`, `body-modding-platform-plan.md`, and `deployment.md` describe the implemented React/Vite + FastAPI app rather than the older plan. | Done |
-| Flesh out measurement-first app features | `frontend/src/App.jsx`, components, and libs implement expanded measurement entry, validation, silhouette, top match plus runner-up display, simplified result metrics, snapshots, local trend charting, per-metric snapshot history charts, historical weight CSV import, encrypted local backup/restore, goal progress and maintenance drift alerts, current-vs-prior snapshot silhouette comparison, target metadata/explanation display, target difference tables, tabbed result / vs Target / vs US Population panes, Body/Diet top-level navigation, Diet food lookup/barcode/logging, header share action, method/privacy footnote, local events, and corpus UI. | Implemented as prototype |
-| Backend target and match support | `backend/app/main.py`, `backend/app/services.py`, `backend/app/repositories.py`, `backend/app/data/targets.seed.json`, `backend/app/models.py`, `target-profiles-template.json`, and `target-profile-curation.md` expose health, targets, match endpoints, a SQLite-backed target repository, a target data template, and a target curation rubric. | Done |
+| Flesh out measurement-first app features | `frontend/src/App.jsx`, components, and libs implement expanded measurement entry, validation, front/side silhouette projections, configurable match-priority presets, top match plus runner-up display, simplified result metrics, snapshots, local trend charting, per-metric snapshot history charts, historical weight CSV import, encrypted local backup/restore, goal progress and maintenance drift alerts, current-vs-prior snapshot silhouette comparison, target metadata/explanation display, target difference tables, tabbed result / vs Target / vs US Population panes, Body/Diet top-level navigation, Diet food lookup/barcode/logging/import, expanded micronutrient target rows, header share action, method/privacy footnote, local events, and corpus UI. | Implemented as prototype |
+| Backend target and match support | `backend/app/main.py`, `backend/app/services.py`, `backend/app/repositories.py`, `backend/app/data/targets.seed.json`, `backend/app/data/match_priorities.py`, `backend/app/models.py`, `target-profiles-template.json`, and `target-profile-curation.md` expose health, targets, match endpoints, configurable scoring-priority presets, a SQLite-backed target repository, a target data template, and a target curation rubric. | Done |
 | Approximate percentile output | `backend/app/percentiles.py`, `backend/app/data/reference.py`, and `reference-data-curation.md` implement labeled approximate reference percentiles and define the production replacement standard. | Prototype only |
 | Strategy corpus scaffold | `frontend/src/components/StrategyCorpus.jsx`, `frontend/src/lib/strategyCorpus.js`, `frontend/tests/strategyCorpus.node.mjs`, `strategy-corpus-template.json`, and `strategy-corpus-curation.md` provide overlay-based outcome-first browsing, one efficacy/risk plot per selected outcome, clickable dot labels, synopsis modals, strategy detail views, metadata, local import/export/persistence, validation tests, a curation template, and a manual review rubric. | Scaffold done |
-| Tests simulating frontend users | `frontend/tests/app.spec.js` and `frontend/tests/mobile.spec.js` cover desktop and phone workflows with mocked backend responses, no-backend behavior, target comparison, population chart mode/axis controls, snapshots, snapshot history charts, sharing, historical weight import, encrypted backup restore, maintenance drift alerts, Diet search/barcode/logging, 10 persona account walkthroughs, and strategy corpus use. Node helper suites cover parser, crypto, chart, and calculation behavior. | Done |
+| Tests simulating frontend users | `frontend/tests/app.spec.js` and `frontend/tests/mobile.spec.js` cover desktop and phone workflows with mocked backend responses, no-backend behavior, target comparison, match-priority switching, front/side silhouette view switching, population chart mode/axis controls, snapshots, snapshot history charts, sharing, historical weight import, encrypted backup restore, maintenance drift alerts, Diet search/barcode/logging/import, expanded micronutrient totals, 10 persona account walkthroughs, and strategy corpus use. Node helper suites cover parser, crypto, chart, projection, and calculation behavior. | Done |
 | Screenshot capture for visual/model review | `frontend/tests/capture-screenshots.mjs`, `npm run capture:screenshots`, and `review-screenshots/*.png` capture desktop and mobile review states after opening the vs Target overlap view. | Done |
 | Use local Qwen vision model | Earlier local Qwen review artifacts were removed from the test/review suite at user request. Current verification relies on deterministic tests and screenshot capture. | Removed from scope |
 | Verification of backend behavior | `backend/tests/` covers API, service ranking, schema alignment, target data, and percentile bounds/monotonicity. | Done |
@@ -41,7 +41,9 @@ The wrapper runs the component commands below and cleans Playwright output.
 cd frontend
 npm run test:corpus
 npm run test:diet
+npm run test:diet-import
 npm run test:adaptive-tdee
+npm run test:silhouette
 npm run test:history-import
 npm run test:local-backup
 npm run test:tracking
@@ -54,13 +56,15 @@ Observed result:
 
 - frontend build passed
 - Node corpus validation passed `5` tests
-- Node diet validation passed `10` tests
+- Node diet validation passed `11` tests
+- Node diet CSV import validation passed `4` tests
+- Node silhouette projection validation passed `2` tests
 - Node historical weight import validation passed `4` tests
 - Node encrypted local backup validation passed `4` tests
 - all frontend Node helper suites in `verify.ps1` passed
 - Playwright passed `16` tests
 - screenshot capture passed through `npm run capture:screenshots`
-- desktop/mobile screenshot review passed; targeted account-panel screenshots confirmed the historical importer is readable on desktop and mobile
+- desktop/mobile screenshot review passed; targeted side-view, match-priority, and Diet micronutrient screenshots confirmed the estimated profile projection, priority selector, expanded nutrient cards, and front/side controls are readable on desktop and mobile
 - `.\verify.ps1` completed successfully
 
 ```bash
@@ -70,7 +74,7 @@ cd backend
 
 Observed result:
 
-- backend pytest passed `22` tests
+- backend pytest passed `25` tests
 
 ## Current Decision
 

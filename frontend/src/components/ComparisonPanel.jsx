@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import SilhouetteView from "./SilhouetteView";
+import SilhouetteView, { SilhouetteViewToggle } from "./SilhouetteView";
 import {
   buildMeasurementBandDiff,
   interpolateMeasurements,
@@ -20,7 +20,9 @@ export default function ComparisonPanel({
   onTargetFilterChange,
   currentMeasurements,
   snapshotComparison,
-  comparisonSnapshot
+  comparisonSnapshot,
+  silhouetteView = "front",
+  onSilhouetteViewChange
 }) {
   const [morphPosition, setMorphPosition] = useState(50);
   const [isMorphPlaying, setIsMorphPlaying] = useState(false);
@@ -177,6 +179,14 @@ export default function ComparisonPanel({
             </div>
           ) : null}
 
+          <div className="comparison-view-row">
+            <SilhouetteViewToggle
+              view={silhouetteView}
+              onViewChange={onSilhouetteViewChange}
+              label="Comparison silhouette view"
+            />
+          </div>
+
           <div className="comparison-grid">
             <div
               className={`comparison-visual-stage ${
@@ -199,6 +209,7 @@ export default function ComparisonPanel({
                   <SilhouetteView
                     label={`${selectedTarget.label} morph preview`}
                     measurements={morphMeasurements}
+                    view={silhouetteView}
                   />
                   <div className="morph-readout" aria-label="Morph progress readout">
                     <span>You</span>
@@ -209,12 +220,17 @@ export default function ComparisonPanel({
               ) : (
                 <>
                   <div className="comparison-stage-layer stage-user">
-                    <SilhouetteView label="You" measurements={currentMeasurements} />
+                    <SilhouetteView
+                      label="You"
+                      measurements={currentMeasurements}
+                      view={silhouetteView}
+                    />
                   </div>
                   <div className="comparison-stage-layer stage-target target-silhouette-card">
                     <SilhouetteView
                       label={selectedTarget.label}
                       measurements={selectedTarget.measurements}
+                      view={silhouetteView}
                     />
                   </div>
                 </>
@@ -349,11 +365,16 @@ export default function ComparisonPanel({
         <div className="snapshot-visual-compare" aria-label="Current vs selected snapshot silhouettes">
           <h3>Snapshot silhouettes</h3>
           <div className="snapshot-silhouette-grid">
-            <SilhouetteView label="Current snapshot comparison" measurements={currentMeasurements} />
+            <SilhouetteView
+              label="Current snapshot comparison"
+              measurements={currentMeasurements}
+              view={silhouetteView}
+            />
             <div className="prior-snapshot-card">
               <SilhouetteView
                 label={comparisonSnapshot.label || "Selected snapshot"}
                 measurements={comparisonSnapshot.measurements}
+                view={silhouetteView}
               />
             </div>
           </div>

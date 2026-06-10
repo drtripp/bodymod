@@ -1,5 +1,5 @@
 import { useState } from "react";
-import SilhouetteView from "./SilhouetteView";
+import SilhouetteView, { SilhouetteViewToggle } from "./SilhouetteView";
 import { calculateBodyComposition } from "../lib/bodyComposition";
 import { estimateClothingSizes } from "../lib/clothingSizes";
 import { calculateRatios } from "../lib/ratios";
@@ -27,7 +27,12 @@ export default function ResultSummary({
   apiStatus,
   clothingSizeTables,
   hoveredMeasurement,
-  onMeasurementHover
+  onMeasurementHover,
+  silhouetteView = "front",
+  onSilhouetteViewChange,
+  matchPriority = "balanced",
+  matchPriorityPresets = [],
+  onMatchPriorityChange
 }) {
   const [shareStatus, setShareStatus] = useState("");
   const ratios = calculateRatios(measurements);
@@ -38,6 +43,10 @@ export default function ResultSummary({
     .map((method) => `${method.label} ${formatPercent(method.value)}`)
     .join(" / ");
   const runnerUp = result?.matches?.[1] || null;
+  const selectedPriority =
+    matchPriorityPresets.find((preset) => preset.id === matchPriority) ||
+    matchPriorityPresets[0] ||
+    null;
   const metricBlocks = [
     {
       id: "height",
@@ -109,16 +118,45 @@ export default function ResultSummary({
   return (
     <section className="panel">
       <div className="result-grid">
-        <SilhouetteView
-          label="Current profile"
-          measurements={measurements}
-          hoveredMeasurement={hoveredMeasurement}
-          onMeasurementHover={onMeasurementHover}
-        />
+        <div className="silhouette-card-stack">
+          <SilhouetteViewToggle
+            view={silhouetteView}
+            onViewChange={onSilhouetteViewChange}
+            label="Result silhouette view"
+          />
+          <SilhouetteView
+            label="Current profile"
+            measurements={measurements}
+            hoveredMeasurement={hoveredMeasurement}
+            onMeasurementHover={onMeasurementHover}
+            view={silhouetteView}
+          />
+        </div>
 
         <div className="result-copy">
           <div className="top-match-block">
             <h3>Top match</h3>
+            {matchPriorityPresets.length ? (
+              <label className="field compact-field match-priority-field">
+                <span className="field-label">Match priority</span>
+                <select
+                  aria-label="Match priority"
+                  value={matchPriority}
+                  onChange={(event) => onMatchPriorityChange?.(event.target.value)}
+                >
+                  {matchPriorityPresets.map((preset) => (
+                    <option key={preset.id} value={preset.id}>
+                      {preset.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            {selectedPriority ? (
+              <small className="muted-text match-priority-summary">
+                {selectedPriority.summary}
+              </small>
+            ) : null}
             <p>{result?.top_match?.label || "No match yet"}</p>
             <span>Similarity score: {formatScore(result?.top_match?.similarity)}</span>
             {runnerUp ? (

@@ -171,16 +171,20 @@ Source files:
 Status:
 
 - implemented
-- front-view only
+- supports front-view and estimated side-view projections
+- side view estimates profile depth from circumference relative to available
+  width fields; it is deterministic projection, not camera-measured depth
 - deterministic
 - measurement anchors are interactive
 - SVG title/description and human-readable anchor labels are exposed for assistive technology
-- Playwright covers minimum and maximum valid measurement profiles
+- Playwright covers minimum and maximum valid measurement profiles plus the
+  front/side view toggle
 
 Next:
 
 - continue manual visual QA across more real-world body shapes
-- add comparison rendering variants
+- keep refining comparison rendering variants as more real-world profiles are
+  tested
 
 ### Matching Engine
 
@@ -189,16 +193,20 @@ Source files:
 - `backend/app/services.py`
 - `backend/app/repositories.py`
 - `backend/app/data/targets.seed.json`
+- `backend/app/data/match_priorities.py`
 
 Status:
 
 - implemented as scaffold logic
 - height-normalized absolute distance plus shoulder/waist and waist/hip ratio terms
+- backend-served match-priority presets adjust field and ratio weights for
+  balanced, shoulders, and waist/hip matching
 - target data is placeholder-quality
 - target data is served from a SQLite repository seeded from JSON, not in-code dicts
 - explanation bullets are exposed in the response
 - target list can be searched, filtered by source type, and sorted by score or name
 - API and service tests cover ranking and response shape
+- API and service tests cover match-priority preset data and weighted score parts
 - target-data integrity tests cover schema validity, unique IDs, source type, and visible placeholder notes
 - target profile template and curation guide exist for future production data
 
@@ -237,14 +245,15 @@ Status:
 
 - component is wired into `App.jsx`
 - shown as the vs Target tab beside the result and vs US Population panes
-- overlap mode currently overlays silhouettes rather than computing true diff regions
+- overlap mode pairs silhouette overlay with measurement-band diff regions
 - no-backend state explains that target comparison needs loaded target profiles while snapshot comparison remains local
 - current-vs-target measurement difference table is visible below the comparison renderer
 - selected target type, source/placeholder note, and largest score-driver bullets are visible above the renderer
+- supports the shared front/side silhouette view toggle
 
 Next:
 
-- decide whether overlap stays simple or becomes measurement-band diff
+- continue visual QA across more real-world body shapes
 
 ### Population Renderer
 
@@ -302,6 +311,34 @@ Status:
 Next:
 
 - expand longitudinal charts if local tracking becomes a core workflow
+
+### Diet Tracker
+
+Source files:
+
+- `frontend/src/components/DietDashboard.jsx`
+- `frontend/src/lib/diet.js`
+- `frontend/src/lib/storage.js`
+
+Status:
+
+- implemented as local-first browser storage
+- Open Food Facts search and barcode lookup normalize macros and selected
+  micronutrients
+- custom foods, recent foods, favorites, saved meals, and latest-day copy are
+  local-only
+- pasted/file CSV import accepts flexible MFP/Cronometer-style date, meal, food,
+  macro, and micronutrient headers through `frontend/src/lib/dietImport.js`
+- macro targets use the placeholder Mifflin-St Jeor estimate and selectable
+  goal/activity settings
+- expanded micronutrient rows show actuals plus goal/limit percentages for
+  fiber, sugar, sodium, potassium, calcium, iron, magnesium, zinc, vitamin C,
+  vitamin D, and B12
+- fluid logging tracks target-vs-actual progress
+
+Next:
+
+- add a second food source once credential and data-source decisions are made
 
 ### Method And Privacy Content
 

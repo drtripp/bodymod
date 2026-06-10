@@ -216,7 +216,8 @@ export default function AccountGoalPanel({
   snapshotProps,
   targetProfiles = [],
   onOpenStrategies,
-  onClose
+  onClose,
+  silhouetteView = "front"
 }) {
   const [planningData, setPlanningData] = useState(emptyPlanningData);
   const [planningStatus, setPlanningStatus] = useState("Loading planning data...");
@@ -2055,10 +2056,12 @@ export default function AccountGoalPanel({
                                       <SilhouetteView
                                         label={`${protocol.label} protocol start`}
                                         measurements={protocol.startingMeasurements || currentMeasurements}
+                                        view={silhouetteView}
                                       />
                                       <SilhouetteView
                                         label={`${protocol.label} projected endpoint`}
                                         measurements={projectedSilhouette.measurements}
+                                        view={silhouetteView}
                                       />
                                     </div>
                                     <p>
@@ -2489,7 +2492,11 @@ export default function AccountGoalPanel({
                     <img src={latestPhoto.dataUrl} alt={`${latestPhoto.category} progress`} />
                     <figcaption>{photoOptionLabel(latestPhoto)}</figcaption>
                   </figure>
-                  <SilhouetteView measurements={currentMeasurements} label="Photo reference profile" />
+                  <SilhouetteView
+                    measurements={currentMeasurements}
+                    label="Photo reference profile"
+                    view={silhouetteView}
+                  />
                 </div>
               ) : null}
 

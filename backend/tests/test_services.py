@@ -4,6 +4,7 @@ from app.repositories import load_target_seed
 from app.services import (
     build_match_response,
     get_targets,
+    resolve_match_priority,
     score_match,
     score_parts,
     similarity_from_distance,
@@ -57,6 +58,45 @@ def test_score_includes_ratio_distance() -> None:
     labels = [part[0] for part in score_parts(altered, target)]
     assert "shoulder / waist" in labels
     assert "waist / hip" in labels
+
+
+def test_match_priority_presets_change_score_weights() -> None:
+    current = measurement(0)
+    target = get_targets()[0]
+    altered = current.model_copy(
+        update={
+            "bideltoidCircumference": current.bideltoidCircumference + 10,
+            "waistCircumference": current.waistCircumference + 10,
+            "hipCircumference": current.hipCircumference + 10,
+        }
+    )
+
+    balanced_parts = dict(
+        (label, score_part)
+        for label, _signed_delta, score_part in score_parts(altered, target, "balanced")
+    )
+    shoulder_parts = dict(
+        (label, score_part)
+        for label, _signed_delta, score_part in score_parts(altered, target, "shoulders")
+    )
+    waist_hip_parts = dict(
+        (label, score_part)
+        for label, _signed_delta, score_part in score_parts(altered, target, "waist-hip")
+    )
+
+    assert shoulder_parts["shoulder mass"] > balanced_parts["shoulder mass"]
+    assert shoulder_parts["shoulder / waist"] > balanced_parts["shoulder / waist"]
+    assert waist_hip_parts["waist"] > balanced_parts["waist"]
+    assert waist_hip_parts["waist / hip"] > balanced_parts["waist / hip"]
+    assert score_match(altered, target, "unknown") == score_match(altered, target, "balanced")
+    assert resolve_match_priority("unknown").id == "balanced"
+
+
+def test_match_response_records_selected_priority() -> None:
+    response = build_match_response(measurement(0), "waist-hip")
+
+    assert response.priority == "waist-hip"
+    assert response.matches == sorted(response.matches, key=lambda item: item.score)
 
 
 def test_normal_percentile_is_monotonic() -> None:

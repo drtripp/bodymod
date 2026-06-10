@@ -49,6 +49,15 @@ class MatchResult(BaseModel):
     explanation: list[str] = []
 
 
+class MatchPriorityPreset(BaseModel):
+    id: str
+    label: str
+    summary: str
+    fieldMultipliers: dict[str, float] = {}
+    ratioMultipliers: dict[str, float] = {}
+    sexMismatchMultiplier: float = 1.0
+
+
 class PercentileSummary(BaseModel):
     height: int
     waistCircumference: int
@@ -60,6 +69,7 @@ class MatchResponse(BaseModel):
     top_match: MatchResult | None
     matches: list[MatchResult]
     percentiles: PercentileSummary
+    priority: str = "balanced"
 
 
 class PersonaProfile(BaseModel):

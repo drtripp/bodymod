@@ -26,10 +26,12 @@ try {
   try {
     Invoke-Checked { npm run test:corpus }
     Invoke-Checked { npm run test:diet }
+    Invoke-Checked { npm run test:diet-import }
     Invoke-Checked { npm run test:adaptive-tdee }
     Invoke-Checked { npm run test:ratios }
     Invoke-Checked { npm run test:body-composition }
     Invoke-Checked { npm run test:comparison }
+    Invoke-Checked { npm run test:silhouette }
     Invoke-Checked { npm run test:sizes }
     Invoke-Checked { npm run test:workouts }
     Invoke-Checked { npm run test:photos }

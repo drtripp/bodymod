@@ -12,7 +12,7 @@ from app.models import ExerciseLibrary
 from app.models import MeasurementGuideLibrary
 from app.models import MeasurementSet
 from app.models import PlanningData
-from app.services import build_match_response, get_targets
+from app.services import build_match_response, get_match_priorities, get_targets
 
 app = FastAPI(title="bodymod api", version="0.1.0")
 
@@ -52,8 +52,14 @@ def list_targets() -> dict[str, list[dict]]:
 
 
 @app.post("/api/match")
-def match_profile(measurements: MeasurementSet) -> dict:
-    return build_match_response(measurements).model_dump()
+def match_profile(measurements: MeasurementSet, priority: str = "balanced") -> dict:
+    return build_match_response(measurements, priority).model_dump()
+
+
+@app.get("/api/match-priorities")
+def match_priorities() -> dict[str, list[dict]]:
+    priorities = [priority.model_dump() for priority in get_match_priorities()]
+    return {"priorities": priorities}
 
 
 @app.get("/api/planning")

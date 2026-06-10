@@ -14,7 +14,19 @@ export const sampleFoods = [
     brand: "Sample food",
     serving: "170 g",
     macros: { calories: 100, protein: 17, carbs: 6, fat: 0 },
-    micros: { fiber: 0, sugar: 6, sodium: 65, calcium: 180, iron: 0 }
+    micros: {
+      fiber: 0,
+      sugar: 6,
+      sodium: 65,
+      potassium: 240,
+      calcium: 180,
+      iron: 0,
+      magnesium: 18,
+      zinc: 0.9,
+      vitaminC: 0,
+      vitaminD: 0,
+      vitaminB12: 1.1
+    }
   },
   {
     id: "sample-chicken-rice",
@@ -22,7 +34,19 @@ export const sampleFoods = [
     brand: "Sample meal",
     serving: "350 g",
     macros: { calories: 520, protein: 43, carbs: 58, fat: 11 },
-    micros: { fiber: 3, sugar: 2, sodium: 620, calcium: 42, iron: 2.1 }
+    micros: {
+      fiber: 3,
+      sugar: 2,
+      sodium: 620,
+      potassium: 620,
+      calcium: 42,
+      iron: 2.1,
+      magnesium: 75,
+      zinc: 1.8,
+      vitaminC: 2,
+      vitaminD: 0,
+      vitaminB12: 0.3
+    }
   },
   {
     id: "sample-oats",
@@ -30,9 +54,49 @@ export const sampleFoods = [
     brand: "Sample food",
     serving: "40 g",
     macros: { calories: 150, protein: 5, carbs: 27, fat: 3 },
-    micros: { fiber: 4, sugar: 1, sodium: 2, calcium: 20, iron: 1.7 }
+    micros: {
+      fiber: 4,
+      sugar: 1,
+      sodium: 2,
+      potassium: 140,
+      calcium: 20,
+      iron: 1.7,
+      magnesium: 55,
+      zinc: 1.2,
+      vitaminC: 0,
+      vitaminD: 0,
+      vitaminB12: 0
+    }
   }
 ];
+
+export const micronutrientTargets = [
+  { id: "fiber", label: "Fiber", unit: "g", target: 30, digits: 1, targetType: "goal" },
+  { id: "sugar", label: "Sugar", unit: "g", target: 50, digits: 1, targetType: "limit" },
+  { id: "sodium", label: "Sodium", unit: "mg", target: 2300, digits: 0, targetType: "limit" },
+  { id: "potassium", label: "Potassium", unit: "mg", target: 3400, digits: 0, targetType: "goal" },
+  { id: "calcium", label: "Calcium", unit: "mg", target: 1000, digits: 0, targetType: "goal" },
+  { id: "iron", label: "Iron", unit: "mg", target: 18, digits: 1, targetType: "goal" },
+  { id: "magnesium", label: "Magnesium", unit: "mg", target: 420, digits: 0, targetType: "goal" },
+  { id: "zinc", label: "Zinc", unit: "mg", target: 11, digits: 1, targetType: "goal" },
+  { id: "vitaminC", label: "Vitamin C", unit: "mg", target: 90, digits: 0, targetType: "goal" },
+  { id: "vitaminD", label: "Vitamin D", unit: "mcg", target: 20, digits: 1, targetType: "goal" },
+  { id: "vitaminB12", label: "Vitamin B12", unit: "mcg", target: 2.4, digits: 1, targetType: "goal" }
+];
+
+const micronutrientProductFields = {
+  fiber: { keys: ["fiber_serving", "fiber_100g"], multiplier: 1 },
+  sugar: { keys: ["sugars_serving", "sugars_100g"], multiplier: 1 },
+  sodium: { keys: ["sodium_serving", "sodium_100g"], multiplier: 1000 },
+  potassium: { keys: ["potassium_serving", "potassium_100g"], multiplier: 1000 },
+  calcium: { keys: ["calcium_serving", "calcium_100g"], multiplier: 1000 },
+  iron: { keys: ["iron_serving", "iron_100g"], multiplier: 1000 },
+  magnesium: { keys: ["magnesium_serving", "magnesium_100g"], multiplier: 1000 },
+  zinc: { keys: ["zinc_serving", "zinc_100g"], multiplier: 1000 },
+  vitaminC: { keys: ["vitamin-c_serving", "vitamin-c_100g"], multiplier: 1000 },
+  vitaminD: { keys: ["vitamin-d_serving", "vitamin-d_100g"], multiplier: 1000000 },
+  vitaminB12: { keys: ["vitamin-b12_serving", "vitamin-b12_100g"], multiplier: 1000000 }
+};
 
 export const dietGoalOptions = [
   {
@@ -90,6 +154,10 @@ function stableFoodId(prefix = "food") {
 function cleanText(value, fallback = "") {
   const text = String(value || "").trim();
   return text || fallback;
+}
+
+function emptyMicros() {
+  return Object.fromEntries(micronutrientTargets.map((target) => [target.id, 0]));
 }
 
 export function mergeFoodLists(...foodLists) {
@@ -152,6 +220,13 @@ export function foodMatchesQuery(food, query) {
 }
 
 export function normalizeCustomFood(input = {}, id = stableFoodId("custom")) {
+  const micros = Object.fromEntries(
+    micronutrientTargets.map((target) => [
+      target.id,
+      numberField(input[target.id] ?? input.micros?.[target.id])
+    ])
+  );
+
   return {
     id,
     name: cleanText(input.name, "Custom food"),
@@ -164,13 +239,7 @@ export function normalizeCustomFood(input = {}, id = stableFoodId("custom")) {
       carbs: numberField(input.carbs ?? input.macros?.carbs),
       fat: numberField(input.fat ?? input.macros?.fat)
     },
-    micros: {
-      fiber: numberField(input.fiber ?? input.micros?.fiber),
-      sugar: numberField(input.sugar ?? input.micros?.sugar),
-      sodium: numberField(input.sodium ?? input.micros?.sodium),
-      calcium: numberField(input.calcium ?? input.micros?.calcium),
-      iron: numberField(input.iron ?? input.micros?.iron)
-    }
+    micros
   };
 }
 
@@ -335,6 +404,19 @@ export function macroTargetRows(actualMacros = {}, targets = {}) {
   });
 }
 
+export function micronutrientTargetRows(actualMicros = {}) {
+  return micronutrientTargets.map((target) => {
+    const actual = numberField(actualMicros[target.id]);
+    const percent = target.target > 0 ? Math.round(Math.min(999, (actual / target.target) * 100)) : 0;
+
+    return {
+      ...target,
+      actual,
+      percent
+    };
+  });
+}
+
 function nutriment(nutriments, keys) {
   for (const key of keys) {
     if (nutriments?.[key] !== undefined) {
@@ -347,6 +429,15 @@ function nutriment(nutriments, keys) {
 
 export function normalizeFoodProduct(product) {
   const nutriments = product?.nutriments || {};
+  const micros = Object.fromEntries(
+    micronutrientTargets.map((target) => {
+      const field = micronutrientProductFields[target.id];
+      return [
+        target.id,
+        nutriment(nutriments, field.keys) * field.multiplier
+      ];
+    })
+  );
 
   return {
     id: product?.code ? `off-${product.code}` : crypto.randomUUID(),
@@ -362,13 +453,7 @@ export function normalizeFoodProduct(product) {
       carbs: nutriment(nutriments, ["carbohydrates_serving", "carbohydrates_100g"]),
       fat: nutriment(nutriments, ["fat_serving", "fat_100g"])
     },
-    micros: {
-      fiber: nutriment(nutriments, ["fiber_serving", "fiber_100g"]),
-      sugar: nutriment(nutriments, ["sugars_serving", "sugars_100g"]),
-      sodium: nutriment(nutriments, ["sodium_serving", "sodium_100g"]) * 1000,
-      calcium: nutriment(nutriments, ["calcium_serving", "calcium_100g"]) * 1000,
-      iron: nutriment(nutriments, ["iron_serving", "iron_100g"]) * 1000
-    }
+    micros
   };
 }
 
@@ -444,7 +529,7 @@ export function sumNutrition(entries) {
     },
     {
       macros: { calories: 0, protein: 0, carbs: 0, fat: 0 },
-      micros: { fiber: 0, sugar: 0, sodium: 0, calcium: 0, iron: 0 }
+      micros: emptyMicros()
     }
   );
 }

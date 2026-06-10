@@ -12,6 +12,8 @@ import {
   macroTargetRows,
   mealSummary,
   mergeFoodLists,
+  micronutrientTargets,
+  micronutrientTargetRows,
   normalizeMealTemplate,
   normalizeFoodProduct,
   normalizeCustomFood,
@@ -36,8 +38,14 @@ const openFoodFactsProduct = {
     fiber_serving: 0,
     sugars_serving: 7,
     sodium_serving: 0.06,
+    potassium_serving: 0.24,
     calcium_serving: 0.18,
-    iron_serving: 0.0002
+    iron_serving: 0.0002,
+    magnesium_serving: 0.035,
+    zinc_serving: 0.0011,
+    "vitamin-c_serving": 0.012,
+    "vitamin-d_serving": 0.0000015,
+    "vitamin-b12_serving": 0.0000012
   }
 };
 
@@ -49,7 +57,12 @@ test("normalizes Open Food Facts products into app nutrition rows", () => {
   assert.equal(food.macros.calories, 140);
   assert.equal(food.macros.protein, 20);
   assert.equal(food.micros.sodium, 60);
+  assert.equal(food.micros.potassium, 240);
   assert.equal(food.micros.calcium, 180);
+  assert.equal(food.micros.magnesium, 35);
+  assert.equal(food.micros.vitaminC, 12);
+  assert.equal(food.micros.vitaminD, 1.5);
+  assert.equal(food.micros.vitaminB12, 1.2);
 });
 
 test("scales macros and micros by serving count", () => {
@@ -68,6 +81,7 @@ test("sums diet log nutrition totals", () => {
   assert.equal(totals.macros.calories, 210);
   assert.equal(totals.macros.protein, 30);
   assert.equal(totals.micros.calcium, 270);
+  assert.equal(totals.micros.potassium, 360);
 });
 
 test("calculates formula-based macro targets from measurements and goal rate", () => {
@@ -101,6 +115,37 @@ test("builds macro target progress rows for logged totals", () => {
   assert.equal(byId.protein.percent, 31);
 });
 
+test("builds expanded micronutrient target rows", () => {
+  const rows = micronutrientTargetRows({
+    fiber: 15,
+    sodium: 1150,
+    potassium: 1700,
+    vitaminD: 10,
+    vitaminB12: 2.4
+  });
+  const byId = Object.fromEntries(rows.map((row) => [row.id, row]));
+
+  assert.deepEqual(micronutrientTargets.map((target) => target.id), [
+    "fiber",
+    "sugar",
+    "sodium",
+    "potassium",
+    "calcium",
+    "iron",
+    "magnesium",
+    "zinc",
+    "vitaminC",
+    "vitaminD",
+    "vitaminB12"
+  ]);
+  assert.equal(byId.fiber.percent, 50);
+  assert.equal(byId.sodium.targetType, "limit");
+  assert.equal(byId.sodium.percent, 50);
+  assert.equal(byId.potassium.percent, 50);
+  assert.equal(byId.vitaminD.unit, "mcg");
+  assert.equal(byId.vitaminB12.percent, 100);
+});
+
 test("normalizes custom foods into local nutrition rows", () => {
   const food = normalizeCustomFood(
     {
@@ -110,7 +155,10 @@ test("normalizes custom foods into local nutrition rows", () => {
       calories: "520",
       protein: "34",
       carbs: "54",
-      fat: "18"
+      fat: "18",
+      potassium: "620",
+      vitaminD: "5",
+      vitaminB12: "1.2"
     },
     "custom-test"
   );
@@ -121,6 +169,9 @@ test("normalizes custom foods into local nutrition rows", () => {
   assert.equal(food.source, "Custom");
   assert.equal(food.macros.calories, 520);
   assert.equal(food.macros.protein, 34);
+  assert.equal(food.micros.potassium, 620);
+  assert.equal(food.micros.vitaminD, 5);
+  assert.equal(food.micros.vitaminB12, 1.2);
 });
 
 test("dedupes, recents, favorites, and local food search helpers", () => {

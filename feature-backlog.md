@@ -63,9 +63,10 @@ Protocol Tracker → Diet upgrades → Native app.
       API field, frontend display, calibration script, tests).
 - [ ] Recalibrate scoring weights once real target data exists. **[human]**
       sign-off on weight changes.
-- [ ] Configurable match priorities: user weighting presets ("prioritize
-      shoulders", "prioritize waist/hip") applied to scoring (from
-      `body-modding-platform-plan.md`).
+- [x] Configurable match priorities: backend-served weighting presets now
+      include balanced, prioritize shoulders, and prioritize waist/hip modes;
+      the selected preset is sent to `/api/match`, changes score-part weights,
+      and is exposed in the result UI.
 - [ ] Attractiveness evidence base **(new)**: sourced summary of the
       peer-reviewed literature on measurable attractiveness correlates — WHR
       (best-studied), shoulder-to-waist ratio, BMI preference ranges,
@@ -220,9 +221,11 @@ Protocol Tracker → Diet upgrades → Native app.
       flagged in `site-implementation-plan.md` — resolve it as: build it).
 - [ ] Comparison rendering variants and silhouette QA across more real-world
       body shapes (incl. extreme valid values).
-- [ ] Side-view silhouette **(new)**: second deterministic projection
-      (requires a depth-related field or estimation from circumference vs
-      width); doubles comparison fidelity. Spec carefully before building.
+- [x] Side-view silhouette **(new)**: second deterministic projection now
+      estimates profile depth from circumference relative to available width,
+      shares the front/side toggle across result/comparison/account views, and
+      is covered by unit and browser tests. It remains an estimated projection,
+      not camera-measured depth.
 - [x] Past self as target **(confirmed)**: any saved snapshot usable as a
       match/comparison target — enables "maintain" and "return to form" goals
       with zero new data requirements.
@@ -307,10 +310,15 @@ Protocol Tracker → Diet upgrades → Native app.
       on US generic/raw foods; FDC is public domain).
 - [x] Water/fluid logging **(new)**: Diet has local fluid entries, quick ml
       presets, manual labels, and target-vs-actual progress.
-- [ ] Micronutrient panel expansion beyond the current five, with %-of-target
-      display.
-- [ ] Diet day import **(new)**: accept MFP/Cronometer CSV exports for
-      switchers; HealthKit nutrition read/write once native ships.
+- [x] Micronutrient panel expansion beyond the current five, with %-of-target
+      display: Diet now tracks fiber, sugar, sodium, potassium, calcium, iron,
+      magnesium, zinc, vitamin C, vitamin D, and B12 with goal/limit rows and
+      optional custom-food inputs.
+- [x] Diet day import **(new)**: Diet accepts pasted or file CSV exports with
+      flexible MFP/Cronometer-style date, meal, food, macro, and micronutrient
+      headers, skips duplicate food rows, and stores imported rows as normal
+      local diet log entries. HealthKit nutrition read/write remains native
+      scope.
 
 ## 9. Workout Logger (offer, don't win)
 

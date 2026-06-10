@@ -12,6 +12,7 @@ import StrategyCorpus from "./components/StrategyCorpus";
 import {
   fetchClothingSizeTables,
   fetchHealth,
+  fetchMatchPriorities,
   fetchMatches,
   fetchMeasurementGuides,
   fetchTargets
@@ -57,6 +58,24 @@ import {
   filterTargets
 } from "./lib/targetFilters";
 
+const fallbackMatchPriorities = [
+  {
+    id: "balanced",
+    label: "Balanced",
+    summary: "Equal all-around body-shape matching."
+  },
+  {
+    id: "shoulders",
+    label: "Prioritize shoulders",
+    summary: "Weights frame width, deltoid width, and shoulder-to-waist ratio more heavily."
+  },
+  {
+    id: "waist-hip",
+    label: "Prioritize waist/hip",
+    summary: "Weights waist, hip, pant-waist, and waist-to-hip ratio more heavily."
+  }
+];
+
 export default function App() {
   const [formState, setFormState] = useState(defaultMeasurements);
   const [displayFormState, setDisplayFormState] = useState(defaultMeasurements);
@@ -75,6 +94,9 @@ export default function App() {
   const [importStatus, setImportStatus] = useState("");
   const [comparisonSnapshotId, setComparisonSnapshotId] = useState("");
   const [comparisonMode, setComparisonMode] = useState("side-by-side");
+  const [silhouetteView, setSilhouetteView] = useState("front");
+  const [matchPriority, setMatchPriority] = useState("balanced");
+  const [matchPriorityPresets, setMatchPriorityPresets] = useState(fallbackMatchPriorities);
   const [selectedTargetId, setSelectedTargetId] = useState("");
   const [targetFilters, setTargetFilters] = useState(defaultTargetFilters);
   const [shareStatus, setShareStatus] = useState("");
@@ -125,6 +147,14 @@ export default function App() {
       })
       .catch(() => setTargets([]));
 
+    fetchMatchPriorities()
+      .then((response) => {
+        if (response.priorities?.length) {
+          setMatchPriorityPresets(response.priorities);
+        }
+      })
+      .catch(() => setMatchPriorityPresets(fallbackMatchPriorities));
+
     fetchClothingSizeTables()
       .then((response) => setClothingSizeTables(response))
       .catch(() => setClothingSizeTables(DEFAULT_CLOTHING_SIZE_TABLES));
@@ -153,18 +183,19 @@ export default function App() {
     }, 180);
 
     return () => window.clearTimeout(timeoutId);
-  }, [fieldUnitOverrides, formState, globalUnitSystem, targets]);
+  }, [fieldUnitOverrides, formState, globalUnitSystem, matchPriority, targets]);
 
   async function runMatch(measurements) {
     setIsLoading(true);
 
     try {
-      const response = await fetchMatches(measurements);
+      const response = await fetchMatches(measurements, matchPriority);
       setResult(response);
       setSelectedTargetId((current) => current || response.matches?.[0]?.id || "");
       trackEvent("result_rendered", {
         matchCount: response.matches?.length || 0,
-        topMatch: response.top_match?.id
+        topMatch: response.top_match?.id,
+        priority: response.priority || matchPriority
       });
     } catch (error) {
       setResult({
@@ -579,6 +610,17 @@ export default function App() {
     trackEvent("comparison_mode_changed", { mode: nextMode });
   }
 
+  function handleSilhouetteViewChange(nextView) {
+    setSilhouetteView(nextView === "side" ? "side" : "front");
+    trackEvent("silhouette_view_changed", { view: nextView });
+  }
+
+  function handleMatchPriorityChange(nextPriority) {
+    setMatchPriority(nextPriority);
+    setSelectedTargetId("");
+    trackEvent("match_priority_changed", { priority: nextPriority });
+  }
+
   async function handleCopyShareLink() {
     try {
       await navigator.clipboard.writeText(shareUrl);
@@ -643,6 +685,11 @@ export default function App() {
                     clothingSizeTables={clothingSizeTables}
                     hoveredMeasurement={hoveredMeasurement}
                     onMeasurementHover={setHoveredMeasurement}
+                    silhouetteView={silhouetteView}
+                    onSilhouetteViewChange={handleSilhouetteViewChange}
+                    matchPriority={matchPriority}
+                    matchPriorityPresets={matchPriorityPresets}
+                    onMatchPriorityChange={handleMatchPriorityChange}
                   />
                 ) : insightTab === "target" ? (
                   <ComparisonPanel
@@ -658,6 +705,8 @@ export default function App() {
                     currentMeasurements={currentMeasurements}
                     snapshotComparison={snapshotComparison}
                     comparisonSnapshot={comparisonSnapshot}
+                    silhouetteView={silhouetteView}
+                    onSilhouetteViewChange={handleSilhouetteViewChange}
                   />
                 ) : (
                   <PopulationPanel measurements={currentMeasurements} />
@@ -674,6 +723,7 @@ export default function App() {
                 onSetMeasurement={setOnboardingMeasurement}
                 onApplyDemo={applyMeasurementSet}
                 onSaveFirstSnapshot={handleSaveFirstSnapshot}
+                silhouetteView={silhouetteView}
               />
 
               <MeasurementForm
@@ -726,6 +776,7 @@ export default function App() {
             setIsStrategyExplorerOpen(true);
           }}
           onClose={() => setIsAccountPanelOpen(false)}
+          silhouetteView={silhouetteView}
           snapshotProps={{
             snapshotLabel,
             onSnapshotLabelChange: setSnapshotLabel,

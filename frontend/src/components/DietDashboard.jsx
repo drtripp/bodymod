@@ -15,6 +15,8 @@ import {
   macroTargetRows,
   mealSummary,
   mergeFoodLists,
+  micronutrientTargets,
+  micronutrientTargetRows,
   normalizeCustomFood,
   normalizeMealTemplate,
   removeMeal,
@@ -26,6 +28,10 @@ import {
   upsertFood,
   upsertMeal
 } from "../lib/diet";
+import {
+  parseDietCsvImport,
+  summarizeDietCsvImport
+} from "../lib/dietImport";
 import { defaultMeasurements } from "../lib/measurements";
 import {
   loadDietFoodLibrary,
@@ -53,6 +59,24 @@ function targetLine(row) {
   return `Target ${formatNumber(row.target)} ${row.unit} / ${row.percent}%`;
 }
 
+function micronutrientLine(row) {
+  const prefix = row.targetType === "limit" ? "Limit" : "Target";
+  return `${prefix} ${formatNumber(row.target, row.digits)} ${row.unit} / ${row.percent}%`;
+}
+
+function createCustomFoodForm() {
+  return {
+    name: "",
+    brand: "",
+    serving: "",
+    calories: "",
+    protein: "",
+    carbs: "",
+    fat: "",
+    ...Object.fromEntries(micronutrientTargets.map((target) => [target.id, ""]))
+  };
+}
+
 function createLogEntry(food, servings) {
   const scaledFood = scaleFood(food, servings);
 
@@ -69,19 +93,13 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
   const [servings, setServings] = useState(1);
   const [results, setResults] = useState(sampleFoods);
   const [selectedFood, setSelectedFood] = useState(sampleFoods[0]);
-  const [customFoodForm, setCustomFoodForm] = useState({
-    name: "",
-    brand: "",
-    serving: "",
-    calories: "",
-    protein: "",
-    carbs: "",
-    fat: ""
-  });
+  const [customFoodForm, setCustomFoodForm] = useState(() => createCustomFoodForm());
   const [mealName, setMealName] = useState("");
   const [fluidAmount, setFluidAmount] = useState("500");
   const [fluidLabel, setFluidLabel] = useState("Water");
   const [status, setStatus] = useState("");
+  const [dietImportText, setDietImportText] = useState("");
+  const [dietImportStatus, setDietImportStatus] = useState("");
   const [entries, setEntries] = useState([]);
   const [fluidEntries, setFluidEntries] = useState([]);
   const [foodLibrary, setFoodLibrary] = useState({
@@ -104,6 +122,10 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
   const macroRows = useMemo(
     () => macroTargetRows(totals.macros, macroTargets),
     [macroTargets, totals.macros]
+  );
+  const micronutrientRows = useMemo(
+    () => micronutrientTargetRows(totals.micros),
+    [totals.micros]
   );
   const fluidTarget = useMemo(
     () => calculateFluidTarget(currentMeasurements),
@@ -282,6 +304,50 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
     setStatus(`Copied latest logged day (${copiedEntries.length} item(s)).`);
   }
 
+  function importDietCsv(rawValue) {
+    const result = parseDietCsvImport(rawValue, { existingEntries: entries });
+
+    if (!result.entries.length) {
+      const reason =
+        result.invalidRows[0]?.reason ||
+        (result.duplicateRows ? "All imported foods were already logged." : "No food rows found.");
+      setDietImportStatus(reason);
+      setStatus(`Diet import skipped: ${reason}`);
+      return;
+    }
+
+    updateEntries((current) =>
+      [...result.entries, ...current].sort(
+        (left, right) => new Date(right.loggedAt) - new Date(left.loggedAt)
+      )
+    );
+    const summary = summarizeDietCsvImport(result);
+    setDietImportText("");
+    setDietImportStatus(summary);
+    setStatus(summary);
+  }
+
+  function handleDietCsvImport(event) {
+    event.preventDefault();
+    importDietCsv(dietImportText);
+  }
+
+  function handleDietCsvFile(event) {
+    const [file] = event.target.files || [];
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => importDietCsv(String(reader.result || ""));
+    reader.onerror = () => {
+      setDietImportStatus("CSV file import failed.");
+      setStatus("Diet import failed.");
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+  }
+
   function handleCustomFoodFieldChange(event) {
     const { name, value } = event.target;
     setCustomFoodForm((current) => ({
@@ -306,15 +372,7 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
     }));
     setResults((current) => mergeFoodLists([customFood], current));
     setSelectedFood(customFood);
-    setCustomFoodForm({
-      name: "",
-      brand: "",
-      serving: "",
-      calories: "",
-      protein: "",
-      carbs: "",
-      fat: ""
-    });
+    setCustomFoodForm(createCustomFoodForm());
     setStatus(`Saved custom food ${customFood.name}.`);
   }
 
@@ -461,6 +519,33 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
         </div>
 
         {status ? <p className="muted-text">{status}</p> : null}
+
+        <form className="diet-import-card" aria-label="Diet CSV import" onSubmit={handleDietCsvImport}>
+          <label className="field">
+            <span className="field-label">Diet CSV</span>
+            <textarea
+              aria-label="Diet CSV"
+              value={dietImportText}
+              placeholder="Date,Meal,Food,Calories,Protein,Carbs,Fat..."
+              onChange={(event) => setDietImportText(event.target.value)}
+            />
+          </label>
+          <div className="button-row">
+            <button className="button" type="submit">
+              Import diet CSV
+            </button>
+            <label className="button file-button">
+              Import file
+              <input
+                aria-label="Import diet CSV file"
+                type="file"
+                accept=".csv,text/csv"
+                onChange={handleDietCsvFile}
+              />
+            </label>
+          </div>
+          {dietImportStatus ? <p className="muted-text">{dietImportStatus}</p> : null}
+        </form>
       </section>
 
       <section className="diet-grid">
@@ -519,6 +604,24 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
                 />
               </label>
             ))}
+            <div className="custom-micro-grid" aria-label="Custom food micronutrients">
+              {micronutrientTargets.map((target) => (
+                <label key={target.id} className="field compact-field">
+                  <span className="field-label">
+                    {target.label} ({target.unit})
+                  </span>
+                  <input
+                    aria-label={`Custom food ${target.label.toLowerCase()}`}
+                    name={target.id}
+                    type="number"
+                    min="0"
+                    step={target.digits ? "0.1" : "1"}
+                    value={customFoodForm[target.id]}
+                    onChange={handleCustomFoodFieldChange}
+                  />
+                </label>
+              ))}
+            </div>
             <button className="button" type="submit">
               Save custom food
             </button>
@@ -722,11 +825,16 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
           </div>
 
           <div className="micro-total-grid" aria-label="Diet micronutrient totals">
-            <span>Fiber <strong>{formatNumber(totals.micros.fiber, 1)} g</strong></span>
-            <span>Sugar <strong>{formatNumber(totals.micros.sugar, 1)} g</strong></span>
-            <span>Sodium <strong>{formatNumber(totals.micros.sodium)} mg</strong></span>
-            <span>Calcium <strong>{formatNumber(totals.micros.calcium)} mg</strong></span>
-            <span>Iron <strong>{formatNumber(totals.micros.iron, 1)} mg</strong></span>
+            {micronutrientRows.map((row) => (
+              <article key={row.id}>
+                <span>{row.label}</span>
+                <strong>{formatNumber(row.actual, row.digits)} {row.unit}</strong>
+                <small>{micronutrientLine(row)}</small>
+                <div className="macro-progress-track" aria-hidden="true">
+                  <i style={{ width: `${Math.min(100, row.percent)}%` }} />
+                </div>
+              </article>
+            ))}
           </div>
 
           <div className="fluid-panel" aria-label="Fluid log">

@@ -154,11 +154,35 @@ try {
         }
       })
     );
-    await page.route("**/api/match", (route) =>
+    await page.route("**/api/match-priorities", (route) =>
+      route.fulfill({
+        json: {
+          priorities: [
+            {
+              id: "balanced",
+              label: "Balanced",
+              summary: "Equal all-around body-shape matching."
+            },
+            {
+              id: "shoulders",
+              label: "Prioritize shoulders",
+              summary: "Weights frame width, deltoid width, and shoulder-to-waist ratio more heavily."
+            },
+            {
+              id: "waist-hip",
+              label: "Prioritize waist/hip",
+              summary: "Weights waist, hip, pant-waist, and waist-to-hip ratio more heavily."
+            }
+          ]
+        }
+      })
+    );
+    await page.route(/\/api\/match(?:\?|$)/, (route) =>
       route.fulfill({
         json: {
           top_match: targets[0],
           matches: targets,
+          priority: "balanced",
           percentiles: {
             height: 44,
             waistCircumference: 26,

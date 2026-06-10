@@ -85,11 +85,31 @@ async function mockApi(page) {
     await route.fulfill({ json: measurementGuideLibrary });
   });
 
-  await page.route("**/api/match", async (route) => {
+  await page.route("**/api/match-priorities", async (route) => {
+    await route.fulfill({
+      json: {
+        priorities: [
+          {
+            id: "balanced",
+            label: "Balanced",
+            summary: "Equal all-around body-shape matching."
+          },
+          {
+            id: "waist-hip",
+            label: "Prioritize waist/hip",
+            summary: "Weights waist, hip, pant-waist, and waist-to-hip ratio more heavily."
+          }
+        ]
+      }
+    });
+  });
+
+  await page.route(/\/api\/match(?:\?|$)/, async (route) => {
     await route.fulfill({
       json: {
         top_match: targets[0],
         matches: targets,
+        priority: "balanced",
         percentiles: {
           height: 44,
           waistCircumference: 26,

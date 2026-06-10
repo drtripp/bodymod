@@ -24,11 +24,17 @@ export function fetchTargets() {
   return request("/api/targets");
 }
 
-export function fetchMatches(payload) {
-  return request("/api/match", {
+export function fetchMatches(payload, priority = "balanced") {
+  const query = new URLSearchParams({ priority }).toString();
+
+  return request(`/api/match?${query}`, {
     method: "POST",
     body: JSON.stringify(payload)
   });
+}
+
+export function fetchMatchPriorities() {
+  return request("/api/match-priorities");
 }
 
 export function fetchPlanningData() {

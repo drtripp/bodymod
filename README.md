@@ -71,10 +71,12 @@ Implemented now:
 - per-field measurement help text
 - inline validation in frontend and backend
 - deterministic front-view SVG silhouette
+- deterministic side-view SVG silhouette estimated from circumference vs width
 - hover-linked measurement anchors between form and silhouette
 - FastAPI health, target-list, and match endpoints
 - curated placeholder and archetype target profiles served through a SQLite repository
 - height-normalized and ratio-aware match scoring with explanation bullets
+- configurable match-priority presets for balanced, shoulders, and waist/hip scoring
 - approximate adult-reference percentile output
 - simplified result pane with large top-match name and placeholder similarity score
 - runner-up match shown directly under the top match
@@ -109,7 +111,7 @@ Implemented now:
 - result, vs Target, and vs US Population panes are presented as tabs
 - first-draft US population scatter and distribution plots with sex-colored reference bands
 - Body/Diet top-level switcher
-- Diet tracker with Open Food Facts search, barcode lookup, optional browser barcode scanner, local food log, macro totals, and micronutrient totals
+- Diet tracker with Open Food Facts search, barcode lookup, optional browser barcode scanner, CSV import, local food log, macro targets, and expanded micronutrient target rows
 - method/privacy content collapsed into a hover footnote
 - header share icon that copies an encoded measurement URL without showing a share panel
 - local-only lightweight usage event logging

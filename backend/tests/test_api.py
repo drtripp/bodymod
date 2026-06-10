@@ -43,16 +43,29 @@ def test_targets_endpoint_returns_curated_profiles() -> None:
 
 
 def test_match_endpoint_returns_ranked_explanations_and_reference() -> None:
-    response = client.post("/api/match", json=TARGETS[0]["measurements"])
+    response = client.post("/api/match?priority=waist-hip", json=TARGETS[0]["measurements"])
 
     assert response.status_code == 200
     payload = response.json()
     assert payload["top_match"]["id"] == TARGETS[0]["id"]
+    assert payload["priority"] == "waist-hip"
     assert payload["matches"][0]["score"] <= payload["matches"][-1]["score"]
     assert payload["matches"][0]["similarity"] >= payload["matches"][-1]["similarity"]
     assert all(0 <= match["similarity"] <= 100 for match in payload["matches"])
     assert payload["matches"][0]["explanation"]
     assert "reference" in payload["percentiles"]
+
+
+def test_match_priorities_endpoint_returns_weighting_presets() -> None:
+    response = client.get("/api/match-priorities")
+
+    assert response.status_code == 200
+    payload = response.json()
+    priority_ids = {priority["id"] for priority in payload["priorities"]}
+
+    assert {"balanced", "shoulders", "waist-hip"}.issubset(priority_ids)
+    assert any(priority["fieldMultipliers"] for priority in payload["priorities"])
+    assert any(priority["ratioMultipliers"] for priority in payload["priorities"])
 
 
 def test_planning_endpoint_returns_personas_goals_and_protocols() -> None:

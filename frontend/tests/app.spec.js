@@ -460,6 +460,24 @@ const exerciseLibrary = {
   ]
 };
 
+const matchPriorityPresets = [
+  {
+    id: "balanced",
+    label: "Balanced",
+    summary: "Equal all-around body-shape matching."
+  },
+  {
+    id: "shoulders",
+    label: "Prioritize shoulders",
+    summary: "Weights frame width, deltoid width, and shoulder-to-waist ratio more heavily."
+  },
+  {
+    id: "waist-hip",
+    label: "Prioritize waist/hip",
+    summary: "Weights waist, hip, pant-waist, and waist-to-hip ratio more heavily."
+  }
+];
+
 const measurementGuideLibrary = {
   version: 1,
   reference: "Dummy measurement how-to guide copy for user validation.",
@@ -539,11 +557,23 @@ async function mockApi(page) {
     });
   });
 
-  await page.route("**/api/match", async (route) => {
+  await page.route("**/api/match-priorities", async (route) => {
+    await route.fulfill({ json: { priorities: matchPriorityPresets } });
+  });
+
+  await page.route(/\/api\/match(?:\?|$)/, async (route) => {
+    const url = new URL(route.request().url());
+    const priority = url.searchParams.get("priority") || "balanced";
+    const orderedTargets =
+      priority === "waist-hip"
+        ? [targets[2], targets[0], targets[1]]
+        : targets;
+
     await route.fulfill({
       json: {
-        top_match: targets[0],
-        matches: targets,
+        top_match: orderedTargets[0],
+        matches: orderedTargets,
+        priority,
         percentiles: {
           height: 44,
           waistCircumference: 26,
@@ -573,10 +603,19 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.getByLabel("Selected measurement guide")).toContainText("raising the arms");
   await expect(page.getByRole("img", { name: "Current profile silhouette" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Waist: 80 cm" }).first()).toBeVisible();
+  await page.getByRole("button", { name: "Side view" }).click();
+  await expect(page.getByRole("img", { name: "Current profile side silhouette" })).toBeVisible();
   await expect(page.locator(".top-match-block").getByText("Astarion")).toBeVisible();
   await expect(page.locator(".runner-up-block").getByText("Classic Physique Archetype")).toBeVisible();
   await expect(page.locator(".top-match-block > span")).toHaveText("Similarity score: 89%");
   await expect(page.locator(".runner-up-block small")).toHaveText("Similarity score: 77%");
+  await page.getByLabel("Match priority").selectOption("waist-hip");
+  await expect(page.locator(".top-match-block")).toContainText(
+    "Weights waist, hip, pant-waist, and waist-to-hip ratio more heavily."
+  );
+  await expect(page.locator(".top-match-block > p")).toHaveText("Shadowheart");
+  await page.getByLabel("Match priority").selectOption("balanced");
+  await expect(page.locator(".top-match-block > p")).toHaveText("Astarion");
   await expect(page.locator(".top-match-block")).not.toContainText("TBD");
   await expect(page.getByLabel("Result metric blocks")).toBeVisible();
   const metricBlocks = page.getByLabel("Result metric blocks");
@@ -608,6 +647,10 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.getByLabel("Clothing size estimates")).toContainText("Weak wrist proxy");
   await expect(page.getByText("Sexed measurements")).not.toBeVisible();
   await page.getByRole("tab", { name: "vs Target" }).click();
+  await expect(page.getByRole("img", { name: "You side silhouette" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Astarion side silhouette" })).toBeVisible();
+  await page.getByRole("button", { name: "Front view" }).click();
+  await expect(page.getByRole("img", { name: "You silhouette" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "vs Target" })).toHaveCount(0);
   const targetSelect = page.locator(".target-select-field select");
   await expect(page.getByLabel("Target filters")).toBeVisible();
@@ -1299,8 +1342,14 @@ test("searches food data, looks up barcodes, and logs diet totals", async ({ pag
         fiber_serving: 0,
         sugars_serving: 7,
         sodium_serving: 0.06,
+        potassium_serving: 0.24,
         calcium_serving: 0.18,
-        iron_serving: 0.0002
+        iron_serving: 0.0002,
+        magnesium_serving: 0.035,
+        zinc_serving: 0.0011,
+        "vitamin-c_serving": 0.012,
+        "vitamin-d_serving": 0.0000015,
+        "vitamin-b12_serving": 0.0000012
       }
     };
 
@@ -1334,6 +1383,11 @@ test("searches food data, looks up barcodes, and logs diet totals", async ({ pag
   await expect(page.getByLabel("Diet macro targets")).toContainText("about -0.45 kg/week");
   await expect(page.getByLabel("Diet macro totals")).toContainText("Target 2290 kcal / 12%");
   await expect(page.getByLabel("Diet micronutrient totals").getByText("Calcium")).toBeVisible();
+  await expect(page.getByLabel("Diet micronutrient totals")).toContainText("Potassium");
+  await expect(page.getByLabel("Diet micronutrient totals")).toContainText("480 mg");
+  await expect(page.getByLabel("Diet micronutrient totals")).toContainText("Target 3400 mg / 14%");
+  await expect(page.getByLabel("Diet micronutrient totals")).toContainText("Vitamin D");
+  await expect(page.getByLabel("Diet micronutrient totals")).toContainText("3.0 mcg");
 
   await page.getByLabel("Custom food name").fill("Tofu bowl");
   await page.getByLabel("Custom food brand").fill("Home recipe");
@@ -1342,6 +1396,9 @@ test("searches food data, looks up barcodes, and logs diet totals", async ({ pag
   await page.getByLabel("Custom food protein").fill("34");
   await page.getByLabel("Custom food carbs").fill("54");
   await page.getByLabel("Custom food fat").fill("18");
+  await page.getByLabel("Custom food potassium").fill("620");
+  await page.getByLabel("Custom food vitamin d").fill("5");
+  await page.getByLabel("Custom food vitamin b12").fill("1.2");
   await page.getByRole("button", { name: "Save custom food" }).click();
   await expect(page.getByText("Saved custom food Tofu bowl.")).toBeVisible();
   const tofuRow = page.getByLabel("Food search results").locator("li").filter({ hasText: "Tofu bowl" });
@@ -1385,6 +1442,17 @@ test("searches food data, looks up barcodes, and logs diet totals", async ({ pag
   await page.getByRole("textbox", { name: "Barcode" }).fill("1234567890123");
   await page.getByRole("button", { name: "Lookup barcode" }).click();
   await expect(page.getByText("Barcode matched Mock Skyr.")).toBeVisible();
+  await page.getByRole("textbox", { name: "Diet CSV" }).fill(
+    [
+      "Date,Meal,Food,Calories,Carbs (g),Fat (g),Protein (g),Potassium (mg),Vitamin D (mcg)",
+      "2026-06-01,Breakfast,Imported oats,300,50,6,12,400,0",
+      "2026-06-01,Lunch,Imported tofu bowl,520,54,18,34,620,5"
+    ].join("\n")
+  );
+  await page.getByRole("button", { name: "Import diet CSV", exact: true }).click();
+  await expect(page.getByLabel("Diet CSV import")).toContainText("Imported 2 food log(s).");
+  await expect(page.getByLabel("Diet log entries")).toContainText("Imported oats");
+  await expect(page.getByLabel("Diet log entries")).toContainText("Imported tofu bowl");
 
   await page.evaluate(() => {
     navigator.mediaDevices = {

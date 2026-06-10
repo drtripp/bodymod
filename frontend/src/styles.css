@@ -1231,6 +1231,18 @@ textarea {
   gap: 10px;
 }
 
+.diet-import-card {
+  border-top: 1px solid #344454;
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.diet-import-card textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
 .diet-search-grid {
   display: grid;
   grid-template-columns: minmax(240px, 1fr) auto auto;
@@ -1280,6 +1292,15 @@ textarea {
 
 .custom-food-form .button {
   min-height: 31px;
+}
+
+.custom-micro-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
+  gap: 8px;
+  border-top: 1px solid #344454;
+  padding-top: 8px;
 }
 
 .meal-template-form {
@@ -1506,18 +1527,37 @@ textarea {
 
 .micro-total-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 10px;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 8px;
   border-top: 1px solid #344454;
   border-bottom: 1px solid #344454;
   padding: 8px 0;
   margin-bottom: 10px;
 }
 
+.micro-total-grid article {
+  border: 1px solid #344454;
+  background: #111922;
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+}
+
 .micro-total-grid span {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
+  color: #c7d0d9;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.micro-total-grid strong {
+  color: #f2f0e8;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.micro-total-grid small {
+  color: #c7d0d9;
+  font-size: 0.76rem;
 }
 
 .fluid-panel {
@@ -2189,6 +2229,13 @@ textarea {
   gap: 12px;
 }
 
+.silhouette-card-stack {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+}
+
 .comparison-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 0.48fr);
@@ -2294,6 +2341,12 @@ textarea {
 
 .comparison-visual-stage.is-morph .legend {
   display: none;
+}
+
+.comparison-view-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 8px;
 }
 
 .comparison-visual-stage .legend {
@@ -2504,6 +2557,15 @@ textarea {
   color: #c7d0d9;
 }
 
+.match-priority-field {
+  margin: 6px 0 0;
+}
+
+.match-priority-summary {
+  display: block;
+  margin-top: 4px;
+}
+
 .runner-up-block {
   margin-top: 6px;
   border-top: 1px solid #344454;
@@ -2709,6 +2771,19 @@ textarea {
   padding: 12px;
   background:
     linear-gradient(to right, transparent calc(50% - 0.5px), #344454 calc(50% - 0.5px), #344454 calc(50% + 0.5px), transparent calc(50% + 0.5px));
+}
+
+.silhouette-view-toggle {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(72px, auto));
+  gap: 4px;
+  justify-self: end;
+}
+
+.silhouette-view-toggle .button {
+  min-height: 30px;
+  padding: 5px 9px;
+  white-space: nowrap;
 }
 
 .silhouette-svg {
@@ -3965,6 +4040,16 @@ textarea {
 
   .snapshot-history-controls {
     grid-template-columns: 1fr;
+  }
+
+  .comparison-view-row {
+    justify-content: stretch;
+  }
+
+  .silhouette-view-toggle {
+    width: 100%;
+    justify-self: stretch;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .control-column {
