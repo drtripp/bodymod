@@ -170,6 +170,49 @@ class ExerciseLibrary(BaseModel):
     programTemplates: list[ProgramTemplateSeed]
 
 
+class StrategySourceLink(BaseModel):
+    title: str
+    url: str
+    sourceType: str = "unspecified"
+    reviewedAt: str = ""
+
+
+class StrategySeed(BaseModel):
+    name: str
+    outcome: str
+    interventionType: str
+    efficacy: float = Field(ge=0, le=100)
+    risk: float = Field(ge=0, le=100)
+    evidence: str
+    reviewStatus: str
+    sourceLinks: list[StrategySourceLink] = Field(default_factory=list)
+    sensitivity: str = "low"
+    reversibility: str
+    timeHorizon: str
+    cost: str
+    claimedMechanism: str
+    expectedMagnitude: str
+    contraindicationFlags: list[str] = Field(default_factory=list)
+    legalNotes: str
+    uncertaintyNotes: str
+    excludedFromPersonalization: bool = False
+    notes: str
+
+
+class StrategyOutcomeSeed(BaseModel):
+    id: str
+    label: str
+    description: str
+    strategies: list[StrategySeed]
+
+
+class StrategyCorpusSeed(BaseModel):
+    version: int
+    source: str
+    notes: list[str] = Field(default_factory=list)
+    outcomes: list[StrategyOutcomeSeed]
+
+
 class MeasurementGuide(BaseModel):
     field: str
     label: str

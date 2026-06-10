@@ -497,9 +497,10 @@ land. No social features, no marketplace.
       `strategy-corpus-curation.md` rubric — evidence/risk/reversibility
       scores, legal notes, exclusions. **[human]** — this is the moat and it
       is manual.
-- [ ] Corpus backend migration: curated corpus moves from local
-      import/localStorage to backend storage with review status, source
-      metadata, and version history; seed/import flow retained for drafting.
+- [x] Corpus backend migration: curated corpus seed moved from frontend-only
+      local seed to backend-served data with review status, source metadata,
+      versioned payload, and validation; frontend import/localStorage override
+      remains for drafting and reset returns to the backend seed when loaded.
 - [ ] Admin curation tool **(new)**: minimal internal CRUD UI (or structured
       git workflow) for corpus entries, targets, and case logs with validation
       against the templates — beats hand-editing JSON/Python for every entry.

@@ -445,12 +445,15 @@ Candidate events:
 
 Source files:
 
+- `backend/app/data/strategy_corpus.py`
+- `backend/app/main.py`
 - `frontend/src/components/StrategyCorpus.jsx`
 - `frontend/src/lib/strategyCorpus.js`
 
 Status:
 
 - outcome-first explorer is implemented
+- backend exposes `/api/strategy-corpus` as the default corpus seed source
 - explorer opens as an overlay after the user chooses to work on an outcome
 - one efficacy/risk plot is shown for the selected desired outcome
 - clickable strategy dots open a synopsis modal
@@ -459,12 +462,15 @@ Status:
 - review status, sensitivity, and source-count metadata are visible
 - manual corpus curation rubric exists in `strategy-corpus-curation.md`
 - corpus JSON export/import is implemented with frontend schema validation
-- imported corpus can persist locally and be reset to the seed corpus
+- imported corpus can persist locally as an override and be reset to the
+  backend seed when loaded, or to the bundled seed offline
 - imported source links render inside strategy entries
 - safety flags, legal notes, cost, and personalization exclusion status are visible
 - a local 18+ gate appears before corpus content is shown
 - high-risk entries require a separate informational acknowledgment before opening
-- Node tests cover corpus template parsing, normalization, bounds clamping, local age-gate storage, high-risk classification, invalid evidence rejection, and export round trips
+- backend tests validate the strategy corpus API seed, score bounds, and
+  high-risk personalization exclusions
+- Node tests cover corpus template parsing, normalization, bounds clamping, local age-gate storage, local override storage, high-risk classification, invalid evidence rejection, and export round trips
 - entries are illustrative and not yet source-reviewed
 - copy explicitly separates information from advice
 
@@ -473,7 +479,7 @@ Next:
 - manually source entries
 - add evidence and risk taxonomy
 - finalize exclusion/moderation policy for sourced production entries
-- decide whether curated corpus data should move to backend storage
+- build admin or structured git workflow for reviewed corpus edits
 
 ## Engineering Backlog
 

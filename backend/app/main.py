@@ -9,6 +9,7 @@ from app.data.exercises import EXERCISE_LIBRARY
 from app.data.food_usda import USDA_FOOD_LIBRARY, search_usda_foods
 from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TAXONOMY, PROTOCOL_TEMPLATES
+from app.data.strategy_corpus import STRATEGY_CORPUS
 from app.models import ClothingSizeTables
 from app.models import EntitlementConfig
 from app.models import ExerciseLibrary
@@ -16,6 +17,7 @@ from app.models import FoodSearchResponse
 from app.models import MeasurementGuideLibrary
 from app.models import MeasurementSet
 from app.models import PlanningData
+from app.models import StrategyCorpusSeed
 from app.services import build_match_response, get_match_priorities, get_targets
 
 app = FastAPI(title="bodymod api", version="0.1.0")
@@ -86,6 +88,11 @@ def clothing_size_tables() -> dict:
 @app.get("/api/exercise-library")
 def exercise_library() -> dict:
     return ExerciseLibrary.model_validate(EXERCISE_LIBRARY).model_dump()
+
+
+@app.get("/api/strategy-corpus")
+def strategy_corpus() -> dict:
+    return StrategyCorpusSeed.model_validate(STRATEGY_CORPUS).model_dump()
 
 
 @app.get("/api/measurement-guides")

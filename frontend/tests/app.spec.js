@@ -3,6 +3,7 @@ import { Buffer } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import { DEFAULT_CLOTHING_SIZE_TABLES } from "../src/lib/clothingSizes.js";
 import { silhouetteQaProfiles } from "../src/lib/silhouetteQaProfiles.js";
+import { strategyOutcomes } from "../src/lib/strategyCorpus.js";
 
 const targetMeasurements = {
   height: 178,
@@ -629,6 +630,17 @@ async function mockApi(page) {
 
   await page.route("**/api/exercise-library", async (route) => {
     await route.fulfill({ json: exerciseLibrary });
+  });
+
+  await page.route("**/api/strategy-corpus", async (route) => {
+    await route.fulfill({
+      json: {
+        version: 1,
+        source: "Mock backend strategy corpus seed.",
+        notes: ["Mocked Playwright strategy corpus source."],
+        outcomes: strategyOutcomes
+      }
+    });
   });
 
   await page.route("**/api/measurement-guides", async (route) => {
@@ -1807,7 +1819,9 @@ test("exposes method, privacy, and strategy corpus content", async ({ page }) =>
   await expect(page.getByText("Local usage events stored: 0")).toBeVisible();
   await expect(page.getByText("Local usage events cleared from this browser.")).toBeVisible();
 
+  const strategyCorpusResponse = page.waitForResponse(/\/api\/strategy-corpus/);
   await page.getByRole("button", { name: "Build Plan" }).click();
+  expect((await strategyCorpusResponse).ok()).toBeTruthy();
   await expect(page.getByRole("heading", { name: "Strategy explorer" })).toBeVisible();
   await expect(page.getByLabel("Strategy corpus age gate")).toContainText("18+ content gate");
   await page.getByRole("button", { name: "I am 18 or older" }).click();

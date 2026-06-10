@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { strategyOutcomes } from "../src/lib/strategyCorpus.js";
 
 const targetMeasurements = {
   height: 178,
@@ -117,6 +118,17 @@ async function mockApi(page) {
 
   await page.route("**/api/entitlements", async (route) => {
     await route.fulfill({ json: entitlementConfig });
+  });
+
+  await page.route("**/api/strategy-corpus", async (route) => {
+    await route.fulfill({
+      json: {
+        version: 1,
+        source: "Mock backend strategy corpus seed.",
+        notes: ["Mocked mobile strategy corpus source."],
+        outcomes: strategyOutcomes
+      }
+    });
   });
 
   await page.route("**/api/match-priorities", async (route) => {

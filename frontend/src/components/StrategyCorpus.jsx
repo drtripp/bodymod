@@ -1,10 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { fetchStrategyCorpus } from "../lib/api";
 import {
   clearStrategyCorpusOverride,
   acceptStrategyCorpusAgeGate,
+  hasStrategyCorpusOverride,
   isHighRiskStrategy,
   isStrategyCorpusAgeAccepted,
   loadStrategyCorpus,
+  normalizeStrategyOutcomes,
   parseStrategyCorpusExport,
   persistStrategyCorpus,
   serializeStrategyCorpus,
@@ -49,6 +52,7 @@ function findStrategy(outcomes, slug) {
 
 export default function StrategyCorpus() {
   const [corpusOutcomes, setCorpusOutcomes] = useState(() => loadStrategyCorpus());
+  const [seedOutcomes, setSeedOutcomes] = useState(strategyOutcomes);
   const [corpusStatus, setCorpusStatus] = useState("");
   const [selectedOutcomeId, setSelectedOutcomeId] = useState(() => corpusOutcomes[0]?.id || "");
   const [query, setQuery] = useState("");
@@ -57,6 +61,40 @@ export default function StrategyCorpus() {
   const [detailStrategySlug, setDetailStrategySlug] = useState("");
   const [ageGateAccepted, setAgeGateAccepted] = useState(() => isStrategyCorpusAgeAccepted());
   const [pendingHighRiskSlug, setPendingHighRiskSlug] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchStrategyCorpus()
+      .then((response) => {
+        const backendOutcomes = normalizeStrategyOutcomes(response.outcomes);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setSeedOutcomes(backendOutcomes);
+
+        if (!hasStrategyCorpusOverride()) {
+          setCorpusOutcomes(backendOutcomes);
+          setSelectedOutcomeId((current) =>
+            backendOutcomes.some((outcome) => outcome.id === current)
+              ? current
+              : backendOutcomes[0]?.id || ""
+          );
+          setCorpusStatus("Backend seed corpus loaded for this browser.");
+        }
+      })
+      .catch(() => {
+        if (isMounted && !hasStrategyCorpusOverride()) {
+          setCorpusStatus("Using bundled seed corpus while backend is unavailable.");
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const selectedOutcome =
     corpusOutcomes.find((outcome) => outcome.id === selectedOutcomeId) ||
@@ -152,8 +190,8 @@ export default function StrategyCorpus() {
 
   function handleResetCorpus() {
     clearStrategyCorpusOverride();
-    setCorpusOutcomes(strategyOutcomes);
-    setSelectedOutcomeId(strategyOutcomes[0]?.id || "");
+    setCorpusOutcomes(seedOutcomes);
+    setSelectedOutcomeId(seedOutcomes[0]?.id || "");
     setSelectedStrategySlug("");
     setDetailStrategySlug("");
     setQuery("");
@@ -429,7 +467,11 @@ export default function StrategyCorpus() {
         </button>
       </div>
 
-      {corpusStatus ? <p className="muted-text">{corpusStatus}</p> : null}
+      {corpusStatus ? (
+        <p className="muted-text" role="status" aria-live="polite">
+          {corpusStatus}
+        </p>
+      ) : null}
 
       <p className="muted-text">
         Loaded {corpusOutcomes.length} outcome(s) with {sourceCount} reviewed

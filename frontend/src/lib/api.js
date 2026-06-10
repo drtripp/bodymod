@@ -49,6 +49,10 @@ export function fetchExerciseLibrary() {
   return request("/api/exercise-library");
 }
 
+export function fetchStrategyCorpus() {
+  return request("/api/strategy-corpus");
+}
+
 export function fetchMeasurementGuides() {
   return request("/api/measurement-guides");
 }

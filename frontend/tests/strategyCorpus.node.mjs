@@ -3,10 +3,15 @@ import fs from "node:fs";
 import test from "node:test";
 import {
   acceptStrategyCorpusAgeGate,
+  clearStrategyCorpusOverride,
+  hasStrategyCorpusOverride,
   isHighRiskStrategy,
   isStrategyCorpusAgeAccepted,
+  loadStrategyCorpus,
+  loadStrategyCorpusOverride,
   normalizeStrategyOutcomes,
   parseStrategyCorpusExport,
+  persistStrategyCorpus,
   serializeStrategyCorpus
 } from "../src/lib/strategyCorpus.js";
 import { createMemoryStorageAdapter } from "../src/lib/storageAdapter.js";
@@ -107,6 +112,21 @@ test("round-trips serialized corpus exports", () => {
 
   assert.equal(reparsed[0].label, "Test Outcome");
   assert.equal(reparsed[0].strategies[0].name, "Reviewed strategy");
+});
+
+test("stores local corpus overrides separately from the bundled seed", () => {
+  const adapter = createMemoryStorageAdapter();
+
+  assert.equal(hasStrategyCorpusOverride(adapter), false);
+  assert.equal(loadStrategyCorpusOverride(adapter), null);
+  assert.ok(loadStrategyCorpus().length >= 8);
+
+  persistStrategyCorpus([validOutcome], adapter);
+  assert.equal(hasStrategyCorpusOverride(adapter), true);
+  assert.equal(loadStrategyCorpusOverride(adapter)[0].id, "test-outcome");
+
+  clearStrategyCorpusOverride(adapter);
+  assert.equal(hasStrategyCorpusOverride(adapter), false);
 });
 
 test("stores the strategy corpus age gate locally", () => {

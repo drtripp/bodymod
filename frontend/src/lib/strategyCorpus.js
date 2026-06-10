@@ -211,27 +211,36 @@ export function serializeStrategyCorpus(outcomes) {
 }
 
 export function loadStrategyCorpus() {
+  return loadStrategyCorpusOverride() || strategyOutcomes;
+}
+
+export function loadStrategyCorpusOverride(adapter) {
   try {
-    const parsed = readJsonSync(STRATEGY_CORPUS_STORAGE_KEY, null);
-    return parsed ? normalizeStrategyOutcomes(parsed.outcomes || parsed) : strategyOutcomes;
+    const parsed = readJsonSync(STRATEGY_CORPUS_STORAGE_KEY, null, adapter);
+    return parsed ? normalizeStrategyOutcomes(parsed.outcomes || parsed) : null;
   } catch (error) {
-    return strategyOutcomes;
+    return null;
   }
 }
 
-export function persistStrategyCorpus(outcomes) {
+export function hasStrategyCorpusOverride(adapter) {
+  return Boolean(loadStrategyCorpusOverride(adapter));
+}
+
+export function persistStrategyCorpus(outcomes, adapter) {
   writeJsonSync(
     STRATEGY_CORPUS_STORAGE_KEY,
     {
       version: STRATEGY_CORPUS_VERSION,
       exportedAt: new Date().toISOString(),
       outcomes: normalizeStrategyOutcomes(outcomes)
-    }
+    },
+    adapter
   );
 }
 
-export function clearStrategyCorpusOverride() {
-  removeStoredItemSync(STRATEGY_CORPUS_STORAGE_KEY);
+export function clearStrategyCorpusOverride(adapter) {
+  removeStoredItemSync(STRATEGY_CORPUS_STORAGE_KEY, adapter);
 }
 
 export function isStrategyCorpusAgeAccepted(adapter) {

@@ -6,6 +6,7 @@ from app.data.exercises import EXERCISE_LIBRARY
 from app.data.food_usda import USDA_FOOD_LIBRARY
 from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TEMPLATES
+from app.data.strategy_corpus import STRATEGY_CORPUS
 from app.main import allowed_cors_origins, app
 from app.repositories import load_target_seed
 
@@ -147,6 +148,39 @@ def test_exercise_library_endpoint_returns_seeded_programs() -> None:
             assert {item["exerciseId"] for item in day["exercises"]}.issubset(
                 exercise_ids
             )
+
+
+def test_strategy_corpus_endpoint_returns_backend_seed() -> None:
+    response = client.get("/api/strategy-corpus")
+
+    assert response.status_code == 200
+    payload = response.json()
+    outcome_ids = {outcome["id"] for outcome in payload["outcomes"]}
+    all_strategies = [
+        strategy
+        for outcome in payload["outcomes"]
+        for strategy in outcome["strategies"]
+    ]
+
+    assert payload["version"] == STRATEGY_CORPUS["version"]
+    assert "Backend dummy strategy corpus seed" in payload["source"]
+    assert len(payload["outcomes"]) == 8
+    assert {
+        "gain-weight",
+        "lose-weight",
+        "alter-skin",
+        "alter-perceived-structure",
+    }.issubset(outcome_ids)
+    assert any(strategy["name"] == "Orthognathic surgery" for strategy in all_strategies)
+    assert any(strategy["sensitivity"] == "surgical" for strategy in all_strategies)
+    assert all(strategy["evidence"] for strategy in all_strategies)
+    assert all(0 <= strategy["efficacy"] <= 100 for strategy in all_strategies)
+    assert all(0 <= strategy["risk"] <= 100 for strategy in all_strategies)
+    assert all(
+        strategy["excludedFromPersonalization"]
+        for strategy in all_strategies
+        if strategy["sensitivity"] in {"clinical", "surgical", "pharmaceutical", "medical-adjacent"}
+    )
 
 
 def test_measurement_guides_endpoint_returns_field_guides() -> None:

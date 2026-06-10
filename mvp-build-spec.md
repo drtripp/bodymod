@@ -221,14 +221,19 @@ Implemented:
 - strategy explorer opens as an overlay from the main header action
 - clickable strategy dots with synopsis modal and dedicated detail view
 - corpus search/filter controls scoped to the selected outcome
+- backend-served strategy corpus seed at `/api/strategy-corpus`
 - corpus JSON export/import for future manual source review
 - corpus curation rubric in `strategy-corpus-curation.md`
-- imported corpus persistence in browser storage with reset-to-seed control
+- imported corpus persistence in browser storage with reset-to-backend-seed
+  control, falling back to the bundled seed offline
 - imported source links render inside corpus entries
 - safety flags, legal notes, cost, and personalization exclusion status are visible in corpus entries
 - strategy corpus content is behind a local 18+ gate
 - high-risk corpus entries require a separate informational acknowledgment before opening
-- Node tests cover corpus template parsing, normalization, bounds clamping, local age-gate storage, high-risk classification, invalid evidence rejection, and export round trips
+- backend tests cover corpus seed validation and high-risk exclusion; Node
+  tests cover corpus template parsing, normalization, bounds clamping, local
+  age-gate storage, local overrides, high-risk classification, invalid evidence
+  rejection, and export round trips
 - Playwright desktop and phone-viewport user-flow tests
 - graceful no-backend state for form and local snapshots
 - offline comparison copy separates backend target comparison from local snapshot comparison
@@ -254,7 +259,7 @@ Implemented:
 Still needed:
 
 - source-reviewed strategy corpus entries
-- controlled backend/source-of-truth decision for curated corpus beyond local import
+- admin or structured git workflow for reviewed corpus edits
 - production FoodData Central import/API pipeline and nutrient validation
 - vetted ANSUR, NHANES, or equivalent source tables for the population charts
 - production analytics decision
