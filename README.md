@@ -175,6 +175,10 @@ Remaining non-code inputs are tracked in `manual-work-queue.md`.
 - `body-modding-platform-plan.docx`: original archival planning document
 - `deployment.md`: prototype deployment notes and launch caveats
 - `reference-data-curation.md`: replacement standard for production percentile data
+- `similarity-score-spec.md`: calibrated 0-100 similarity score mapping and implementation plan
+- `product-strategy-notes.md`: feature roadmap, engagement mechanics, onboarding, demographics, iOS packaging, and monetization notes
+- `feature-backlog.md`: full build-out to-do list across all workstreams, with human-gated items tagged
+- `attractiveness-evidence-base.md`: cited peer-reviewed evidence for attractiveness-correlate goal presets, with ship/don't-ship verdicts per metric
 - `review-screenshots/README.md`: screenshot capture and manual visual-review notes
 - `strategy-corpus-template.json`: starter JSON shape for manually sourced corpus entries
 - `strategy-corpus-curation.md`: manual review rubric for corpus entries
