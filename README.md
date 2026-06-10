@@ -67,6 +67,7 @@ Deployment notes are in `deployment.md`. For a hosted frontend, set
 Implemented now:
 
 - single-page tool layout
+- warm cafe theme by default with a persisted graphite theme toggle
 - expanded measurement form with metric/imperial display controls
 - per-field measurement help text
 - inline validation in frontend and backend
@@ -116,6 +117,8 @@ Implemented now:
 - header share icon that copies an encoded measurement URL without showing a share panel
 - local-only lightweight usage event logging
 - privacy control to inspect and clear local usage events
+- backend-served free/pro entitlement config, with all current tracking/data/export tools free
+- local-only Pro waitlist capture and blurred Pro preview cards in the account panel
 - outcome-first strategy explorer with one efficacy/risk graph per desired outcome
 - strategy explorer opens as an overlay from the main header action
 - clickable strategy dots with synopsis modal and dedicated strategy detail view
@@ -123,16 +126,20 @@ Implemented now:
 - imported strategy corpus persists locally with a reset-to-seed control
 - imported corpus source links render in strategy entries
 - corpus entries display safety flags, legal notes, cost, and personalization exclusion status
+- strategy corpus is behind a local 18+ age gate
+- high-risk corpus entries require an extra informational acknowledgment before opening
 - importable corpus template in `strategy-corpus-template.json`
-- Node corpus validation tests for import/export normalization and rejected evidence levels
+- Node corpus validation tests for import/export normalization, safety gating, and rejected evidence levels
 - Playwright desktop and phone-viewport frontend user-flow tests
 - pytest backend API/service tests
-- backend schema-drift test for frontend/backend measurement fields
+- shared measurement schema file for frontend field metadata and backend Pydantic validation
+- backend and Node schema tests for frontend/backend measurement alignment
+- backend and Node entitlement tests proving current data tools stay non-paywalled
 - backend target-data and SQLite repository tests for IDs, schemas, and placeholder uncertainty notes
 - target profile template and curation guide for future production target data
 - graceful no-backend state for local form and snapshots
 - offline comparison copy that keeps target comparison separate from local snapshot comparison
-- minimal dark visual system using plain CSS
+- CSS-custom-property theme system with cafe and graphite palettes
 
 Not implemented yet:
 
@@ -145,7 +152,7 @@ Not implemented yet:
 
 ## Current Measurement Schema
 
-The app no longer uses the original seven-field MVP schema. The current schema is expanded and mirrored between `frontend/src/lib/measurements.js` and `backend/app/models.py`:
+The app no longer uses the original seven-field MVP schema. The current schema is expanded in `shared/measurement_schema.json`, which feeds `frontend/src/lib/measurements.js` and the backend `MeasurementSet` model:
 
 - height
 - weight

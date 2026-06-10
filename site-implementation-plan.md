@@ -73,6 +73,7 @@ backend/
 - snapshot import/export status
 - comparison mode and selected target
 - share-link status
+- persisted cafe/graphite theme preference
 - global and per-field unit systems
 - hovered measurement state
 
@@ -100,25 +101,26 @@ Implemented endpoints:
 - `GET /api/health`
 - `GET /api/targets`
 - `POST /api/match`
+- `GET /api/entitlements`
 
 The backend seeds target data from `backend/app/data/targets.seed.json` into
 SQLite through `backend/app/repositories.py`.
 
 ## Visual Direction
 
-The current UI is a dense, utilitarian dark interface.
+The current UI is a dense, utilitarian interface with a warm cafe theme by
+default and the earlier dark interface preserved as the persisted "graphite"
+theme.
 
 Current choices:
 
 - Georgia/system serif typography
+- CSS custom properties for cafe and graphite palettes
 - plain bordered panels
-- rectangular controls
-- no rounded cards
+- modest rounded geometry in cafe, squared geometry in graphite
 - no decorative animation
 - no gradients beyond the silhouette centerline background
-- functional cool accent color for hover/anchor states
-
-This differs from the earlier light/off-white recommendation. The built dark visual system is now the baseline unless intentionally redesigned.
+- sage/clay cafe accents and cool graphite accents for hover/anchor states
 
 ## Implemented Modules
 
@@ -126,18 +128,19 @@ This differs from the earlier light/off-white recommendation. The built dark vis
 
 Source files:
 
+- `shared/measurement_schema.json`
 - `frontend/src/lib/measurements.js`
+- `backend/app/measurement_schema.py`
 - `backend/app/models.py`
 
 Status:
 
 - implemented
 - expanded beyond original MVP
-- frontend/backend fields and min/max bounds are checked by backend tests
-
-Next:
-
-- consider generating one side from the other if the schema changes often
+- frontend and backend derive measurement fields, bounds, select options, and
+  defaults from the shared JSON schema
+- backend and Node tests prove the generated Pydantic model and frontend
+  exports stay attached to the shared artifact
 
 ### Form And Validation
 
@@ -405,7 +408,9 @@ Status:
 - imported corpus can persist locally and be reset to the seed corpus
 - imported source links render inside strategy entries
 - safety flags, legal notes, cost, and personalization exclusion status are visible
-- Node tests cover corpus template parsing, normalization, bounds clamping, invalid evidence rejection, and export round trips
+- a local 18+ gate appears before corpus content is shown
+- high-risk entries require a separate informational acknowledgment before opening
+- Node tests cover corpus template parsing, normalization, bounds clamping, local age-gate storage, high-risk classification, invalid evidence rejection, and export round trips
 - entries are illustrative and not yet source-reviewed
 - copy explicitly separates information from advice
 
@@ -413,7 +418,7 @@ Next:
 
 - manually source entries
 - add evidence and risk taxonomy
-- define exclusion/moderation rules
+- finalize exclusion/moderation policy for sourced production entries
 - decide whether curated corpus data should move to backend storage
 
 ## Engineering Backlog
@@ -449,6 +454,9 @@ Next:
 - method/privacy information is visible
 - placeholder math is clearly labeled
 - local analytics and the share icon are implemented, with public-launch privacy decisions documented
+- cafe and graphite themes are available, persisted locally, and covered by tests
+- free/pro entitlement config is served by the backend, current data tools are
+  tested as non-paywalled, and the local Pro waitlist is visible in the account panel
 - launch gates are tracked in `launch-decision-record.md`
 
 ## Non-Goals
@@ -461,5 +469,5 @@ Do not add these to the current build without a deliberate product decision:
 - AI assistant or chat UI
 - account-gated usage
 - social feed
-- elaborate design system
+- elaborate design system beyond the current CSS-token theme layer
 - 3D renderer

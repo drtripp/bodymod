@@ -19,7 +19,7 @@ Protocol Tracker → Diet upgrades → Native app.
 
 ## 1. Infrastructure Prep (do these before the feature wave)
 
-- [ ] Theme system: refactor `frontend/src/styles.css` onto CSS custom
+- [x] Theme system: refactor `frontend/src/styles.css` onto CSS custom
       properties with two themes — "cafe" (new warm default: paper/cream base,
       terracotta/clay/sage accents, rounded geometry) and "graphite" (current
       dark system), user-toggleable, persisted locally.
@@ -40,9 +40,11 @@ Protocol Tracker → Diet upgrades → Native app.
 - [ ] Error monitoring decision + wiring (privacy-conscious, e.g. self-hosted
       Sentry/GlitchTip; no measurement values in payloads). **[human]** for the
       provider decision, agent for the wiring.
-- [ ] Schema single-source: generate the frontend field/bounds table and the
-      Pydantic model from one schema definition (the drift test stays as a
-      backstop). Already suggested in `site-implementation-plan.md`.
+- [x] Schema single-source: `shared/measurement_schema.json` now defines
+      field order, labels, categories, bounds, select options, and defaults;
+      the frontend measurement helpers import it directly and the backend
+      builds the Pydantic `MeasurementSet` from it. Backend and Node tests keep
+      the shared artifact covered.
 - [ ] i18n groundwork **(new)**: extract user-facing strings behind a
       lightweight i18n layer now, while the copy surface is small;
       translations come later.
@@ -379,7 +381,7 @@ land. No social features, no marketplace.
       search-collision checks before committing. **[human]**
 - [ ] Rebrand pass once decided: wordmark, app icons, store assets, README,
       meta tags, share-card branding.
-- [ ] Warm "cafe" theme as default (see Infrastructure item 1), graphite as
+- [x] Warm "cafe" theme as default (see Infrastructure item 1), graphite as
       toggle.
 - [ ] Silhouette restyle: illustrated line-art treatment to match the warm
       theme (renderer geometry unchanged, stroke/fill treatment themed).
@@ -432,20 +434,20 @@ land. No social features, no marketplace.
 
 ## 15. Monetization
 
-- [ ] Entitlement layer: free/pro flag wired through frontend + backend,
+- [x] Entitlement layer: free/pro flag wired through frontend + backend,
       defaulting everything current to free. Tier line = marginal cost: free
       gets all tracking/data entry; pro gets compute/curation features
       (projections, adaptive TDEE, AI assistant, aggregated insights,
       HealthKit auto-sync, multi-profile).
-- [ ] Pro waitlist email capture before the paywall exists.
+- [x] Pro waitlist email capture before the paywall exists.
 - [ ] Stripe subscriptions (web) — monthly + annual only, never weekly.
       **[human]** for account/pricing finals (~$6-8/mo, ~$40-50/yr working
       numbers).
 - [ ] Apple IAP for iOS (required for digital goods; 15-30% cut); web
       checkout retained for web users.
-- [ ] Blurred-preview paywall treatment for pro insights (show that the
+- [x] Blurred-preview paywall treatment for pro insights (show that the
       insight exists; blur content; honest pricing page).
-- [ ] Never paywall the user's own historical data — encode as a test if
+- [x] Never paywall the user's own historical data — encode as a test if
       possible (entitlement checks must not gate snapshot read paths).
 
 ## 16. Native Apps (Capacitor)
@@ -486,10 +488,9 @@ land. No social features, no marketplace.
       against the templates — beats hand-editing JSON/Python for every entry.
 - [ ] Case-log content type linked from corpus entries (schema shared with
       the protocol tracker's completed protocols).
-- [ ] High-risk display friction: corpus entries flagged
+- [x] High-risk display friction: corpus entries flagged
       surgical/pharma/medical-adjacent get an extra acknowledgment step and
-      are excluded from any personalization (existing decision, needs
-      enforcement once corpus is real).
+      are excluded from any personalization.
 - [ ] User-submitted case logs with moderation queue — explicitly last, after
       corpus v1 proves the content model. **[human]** moderation policy.
 
@@ -497,7 +498,8 @@ land. No social features, no marketplace.
 
 - [ ] ToS, privacy policy, and medical disclaimer pages. **[human]** review
       (template-based drafting is delegable).
-- [ ] Age gate (17+/18+) before corpus content; store rating set accordingly.
+- [x] Age gate (18+) before corpus content, stored locally per browser.
+- [ ] Store rating set accordingly before native submission. **[human]**
 - [ ] Methodology page: scoring, similarity, percentile sources, gender score
       math — public and indexable (trust + SEO).
 - [ ] Accessibility pass **(new)**: keyboard navigation, contrast in both

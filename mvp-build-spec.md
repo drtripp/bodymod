@@ -60,6 +60,8 @@ Earlier planning recommended Next.js and TypeScript. That is no longer the curre
 ## Current Measurement Schema
 
 The implemented schema has expanded beyond the original seven fields.
+`shared/measurement_schema.json` is the source of truth for frontend field
+metadata, frontend defaults, and backend Pydantic validation.
 
 Canonical fields:
 
@@ -199,7 +201,9 @@ Implemented:
 - imported corpus persistence in browser storage with reset-to-seed control
 - imported source links render inside corpus entries
 - safety flags, legal notes, cost, and personalization exclusion status are visible in corpus entries
-- Node tests cover corpus template parsing, normalization, bounds clamping, invalid evidence rejection, and export round trips
+- strategy corpus content is behind a local 18+ gate
+- high-risk corpus entries require a separate informational acknowledgment before opening
+- Node tests cover corpus template parsing, normalization, bounds clamping, local age-gate storage, high-risk classification, invalid evidence rejection, and export round trips
 - Playwright desktop and phone-viewport user-flow tests
 - graceful no-backend state for form and local snapshots
 - offline comparison copy separates backend target comparison from local snapshot comparison

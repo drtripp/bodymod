@@ -37,6 +37,7 @@ try {
     Invoke-Checked { npm run test:photos }
     Invoke-Checked { npm run test:onboarding }
     Invoke-Checked { npm run test:storage }
+    Invoke-Checked { npm run test:theme }
     Invoke-Checked { npm run test:snapshot-trends }
     Invoke-Checked { npm run test:history-import }
     Invoke-Checked { npm run test:local-backup }
@@ -45,6 +46,8 @@ try {
     Invoke-Checked { npm run test:local-targets }
     Invoke-Checked { npm run test:goal-targets }
     Invoke-Checked { npm run test:measurement-guides }
+    Invoke-Checked { npm run test:measurement-schema }
+    Invoke-Checked { npm run test:entitlements }
     Invoke-Checked { npm run test:face-measurements }
     Invoke-Checked { npm run test:result-card }
     Invoke-Checked { npm run test:progress-report }

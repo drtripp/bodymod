@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import {
   clearStrategyCorpusOverride,
+  acceptStrategyCorpusAgeGate,
+  isHighRiskStrategy,
+  isStrategyCorpusAgeAccepted,
   loadStrategyCorpus,
   parseStrategyCorpusExport,
   persistStrategyCorpus,
@@ -52,6 +55,8 @@ export default function StrategyCorpus() {
   const [evidenceFilter, setEvidenceFilter] = useState("all");
   const [selectedStrategySlug, setSelectedStrategySlug] = useState("");
   const [detailStrategySlug, setDetailStrategySlug] = useState("");
+  const [ageGateAccepted, setAgeGateAccepted] = useState(() => isStrategyCorpusAgeAccepted());
+  const [pendingHighRiskSlug, setPendingHighRiskSlug] = useState("");
 
   const selectedOutcome =
     corpusOutcomes.find((outcome) => outcome.id === selectedOutcomeId) ||
@@ -157,7 +162,51 @@ export default function StrategyCorpus() {
   }
 
   function openStrategy(strategy) {
-    setSelectedStrategySlug(strategySlug(strategy));
+    const slug = strategySlug(strategy);
+    if (isHighRiskStrategy(strategy)) {
+      setSelectedStrategySlug("");
+      setPendingHighRiskSlug(slug);
+      return;
+    }
+
+    setSelectedStrategySlug(slug);
+  }
+
+  function handleAcceptAgeGate() {
+    acceptStrategyCorpusAgeGate();
+    setAgeGateAccepted(true);
+    setCorpusStatus("Strategy corpus age gate accepted on this browser.");
+  }
+
+  function handleAcknowledgeHighRisk() {
+    setSelectedStrategySlug(pendingHighRiskSlug);
+    setPendingHighRiskSlug("");
+  }
+
+  if (!ageGateAccepted) {
+    return (
+      <section className="panel anchor-panel corpus-age-gate" id="strategy-corpus" aria-label="Strategy corpus age gate">
+        <div className="panel-header">
+          <h2>Strategy explorer</h2>
+          <p>
+            This corpus can include medical-adjacent, surgical, and pharmaceutical
+            topics. It is informational only and not advice, coaching, dosing, or
+            a protocol generator.
+          </p>
+        </div>
+        <div className="age-gate-card">
+          <strong>18+ content gate</strong>
+          <p>
+            Continue only if you are at least 18 and understand that high-risk
+            entries require professional review. The app does not personalize
+            surgical, pharmaceutical, or clinical entries.
+          </p>
+          <button className="button" type="button" onClick={handleAcceptAgeGate}>
+            I am 18 or older
+          </button>
+        </div>
+      </section>
+    );
   }
 
   if (detailStrategyResult) {
@@ -428,6 +477,35 @@ export default function StrategyCorpus() {
             >
               Open strategy page
             </button>
+          </dialog>
+        </div>
+      ) : null}
+
+      {pendingHighRiskSlug ? (
+        <div className="strategy-modal-backdrop" role="presentation">
+          <dialog className="strategy-modal high-risk-ack" open aria-label="High-risk strategy acknowledgment">
+            <button
+              className="modal-close"
+              type="button"
+              aria-label="Cancel high-risk strategy"
+              onClick={() => setPendingHighRiskSlug("")}
+            >
+              x
+            </button>
+            <h3>High-risk information</h3>
+            <p>
+              This entry is surgical, pharmaceutical, clinical, or otherwise
+              high risk. It is excluded from personalization and is not a
+              recommendation, protocol, or dosing guide.
+            </p>
+            <div className="button-row">
+              <button className="button" type="button" onClick={handleAcknowledgeHighRisk}>
+                Show informational entry
+              </button>
+              <button className="button" type="button" onClick={() => setPendingHighRiskSlug("")}>
+                Keep closed
+              </button>
+            </div>
           </dialog>
         </div>
       ) : null}

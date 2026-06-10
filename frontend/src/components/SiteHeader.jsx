@@ -1,6 +1,8 @@
 export default function SiteHeader({
   activeSection,
+  theme,
   onSectionChange,
+  onThemeChange,
   onOpenAccount,
   onOpenStrategies,
   onShare,
@@ -32,6 +34,15 @@ export default function SiteHeader({
         </button>
       </div>
       <nav className="site-nav header-actions" aria-label="Account and planning actions">
+        <select
+          className="theme-select"
+          aria-label="Theme"
+          value={theme}
+          onChange={(event) => onThemeChange(event.target.value)}
+        >
+          <option value="cafe">Cafe</option>
+          <option value="graphite">Graphite</option>
+        </select>
         <button className="icon-button user-icon" type="button" aria-label="User profile" onClick={onOpenAccount}>
           <span aria-hidden="true" />
         </button>

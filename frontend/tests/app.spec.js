@@ -518,6 +518,56 @@ const measurementGuideLibrary = {
   ]
 };
 
+const entitlementConfig = {
+  version: 1,
+  currentTier: "free",
+  source: "Mock entitlement config.",
+  tiers: [
+    {
+      id: "free",
+      label: "Free",
+      summary: "All current tracking, local logs, imports, exports, and restore tools remain free."
+    },
+    {
+      id: "pro",
+      label: "Pro",
+      summary: "Future paid tier for compute, curation, sync, and automation."
+    }
+  ],
+  features: [
+    {
+      id: "measurement-tracking",
+      label: "Measurement tracking",
+      tier: "free",
+      status: "available",
+      category: "Tracking",
+      summary: "Manual measurements, snapshots, check-ins, trend charts, and goals."
+    },
+    {
+      id: "local-data-export",
+      label: "Local data export",
+      tier: "free",
+      status: "available",
+      category: "Data ownership",
+      summary: "Snapshot JSON export, encrypted local backup, and progress report downloads."
+    },
+    {
+      id: "ai-data-explainer",
+      label: "AI explain my data",
+      tier: "pro",
+      status: "preview",
+      category: "Compute",
+      summary: "A bounded assistant for questions about the user's own logs and corpus entries."
+    }
+  ],
+  nonPaywalledFeatureIds: ["measurement-tracking", "local-data-export"],
+  waitlist: {
+    enabled: true,
+    storage: "local-only",
+    message: "Join the local Pro waitlist before pricing or checkout exists."
+  }
+};
+
 function progressPhotoFile(name, color = "#8da9c4") {
   return {
     name,
@@ -547,6 +597,10 @@ async function mockApi(page) {
 
   await page.route("**/api/measurement-guides", async (route) => {
     await route.fulfill({ json: measurementGuideLibrary });
+  });
+
+  await page.route("**/api/entitlements", async (route) => {
+    await route.fulfill({ json: entitlementConfig });
   });
 
   await page.route("**/api/targets", async (route) => {
@@ -592,6 +646,18 @@ test.beforeEach(async ({ page }) => {
 
 test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "bodymod" })).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "cafe");
+  await expect(page.getByLabel("Theme")).toHaveValue("cafe");
+  await page.getByLabel("Theme").selectOption("graphite");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "graphite");
+  expect(await page.evaluate(() => window.localStorage.getItem("bodymod:theme:v1"))).toBe(
+    JSON.stringify("graphite")
+  );
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "bodymod" })).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "graphite");
+  await page.getByLabel("Theme").selectOption("cafe");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "cafe");
   await expect(page.getByRole("heading", { name: "Measurements", exact: true })).toBeVisible();
   await expect(page.locator('input[name="ankleCircumference"]')).toBeVisible();
   const guidePanel = page.getByLabel("Measurement guides");
@@ -952,6 +1018,19 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Account email")).not.toBeVisible();
   await expect(page.getByLabel("Face measurement logger")).toContainText("No saved face measurements yet.");
   await expect(page.getByLabel("Side profile research notes")).toContainText("Nose projection");
+  await expect(page.getByLabel("Plan and access")).toContainText("Free plan");
+  await expect(page.getByLabel("Free included features")).toContainText("Measurement tracking");
+  await expect(page.getByLabel("Free included features")).toContainText("Local data export");
+  await expect(page.getByLabel("Locked Pro previews")).toContainText("AI explain my data");
+  await expect(page.getByRole("button", { name: "Download progress report" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Download encrypted backup" })).toBeVisible();
+  await page.getByLabel("Pro waitlist email").fill("mason@example.com");
+  await page.getByRole("button", { name: "Join Pro waitlist" }).click();
+  await expect(page.getByLabel("Pro waitlist signup")).toContainText("Saved to the local Pro waitlist.");
+  const waitlistSignupCount = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("bodymod:pro-waitlist:v1")).signups.length
+  );
+  expect(waitlistSignupCount).toBe(1);
 
   await page.getByLabel("Daily weight").fill("86.4");
   await page.getByLabel("Daily calories").fill("2400");
@@ -1323,6 +1402,8 @@ test("roleplays all persona samples through account logging, goals, and learning
 
   await page.getByRole("button", { name: "Learn from strategy corpus" }).click();
   await expect(page.getByRole("heading", { name: "Strategy explorer" })).toBeVisible();
+  await expect(page.getByLabel("Strategy corpus age gate")).toContainText("18+ content gate");
+  await page.getByRole("button", { name: "I am 18 or older" }).click();
   await expect(page.getByText("This is not advice")).toBeVisible();
 });
 
@@ -1480,6 +1561,8 @@ test("exposes method, privacy, and strategy corpus content", async ({ page }) =>
 
   await page.getByRole("button", { name: "Build Plan" }).click();
   await expect(page.getByRole("heading", { name: "Strategy explorer" })).toBeVisible();
+  await expect(page.getByLabel("Strategy corpus age gate")).toContainText("18+ content gate");
+  await page.getByRole("button", { name: "I am 18 or older" }).click();
   await expect(page.getByRole("heading", { name: "I want to..." })).toBeVisible();
   await expect(page.getByLabel("Gain Weight efficacy and risk plot")).toBeVisible();
   await expect(page.getByText("This is not advice")).toBeVisible();
@@ -1494,6 +1577,10 @@ test("exposes method, privacy, and strategy corpus content", async ({ page }) =>
   await page.getByRole("button", { name: "Alter Perceived Structure" }).click();
   await expect(page.getByText("Orthognathic surgery")).toBeVisible();
   await page.getByRole("button", { name: /Orthognathic surgery: efficacy/ }).click();
+  const highRiskDialog = page.getByRole("dialog", { name: "High-risk strategy acknowledgment" });
+  await expect(highRiskDialog).toBeVisible();
+  await expect(highRiskDialog).toContainText("excluded from personalization");
+  await page.getByRole("button", { name: "Show informational entry" }).click();
   const strategyDialog = page.getByRole("dialog", { name: "Strategy synopsis" });
   await expect(strategyDialog).toBeVisible();
   await expect(strategyDialog.getByText("higher confidence")).toBeVisible();

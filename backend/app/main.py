@@ -4,10 +4,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
+from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY
 from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TAXONOMY, PROTOCOL_TEMPLATES
 from app.models import ClothingSizeTables
+from app.models import EntitlementConfig
 from app.models import ExerciseLibrary
 from app.models import MeasurementGuideLibrary
 from app.models import MeasurementSet
@@ -87,3 +89,8 @@ def exercise_library() -> dict:
 @app.get("/api/measurement-guides")
 def measurement_guides() -> dict:
     return MeasurementGuideLibrary.model_validate(MEASUREMENT_GUIDES).model_dump()
+
+
+@app.get("/api/entitlements")
+def entitlement_config() -> dict:
+    return EntitlementConfig.model_validate(ENTITLEMENT_CONFIG).model_dump()

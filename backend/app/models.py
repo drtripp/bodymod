@@ -1,33 +1,9 @@
-from typing import Literal
-
 from pydantic import BaseModel, Field
 
+from .measurement_schema import build_measurement_model
 
-Sex = Literal["male", "female"]
 
-
-class MeasurementSet(BaseModel):
-    height: float = Field(ge=120, le=240)
-    weight: float = Field(ge=35, le=250)
-    sex: Sex
-    headCircumference: float = Field(ge=45, le=70)
-    neckCircumference: float = Field(ge=25, le=65)
-    biacromialWidth: float = Field(ge=28, le=65)
-    bideltoidWidth: float = Field(ge=34, le=85)
-    bideltoidCircumference: float = Field(ge=70, le=180)
-    armpitCircumference: float = Field(ge=50, le=190)
-    nippleCircumference: float = Field(ge=50, le=190)
-    underbustCircumference: float = Field(ge=50, le=180)
-    waistCircumference: float = Field(ge=45, le=180)
-    pantWaistCircumference: float = Field(ge=45, le=190)
-    hipCircumference: float = Field(ge=60, le=200)
-    upperThighCircumference: float = Field(ge=30, le=110)
-    midThighCircumference: float = Field(ge=25, le=95)
-    calfCircumference: float = Field(ge=20, le=70)
-    ankleCircumference: float = Field(ge=14, le=40)
-    bicepCircumference: float = Field(ge=18, le=75)
-    upperForearmCircumference: float = Field(ge=15, le=55)
-    wristCircumference: float = Field(ge=11, le=30)
+MeasurementSet = build_measurement_model()
 
 
 class TargetProfile(BaseModel):
@@ -209,3 +185,34 @@ class MeasurementGuideLibrary(BaseModel):
     reference: str
     notes: list[str] = []
     guides: list[MeasurementGuide]
+
+
+class EntitlementTier(BaseModel):
+    id: str
+    label: str
+    summary: str
+
+
+class EntitlementFeature(BaseModel):
+    id: str
+    label: str
+    tier: str
+    status: str
+    category: str
+    summary: str
+
+
+class EntitlementWaitlist(BaseModel):
+    enabled: bool
+    storage: str
+    message: str
+
+
+class EntitlementConfig(BaseModel):
+    version: int
+    currentTier: str = "free"
+    source: str
+    tiers: list[EntitlementTier]
+    features: list[EntitlementFeature]
+    nonPaywalledFeatureIds: list[str] = []
+    waitlist: EntitlementWaitlist

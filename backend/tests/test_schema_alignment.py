@@ -1,32 +1,11 @@
-import re
-from pathlib import Path
+from typing import get_args
 
+from app.measurement_schema import load_measurement_schema
 from app.models import MeasurementSet
 
 
-FRONTEND_SCHEMA = (
-    Path(__file__).resolve().parents[2]
-    / "frontend"
-    / "src"
-    / "lib"
-    / "measurements.js"
-)
-
-
-def frontend_measurement_fields() -> dict[str, dict[str, float | None]]:
-    source = FRONTEND_SCHEMA.read_text(encoding="utf-8")
-    entries = re.findall(r"\{\s*name: \"(?P<name>[^\"]+)\"(?P<body>.*?)\n\s*\}", source, re.S)
-
-    fields: dict[str, dict[str, float | None]] = {}
-    for name, body in entries:
-        minimum_match = re.search(r"\bmin: (?P<value>\d+(?:\.\d+)?)", body)
-        maximum_match = re.search(r"\bmax: (?P<value>\d+(?:\.\d+)?)", body)
-        fields[name] = {
-            "min": float(minimum_match.group("value")) if minimum_match else None,
-            "max": float(maximum_match.group("value")) if maximum_match else None,
-        }
-
-    return fields
+def schema_fields() -> dict[str, dict]:
+    return {field["name"]: field for field in load_measurement_schema()["fields"]}
 
 
 def backend_measurement_bounds() -> dict[str, dict[str, float | None]]:
@@ -44,11 +23,32 @@ def backend_measurement_bounds() -> dict[str, dict[str, float | None]]:
     return bounds
 
 
-def test_frontend_and_backend_measurement_fields_stay_aligned() -> None:
-    frontend_fields = frontend_measurement_fields()
-    backend_fields = backend_measurement_bounds()
+def test_measurement_model_is_generated_from_shared_schema() -> None:
+    fields = schema_fields()
+    backend_bounds = backend_measurement_bounds()
 
-    assert set(frontend_fields) == set(backend_fields)
+    assert set(fields) == set(MeasurementSet.model_fields)
 
-    for name, backend_bounds in backend_fields.items():
-        assert frontend_fields[name] == backend_bounds
+    for name, field in fields.items():
+        if field.get("type") == "select":
+            allowed_values = tuple(option["value"] for option in field["options"])
+            assert get_args(MeasurementSet.model_fields[name].annotation) == allowed_values
+            continue
+
+        assert backend_bounds[name] == {
+            "min": float(field["min"]),
+            "max": float(field["max"]),
+        }
+
+
+def test_shared_schema_defaults_validate_against_measurement_model() -> None:
+    schema = load_measurement_schema()
+
+    for sex, defaults in schema["defaultsBySex"].items():
+        payload = {
+            **schema["defaults"],
+            "sex": sex,
+            **defaults,
+        }
+        model = MeasurementSet.model_validate(payload)
+        assert model.sex == sex

@@ -18,6 +18,14 @@ export const strategyReviewStatuses = [
 
 export const STRATEGY_CORPUS_VERSION = 1;
 const STRATEGY_CORPUS_STORAGE_KEY = "bodymod:strategy-corpus:v1";
+export const STRATEGY_AGE_GATE_KEY = "bodymod:strategy-age-gate:v1";
+
+export const highRiskSensitivityLevels = [
+  "clinical",
+  "surgical",
+  "pharmaceutical",
+  "medical-adjacent"
+];
 
 function strategy({
   name,
@@ -59,7 +67,7 @@ function strategy({
     uncertaintyNotes,
     excludedFromPersonalization:
       reviewStatus === "exclude from personalization" ||
-      ["clinical", "surgical", "pharmaceutical", "medical-adjacent"].includes(sensitivity),
+      highRiskSensitivityLevels.includes(sensitivity),
     notes
   };
 }
@@ -145,7 +153,7 @@ function normalizeStrategy(rawStrategy) {
     excludedFromPersonalization:
       Boolean(rawStrategy.excludedFromPersonalization) ||
       reviewStatus === "exclude from personalization" ||
-      ["clinical", "surgical", "pharmaceutical", "medical-adjacent"].includes(sensitivity),
+      highRiskSensitivityLevels.includes(sensitivity),
     notes: stringField(rawStrategy.notes, "No notes captured.")
   };
 }
@@ -224,6 +232,31 @@ export function persistStrategyCorpus(outcomes) {
 
 export function clearStrategyCorpusOverride() {
   removeStoredItemSync(STRATEGY_CORPUS_STORAGE_KEY);
+}
+
+export function isStrategyCorpusAgeAccepted(adapter) {
+  const parsed = readJsonSync(STRATEGY_AGE_GATE_KEY, null, adapter);
+  return parsed?.accepted === true && parsed?.minimumAge === 18;
+}
+
+export function acceptStrategyCorpusAgeGate(adapter) {
+  const record = {
+    accepted: true,
+    minimumAge: 18,
+    acceptedAt: new Date().toISOString()
+  };
+  writeJsonSync(STRATEGY_AGE_GATE_KEY, record, adapter);
+  return record;
+}
+
+export function isHighRiskStrategy(strategy = {}) {
+  return (
+    Number(strategy.risk || 0) >= 75 ||
+    highRiskSensitivityLevels.includes(strategy.sensitivity) ||
+    strategy.reviewStatus === "needs clinical review" ||
+    strategy.reviewStatus === "exclude from personalization" ||
+    strategy.excludedFromPersonalization === true
+  );
 }
 
 export const strategyOutcomes = [

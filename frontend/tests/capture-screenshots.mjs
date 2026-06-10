@@ -127,6 +127,36 @@ const measurementGuideLibrary = {
   ]
 };
 
+const entitlementConfig = {
+  version: 1,
+  currentTier: "free",
+  source: "Screenshot entitlement config.",
+  tiers: [
+    { id: "free", label: "Free", summary: "All current tracking remains free." },
+    { id: "pro", label: "Pro", summary: "Future paid tier." }
+  ],
+  features: [
+    {
+      id: "measurement-tracking",
+      label: "Measurement tracking",
+      tier: "free",
+      status: "available",
+      category: "Tracking",
+      summary: "Manual measurements and snapshots."
+    },
+    {
+      id: "ai-data-explainer",
+      label: "AI explain my data",
+      tier: "pro",
+      status: "preview",
+      category: "Compute",
+      summary: "Future bounded assistant."
+    }
+  ],
+  nonPaywalledFeatureIds: ["measurement-tracking"],
+  waitlist: { enabled: true, storage: "local-only", message: "Join the local Pro waitlist." }
+};
+
 let server = null;
 let browser = null;
 try {
@@ -146,6 +176,9 @@ try {
     );
     await page.route("**/api/measurement-guides", (route) =>
       route.fulfill({ json: measurementGuideLibrary })
+    );
+    await page.route("**/api/entitlements", (route) =>
+      route.fulfill({ json: entitlementConfig })
     );
     await page.route("**/api/targets", (route) =>
       route.fulfill({

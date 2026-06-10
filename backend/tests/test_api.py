@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
+from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY
 from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TEMPLATES
@@ -166,3 +167,25 @@ def test_measurement_guides_endpoint_returns_field_guides() -> None:
     }.issubset(guide_fields)
     assert all(guide["steps"] for guide in payload["guides"])
     assert all(guide["illustration"] for guide in payload["guides"])
+
+
+def test_entitlements_endpoint_keeps_current_tools_free() -> None:
+    response = client.get("/api/entitlements")
+
+    assert response.status_code == 200
+    payload = response.json()
+    feature_ids = {feature["id"] for feature in payload["features"]}
+
+    assert payload["currentTier"] == "free"
+    assert payload["waitlist"]["enabled"] is True
+    assert set(payload["nonPaywalledFeatureIds"]).issubset(feature_ids)
+    assert {
+        "measurement-tracking",
+        "local-data-export",
+        "diet-workout-logs",
+    }.issubset(payload["nonPaywalledFeatureIds"])
+    assert any(
+        feature["tier"] == "pro" and feature["status"] == "preview"
+        for feature in payload["features"]
+    )
+    assert payload["version"] == ENTITLEMENT_CONFIG["version"]

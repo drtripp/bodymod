@@ -2,10 +2,14 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 import {
+  acceptStrategyCorpusAgeGate,
+  isHighRiskStrategy,
+  isStrategyCorpusAgeAccepted,
   normalizeStrategyOutcomes,
   parseStrategyCorpusExport,
   serializeStrategyCorpus
 } from "../src/lib/strategyCorpus.js";
+import { createMemoryStorageAdapter } from "../src/lib/storageAdapter.js";
 
 const validOutcome = {
   id: "test-outcome",
@@ -59,6 +63,7 @@ test("normalizes valid imported corpus data", () => {
   assert.equal(strategy.sourceCount, 1);
   assert.deepEqual(strategy.contraindicationFlags, ["manual review flag"]);
   assert.equal(strategy.excludedFromPersonalization, true);
+  assert.equal(isHighRiskStrategy(strategy), true);
 });
 
 test("clamps efficacy and risk scores into plot bounds", () => {
@@ -104,3 +109,11 @@ test("round-trips serialized corpus exports", () => {
   assert.equal(reparsed[0].strategies[0].name, "Reviewed strategy");
 });
 
+test("stores the strategy corpus age gate locally", () => {
+  const adapter = createMemoryStorageAdapter();
+
+  assert.equal(isStrategyCorpusAgeAccepted(adapter), false);
+  const record = acceptStrategyCorpusAgeGate(adapter);
+  assert.equal(record.minimumAge, 18);
+  assert.equal(isStrategyCorpusAgeAccepted(adapter), true);
+});

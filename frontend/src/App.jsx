@@ -11,6 +11,7 @@ import SiteHeader from "./components/SiteHeader";
 import StrategyCorpus from "./components/StrategyCorpus";
 import {
   fetchClothingSizeTables,
+  fetchEntitlements,
   fetchHealth,
   fetchMatchPriorities,
   fetchMatches,
@@ -46,6 +47,11 @@ import {
   persistOnboardingProfile
 } from "./lib/onboarding";
 import {
+  applyThemePreference,
+  loadThemePreference,
+  persistThemePreference
+} from "./lib/theme";
+import {
   buildDisplayFormState,
   displayToMetricValue,
   formatDisplayValue,
@@ -57,6 +63,10 @@ import {
   defaultTargetFilters,
   filterTargets
 } from "./lib/targetFilters";
+import {
+  fallbackEntitlementConfig,
+  normalizeEntitlementConfig
+} from "./lib/entitlements";
 
 const fallbackMatchPriorities = [
   {
@@ -105,13 +115,20 @@ export default function App() {
   const [hoveredMeasurement, setHoveredMeasurement] = useState(null);
   const [insightTab, setInsightTab] = useState("result");
   const [activeSection, setActiveSection] = useState("body");
+  const [theme, setTheme] = useState(() => loadThemePreference());
   const [isAccountPanelOpen, setIsAccountPanelOpen] = useState(false);
   const [isStrategyExplorerOpen, setIsStrategyExplorerOpen] = useState(false);
   const [clothingSizeTables, setClothingSizeTables] = useState(DEFAULT_CLOTHING_SIZE_TABLES);
   const [measurementGuideLibrary, setMeasurementGuideLibrary] = useState(
     emptyMeasurementGuideLibrary
   );
+  const [entitlements, setEntitlements] = useState(fallbackEntitlementConfig);
   const [onboardingProfile, setOnboardingProfile] = useState(() => loadOnboardingProfile());
+
+  useEffect(() => {
+    applyThemePreference(theme);
+    persistThemePreference(theme);
+  }, [theme]);
 
   useEffect(() => {
     trackEvent("app_loaded");
@@ -162,6 +179,10 @@ export default function App() {
     fetchMeasurementGuides()
       .then((response) => setMeasurementGuideLibrary(normalizeMeasurementGuideLibrary(response)))
       .catch(() => setMeasurementGuideLibrary(emptyMeasurementGuideLibrary));
+
+    fetchEntitlements()
+      .then((response) => setEntitlements(normalizeEntitlementConfig(response)))
+      .catch(() => setEntitlements(fallbackEntitlementConfig));
   }, []);
 
   useEffect(() => {
@@ -635,7 +656,9 @@ export default function App() {
     <div className="app-shell">
       <SiteHeader
         activeSection={activeSection}
+        theme={theme}
         onSectionChange={setActiveSection}
+        onThemeChange={setTheme}
         onOpenAccount={() => setIsAccountPanelOpen(true)}
         onOpenStrategies={() => setIsStrategyExplorerOpen(true)}
         onShare={handleCopyShareLink}
@@ -769,6 +792,7 @@ export default function App() {
       {isAccountPanelOpen ? (
         <AccountGoalPanel
           currentMeasurements={currentMeasurements}
+          entitlements={entitlements}
           onApplyMeasurements={applyMeasurementSet}
           targetProfiles={rankedMatches}
           onOpenStrategies={() => {

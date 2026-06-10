@@ -68,6 +68,36 @@ const measurementGuideLibrary = {
   ]
 };
 
+const entitlementConfig = {
+  version: 1,
+  currentTier: "free",
+  source: "Mock entitlement config.",
+  tiers: [
+    { id: "free", label: "Free", summary: "All current tracking remains free." },
+    { id: "pro", label: "Pro", summary: "Future paid tier." }
+  ],
+  features: [
+    {
+      id: "measurement-tracking",
+      label: "Measurement tracking",
+      tier: "free",
+      status: "available",
+      category: "Tracking",
+      summary: "Manual measurements and snapshots."
+    },
+    {
+      id: "ai-data-explainer",
+      label: "AI explain my data",
+      tier: "pro",
+      status: "preview",
+      category: "Compute",
+      summary: "Future bounded assistant."
+    }
+  ],
+  nonPaywalledFeatureIds: ["measurement-tracking"],
+  waitlist: { enabled: true, storage: "local-only", message: "Join the local Pro waitlist." }
+};
+
 async function mockApi(page) {
   await page.route("**/api/health", async (route) => {
     await route.fulfill({ json: { status: "ok" } });
@@ -83,6 +113,10 @@ async function mockApi(page) {
 
   await page.route("**/api/measurement-guides", async (route) => {
     await route.fulfill({ json: measurementGuideLibrary });
+  });
+
+  await page.route("**/api/entitlements", async (route) => {
+    await route.fulfill({ json: entitlementConfig });
   });
 
   await page.route("**/api/match-priorities", async (route) => {
@@ -129,6 +163,7 @@ test.beforeEach(async ({ page }) => {
 
 test("keeps the dense workflow usable on a phone viewport", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "bodymod" })).toBeVisible();
+  await expect(page.getByLabel("Theme")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Measurements", exact: true })).toBeVisible();
   await expect(page.locator(".workspace")).toHaveCSS("grid-template-columns", /390px|366px|358px|1fr/);
 
@@ -151,6 +186,8 @@ test("keeps the dense workflow usable on a phone viewport", async ({ page }) => 
 
   await page.getByRole("button", { name: "Build Plan" }).click();
   await expect(page.getByRole("heading", { name: "Strategy explorer" })).toBeVisible();
+  await expect(page.getByLabel("Strategy corpus age gate")).toContainText("18+ content gate");
+  await page.getByRole("button", { name: "I am 18 or older" }).click();
   await page.getByRole("button", { name: "Alter Perceived Structure" }).click();
   await expect(page.getByText("Orthognathic surgery")).toBeVisible();
 

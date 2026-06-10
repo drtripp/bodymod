@@ -97,6 +97,14 @@ import {
   programsForGoal,
   suggestedExerciseTargets
 } from "../lib/workouts";
+import {
+  canAccessEntitlementFeature,
+  entitlementTier,
+  fallbackEntitlementConfig,
+  loadProWaitlistSignups,
+  normalizeEntitlementConfig,
+  saveProWaitlistSignup
+} from "../lib/entitlements";
 
 const emptyPlanningData = {
   personas: [],
@@ -212,6 +220,7 @@ function buildTrendWeightChart(series) {
 
 export default function AccountGoalPanel({
   currentMeasurements,
+  entitlements = fallbackEntitlementConfig,
   onApplyMeasurements,
   snapshotProps,
   targetProfiles = [],
@@ -280,8 +289,19 @@ export default function AccountGoalPanel({
   const [historyImportStatus, setHistoryImportStatus] = useState("");
   const [backupPassphrase, setBackupPassphrase] = useState("");
   const [backupStatus, setBackupStatus] = useState("");
+  const [proWaitlistEmail, setProWaitlistEmail] = useState("");
+  const [proWaitlistStatus, setProWaitlistStatus] = useState("");
   const [selectedProtocolIds, setSelectedProtocolIds] = useState([]);
   const [status, setStatus] = useState("");
+
+  const entitlementConfig = normalizeEntitlementConfig(entitlements);
+  const currentTier = entitlementTier(entitlementConfig);
+  const freeEntitlementFeatures = entitlementConfig.features.filter((feature) =>
+    canAccessEntitlementFeature(entitlementConfig, feature.id)
+  );
+  const proPreviewFeatures = entitlementConfig.features.filter((feature) =>
+    !canAccessEntitlementFeature(entitlementConfig, feature.id)
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -311,6 +331,12 @@ export default function AccountGoalPanel({
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (account?.email) {
+      setProWaitlistEmail(account.email);
+    }
+  }, [account?.email]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1125,6 +1151,26 @@ export default function AccountGoalPanel({
     setStatus("Progress report downloaded.");
   }
 
+  function handleProWaitlistSubmit(event) {
+    event.preventDefault();
+
+    try {
+      const signup = saveProWaitlistSignup({
+        email: proWaitlistEmail || account?.email,
+        accountId: account?.id || "",
+        source: "account-panel"
+      });
+      const count = loadProWaitlistSignups().length;
+      setProWaitlistStatus(
+        signup.duplicate
+          ? `Already on the local Pro waitlist. ${count} saved signup(s) on this browser.`
+          : `Saved to the local Pro waitlist. ${count} saved signup(s) on this browser.`
+      );
+    } catch (error) {
+      setProWaitlistStatus(error.message);
+    }
+  }
+
   return (
     <div className="account-overlay" role="presentation">
       <section className="account-panel panel" role="dialog" aria-modal="true" aria-label="Account, logs, and goals">
@@ -1218,6 +1264,62 @@ export default function AccountGoalPanel({
               <button className="button" type="button" onClick={handleLogout}>
                 Log out
               </button>
+            </section>
+
+            <section className="entitlement-section" aria-label="Plan and access">
+              <div className="entitlement-current">
+                <div>
+                  <h3>{currentTier.label} plan</h3>
+                  <p>{currentTier.summary}</p>
+                </div>
+                <strong>{entitlementConfig.waitlist.storage}</strong>
+              </div>
+              <div className="entitlement-grid">
+                <div className="entitlement-free" aria-label="Free included features">
+                  <h4>Included now</h4>
+                  <ul>
+                    {freeEntitlementFeatures.map((feature) => (
+                      <li key={feature.id}>
+                        <strong>{feature.label}</strong>
+                        <span>{feature.summary}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <form
+                  className="pro-waitlist-card"
+                  aria-label="Pro waitlist signup"
+                  onSubmit={handleProWaitlistSubmit}
+                >
+                  <h4>Pro preview</h4>
+                  <p>{entitlementConfig.waitlist.message}</p>
+                  <div className="pro-preview-list" aria-label="Locked Pro previews">
+                    {proPreviewFeatures.map((feature) => (
+                      <article key={feature.id} className="pro-preview-card">
+                        <strong>{feature.label}</strong>
+                        <span>{feature.category} / {feature.status}</span>
+                        <p>{feature.summary}</p>
+                      </article>
+                    ))}
+                  </div>
+                  <label className="field">
+                    <span className="field-label">Waitlist email</span>
+                    <input
+                      aria-label="Pro waitlist email"
+                      type="email"
+                      value={proWaitlistEmail}
+                      onChange={(event) => setProWaitlistEmail(event.target.value)}
+                      placeholder={account.email}
+                    />
+                  </label>
+                  <button className="button" type="submit">
+                    Join Pro waitlist
+                  </button>
+                  {proWaitlistStatus ? (
+                    <small className="pro-waitlist-status">{proWaitlistStatus}</small>
+                  ) : null}
+                </form>
+              </div>
             </section>
 
             <section className="progress-report-section" aria-label="Progress report">

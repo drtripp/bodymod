@@ -52,3 +52,7 @@ export function fetchExerciseLibrary() {
 export function fetchMeasurementGuides() {
   return request("/api/measurement-guides");
 }
+
+export function fetchEntitlements() {
+  return request("/api/entitlements");
+}
