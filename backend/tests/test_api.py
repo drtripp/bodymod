@@ -4,11 +4,12 @@ from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.exercises import EXERCISE_LIBRARY
 from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TEMPLATES
-from app.data.targets import TARGETS
 from app.main import allowed_cors_origins, app
+from app.repositories import load_target_seed
 
 
 client = TestClient(app)
+TARGETS = load_target_seed()["targets"]
 
 
 def test_health_endpoint() -> None:

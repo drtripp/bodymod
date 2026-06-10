@@ -1,6 +1,6 @@
-from app.data.targets import TARGETS
 from app.models import MeasurementSet
 from app.percentiles import estimate_percentiles, normal_percentile
+from app.repositories import load_target_seed
 from app.services import (
     build_match_response,
     get_targets,
@@ -8,6 +8,8 @@ from app.services import (
     score_parts,
     similarity_from_distance,
 )
+
+TARGETS = load_target_seed()["targets"]
 
 
 def measurement(index: int = 0) -> MeasurementSet:

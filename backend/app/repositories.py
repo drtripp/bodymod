@@ -1,0 +1,146 @@
+import json
+import os
+import sqlite3
+from contextlib import closing
+from pathlib import Path
+from typing import Any
+
+from app.models import TargetProfile
+
+
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_DB_PATH = BACKEND_ROOT / ".local" / "bodymod.sqlite3"
+TARGET_SEED_PATH = Path(__file__).resolve().parent / "data" / "targets.seed.json"
+
+
+def configured_database_path() -> Path:
+    configured_path = os.getenv("BODYMOD_DB_PATH")
+    if configured_path:
+        return Path(configured_path)
+    return DEFAULT_DB_PATH
+
+
+def load_target_seed(seed_path: Path = TARGET_SEED_PATH) -> dict[str, Any]:
+    seed = json.loads(seed_path.read_text(encoding="utf-8"))
+    if not isinstance(seed.get("version"), int):
+        raise ValueError("Target seed must include an integer version.")
+    if not isinstance(seed.get("targets"), list) or not seed["targets"]:
+        raise ValueError("Target seed must include at least one target.")
+
+    for target in seed["targets"]:
+        TargetProfile.model_validate(target)
+
+    return seed
+
+
+class TargetRepository:
+    def __init__(
+        self,
+        db_path: Path | str | None = None,
+        seed_path: Path = TARGET_SEED_PATH,
+    ) -> None:
+        self.db_path = Path(db_path) if db_path is not None else configured_database_path()
+        self.seed_path = seed_path
+
+    def list_targets(self) -> list[TargetProfile]:
+        return [TargetProfile.model_validate(item) for item in self.list_target_dicts()]
+
+    def list_target_dicts(self) -> list[dict[str, Any]]:
+        with closing(self._connect()) as connection:
+            self._ensure_seeded(connection)
+            rows = connection.execute(
+                """
+                SELECT id, label, source_type, notes, measurements_json
+                FROM target_profiles
+                ORDER BY position ASC, id ASC
+                """
+            ).fetchall()
+
+        return [
+            {
+                "id": row["id"],
+                "label": row["label"],
+                "source_type": row["source_type"],
+                "notes": row["notes"],
+                "measurements": json.loads(row["measurements_json"]),
+            }
+            for row in rows
+        ]
+
+    def _connect(self) -> sqlite3.Connection:
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        connection = sqlite3.connect(self.db_path)
+        connection.row_factory = sqlite3.Row
+        return connection
+
+    def _ensure_seeded(self, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS app_metadata (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS target_profiles (
+                id TEXT PRIMARY KEY,
+                label TEXT NOT NULL,
+                source_type TEXT NOT NULL,
+                notes TEXT,
+                measurements_json TEXT NOT NULL,
+                position INTEGER NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+        seed = load_target_seed(self.seed_path)
+        seed_version = str(seed["version"])
+        stored_version = connection.execute(
+            "SELECT value FROM app_metadata WHERE key = ?",
+            ("target_seed_version",),
+        ).fetchone()
+        target_count = connection.execute("SELECT COUNT(*) AS count FROM target_profiles").fetchone()[
+            "count"
+        ]
+
+        if stored_version and stored_version["value"] == seed_version and target_count:
+            return
+
+        with connection:
+            connection.execute("DELETE FROM target_profiles")
+            connection.executemany(
+                """
+                INSERT INTO target_profiles (
+                    id,
+                    label,
+                    source_type,
+                    notes,
+                    measurements_json,
+                    position
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    (
+                        target["id"],
+                        target["label"],
+                        target["source_type"],
+                        target.get("notes"),
+                        json.dumps(target["measurements"], separators=(",", ":"), sort_keys=True),
+                        index,
+                    )
+                    for index, target in enumerate(seed["targets"])
+                ],
+            )
+            connection.execute(
+                """
+                INSERT INTO app_metadata (key, value)
+                VALUES (?, ?)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value
+                """,
+                ("target_seed_version", seed_version),
+            )

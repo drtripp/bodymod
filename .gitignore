@@ -7,6 +7,7 @@ dist/
 coverage/
 .venv/
 backend/.venv/
+backend/.local/
 frontend/dist/
 __pycache__/
 *.pyc

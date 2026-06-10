@@ -1,7 +1,8 @@
 # Target Profile Curation Guide
 
 This guide defines how target profiles should be prepared before they are added
-to `backend/app/data/targets.py` or a later controlled target data source.
+to `backend/app/data/targets.seed.json` and seeded into the backend SQLite
+repository.
 
 The current target library is placeholder-quality. Production targets need
 source notes, uncertainty labels, and consistent measurement assumptions.
@@ -77,4 +78,3 @@ A target profile is not production-quality unless:
 - the profile validates against the backend schema
 - match scoring has been checked for obvious ranking distortions
 - the profile does not imply medical, biometric, or body-scan precision
-

@@ -4,6 +4,9 @@ import SilhouetteView from "./SilhouetteView";
 import SnapshotPanel from "./SnapshotPanel";
 import { fetchExerciseLibrary, fetchPlanningData } from "../lib/api";
 import {
+  buildAdaptiveTdeeEstimate
+} from "../lib/adaptiveTdee";
+import {
   appendGoalCheckIn,
   appendProtocolCheckIn,
   archiveUserProtocol,
@@ -39,6 +42,9 @@ import {
   buildWeeklyDigest,
   buildWeeklyStreak
 } from "../lib/checkInLoop";
+import {
+  buildReliabilityPauseSummary
+} from "../lib/reliabilityEvents";
 import {
   buildEnergyProjection,
   buildPlanRetro,
@@ -381,6 +387,16 @@ export default function AccountGoalPanel({
   const latestPhoto = visiblePhotos[0] || photosForCategory(photos, "all")[0] || null;
   const trendWeight = useMemo(() => calculateTrendWeight(checkIns), [checkIns]);
   const trendWeightSeries = useMemo(() => buildTrendWeightSeries(checkIns), [checkIns]);
+  const adaptiveTdee = useMemo(() => buildAdaptiveTdeeEstimate(checkIns), [checkIns]);
+  const weightReliabilityPause = useMemo(
+    () =>
+      buildReliabilityPauseSummary({
+        checkIns,
+        fieldName: "weight",
+        entries: checkIns.filter((checkIn) => checkIn.type === "daily-weight")
+      }),
+    [checkIns]
+  );
   const trendWeightChart = useMemo(
     () => buildTrendWeightChart(trendWeightSeries),
     [trendWeightSeries]
@@ -1193,6 +1209,29 @@ export default function AccountGoalPanel({
                     ? `${trendWeight.count} log(s), ${formatSignedDelta(trendWeight.delta)} kg last trend step`
                     : "No daily logs yet."}
                 </span>
+                {weightReliabilityPause.pausedEntryCount ? (
+                  <small>
+                    {weightReliabilityPause.pausedEntryCount} weight log(s) excluded by reliability pause.
+                  </small>
+                ) : null}
+                {weightReliabilityPause.isPaused && weightReliabilityPause.latestWindow ? (
+                  <small>
+                    Weight trend paused until {formatDate(weightReliabilityPause.latestWindow.endAt)}.
+                  </small>
+                ) : null}
+                <strong>
+                  Adaptive TDEE: {adaptiveTdee.status === "ready" ? `${adaptiveTdee.estimatedTdee} kcal` : "--"}
+                </strong>
+                <span>
+                  {adaptiveTdee.status === "ready"
+                    ? `${adaptiveTdee.confidenceLabel}; ${adaptiveTdee.rangeLow}-${adaptiveTdee.rangeHigh} kcal/day band`
+                    : adaptiveTdee.reason}
+                </span>
+                {adaptiveTdee.excludedEntries ? (
+                  <small>
+                    {adaptiveTdee.excludedEntries} calorie log(s) excluded by reliability pause.
+                  </small>
+                ) : null}
               </div>
               <div className="streak-panel" aria-label="Check-in streak">
                 <div>

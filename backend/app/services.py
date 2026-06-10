@@ -1,8 +1,8 @@
 from math import exp
 
-from app.data.targets import TARGETS
 from app.models import MatchResponse, MatchResult, MeasurementSet, TargetProfile
 from app.percentiles import estimate_percentiles
+from app.repositories import TargetRepository
 
 
 SIMILARITY_EXPONENT = 1.5
@@ -46,8 +46,9 @@ SCORING_RATIOS = [
 ]
 
 
-def get_targets() -> list[TargetProfile]:
-    return [TargetProfile.model_validate(item) for item in TARGETS]
+def get_targets(repository: TargetRepository | None = None) -> list[TargetProfile]:
+    target_repository = repository or TargetRepository()
+    return target_repository.list_targets()
 
 
 def ratio_value(values: dict, numerator_key: str, denominator_key: str) -> float:

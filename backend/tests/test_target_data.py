@@ -1,12 +1,13 @@
 import json
 from pathlib import Path
 
-from app.data.targets import TARGETS
 from app.models import TargetProfile
+from app.repositories import load_target_seed
 
 
 ALLOWED_SOURCE_TYPES = {"character", "archetype"}
 REPO_ROOT = Path(__file__).resolve().parents[2]
+TARGETS = load_target_seed()["targets"]
 
 
 def test_all_target_profiles_validate_against_schema() -> None:

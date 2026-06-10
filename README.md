@@ -11,8 +11,8 @@ The current app is a small full-stack prototype:
 ## Stack
 
 - Frontend: React 18, Vite, plain CSS
-- Backend: FastAPI, Uvicorn, Pydantic
-- Storage: browser `localStorage` for local snapshots
+- Backend: FastAPI, Uvicorn, Pydantic, SQLite
+- Storage: adapter-backed browser `localStorage` for local snapshots and account data
 - Rendering: deterministic SVG silhouette generated from measurements
 
 The app is measurement-first. It does not accept photos, does not provide medical or procedural guidance, and does not include accounts.
@@ -29,6 +29,8 @@ Run the full local verification suite from the repo root:
 
 This runs backend pytest, corpus validation tests, frontend build, Playwright
 user-flow tests, screenshot capture, and Playwright output cleanup.
+GitHub Actions runs the same verifier on push and pull requests via
+`.github/workflows/verify.yml`.
 
 ### Backend
 
@@ -41,6 +43,9 @@ uvicorn app.main:app --reload
 ```
 
 The backend runs on `http://localhost:8000` by default.
+Target profiles are seeded from `backend/app/data/targets.seed.json` into a
+local SQLite database. Set `BODYMOD_DB_PATH` to override the default runtime DB
+path (`backend/.local/bodymod.sqlite3`).
 
 ### Frontend
 
@@ -68,19 +73,23 @@ Implemented now:
 - deterministic front-view SVG silhouette
 - hover-linked measurement anchors between form and silhouette
 - FastAPI health, target-list, and match endpoints
-- curated placeholder and archetype target profiles
+- curated placeholder and archetype target profiles served through a SQLite repository
 - height-normalized and ratio-aware match scoring with explanation bullets
 - approximate adult-reference percentile output
 - simplified result pane with large top-match name and placeholder similarity score
 - runner-up match shown directly under the top match
 - 2x3 metric block grid for height, BMI, estimated body fat, SHR, WHR, and SWR
 - local snapshot save, label, note, load, compare, export, import, and delete in browser storage
+- shared frontend storage adapter for current web storage and future native storage
 - local snapshot trend summary across saved entries
 - compact local trend chart for key saved-snapshot metrics
+- per-field noise bands on snapshot trend charts using the documented re-measurement error model
 - local account workspace for persona walkthroughs, goals, protocols, check-ins, workouts, photos, and reports
 - daily weight trend smoothing with raw-dot vs smoothed-line display
+- adaptive TDEE estimate from reliable daily weight and calorie logs, with reliability-window exclusions
 - guided weekly check-in flow with snapshot save, streak/grace state, heatmap, milestones, insight drops, and weekly digest
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
+- reliability events pause affected weight and tape trend inference during healing or disruption windows
 - projected silhouettes for calorie-target protocol planning bands, with uncertainty copy
 - local goals can target preset deltas, custom deltas, target profiles, or saved past-self snapshots
 - local browser face measurement logger using self-hosted MediaPipe assets for camera/photo landmark scans
@@ -113,7 +122,7 @@ Implemented now:
 - Playwright desktop and phone-viewport frontend user-flow tests
 - pytest backend API/service tests
 - backend schema-drift test for frontend/backend measurement fields
-- backend target-data integrity tests for IDs, schemas, and placeholder uncertainty notes
+- backend target-data and SQLite repository tests for IDs, schemas, and placeholder uncertainty notes
 - target profile template and curation guide for future production target data
 - graceful no-backend state for local form and snapshots
 - offline comparison copy that keeps target comparison separate from local snapshot comparison

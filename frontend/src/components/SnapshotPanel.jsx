@@ -1,4 +1,5 @@
 import { comparisonMetrics, summarizeSnapshotTrend } from "../lib/comparison";
+import { buildSnapshotTrendChart } from "../lib/snapshotTrends";
 
 function formatTimestamp(timestamp) {
   return new Intl.DateTimeFormat(undefined, {
@@ -23,53 +24,6 @@ function formatMeasurements(measurements) {
   ].join(" / ");
 }
 
-const chartMetricKeys = [
-  "weight",
-  "waistCircumference",
-  "bideltoidCircumference",
-  "hipCircumference"
-];
-
-const chartMetrics = comparisonMetrics.filter(([key]) => chartMetricKeys.includes(key));
-
-function buildTrendChart(snapshots) {
-  if (!Array.isArray(snapshots) || snapshots.length < 2) {
-    return null;
-  }
-
-  const orderedSnapshots = snapshots.slice().reverse();
-  const width = 360;
-  const height = 150;
-  const padding = 18;
-  const innerWidth = width - padding * 2;
-  const innerHeight = height - padding * 2;
-
-  const series = chartMetrics.map(([key, label, unit], seriesIndex) => {
-    const values = orderedSnapshots.map((snapshot) => Number(snapshot.measurements[key]));
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const range = max - min || 1;
-    const points = values.map((value, index) => {
-      const x =
-        padding +
-        (orderedSnapshots.length === 1 ? innerWidth / 2 : (index / (orderedSnapshots.length - 1)) * innerWidth);
-      const y = padding + innerHeight - ((value - min) / range) * innerHeight;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    });
-
-    return {
-      key,
-      label,
-      unit,
-      seriesIndex,
-      points: points.join(" "),
-      latest: values[values.length - 1]
-    };
-  });
-
-  return { width, height, series };
-}
-
 export default function SnapshotPanel({
   snapshotLabel,
   onSnapshotLabelChange,
@@ -86,7 +40,7 @@ export default function SnapshotPanel({
   importStatus
 }) {
   const trend = summarizeSnapshotTrend(snapshots);
-  const trendChart = buildTrendChart(snapshots);
+  const trendChart = buildSnapshotTrendChart(snapshots);
 
   return (
     <section className="panel">
@@ -158,6 +112,13 @@ export default function SnapshotPanel({
                 <line x1="18" y1="18" x2="18" y2="132" />
                 <line x1="18" y1="132" x2="342" y2="132" />
                 {trendChart.series.map((series) => (
+                  <path
+                    key={`${series.key}-noise`}
+                    className={`snapshot-chart-noise noise-${series.seriesIndex}`}
+                    d={series.noiseBandPath}
+                  />
+                ))}
+                {trendChart.series.map((series) => (
                   <polyline
                     key={series.key}
                     className={`snapshot-chart-line line-${series.seriesIndex}`}
@@ -169,10 +130,11 @@ export default function SnapshotPanel({
                 {trendChart.series.map((series) => (
                   <span key={series.key}>
                     <i className={`line-${series.seriesIndex}`} />
-                    {series.label}: {series.latest.toFixed(1)} {series.unit}
+                    {series.label}: {series.latest.toFixed(1)} {series.unit} ({series.noiseLabel})
                   </span>
                 ))}
               </div>
+              <p className="muted-text">Bands show typical re-measurement noise, not a target range.</p>
             </div>
           ) : null}
         </div>

@@ -23,17 +23,20 @@ Protocol Tracker → Diet upgrades → Native app.
       properties with two themes — "cafe" (new warm default: paper/cream base,
       terracotta/clay/sage accents, rounded geometry) and "graphite" (current
       dark system), user-toggleable, persisted locally.
-- [ ] Storage adapter: abstract `frontend/src/lib/storage.js` behind an async
-      adapter interface (web: `localStorage`; native: Capacitor
-      Preferences/SQLite later). All new persistence goes through it.
+- [x] Storage adapter: frontend persistence now goes through
+      `frontend/src/lib/storageAdapter.js`, which exposes async adapter methods
+      for web `localStorage` and a memory test adapter while preserving the
+      current synchronous UI helpers until native storage lands.
 - [ ] Decompose `App.jsx` (~500 lines): extract state into hooks/contexts per
       domain (measurements, snapshots, comparison, units) before the feature
       wave makes it worse.
-- [ ] Backend database migration: move targets (and later corpus, case logs)
-      from in-code Python dicts to SQLite via a thin repository layer, keeping
-      current API shapes and tests green.
-- [ ] CI: GitHub Actions running the `verify.ps1` equivalents (pytest, Node
-      tests, build, Playwright) on push/PR.
+- [x] Backend database migration: targets now seed from
+      `backend/app/data/targets.seed.json` into SQLite via
+      `backend/app/repositories.py`, keeping current API shapes and tests
+      green. Corpus/case-log backend migration remains tracked in section 17.
+- [x] CI: GitHub Actions now runs `verify.ps1` on push/PR via
+      `.github/workflows/verify.yml`, covering pytest, Node tests, build,
+      Playwright, and screenshot capture.
 - [ ] Error monitoring decision + wiring (privacy-conscious, e.g. self-hosted
       Sentry/GlitchTip; no measurement values in payloads). **[human]** for the
       provider decision, agent for the wiring.
@@ -99,9 +102,10 @@ Protocol Tracker → Diet upgrades → Native app.
 - [ ] Richer longitudinal charts: per-metric history charts with range
       selection, annotations from snapshot notes (extends the compact trend
       chart).
-- [ ] Per-field noise bands in trend charts **(new)**: shade typical
-      tape-measurement error per field so users don't chase noise; reuses the
-      noise model documented in `similarity-score-spec.md`.
+- [x] Per-field noise bands in trend charts **(new)**: snapshot trend charts
+      shade typical tape/scale re-measurement error per field so users don't
+      chase noise; reuses the noise model documented in
+      `similarity-score-spec.md`.
 - [ ] Historical data import **(new)**: CSV import for weight history (Happy
       Scale, Libra, MFP export formats) and HealthKit historical weight once
       native ships. Instant value for switchers and the strongest lock-in
@@ -186,13 +190,13 @@ Protocol Tracker → Diet upgrades → Native app.
 - [x] Plan retro **(new)**: when a protocol ends, show predicted band vs
       actual outcome for the defensible projections. Closes the loop, builds
       trust, and labels the training data.
-- [ ] Post-procedure reliability flag **(confirmed, lightweight)**: a dated
+- [x] Post-procedure reliability flag **(confirmed, lightweight)**: a dated
       procedure/event annotation that marks affected measurements as
       unreliable for a healing window (swelling) and pauses trend inference
       for those fields. Ships as part of general life-event handling, not a
-      procedure feature. **First pass:** local reliability events can be logged
-      with affected fields and pause days; actual trend-inference pausing
-      remains open.
+      procedure feature. Local reliability events now exclude affected daily
+      weight logs from trend weight and hold affected weekly tape deltas during
+      the pause window.
 - [ ] Full procedure tracking: later **(new)**. Surgeries, fillers,
       piercings, tattoos as first-class intervention types with healing
       timelines, photo streams, and case-log output. Deferred until
@@ -201,7 +205,7 @@ Protocol Tracker → Diet upgrades → Native app.
       pause goals and fat-change inference, annotate the trend timeline.
       Matters for the female demo and for honest data. **First pass:** local
       event annotations exist for procedure, postpartum, injury, and illness;
-      goal/trend pausing remains open.
+      affected-field trend pausing now works; goal pausing remains open.
 
 ## 6. Targets & Comparison
 
@@ -241,9 +245,11 @@ Protocol Tracker → Diet upgrades → Native app.
       metrics including SWR, WHR, WHTR, FFMI, and wrist/ankle frame index;
       methodology copy says this is measurement-pattern comparison only, not
       identity inference or medical advice.
-- [ ] Adaptive TDEE engine **(new)**: estimate true energy expenditure from
-      logged weights + logged calories over time (the MacroFactor killer
-      feature; pure algorithm, very agent-buildable). Flagship Pro feature.
+- [x] Adaptive TDEE engine **(new)**: estimate true energy expenditure from
+      logged weights + logged calories over time. Account check-ins now show a
+      local adaptive kcal/day estimate with confidence bands after enough
+      reliable daily weight+calorie logs; reliability-window exclusions are
+      respected.
 - [ ] Cycle-aware tracking **(new)**: optional menstrual-cycle phase logging
       so weight/waist trend interpretation can flag cycle-correlated
       fluctuation instead of reading it as fat change. Strictly local-first,

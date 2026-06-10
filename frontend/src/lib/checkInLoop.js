@@ -1,3 +1,7 @@
+import {
+  isFieldPausedAt
+} from "./reliabilityEvents.js";
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEK_MS = 7 * DAY_MS;
 
@@ -45,6 +49,31 @@ function signed(value, unit = "") {
   const numeric = Number(value);
   const sign = numeric > 0 ? "+" : "";
   return `${sign}${numeric.toFixed(1)}${unit ? ` ${unit}` : ""}`;
+}
+
+function readableField(fieldName) {
+  return String(fieldName)
+    .replace(/Circumference$/, "")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .toLowerCase();
+}
+
+function reliableFieldDelta(checkIns, latestWeekly, previousWeekly, fieldName) {
+  if (
+    !latestWeekly?.measurements ||
+    !previousWeekly?.measurements ||
+    isFieldPausedAt(checkIns, fieldName, latestWeekly.createdAt) ||
+    isFieldPausedAt(checkIns, fieldName, previousWeekly.createdAt)
+  ) {
+    return null;
+  }
+
+  const latest = Number(latestWeekly.measurements[fieldName]);
+  const previous = Number(previousWeekly.measurements[fieldName]);
+
+  return Number.isFinite(latest) && Number.isFinite(previous)
+    ? latest - previous
+    : null;
 }
 
 export function buildCheckInHeatmap(checkIns = [], now = Date.now(), days = 35) {
@@ -215,6 +244,15 @@ export function buildCheckInInsights({
   const weekly = weeklyCheckIns(checkIns);
   const latestWeekly = weekly[weekly.length - 1] || null;
   const previousWeekly = weekly[weekly.length - 2] || null;
+  const trackedFields = [
+    "weight",
+    "waistCircumference",
+    "hipCircumference",
+    "bideltoidCircumference"
+  ];
+  const pausedFields = latestWeekly
+    ? trackedFields.filter((field) => isFieldPausedAt(checkIns, field, latestWeekly.createdAt))
+    : [];
 
   if (trendWeight) {
     const direction =
@@ -228,24 +266,43 @@ export function buildCheckInInsights({
     );
   }
 
-  if (latestWeekly?.measurements) {
+  if (pausedFields.length) {
+    insights.push(
+      `Reliability pause covers ${pausedFields.map(readableField).join(", ")} in the latest check-in; affected trend deltas are held until the pause window ends.`
+    );
+  }
+
+  if (
+    latestWeekly?.measurements &&
+    !isFieldPausedAt(checkIns, "waistCircumference", latestWeekly.createdAt) &&
+    !isFieldPausedAt(checkIns, "hipCircumference", latestWeekly.createdAt)
+  ) {
     insights.push(
       `Latest weekly check-in saved waist ${Number(latestWeekly.measurements.waistCircumference).toFixed(1)} cm and hip ${Number(latestWeekly.measurements.hipCircumference).toFixed(1)} cm.`
     );
   }
 
   if (latestWeekly?.measurements && previousWeekly?.measurements) {
-    const waistDelta =
-      Number(latestWeekly.measurements.waistCircumference) -
-      Number(previousWeekly.measurements.waistCircumference);
-    const hipDelta =
-      Number(latestWeekly.measurements.hipCircumference) -
-      Number(previousWeekly.measurements.hipCircumference);
-    const shoulderDelta =
-      Number(latestWeekly.measurements.bideltoidCircumference) -
-      Number(previousWeekly.measurements.bideltoidCircumference);
+    const waistDelta = reliableFieldDelta(
+      checkIns,
+      latestWeekly,
+      previousWeekly,
+      "waistCircumference"
+    );
+    const hipDelta = reliableFieldDelta(
+      checkIns,
+      latestWeekly,
+      previousWeekly,
+      "hipCircumference"
+    );
+    const shoulderDelta = reliableFieldDelta(
+      checkIns,
+      latestWeekly,
+      previousWeekly,
+      "bideltoidCircumference"
+    );
 
-    if ([waistDelta, hipDelta, shoulderDelta].some(Number.isFinite)) {
+    if ([waistDelta, hipDelta, shoulderDelta].every((value) => value !== null)) {
       insights.push(
         `Weekly deltas: waist ${signed(waistDelta, "cm")}, hip ${signed(hipDelta, "cm")}, deltoid ${signed(shoulderDelta, "cm")}.`
       );

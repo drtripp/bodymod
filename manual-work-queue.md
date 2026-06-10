@@ -39,7 +39,8 @@ Use:
 
 - `target-profile-curation.md`
 - `target-profiles-template.json`
-- `backend/app/data/targets.py`
+- `backend/app/data/targets.seed.json`
+- `backend/app/repositories.py`
 
 Verification:
 
@@ -100,4 +101,3 @@ Do not mark the active build goal complete until these manual inputs are either:
 
 - provided and implemented, or
 - explicitly removed from launch scope by product decision.
-

@@ -26,6 +26,7 @@ try {
   try {
     Invoke-Checked { npm run test:corpus }
     Invoke-Checked { npm run test:diet }
+    Invoke-Checked { npm run test:adaptive-tdee }
     Invoke-Checked { npm run test:ratios }
     Invoke-Checked { npm run test:body-composition }
     Invoke-Checked { npm run test:comparison }
@@ -33,6 +34,8 @@ try {
     Invoke-Checked { npm run test:workouts }
     Invoke-Checked { npm run test:photos }
     Invoke-Checked { npm run test:onboarding }
+    Invoke-Checked { npm run test:storage }
+    Invoke-Checked { npm run test:snapshot-trends }
     Invoke-Checked { npm run test:tracking }
     Invoke-Checked { npm run test:protocols }
     Invoke-Checked { npm run test:local-targets }

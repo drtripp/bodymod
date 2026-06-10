@@ -1,3 +1,6 @@
+import { readJsonSync, removeStoredItemSync, writeJsonSync } from "./storageAdapter.js";
+import { filterReliableEntries } from "./reliabilityEvents.js";
+
 const ACCOUNTS_KEY = "bodymod:accounts:v1";
 const SESSION_KEY = "bodymod:session:v1";
 const GOALS_KEY = "bodymod:goals:v1";
@@ -8,29 +11,12 @@ const PHOTOS_KEY = "bodymod:photos:v1";
 const FACE_MEASUREMENTS_KEY = "bodymod:face-measurements:v1";
 const STORAGE_VERSION = 1;
 
-function canUseStorage() {
-  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
-}
-
 function readStorage(key, fallback) {
-  if (!canUseStorage()) {
-    return fallback;
-  }
-
-  try {
-    const rawValue = window.localStorage.getItem(key);
-    return rawValue ? JSON.parse(rawValue) : fallback;
-  } catch (error) {
-    return fallback;
-  }
+  return readJsonSync(key, fallback);
 }
 
 function writeStorage(key, value) {
-  if (!canUseStorage()) {
-    return;
-  }
-
-  window.localStorage.setItem(key, JSON.stringify(value));
+  writeJsonSync(key, value);
 }
 
 function normalizeEmail(email) {
@@ -95,11 +81,7 @@ export function persistSession(accountId) {
 }
 
 export function clearSession() {
-  if (!canUseStorage()) {
-    return;
-  }
-
-  window.localStorage.removeItem(SESSION_KEY);
+  removeStoredItemSync(SESSION_KEY);
 }
 
 export function loadSessionAccount() {
@@ -174,10 +156,12 @@ export function loadUserFaceMeasurements(accountId) {
 }
 
 function dailyWeightEntries(checkIns) {
-  return checkIns
+  const dailyWeights = checkIns
     .filter((checkIn) => checkIn.type === "daily-weight" && Number.isFinite(Number(checkIn.weight)))
     .slice()
     .sort((left, right) => new Date(left.createdAt) - new Date(right.createdAt));
+
+  return filterReliableEntries(dailyWeights, checkIns, "weight");
 }
 
 export function buildTrendWeightSeries(checkIns, alpha = 0.25) {

@@ -12,6 +12,9 @@ import {
   buildWeeklyStreak
 } from "../src/lib/checkInLoop.js";
 import {
+  buildReliabilityPauseSummary
+} from "../src/lib/reliabilityEvents.js";
+import {
   buildMeasurementCadenceGroups,
   buildMeasurementDueState,
   getMeasurementCadence
@@ -71,6 +74,52 @@ test("builds sorted raw and smoothed trend weight series", () => {
   assert.deepEqual(series.map((point) => point.raw), [100, 99, 98]);
   assert.deepEqual(series.map((point) => point.trend), [100, 99.75, 99.31]);
   assert.deepEqual(trend, { value: 99.3, delta: -0.4, count: 3 });
+});
+
+test("pauses affected trend inference inside reliability event windows", () => {
+  const checkIns = [
+    {
+      id: "baseline",
+      type: "daily-weight",
+      weight: 100,
+      createdAt: "2026-06-01T00:00:00.000Z"
+    },
+    {
+      id: "procedure",
+      type: "life-event",
+      eventMode: "procedure",
+      affectedFields: ["weight", "waistCircumference"],
+      durationDays: 3,
+      createdAt: "2026-06-02T00:00:00.000Z"
+    },
+    {
+      id: "swollen",
+      type: "daily-weight",
+      weight: 105,
+      createdAt: "2026-06-03T00:00:00.000Z"
+    },
+    {
+      id: "after-window",
+      type: "daily-weight",
+      weight: 101,
+      createdAt: "2026-06-06T00:00:00.000Z"
+    }
+  ];
+  const dailyEntries = checkIns.filter((checkIn) => checkIn.type === "daily-weight");
+  const series = buildTrendWeightSeries(checkIns, 0.25);
+  const trend = calculateTrendWeight(checkIns, 0.25);
+  const pause = buildReliabilityPauseSummary({
+    checkIns,
+    fieldName: "weight",
+    entries: dailyEntries,
+    now: Date.parse("2026-06-03T12:00:00.000Z")
+  });
+
+  assert.deepEqual(series.map((point) => point.id), ["baseline", "after-window"]);
+  assert.deepEqual(series.map((point) => point.trend), [100, 100.25]);
+  assert.deepEqual(trend, { value: 100.3, delta: 0.3, count: 2 });
+  assert.equal(pause.pausedEntryCount, 1);
+  assert.equal(pause.isPaused, true);
 });
 
 test("builds weekly streak, heatmap, milestones, insights, and digest", () => {
@@ -134,4 +183,45 @@ test("builds weekly streak, heatmap, milestones, insights, and digest", () => {
   assert.ok(insights.some((insight) => insight.includes("Weekly deltas")));
   assert.ok(insights.some((insight) => insight.includes("Snapshot comparison unlocked")));
   assert.ok(digest.some((line) => line.startsWith("Tea: trend weight")));
+});
+
+test("suppresses affected weekly deltas during reliability windows", () => {
+  const checkIns = [
+    {
+      id: "weekly-1",
+      type: "weekly-measurements",
+      createdAt: "2026-06-01T12:00:00.000Z",
+      measurements: {
+        waistCircumference: 84,
+        hipCircumference: 100,
+        bideltoidCircumference: 118
+      }
+    },
+    {
+      id: "procedure",
+      type: "life-event",
+      eventMode: "procedure",
+      affectedFields: ["waistCircumference", "hipCircumference", "bideltoidCircumference"],
+      durationDays: 10,
+      createdAt: "2026-06-02T12:00:00.000Z"
+    },
+    {
+      id: "weekly-2",
+      type: "weekly-measurements",
+      createdAt: "2026-06-08T12:00:00.000Z",
+      measurements: {
+        waistCircumference: 91,
+        hipCircumference: 104,
+        bideltoidCircumference: 117
+      }
+    }
+  ];
+
+  const insights = buildCheckInInsights({ checkIns });
+
+  assert.ok(
+    insights.some((insight) => insight.includes("Reliability pause covers waist, hip, bideltoid"))
+  );
+  assert.ok(!insights.some((insight) => insight.startsWith("Weekly deltas")));
+  assert.ok(!insights.some((insight) => insight.startsWith("Latest weekly check-in saved waist")));
 });

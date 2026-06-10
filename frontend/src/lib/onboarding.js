@@ -1,3 +1,5 @@
+import { readJsonSync, writeJsonSync } from "./storageAdapter.js";
+
 const ONBOARDING_PROFILE_KEY = "bodymod:onboarding-profile:v1";
 
 export const onboardingGoalOptions = [
@@ -127,10 +129,6 @@ export const demoMeasurements = {
   wristCircumference: 15
 };
 
-function canUseStorage() {
-  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
-}
-
 export function defaultOnboardingProfile() {
   return {
     version: 1,
@@ -145,12 +143,8 @@ export function defaultOnboardingProfile() {
 }
 
 export function loadOnboardingProfile() {
-  if (!canUseStorage()) {
-    return defaultOnboardingProfile();
-  }
-
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(ONBOARDING_PROFILE_KEY) || "null");
+    const parsed = readJsonSync(ONBOARDING_PROFILE_KEY, null);
     return {
       ...defaultOnboardingProfile(),
       ...(parsed || {}),
@@ -162,16 +156,12 @@ export function loadOnboardingProfile() {
 }
 
 export function persistOnboardingProfile(profile) {
-  if (!canUseStorage()) {
-    return;
-  }
-
-  window.localStorage.setItem(
+  writeJsonSync(
     ONBOARDING_PROFILE_KEY,
-    JSON.stringify({
+    {
       ...defaultOnboardingProfile(),
       ...profile
-    })
+    }
   );
 }
 

@@ -705,7 +705,7 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
               </article>
             </div>
             <p className="muted-text">
-              Formula estimate only: Mifflin-St Jeor with age {macroTargets.ageAssumption} placeholder. Adaptive TDEE comes later after enough logged days.
+              Formula estimate only: Mifflin-St Jeor with age {macroTargets.ageAssumption} placeholder. Adaptive TDEE appears in account check-ins after enough reliable weight and calorie logs.
             </p>
           </div>
           <div className="macro-total-grid" aria-label="Diet macro totals">

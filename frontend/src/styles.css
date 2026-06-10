@@ -339,6 +339,10 @@ textarea {
   color: #c7d0d9;
 }
 
+.checkin-summary small {
+  color: #8fa3b7;
+}
+
 .guided-checkin-card,
 .streak-panel,
 .body-tea-panel {
@@ -3150,10 +3154,19 @@ textarea {
   stroke-linejoin: round;
 }
 
+.snapshot-chart-noise {
+  opacity: 0.16;
+  stroke: none;
+}
+
 .snapshot-chart .line-0,
 .snapshot-chart-legend .line-0 {
   stroke: #f2c94c;
   background: #f2c94c;
+}
+
+.snapshot-chart .noise-0 {
+  fill: #f2c94c;
 }
 
 .snapshot-chart .line-1,
@@ -3162,16 +3175,28 @@ textarea {
   background: #56ccf2;
 }
 
+.snapshot-chart .noise-1 {
+  fill: #56ccf2;
+}
+
 .snapshot-chart .line-2,
 .snapshot-chart-legend .line-2 {
   stroke: #6fcf97;
   background: #6fcf97;
 }
 
+.snapshot-chart .noise-2 {
+  fill: #6fcf97;
+}
+
 .snapshot-chart .line-3,
 .snapshot-chart-legend .line-3 {
   stroke: #eb5757;
   background: #eb5757;
+}
+
+.snapshot-chart .noise-3 {
+  fill: #eb5757;
 }
 
 .snapshot-chart-legend {

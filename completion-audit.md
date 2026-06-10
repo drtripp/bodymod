@@ -15,7 +15,7 @@ User request:
 | Read and reconcile `body-modding-platform-plan.md` | `body-modding-platform-plan.md` now separates current product, near-term roadmap, future feature areas, guardrails, and open questions. | Done |
 | Rewrite docs using current repo state as truth | `README.md`, `mvp-build-spec.md`, `site-implementation-plan.md`, `body-modding-platform-plan.md`, and `deployment.md` describe the implemented React/Vite + FastAPI app rather than the older plan. | Done |
 | Flesh out measurement-first app features | `frontend/src/App.jsx`, components, and libs implement expanded measurement entry, validation, silhouette, top match plus runner-up display, simplified result metrics, snapshots, local trend charting, current-vs-prior snapshot silhouette comparison, target metadata/explanation display, target difference tables, tabbed result / vs Target / vs US Population panes, Body/Diet top-level navigation, Diet food lookup/barcode/logging, header share action, method/privacy footnote, local events, and corpus UI. | Implemented as prototype |
-| Backend target and match support | `backend/app/main.py`, `backend/app/services.py`, `backend/app/data/targets.py`, `backend/app/models.py`, `target-profiles-template.json`, and `target-profile-curation.md` expose health, targets, match endpoints, a target data template, and a target curation rubric. | Done |
+| Backend target and match support | `backend/app/main.py`, `backend/app/services.py`, `backend/app/repositories.py`, `backend/app/data/targets.seed.json`, `backend/app/models.py`, `target-profiles-template.json`, and `target-profile-curation.md` expose health, targets, match endpoints, a SQLite-backed target repository, a target data template, and a target curation rubric. | Done |
 | Approximate percentile output | `backend/app/percentiles.py`, `backend/app/data/reference.py`, and `reference-data-curation.md` implement labeled approximate reference percentiles and define the production replacement standard. | Prototype only |
 | Strategy corpus scaffold | `frontend/src/components/StrategyCorpus.jsx`, `frontend/src/lib/strategyCorpus.js`, `frontend/tests/strategyCorpus.node.mjs`, `strategy-corpus-template.json`, and `strategy-corpus-curation.md` provide overlay-based outcome-first browsing, one efficacy/risk plot per selected outcome, clickable dot labels, synopsis modals, strategy detail views, metadata, local import/export/persistence, validation tests, a curation template, and a manual review rubric. | Scaffold done |
 | Tests simulating frontend users | `frontend/tests/app.spec.js` and `frontend/tests/mobile.spec.js` cover desktop and phone workflows with mocked backend responses, no-backend behavior, target comparison, population chart mode/axis controls, snapshots, sharing, Diet search/barcode/logging, and strategy corpus use. `frontend/tests/populationCharts.node.mjs` and `frontend/tests/diet.node.mjs` cover helper behavior. | Done |
@@ -66,7 +66,7 @@ cd backend
 
 Observed result:
 
-- backend pytest passed `14` tests
+- backend pytest passed `22` tests
 
 ## Current Decision
 

@@ -1,3 +1,5 @@
+import { readJsonSync, removeStoredItemSync, writeJsonSync } from "./storageAdapter.js";
+
 export const strategyEvidenceLevels = [
   "strong",
   "moderate",
@@ -16,10 +18,6 @@ export const strategyReviewStatuses = [
 
 export const STRATEGY_CORPUS_VERSION = 1;
 const STRATEGY_CORPUS_STORAGE_KEY = "bodymod:strategy-corpus:v1";
-
-function canUseStorage() {
-  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
-}
 
 function strategy({
   name,
@@ -205,35 +203,27 @@ export function serializeStrategyCorpus(outcomes) {
 }
 
 export function loadStrategyCorpus() {
-  if (!canUseStorage()) {
-    return strategyOutcomes;
-  }
-
   try {
-    const rawValue = window.localStorage.getItem(STRATEGY_CORPUS_STORAGE_KEY);
-    return rawValue ? parseStrategyCorpusExport(rawValue) : strategyOutcomes;
+    const parsed = readJsonSync(STRATEGY_CORPUS_STORAGE_KEY, null);
+    return parsed ? normalizeStrategyOutcomes(parsed.outcomes || parsed) : strategyOutcomes;
   } catch (error) {
     return strategyOutcomes;
   }
 }
 
 export function persistStrategyCorpus(outcomes) {
-  if (!canUseStorage()) {
-    return;
-  }
-
-  window.localStorage.setItem(
+  writeJsonSync(
     STRATEGY_CORPUS_STORAGE_KEY,
-    serializeStrategyCorpus(outcomes)
+    {
+      version: STRATEGY_CORPUS_VERSION,
+      exportedAt: new Date().toISOString(),
+      outcomes: normalizeStrategyOutcomes(outcomes)
+    }
   );
 }
 
 export function clearStrategyCorpusOverride() {
-  if (!canUseStorage()) {
-    return;
-  }
-
-  window.localStorage.removeItem(STRATEGY_CORPUS_STORAGE_KEY);
+  removeStoredItemSync(STRATEGY_CORPUS_STORAGE_KEY);
 }
 
 export const strategyOutcomes = [

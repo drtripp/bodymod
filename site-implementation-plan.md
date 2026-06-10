@@ -34,6 +34,7 @@ frontend/
       share.js
       silhouette.js
       ratios.js
+      storageAdapter.js
       storage.js
       strategyCorpus.js
       units.js
@@ -46,10 +47,11 @@ backend/
     percentiles.py
     main.py
     models.py
+    repositories.py
     services.py
     data/
       reference.py
-      targets.py
+      targets.seed.json
   tests/
     test_api.py
     test_services.py
@@ -99,7 +101,8 @@ Implemented endpoints:
 - `GET /api/targets`
 - `POST /api/match`
 
-The backend currently uses in-code target data from `backend/app/data/targets.py`.
+The backend seeds target data from `backend/app/data/targets.seed.json` into
+SQLite through `backend/app/repositories.py`.
 
 ## Visual Direction
 
@@ -184,13 +187,15 @@ Next:
 Source files:
 
 - `backend/app/services.py`
-- `backend/app/data/targets.py`
+- `backend/app/repositories.py`
+- `backend/app/data/targets.seed.json`
 
 Status:
 
 - implemented as scaffold logic
 - height-normalized absolute distance plus shoulder/waist and waist/hip ratio terms
 - target data is placeholder-quality
+- target data is served from a SQLite repository seeded from JSON, not in-code dicts
 - explanation bullets are exposed in the response
 - target list can be searched, filtered by source type, and sorted by score or name
 - API and service tests cover ranking and response shape
@@ -266,11 +271,13 @@ Next:
 Source files:
 
 - `frontend/src/components/SnapshotPanel.jsx`
+- `frontend/src/lib/storageAdapter.js`
 - `frontend/src/lib/storage.js`
 
 Status:
 
 - implemented
+- persistence goes through a shared adapter with async methods for future native storage
 - saves, loads, and deletes local snapshots
 - supports optional labels
 - supports optional notes
@@ -317,7 +324,7 @@ Options:
 
 Status:
 
-- implemented as lightweight local event logging in `localStorage`
+- implemented as lightweight local event logging through the frontend storage adapter
 - privacy section exposes local event count and a clear-local-events control
 - no external analytics provider is wired
 
