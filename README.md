@@ -46,6 +46,8 @@ The backend runs on `http://localhost:8000` by default.
 Target profiles are seeded from `backend/app/data/targets.seed.json` into a
 local SQLite database. Set `BODYMOD_DB_PATH` to override the default runtime DB
 path (`backend/.local/bodymod.sqlite3`).
+`/api/match` is protected by a configurable in-process rate limit; production
+deployments should still enforce shared edge limits when using multiple workers.
 
 ### Frontend
 

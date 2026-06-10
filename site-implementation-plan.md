@@ -521,6 +521,9 @@ Next:
   Escape-to-close dialogs, and contrast tests for both themes
 - free/pro entitlement config is served by the backend, current data tools are
   tested as non-paywalled, and the local Pro waitlist is visible in the account panel
+- deployment notes cover TLS/proxy handling, CORS origins, exact-pinned
+  dependency updates, SQLite backup handling, and `/api/match` rate limiting;
+  backend tests cover the `429` limiter path
 - launch gates are tracked in `launch-decision-record.md`
 
 ## Non-Goals

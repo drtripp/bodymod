@@ -59,6 +59,21 @@ def test_match_endpoint_returns_ranked_explanations_and_reference() -> None:
     assert "reference" in payload["percentiles"]
 
 
+def test_match_endpoint_rate_limits_repeated_requests(monkeypatch) -> None:
+    monkeypatch.setenv("BODYMOD_MATCH_RATE_LIMIT_MAX", "2")
+    monkeypatch.setenv("BODYMOD_MATCH_RATE_LIMIT_WINDOW_SECONDS", "60")
+
+    first = client.post("/api/match", json=TARGETS[0]["measurements"])
+    second = client.post("/api/match", json=TARGETS[0]["measurements"])
+    third = client.post("/api/match", json=TARGETS[0]["measurements"])
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert third.status_code == 429
+    assert third.headers["Retry-After"].isdigit()
+    assert "Rate limit exceeded" in third.json()["detail"]
+
+
 def test_match_priorities_endpoint_returns_weighting_presets() -> None:
     response = client.get("/api/match-priorities")
 

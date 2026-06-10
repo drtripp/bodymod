@@ -1,6 +1,6 @@
 import os
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
@@ -18,6 +18,7 @@ from app.models import MeasurementGuideLibrary
 from app.models import MeasurementSet
 from app.models import PlanningData
 from app.models import StrategyCorpusSeed
+from app.rate_limit import enforce_match_rate_limit
 from app.services import build_match_response, get_match_priorities, get_targets
 
 app = FastAPI(title="bodymod api", version="0.1.0")
@@ -58,7 +59,11 @@ def list_targets() -> dict[str, list[dict]]:
 
 
 @app.post("/api/match")
-def match_profile(measurements: MeasurementSet, priority: str = "balanced") -> dict:
+def match_profile(
+    measurements: MeasurementSet,
+    priority: str = "balanced",
+    _rate_limit: None = Depends(enforce_match_rate_limit),
+) -> dict:
     return build_match_response(measurements, priority).model_dump()
 
 

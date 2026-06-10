@@ -3,7 +3,8 @@
 Bodymod is currently a two-process prototype:
 
 - `frontend/`: static React/Vite build
-- `backend/`: FastAPI API for targets, matching, and percentile estimates
+- `backend/`: FastAPI API for targets, matching, strategy corpus seeds, and
+  percentile estimates
 
 ## Frontend
 
@@ -44,6 +45,66 @@ environment variable:
 ```bash
 set BODYMOD_CORS_ORIGINS=https://bodymod.example.com
 ```
+
+Do not serve the public API over plain HTTP. The TLS boundary should also set
+security headers, redirect HTTP to HTTPS, and strip untrusted forwarding
+headers before passing requests to Uvicorn.
+
+## Match Rate Limiting
+
+`/api/match` has a process-local fixed-window rate limit. Defaults:
+
+```bash
+BODYMOD_MATCH_RATE_LIMIT_MAX=60
+BODYMOD_MATCH_RATE_LIMIT_WINDOW_SECONDS=60
+```
+
+Set `BODYMOD_MATCH_RATE_LIMIT_MAX=0` only for trusted internal testing.
+When Uvicorn runs behind a proxy that overwrites `X-Forwarded-For`, enable
+client IP extraction:
+
+```bash
+set BODYMOD_TRUST_PROXY_HEADERS=1
+```
+
+For multi-worker or multi-instance deployments, keep the app limit but add an
+edge or shared-store limiter at the proxy/platform layer because the in-process
+bucket is not shared across workers.
+
+## Dependency Updates
+
+Backend dependencies are exact-pinned in `backend/requirements.txt`. Frontend
+dependencies are locked in `frontend/package-lock.json`. For routine updates:
+
+```bash
+cd backend
+.venv\Scripts\python.exe -m pip install --upgrade --dry-run -r requirements.txt
+
+cd ..\frontend
+npm outdated
+```
+
+Apply updates intentionally, regenerate lockfiles where applicable, and run
+`.\verify.ps1` before deploying.
+
+## Backend Database Backup
+
+The SQLite target repository uses `BODYMOD_DB_PATH`; point it at a persistent
+volume outside the release directory:
+
+```bash
+set BODYMOD_DB_PATH=D:\bodymod\data\bodymod.sqlite3
+```
+
+Before replacing the backend or migrating data, take a SQLite backup:
+
+```powershell
+$stamp = Get-Date -Format yyyyMMdd-HHmmss
+sqlite3 $env:BODYMOD_DB_PATH ".backup 'D:\bodymod\backups\bodymod-$stamp.sqlite3'"
+```
+
+Also snapshot the static seed/data files in the release artifact so a restore
+can recreate the prototype target/corpus state.
 
 ## Smoke Check
 

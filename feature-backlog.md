@@ -528,9 +528,11 @@ land. No social features, no marketplace.
       Escape-to-close dialogs, visible focus rings, live status regions,
       form error associations, SVG chart titles/descriptions, and contrast
       tests for cafe/graphite theme tokens.
-- [ ] Deployment hardening beyond `deployment.md`: HTTPS, rate limiting on
+- [x] Deployment hardening beyond `deployment.md`: HTTPS, rate limiting on
       `/api/match`, dependency pinning/updates, backup strategy for the
-      backend DB.
+      backend DB. Implemented configurable in-process `/api/match` rate
+      limiting with tests; deployment notes now cover TLS/proxy handling,
+      exact-pinned dependency update flow, and SQLite backup/restore handling.
 - [ ] Launch checklist run: `verify.ps1`, screenshot review, fresh-profile
       share-link behavior, privacy copy — per `launch-decision-record.md`,
       with every open gate in that file resolved. **[human]** for the gate
