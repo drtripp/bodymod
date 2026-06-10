@@ -46,6 +46,7 @@ export default function PublicShareDashboard({ record, status = "" }) {
     ["Check-ins", stats.checkInCount || 0],
     ["Goals", stats.goalCount || 0],
     ["Protocols", stats.protocolCount || 0],
+    ["Procedures", stats.procedureCount || 0],
     ["Workouts", stats.workoutCount || 0],
     ["Face scans", stats.faceScanCount || 0]
   ];
@@ -160,6 +161,26 @@ export default function PublicShareDashboard({ record, status = "" }) {
               </ul>
             ) : (
               <p className="muted-text">No shared snapshots.</p>
+            )}
+          </section>
+
+          <section aria-label="Shared procedures">
+            <h2>Procedures</h2>
+            {dashboard.procedures?.length ? (
+              <ul className="public-share-list">
+                {dashboard.procedures.map((procedure) => (
+                  <li key={procedure.id}>
+                    <strong>{procedure.label}</strong>
+                    <span>
+                      {procedure.category} / {procedure.healingDays} day healing window
+                    </span>
+                    {procedure.window ? <small>{procedure.window}</small> : null}
+                    {procedure.summary ? <p>{procedure.summary}</p> : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted-text">No shared procedures.</p>
             )}
           </section>
         </div>

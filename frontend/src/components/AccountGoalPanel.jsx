@@ -6,6 +6,7 @@ import {
   createShareDashboard,
   fetchExerciseLibrary,
   fetchPlanningData,
+  fetchProcedureLibrary,
   revokeShareDashboard,
   updateShareDashboard
 } from "../lib/api";
@@ -28,6 +29,7 @@ import {
   loadSessionAccount,
   loadUserGoals,
   loadUserPhotos,
+  loadUserProcedures,
   loadUserProtocols,
   loadUserWorkoutSessions,
   loginLocalAccount,
@@ -36,6 +38,7 @@ import {
   persistUserFaceMeasurement,
   persistUserGoal,
   persistUserPhoto,
+  persistUserProcedure,
   persistUserProtocol,
   persistUserWorkoutSession,
   restoreUserBackupData,
@@ -93,6 +96,14 @@ import {
   formatProtocolSchemaSummary,
   splitAffectedFields
 } from "../lib/protocolPlanning";
+import {
+  buildProcedureCaseLog,
+  buildProcedureReliabilityCheckIn,
+  createProcedureRecord,
+  fallbackProcedureLibrary,
+  formatProcedureRecord,
+  normalizeProcedureLibrary
+} from "../lib/procedures";
 import {
   buildMeasurementTargetMetrics,
   buildSnapshotTargets
@@ -279,6 +290,10 @@ export default function AccountGoalPanel({
   const [planningStatus, setPlanningStatus] = useState("Loading planning data...");
   const [exerciseLibrary, setExerciseLibrary] = useState(emptyExerciseLibrary);
   const [exerciseStatus, setExerciseStatus] = useState("Loading workout library...");
+  const [procedureLibrary, setProcedureLibrary] = useState(() =>
+    normalizeProcedureLibrary(fallbackProcedureLibrary)
+  );
+  const [procedureStatus, setProcedureStatus] = useState("Loading procedure library...");
   const [accounts, setAccounts] = useState(() => loadAccounts());
   const initialAccount = loadSessionAccount();
   const [account, setAccount] = useState(() => initialAccount);
@@ -287,6 +302,9 @@ export default function AccountGoalPanel({
   const [checkIns, setCheckIns] = useState(() => loadUserCheckIns(initialAccount?.id));
   const [workoutSessions, setWorkoutSessions] = useState(() =>
     loadUserWorkoutSessions(initialAccount?.id)
+  );
+  const [procedures, setProcedures] = useState(() =>
+    loadUserProcedures(initialAccount?.id)
   );
   const [photos, setPhotos] = useState(() => loadUserPhotos(initialAccount?.id));
   const [faceMeasurements, setFaceMeasurements] = useState(() =>
@@ -314,6 +332,13 @@ export default function AccountGoalPanel({
   const [lifeEventFields, setLifeEventFields] = useState("waistCircumference");
   const [lifeEventDurationDays, setLifeEventDurationDays] = useState("42");
   const [lifeEventNote, setLifeEventNote] = useState("");
+  const [selectedProcedureTypeId, setSelectedProcedureTypeId] = useState("");
+  const [procedureDate, setProcedureDate] = useState(() =>
+    new Date().toISOString().slice(0, 10)
+  );
+  const [procedureHealingDays, setProcedureHealingDays] = useState("");
+  const [procedureAffectedFields, setProcedureAffectedFields] = useState("");
+  const [procedureNote, setProcedureNote] = useState("");
   const [selectedExerciseId, setSelectedExerciseId] = useState("");
   const [selectedProgramId, setSelectedProgramId] = useState("");
   const [workoutSets, setWorkoutSets] = useState("3");
@@ -437,6 +462,48 @@ export default function AccountGoalPanel({
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchProcedureLibrary()
+      .then((data) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const normalized = normalizeProcedureLibrary(data);
+        setProcedureLibrary(normalized);
+        setProcedureStatus(
+          `Loaded ${normalized.procedureTypes.length} procedure type seed(s).`
+        );
+        setSelectedProcedureTypeId((current) => current || normalized.procedureTypes[0]?.id || "");
+        setProcedureHealingDays(
+          (current) => current || String(normalized.procedureTypes[0]?.defaultHealingDays || "")
+        );
+        setProcedureAffectedFields(
+          (current) => current || normalized.procedureTypes[0]?.affectedFields.join(", ") || ""
+        );
+      })
+      .catch(() => {
+        if (isMounted) {
+          const fallback = normalizeProcedureLibrary(fallbackProcedureLibrary);
+          setProcedureLibrary(fallback);
+          setProcedureStatus("Procedure library unavailable. Local fallback seed loaded.");
+          setSelectedProcedureTypeId((current) => current || fallback.procedureTypes[0]?.id || "");
+          setProcedureHealingDays(
+            (current) => current || String(fallback.procedureTypes[0]?.defaultHealingDays || "")
+          );
+          setProcedureAffectedFields(
+            (current) => current || fallback.procedureTypes[0]?.affectedFields.join(", ") || ""
+          );
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const selectedPersona = planningData.personas.find(
     (persona) => persona.id === selectedPersonaId
   );
@@ -468,6 +535,9 @@ export default function AccountGoalPanel({
   const isCustomGoalTarget = selectedGoalTargetId === CUSTOM_GOAL_TARGET_ID;
   const selectedProtocolTemplate = planningData.protocolTemplates.find(
     (protocol) => protocol.id === selectedProtocolTemplateId
+  );
+  const selectedProcedureType = procedureLibrary.procedureTypes.find(
+    (procedure) => procedure.id === selectedProcedureTypeId
   );
   const selectedExercise = exerciseById(exerciseLibrary, selectedExerciseId);
   const goalPrograms = useMemo(
@@ -573,6 +643,7 @@ export default function AccountGoalPanel({
         snapshots: snapshotProps.snapshots,
         goals,
         protocols,
+        procedures,
         checkIns,
         workoutSessions,
         faceMeasurements,
@@ -585,6 +656,7 @@ export default function AccountGoalPanel({
       currentMeasurements,
       faceMeasurements,
       goals,
+      procedures,
       protocols,
       snapshotProps.snapshots,
       trendWeight,
@@ -677,6 +749,7 @@ export default function AccountGoalPanel({
     setProtocols(loadUserProtocols(nextAccount?.id));
     setCheckIns(loadUserCheckIns(nextAccount?.id));
     setWorkoutSessions(loadUserWorkoutSessions(nextAccount?.id));
+    setProcedures(loadUserProcedures(nextAccount?.id));
     setPhotos(loadUserPhotos(nextAccount?.id));
     setFaceMeasurements(loadUserFaceMeasurements(nextAccount?.id));
   }
@@ -1150,6 +1223,54 @@ export default function AccountGoalPanel({
     setStatus("Reliability event logged.");
   }
 
+  function handleProcedureTypeChange(procedureId) {
+    setSelectedProcedureTypeId(procedureId);
+    const nextProcedureType = procedureLibrary.procedureTypes.find(
+      (procedure) => procedure.id === procedureId
+    );
+
+    if (!nextProcedureType) {
+      return;
+    }
+
+    setProcedureHealingDays(String(nextProcedureType.defaultHealingDays));
+    setProcedureAffectedFields(nextProcedureType.affectedFields.join(", "));
+  }
+
+  function handleLogProcedure(event) {
+    event.preventDefault();
+    if (!account || !selectedProcedureType) {
+      return;
+    }
+
+    try {
+      const procedureRecord = createProcedureRecord({
+        template: selectedProcedureType,
+        procedureDate,
+        healingDays: procedureHealingDays,
+        affectedFields: procedureAffectedFields,
+        note: procedureNote,
+        baselineMeasurements: currentMeasurements,
+        snapshotCount: snapshotProps.snapshots.length
+      });
+      const nextProcedure = persistUserProcedure(account.id, procedureRecord);
+      const reliabilityCheckIn = persistUserCheckIn(
+        account.id,
+        buildProcedureReliabilityCheckIn(nextProcedure)
+      );
+
+      setProcedures([nextProcedure, ...procedures]);
+      setCheckIns([reliabilityCheckIn, ...checkIns]);
+      setLifeEventMode("procedure");
+      setLifeEventFields(nextProcedure.affectedFields.join(", "));
+      setLifeEventDurationDays(String(nextProcedure.healingDays));
+      setProcedureNote("");
+      setStatus(`Procedure logged: ${nextProcedure.label}. Healing window added to reliability events.`);
+    } catch (error) {
+      setStatus(error.message);
+    }
+  }
+
   function persistWorkoutFromInput(event) {
     event.preventDefault();
     if (!account) {
@@ -1265,6 +1386,7 @@ export default function AccountGoalPanel({
       protocols,
       checkIns,
       workoutSessions,
+      procedures,
       photos,
       faceMeasurements
     });
@@ -1278,6 +1400,7 @@ export default function AccountGoalPanel({
       protocols,
       checkIns,
       workoutSessions,
+      procedures,
       photos,
       faceMeasurements,
       proWaitlistSignups: loadProWaitlistSignups()
@@ -1385,7 +1508,7 @@ export default function AccountGoalPanel({
     link.remove();
     window.URL.revokeObjectURL(url);
     setJsonExportStatus(
-      `JSON export downloaded: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.dietEntries} diet log(s), ${summary.fluidEntries} fluid log(s), and ${summary.photoManifest} photo manifest item(s).`
+      `JSON export downloaded: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.procedures} procedure(s), ${summary.dietEntries} diet log(s), ${summary.fluidEntries} fluid log(s), and ${summary.photoManifest} photo manifest item(s).`
     );
   }
 
@@ -1410,7 +1533,7 @@ export default function AccountGoalPanel({
       link.remove();
       window.URL.revokeObjectURL(url);
       setBackupStatus(
-        `Encrypted backup downloaded: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.goals} goal(s), ${summary.protocols} protocol(s), and ${summary.photoManifest} photo manifest item(s).`
+        `Encrypted backup downloaded: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.goals} goal(s), ${summary.protocols} protocol(s), ${summary.procedures} procedure(s), and ${summary.photoManifest} photo manifest item(s).`
       );
     } catch (error) {
       setBackupStatus(error.message);
@@ -1437,9 +1560,10 @@ export default function AccountGoalPanel({
         setProtocols(restoreResult.protocols);
         setCheckIns(restoreResult.checkIns);
         setWorkoutSessions(restoreResult.workoutSessions);
+        setProcedures(restoreResult.procedures);
         setFaceMeasurements(restoreResult.faceMeasurements);
         setBackupStatus(
-          `Restored backup: ${snapshotRestore.importedCount} snapshot(s), ${restoreResult.imported.checkIns} check-in(s), ${restoreResult.imported.goals} goal(s), ${restoreResult.imported.protocols} protocol(s), ${restoreResult.imported.workoutSessions} workout(s), ${restoreResult.imported.faceMeasurements} face scan(s). Photo manifest: ${summary.photoManifest} item(s); image files are not included.`
+          `Restored backup: ${snapshotRestore.importedCount} snapshot(s), ${restoreResult.imported.checkIns} check-in(s), ${restoreResult.imported.goals} goal(s), ${restoreResult.imported.protocols} protocol(s), ${restoreResult.imported.workoutSessions} workout(s), ${restoreResult.imported.procedures} procedure(s), ${restoreResult.imported.faceMeasurements} face scan(s). Photo manifest: ${summary.photoManifest} item(s); image files are not included.`
         );
       } catch (error) {
         setBackupStatus(error.message);
@@ -1463,6 +1587,7 @@ export default function AccountGoalPanel({
       protocols,
       checkIns,
       workoutSessions,
+      procedures,
       photos,
       faceMeasurements
     });
@@ -1673,10 +1798,10 @@ export default function AccountGoalPanel({
                 <h3>Progress report</h3>
                 <p>
                   Printable local summary of measurements, snapshots, goals,
-                  protocol adherence, workout PRs, and the photo manifest.
+                  protocol adherence, procedures, workout PRs, and the photo manifest.
                 </p>
                 <span>
-                  {snapshotProps.snapshots.length} snapshot(s) / {protocols.length} protocol(s) / {workoutSessions.length} workout(s) / {photos.length} photo(s) / {faceMeasurements.length} face scan(s)
+                  {snapshotProps.snapshots.length} snapshot(s) / {protocols.length} protocol(s) / {procedures.length} procedure(s) / {workoutSessions.length} workout(s) / {photos.length} photo(s) / {faceMeasurements.length} face scan(s)
                 </span>
               </div>
               <button className="button" type="button" onClick={handleDownloadProgressReport}>
@@ -1740,8 +1865,8 @@ export default function AccountGoalPanel({
                 <h3>Local JSON export</h3>
                 <p>
                   Download a readable JSON copy of snapshots, account logs,
-                  goals, protocols, workouts, face metric logs, diet data, and
-                  photo manifests. This is portable, not encrypted.
+                  goals, protocols, procedures, workouts, face metric logs,
+                  diet data, and photo manifests. This is portable, not encrypted.
                 </p>
               </div>
               <button className="button" type="button" onClick={handleDownloadJsonExport}>
@@ -1759,7 +1884,8 @@ export default function AccountGoalPanel({
                 <h3>Encrypted backup</h3>
                 <p>
                   Download a passphrase-encrypted local backup for snapshots,
-                  check-ins, goals, protocols, workouts, and face metric logs.
+                  check-ins, goals, protocols, procedures, workouts, and face
+                  metric logs.
                   Photos are included as a manifest only.
                 </p>
               </div>
@@ -2688,6 +2814,119 @@ export default function AccountGoalPanel({
                   ))}
                 </div>
               ) : null}
+
+              <div className="procedure-panel" aria-label="Procedure tracker">
+                <div>
+                  <h4>Procedure tracker</h4>
+                  <p>{procedureStatus}</p>
+                </div>
+                <form className="procedure-form" onSubmit={handleLogProcedure}>
+                  <label className="field">
+                    <span className="field-label">Procedure type</span>
+                    <select
+                      aria-label="Procedure type"
+                      value={selectedProcedureTypeId}
+                      onChange={(event) => handleProcedureTypeChange(event.target.value)}
+                    >
+                      {procedureLibrary.procedureTypes.map((procedure) => (
+                        <option key={procedure.id} value={procedure.id}>
+                          {procedure.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="field">
+                    <span className="field-label">Date</span>
+                    <input
+                      aria-label="Procedure date"
+                      type="date"
+                      value={procedureDate}
+                      onChange={(event) => setProcedureDate(event.target.value)}
+                    />
+                  </label>
+                  <label className="field">
+                    <span className="field-label">Healing days</span>
+                    <input
+                      aria-label="Procedure healing days"
+                      inputMode="numeric"
+                      value={procedureHealingDays}
+                      onChange={(event) => setProcedureHealingDays(event.target.value)}
+                    />
+                  </label>
+                  <label className="field procedure-fields">
+                    <span className="field-label">Affected fields</span>
+                    <input
+                      aria-label="Procedure affected fields"
+                      value={procedureAffectedFields}
+                      onChange={(event) => setProcedureAffectedFields(event.target.value)}
+                      placeholder="waistCircumference, hipCircumference"
+                    />
+                  </label>
+                  <label className="field procedure-note">
+                    <span className="field-label">Procedure note</span>
+                    <textarea
+                      aria-label="Procedure note"
+                      value={procedureNote}
+                      onChange={(event) => setProcedureNote(event.target.value)}
+                      placeholder="Placement, provider-reviewed constraints, or aftercare notes."
+                    />
+                  </label>
+                  {selectedProcedureType ? (
+                    <div className="procedure-template-summary" aria-label="Selected procedure guidance">
+                      <p>
+                        {selectedProcedureType.summary} Photo stream:{" "}
+                        {selectedProcedureType.photoCategory}. Risk:{" "}
+                        {selectedProcedureType.riskLevel}. Review:{" "}
+                        {selectedProcedureType.reviewStatus}.
+                      </p>
+                      {selectedProcedureType.timeline.length ? (
+                        <ul>
+                          {selectedProcedureType.timeline.slice(0, 3).map((item) => (
+                            <li key={`${selectedProcedureType.id}-${item.day}`}>
+                              Day {item.day}: {item.label}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  <button className="button" type="submit">
+                    Log procedure
+                  </button>
+                </form>
+
+                {procedures.length ? (
+                  <ul className="procedure-list" aria-label="Procedure logs">
+                    {procedures.slice(0, 5).map((procedure) => {
+                      const caseLog = buildProcedureCaseLog(
+                        procedure,
+                        snapshotProps.snapshots,
+                        photos
+                      );
+
+                      return (
+                        <li key={procedure.id}>
+                          <div>
+                            <strong>{formatProcedureRecord(procedure)}</strong>
+                            <span>
+                              {procedure.category} / {procedure.riskLevel} / photo stream {procedure.photoCategory}
+                            </span>
+                            <span>Healing window: {caseLog.window}</span>
+                            {procedure.note ? <p>{procedure.note}</p> : null}
+                          </div>
+                          <div aria-label={`${procedure.label} procedure case log`}>
+                            <h5>Case log</h5>
+                            <p>{caseLog.summary}</p>
+                            <small>{caseLog.reviewStatus}</small>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <p className="muted-text">No procedure logs yet.</p>
+                )}
+              </div>
 
               <div aria-label="Active protocols">
                 {protocols.length ? (

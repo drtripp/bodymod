@@ -1,6 +1,7 @@
 import { readJsonSync, removeStoredItemSync, writeJsonSync } from "./storageAdapter.js";
 import { buildGoalPauseSummary, buildGoalProgress, goalTargetSourceLabel } from "./goalTargets.js";
 import { buildProtocolOutcomeSummary } from "./protocolPlanning.js";
+import { buildProcedureCaseLog } from "./procedures.js";
 
 export const SHARE_DASHBOARD_STATE_KEY = "bodymod:share-dashboard:v1";
 
@@ -109,12 +110,29 @@ function protocolSummary(protocol, snapshots, currentMeasurements) {
   };
 }
 
+function procedureSummary(procedure, snapshots) {
+  const caseLog = buildProcedureCaseLog(procedure, snapshots, []);
+
+  return {
+    id: procedure.id,
+    label: procedure.label,
+    category: procedure.category || "",
+    window: caseLog.window,
+    healingDays: caseLog.healingDays,
+    snapshotCount: caseLog.snapshotCount,
+    photoCategory: caseLog.photoCategory,
+    reviewStatus: caseLog.reviewStatus,
+    summary: caseLog.summary
+  };
+}
+
 export function buildShareDashboardPayload({
   account,
   currentMeasurements,
   snapshots = [],
   goals = [],
   protocols = [],
+  procedures = [],
   checkIns = [],
   workoutSessions = [],
   faceMeasurements = [],
@@ -144,6 +162,7 @@ export function buildShareDashboardPayload({
       checkInCount: checkIns.length,
       goalCount: goals.length,
       protocolCount: protocols.length,
+      procedureCount: procedures.length,
       workoutCount: workoutSessions.length,
       faceScanCount: faceMeasurements.length
     },
@@ -152,6 +171,9 @@ export function buildShareDashboardPayload({
     protocols: activeProtocols
       .slice(0, 6)
       .map((protocol) => protocolSummary(protocol, snapshots, currentMeasurements)),
+    procedures: procedures
+      .slice(0, 6)
+      .map((procedure) => procedureSummary(procedure, snapshots)),
     weeklyStreak: {
       status: weeklyStreak.status || "not-started",
       count: numeric(weeklyStreak.count) || 0,

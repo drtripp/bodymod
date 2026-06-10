@@ -1,0 +1,243 @@
+{
+  "version": 1,
+  "reference": "Dummy procedure taxonomy seed for first-class local procedure tracking; replace with reviewed clinical/body-mod sources before production.",
+  "notes": [
+    "Informational planning scaffold only; not medical advice.",
+    "Default healing windows are placeholders for user validation and professional review.",
+    "Affected measurement fields are used only to pause trend interpretation during healing windows."
+  ],
+  "procedureTypes": [
+    {
+      "id": "large-tattoo-session",
+      "label": "Large tattoo session",
+      "category": "tattoo",
+      "summary": "Track a multi-hour tattoo session with local notes, body photos, and a short swelling/reliability window.",
+      "defaultHealingDays": 28,
+      "affectedFields": [
+        "bicepCircumference",
+        "upperForearmCircumference",
+        "upperThighCircumference",
+        "calfCircumference"
+      ],
+      "photoCategory": "body",
+      "riskLevel": "body-mod review",
+      "reviewStatus": "dummy seed needs artist/clinical review",
+      "requiresHumanReview": true,
+      "timeline": [
+        {
+          "day": 0,
+          "label": "Session day",
+          "summary": "Save baseline notes and optional before photo."
+        },
+        {
+          "day": 7,
+          "label": "Early healing note",
+          "summary": "Expect measurement/photo interpretation to be noisy."
+        },
+        {
+          "day": 28,
+          "label": "Window review",
+          "summary": "Compare notes/photos only after the local healing window ends."
+        }
+      ],
+      "caseLogPrompts": [
+        "placement or area",
+        "session length",
+        "aftercare notes",
+        "affected measurements"
+      ]
+    },
+    {
+      "id": "piercing-or-dermal",
+      "label": "Piercing or dermal healing",
+      "category": "piercing",
+      "summary": "Local event log for piercing/dermal healing with a conservative photo stream and notes.",
+      "defaultHealingDays": 42,
+      "affectedFields": [
+        "headCircumference",
+        "neckCircumference",
+        "armpitCircumference"
+      ],
+      "photoCategory": "face",
+      "riskLevel": "body-mod review",
+      "reviewStatus": "dummy seed needs piercer/clinical review",
+      "requiresHumanReview": true,
+      "timeline": [
+        {
+          "day": 0,
+          "label": "Procedure day",
+          "summary": "Record placement and jewelry/body site notes."
+        },
+        {
+          "day": 14,
+          "label": "Irritation check",
+          "summary": "Keep logs descriptive; do not infer cosmetic outcome yet."
+        },
+        {
+          "day": 42,
+          "label": "Window review",
+          "summary": "Review photos/notes after the placeholder reliability window."
+        }
+      ],
+      "caseLogPrompts": [
+        "placement",
+        "jewelry or material",
+        "irritation notes",
+        "photo stream"
+      ]
+    },
+    {
+      "id": "facial-filler",
+      "label": "Facial filler or injectable",
+      "category": "filler",
+      "summary": "Dated local log for face-focused procedures with face photo references and swelling-window pausing.",
+      "defaultHealingDays": 21,
+      "affectedFields": [
+        "headCircumference",
+        "neckCircumference"
+      ],
+      "photoCategory": "face",
+      "riskLevel": "clinical review",
+      "reviewStatus": "dummy seed needs licensed-clinician review",
+      "requiresHumanReview": true,
+      "timeline": [
+        {
+          "day": 0,
+          "label": "Treatment day",
+          "summary": "Save neutral notes and optional face/photo reference."
+        },
+        {
+          "day": 7,
+          "label": "Swelling window",
+          "summary": "Treat short-term facial measurements/photos as unreliable."
+        },
+        {
+          "day": 21,
+          "label": "Window review",
+          "summary": "Use the case log for discussion, not automated advice."
+        }
+      ],
+      "caseLogPrompts": [
+        "area",
+        "professional review notes",
+        "side/front photo reference",
+        "measurement fields paused"
+      ]
+    },
+    {
+      "id": "orthognathic-or-jaw-surgery",
+      "label": "Jaw or orthognathic surgery",
+      "category": "surgery",
+      "summary": "High-risk face/profile procedure log for side-profile photos, long healing windows, and clinician-reviewed notes.",
+      "defaultHealingDays": 180,
+      "affectedFields": [
+        "headCircumference",
+        "neckCircumference"
+      ],
+      "photoCategory": "face",
+      "riskLevel": "high-risk clinical review",
+      "reviewStatus": "dummy seed needs specialist review",
+      "requiresHumanReview": true,
+      "timeline": [
+        {
+          "day": 0,
+          "label": "Surgery date",
+          "summary": "Record only factual case-log context."
+        },
+        {
+          "day": 42,
+          "label": "Early recovery",
+          "summary": "Keep profile comparisons paused while swelling is expected to dominate."
+        },
+        {
+          "day": 180,
+          "label": "Long-window review",
+          "summary": "Review with clinician-provided context; no automated recommendation."
+        }
+      ],
+      "caseLogPrompts": [
+        "side-profile photo stream",
+        "clinician constraints",
+        "healing-window dates",
+        "measurement fields paused"
+      ]
+    },
+    {
+      "id": "body-contouring-procedure",
+      "label": "Body contouring procedure",
+      "category": "surgery",
+      "summary": "Local measurement and photo log for torso/hip procedures with long reliability pauses.",
+      "defaultHealingDays": 90,
+      "affectedFields": [
+        "waistCircumference",
+        "pantWaistCircumference",
+        "hipCircumference",
+        "upperThighCircumference"
+      ],
+      "photoCategory": "body",
+      "riskLevel": "clinical review",
+      "reviewStatus": "dummy seed needs licensed-clinician review",
+      "requiresHumanReview": true,
+      "timeline": [
+        {
+          "day": 0,
+          "label": "Procedure date",
+          "summary": "Save baseline measurements and optional photo manifest reference."
+        },
+        {
+          "day": 30,
+          "label": "Swelling/noise period",
+          "summary": "Keep affected circumference trends paused."
+        },
+        {
+          "day": 90,
+          "label": "Window review",
+          "summary": "Use snapshots/photos as a case log after the placeholder window."
+        }
+      ],
+      "caseLogPrompts": [
+        "body area",
+        "affected circumference fields",
+        "before/after photo stream",
+        "professional review notes"
+      ]
+    },
+    {
+      "id": "hair-restoration",
+      "label": "Hair restoration procedure",
+      "category": "hair",
+      "summary": "Local timeline and photo-stream scaffold for hair-focused procedures.",
+      "defaultHealingDays": 120,
+      "affectedFields": [
+        "headCircumference"
+      ],
+      "photoCategory": "hair",
+      "riskLevel": "clinical review",
+      "reviewStatus": "dummy seed needs licensed-clinician review",
+      "requiresHumanReview": true,
+      "timeline": [
+        {
+          "day": 0,
+          "label": "Procedure date",
+          "summary": "Start local hair photo stream and notes."
+        },
+        {
+          "day": 30,
+          "label": "Early window",
+          "summary": "Avoid interpreting photos as final outcomes."
+        },
+        {
+          "day": 120,
+          "label": "Long-window review",
+          "summary": "Review timeline notes and photos descriptively."
+        }
+      ],
+      "caseLogPrompts": [
+        "hair photo stream",
+        "area",
+        "timeline notes",
+        "professional review notes"
+      ]
+    }
+  ]
+}

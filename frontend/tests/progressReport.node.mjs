@@ -47,8 +47,21 @@ test("builds a printable progress report model and HTML", () => {
         volumeKg: 288
       }
     ],
+    procedures: [
+      {
+        id: "procedure-1",
+        label: "Large tattoo session",
+        category: "tattoo",
+        procedureDate: "2026-06-08",
+        healingDays: 28,
+        affectedFields: ["bicepCircumference"],
+        photoCategory: "body",
+        reviewStatus: "needs artist review",
+        note: "Upper arm placement."
+      }
+    ],
     photos: [
-      { id: "body", category: "body" },
+      { id: "body", category: "body", createdAt: "2026-06-09T10:00:00.000Z" },
       { id: "face", category: "face" }
     ],
     faceMeasurements: [
@@ -78,12 +91,16 @@ test("builds a printable progress report model and HTML", () => {
   assert.equal(model.protocols[0].adherence.checkIns, 2);
   assert.equal(model.protocols[0].adherence.onTrack, 1);
   assert.equal(model.protocolCaseLogs[0].label, "Progressive resistance training");
+  assert.equal(model.procedureCaseLogs[0].label, "Large tattoo session");
+  assert.equal(model.procedureCaseLogs[0].photoCount, 1);
   assert.equal(model.workoutPrs[0].exerciseLabel, "Dumbbell lateral raise");
   assert.equal(model.faceMeasurements.length, 1);
   assert.match(html, /bodymod progress report/);
   assert.match(html, /Mason/);
   assert.match(html, /Progressive resistance training/);
   assert.match(html, /Protocol case logs/);
+  assert.match(html, /Procedure case logs/);
+  assert.match(html, /Large tattoo session/);
   assert.match(html, /Photo manifest/);
   assert.match(html, /Face measurements/);
   assert.match(html, /Midface ratio: 0.80/);

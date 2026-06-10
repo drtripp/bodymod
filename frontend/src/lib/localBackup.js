@@ -94,6 +94,7 @@ export function buildLocalBackupBundle({
   protocols = [],
   checkIns = [],
   workoutSessions = [],
+  procedures = [],
   photos = [],
   faceMeasurements = []
 } = {}) {
@@ -114,6 +115,7 @@ export function buildLocalBackupBundle({
     protocols: safeArray(protocols),
     checkIns: safeArray(checkIns),
     workoutSessions: safeArray(workoutSessions),
+    procedures: safeArray(procedures),
     faceMeasurements: safeArray(faceMeasurements),
     photoManifest: photoManifest(photos),
     notes: [
@@ -137,6 +139,7 @@ export function normalizeLocalBackupBundle(bundle) {
     protocols: safeArray(bundle.protocols),
     checkIns: safeArray(bundle.checkIns),
     workoutSessions: safeArray(bundle.workoutSessions),
+    procedures: safeArray(bundle.procedures),
     faceMeasurements: safeArray(bundle.faceMeasurements),
     photoManifest: safeArray(bundle.photoManifest),
     notes: safeArray(bundle.notes)
@@ -215,6 +218,7 @@ export function summarizeLocalBackupBundle(bundle) {
     protocols: normalized.protocols.length,
     checkIns: normalized.checkIns.length,
     workoutSessions: normalized.workoutSessions.length,
+    procedures: normalized.procedures.length,
     faceMeasurements: normalized.faceMeasurements.length,
     photoManifest: normalized.photoManifest.length
   };

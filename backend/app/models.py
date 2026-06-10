@@ -199,6 +199,34 @@ class ExerciseLibrary(BaseModel):
     programTemplates: list[ProgramTemplateSeed]
 
 
+class ProcedureTimelineItem(BaseModel):
+    day: int = Field(ge=0)
+    label: str
+    summary: str
+
+
+class ProcedureTypeSeed(BaseModel):
+    id: str
+    label: str
+    category: str
+    summary: str
+    defaultHealingDays: int = Field(ge=1, le=730)
+    affectedFields: list[str] = []
+    photoCategory: str
+    riskLevel: str
+    reviewStatus: str
+    requiresHumanReview: bool = True
+    timeline: list[ProcedureTimelineItem] = []
+    caseLogPrompts: list[str] = []
+
+
+class ProcedureLibrary(BaseModel):
+    version: int
+    reference: str
+    notes: list[str] = []
+    procedureTypes: list[ProcedureTypeSeed]
+
+
 class StrategySourceLink(BaseModel):
     title: str
     url: str
@@ -419,11 +447,24 @@ class ShareDashboardProtocol(BaseModel):
     projectionSummary: str = ""
 
 
+class ShareDashboardProcedure(BaseModel):
+    id: str
+    label: str
+    category: str = ""
+    window: str = ""
+    healingDays: int = Field(default=0, ge=0)
+    snapshotCount: int = Field(default=0, ge=0)
+    photoCategory: str = ""
+    reviewStatus: str = ""
+    summary: str = ""
+
+
 class ShareDashboardStats(BaseModel):
     snapshotCount: int = Field(default=0, ge=0)
     checkInCount: int = Field(default=0, ge=0)
     goalCount: int = Field(default=0, ge=0)
     protocolCount: int = Field(default=0, ge=0)
+    procedureCount: int = Field(default=0, ge=0)
     workoutCount: int = Field(default=0, ge=0)
     faceScanCount: int = Field(default=0, ge=0)
 
@@ -439,6 +480,7 @@ class ShareDashboardPayload(BaseModel):
     snapshots: list[ShareDashboardSnapshot] = Field(default_factory=list)
     goals: list[ShareDashboardGoal] = Field(default_factory=list)
     protocols: list[ShareDashboardProtocol] = Field(default_factory=list)
+    procedures: list[ShareDashboardProcedure] = Field(default_factory=list)
     weeklyStreak: dict = Field(default_factory=dict)
     trendWeight: dict = Field(default_factory=dict)
 

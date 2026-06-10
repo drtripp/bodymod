@@ -134,8 +134,8 @@ Protocol Tracker → Diet upgrades → Native app.
       historical weight remains native-app scope.
 - [x] Encrypted local backup **(new)**: account panel can download and restore
       a passphrase-encrypted AES-GCM backup covering snapshots, check-ins,
-      goals, protocols, workouts, and face metric logs. Photos are included as
-      a metadata manifest only, not embedded image data.
+      goals, protocols, procedures, workouts, and face metric logs. Photos are
+      included as a metadata manifest only, not embedded image data.
 - [x] Measurement how-to guides: backend serves dummy per-field guide copy and
       the browser renders selectable schematic instructions in the dense
       measurement form.
@@ -223,10 +223,13 @@ Protocol Tracker → Diet upgrades → Native app.
       procedure feature. Local reliability events now exclude affected daily
       weight logs from trend weight and hold affected weekly tape deltas during
       the pause window.
-- [ ] Full procedure tracking: later **(new)**. Surgeries, fillers,
-      piercings, tattoos as first-class intervention types with healing
-      timelines, photo streams, and case-log output. Deferred until
-      protocols + corpus are mature.
+- [x] Full procedure tracking **(new)**: surgeries, fillers, piercings,
+      tattoos, jaw/profile procedures, body contouring, and hair restoration
+      now have a backend dummy taxonomy at `/api/procedure-library`, local
+      account-scoped procedure logs, healing timelines, photo stream hints,
+      generated reliability events for affected fields, backup/export/share
+      inclusion, and progress-report case-log output. Production taxonomy and
+      clinical/body-mod review remain human-gated.
 - [x] Life-event modes **(new)**: pregnancy/postpartum, injury, illness —
       pause goals and fat-change inference, annotate the trend timeline.
       Matters for the female demo and for honest data. Local event

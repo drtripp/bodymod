@@ -1074,6 +1074,8 @@ textarea {
 .protocol-schema-panel,
 .life-event-form,
 .life-event-list,
+.procedure-panel,
+.procedure-list li,
 .protocol-outcome-grid > div {
   border: 1px solid var(--color-border);
   background: var(--color-page);
@@ -1089,6 +1091,9 @@ textarea {
 .protocol-schema-panel p,
 .life-event-list span,
 .life-event-list p,
+.procedure-panel p,
+.procedure-list span,
+.procedure-list small,
 .protocol-outcome-grid p,
 .protocol-outcome-grid small {
   color: var(--color-muted);
@@ -1120,6 +1125,65 @@ textarea {
 .life-event-list > div {
   display: grid;
   gap: 3px;
+}
+
+.procedure-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.procedure-panel h4,
+.procedure-list h5 {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+}
+
+.procedure-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) repeat(2, minmax(120px, 0.35fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.procedure-fields,
+.procedure-note,
+.procedure-template-summary {
+  grid-column: 1 / -1;
+}
+
+.procedure-note textarea {
+  min-height: 56px;
+  resize: vertical;
+}
+
+.procedure-template-summary {
+  border: 1px dashed var(--color-border);
+  padding: 10px;
+}
+
+.procedure-template-summary ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: var(--color-muted);
+}
+
+.procedure-list {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  padding-left: 0;
+}
+
+.procedure-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.7fr);
+  gap: 10px;
+}
+
+.procedure-list li > div {
+  display: grid;
+  gap: 4px;
 }
 
 .compact-score-field {
@@ -4551,6 +4615,8 @@ textarea {
   .custom-goal-delta-grid,
   .protocol-form,
   .life-event-form,
+  .procedure-form,
+  .procedure-list li,
   .protocol-outcome-grid,
   .band-diff-row,
   .workout-log-form,

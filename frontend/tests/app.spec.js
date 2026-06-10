@@ -463,6 +463,65 @@ const exerciseLibrary = {
   ]
 };
 
+const procedureLibrary = {
+  version: 1,
+  reference: "Dummy procedure taxonomy seed for Playwright tests.",
+  notes: ["Mocked procedure library; informational only."],
+  procedureTypes: [
+    {
+      id: "large-tattoo-session",
+      label: "Large tattoo session",
+      category: "tattoo",
+      summary: "Track a tattoo session with local notes, body photos, and a short healing window.",
+      defaultHealingDays: 28,
+      affectedFields: ["bicepCircumference", "upperForearmCircumference"],
+      photoCategory: "body",
+      riskLevel: "body-mod review",
+      reviewStatus: "mock artist review needed",
+      requiresHumanReview: true,
+      timeline: [
+        { day: 0, label: "Session day", summary: "Save baseline notes." },
+        { day: 28, label: "Window review", summary: "Review after healing window." }
+      ],
+      caseLogPrompts: ["placement", "aftercare notes", "affected measurements"]
+    },
+    {
+      id: "facial-filler",
+      label: "Facial filler or injectable",
+      category: "filler",
+      summary: "Dated local log for face-focused procedures and swelling-window pausing.",
+      defaultHealingDays: 21,
+      affectedFields: ["headCircumference", "neckCircumference"],
+      photoCategory: "face",
+      riskLevel: "clinical review",
+      reviewStatus: "mock clinician review needed",
+      requiresHumanReview: true,
+      timeline: [
+        { day: 0, label: "Treatment day", summary: "Save neutral notes." },
+        { day: 21, label: "Window review", summary: "Use for review discussion." }
+      ],
+      caseLogPrompts: ["side/front photo reference", "measurement fields paused"]
+    },
+    {
+      id: "orthognathic-or-jaw-surgery",
+      label: "Jaw or orthognathic surgery",
+      category: "surgery",
+      summary: "High-risk profile procedure log for side-profile photos and long healing windows.",
+      defaultHealingDays: 180,
+      affectedFields: ["headCircumference", "neckCircumference"],
+      photoCategory: "face",
+      riskLevel: "high-risk clinical review",
+      reviewStatus: "mock specialist review needed",
+      requiresHumanReview: true,
+      timeline: [
+        { day: 0, label: "Surgery date", summary: "Record factual context only." },
+        { day: 180, label: "Long-window review", summary: "Review with clinician context." }
+      ],
+      caseLogPrompts: ["side-profile photo stream", "healing-window dates"]
+    }
+  ]
+};
+
 const matchPriorityPresets = [
   {
     id: "balanced",
@@ -634,6 +693,10 @@ async function mockApi(page) {
 
   await page.route("**/api/exercise-library", async (route) => {
     await route.fulfill({ json: exerciseLibrary });
+  });
+
+  await page.route("**/api/procedure-library", async (route) => {
+    await route.fulfill({ json: procedureLibrary });
   });
 
   await page.route("**/api/strategy-corpus", async (route) => {
@@ -1516,6 +1579,19 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Saved goals").locator(".goal-pause-alert").first()).toContainText(
     "Goal paused for Waist"
   );
+  await expect(page.getByLabel("Procedure tracker")).toContainText("Loaded 3 procedure type seed(s).");
+  await page.getByLabel("Procedure type").selectOption("large-tattoo-session");
+  await page.getByLabel("Procedure date").fill("2026-06-10");
+  await page.getByLabel("Procedure healing days").fill("28");
+  await page.getByLabel("Procedure affected fields").fill("bicepCircumference, upperForearmCircumference");
+  await page.getByLabel("Procedure note").fill("Left arm sleeve session.");
+  await page.getByRole("button", { name: "Log procedure" }).click();
+  await expect(accountDialog).toContainText("Procedure logged: Large tattoo session");
+  await expect(page.getByLabel("Procedure logs")).toContainText("Large tattoo session / 2026-06-10 / 28 day window");
+  await expect(page.getByLabel("Procedure logs")).toContainText("photo stream body");
+  await expect(page.getByLabel("Large tattoo session procedure case log")).toContainText("bicepCircumference");
+  await expect(page.getByLabel("Reliability events")).toContainText("Procedure log: Large tattoo session");
+  await expect(page.getByLabel("Check-in history")).toContainText("Reliability event: procedure / 28 day window");
   await page.getByRole("button", { name: "Archive protocol" }).click();
   await expect(page.getByLabel("Active protocols")).toContainText("archived");
   await expect(page.getByLabel("Progressive resistance training plan retro")).toContainText("Actual");
@@ -1565,6 +1641,8 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   expect(reportHtml).toContain("Mason");
   expect(reportHtml).toContain("Progressive resistance training");
   expect(reportHtml).toContain("Protocol case logs");
+  expect(reportHtml).toContain("Procedure case logs");
+  expect(reportHtml).toContain("Large tattoo session");
   expect(reportHtml).toContain("Dumbbell lateral raise");
   expect(reportHtml).toContain("Photo manifest");
   expect(reportHtml).toContain("Face measurements");
@@ -1577,6 +1655,7 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Saved goals")).toContainText("Improve shoulder-to-waist ratio");
   await expect(page.getByLabel("Active protocols")).toContainText("Progressive resistance training");
   await expect(page.getByLabel("Active protocols")).toContainText("1 adherence check-in(s)");
+  await expect(page.getByLabel("Procedure logs")).toContainText("Large tattoo session");
   await expect(page.getByLabel("Recent workout sessions")).toContainText("Dumbbell lateral raise");
   await expect(page.getByLabel("Progress photo gallery")).toContainText("Week 1 front pose.");
   await expect(page.getByLabel("Photo comparison slider")).toBeVisible();
@@ -1600,6 +1679,11 @@ test("exports and restores encrypted local backups through the account UI", asyn
   await page.getByLabel("Snapshot label").fill("Backup baseline");
   await page.getByRole("button", { name: "Save current snapshot" }).click();
   await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Backup baseline" })).toBeVisible();
+  await page.getByLabel("Procedure type").selectOption("large-tattoo-session");
+  await page.getByLabel("Procedure date").fill("2026-06-10");
+  await page.getByLabel("Procedure note").fill("Backup procedure log.");
+  await page.getByRole("button", { name: "Log procedure" }).click();
+  await expect(page.getByLabel("Procedure logs")).toContainText("Large tattoo session");
 
   await page.getByLabel("Backup passphrase").fill("correct horse battery staple");
   const downloadPromise = page.waitForEvent("download");
@@ -1617,6 +1701,7 @@ test("exports and restores encrypted local backups through the account UI", asyn
       "bodymod:protocols:v1",
       "bodymod:checkins:v1",
       "bodymod:workouts:v1",
+      "bodymod:procedures:v1",
       "bodymod:photos:v1",
       "bodymod:face-measurements:v1",
       "bodymod:snapshots:v1"
@@ -1632,9 +1717,10 @@ test("exports and restores encrypted local backups through the account UI", asyn
   await page.getByLabel("Restore encrypted backup file").setInputFiles(backupPath);
 
   await expect(page.getByLabel("Encrypted local backup")).toContainText(
-    "Restored backup: 1 snapshot(s), 1 check-in(s)"
+    "Restored backup: 1 snapshot(s), 2 check-in(s)"
   );
   await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 82.4 kg / 2400 kcal");
+  await expect(page.getByLabel("Procedure logs")).toContainText("Large tattoo session");
   await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Backup baseline" })).toBeVisible();
 });
 
@@ -1655,6 +1741,11 @@ test("publishes, updates, views, and revokes a read-only share dashboard", async
   await expect(page.getByLabel("Saved goals")).toContainText("Improve shoulder-to-waist ratio");
   await page.getByRole("button", { name: "Start protocol" }).click();
   await expect(page.getByLabel("Active protocols")).toContainText("Progressive resistance training");
+  await page.getByLabel("Procedure type").selectOption("large-tattoo-session");
+  await page.getByLabel("Procedure date").fill("2026-06-10");
+  await page.getByLabel("Procedure note").fill("Share-safe procedure note should stay private.");
+  await page.getByRole("button", { name: "Log procedure" }).click();
+  await expect(page.getByLabel("Procedure logs")).toContainText("Large tattoo session");
 
   await page.getByRole("button", { name: "Publish share dashboard" }).click();
   await expect(page.getByLabel("Read-only share dashboard")).toContainText(
@@ -1674,9 +1765,12 @@ test("publishes, updates, views, and revokes a read-only share dashboard", async
   await expect(page.getByLabel("Shared account summary")).toContainText("Snapshots");
   await expect(page.getByLabel("Shared goals")).toContainText("Improve shoulder-to-waist ratio");
   await expect(page.getByLabel("Shared protocols")).toContainText("Progressive resistance training");
+  await expect(page.getByLabel("Shared procedures")).toContainText("Large tattoo session");
+  await expect(page.getByLabel("Shared account summary")).toContainText("Procedures");
   await expect(page.getByLabel("Shared snapshots")).toContainText("Share baseline");
   await expect(page.locator("body")).not.toContainText("mason@example.com");
   await expect(page.locator("body")).not.toContainText("local-account");
+  await expect(page.locator("body")).not.toContainText("Share-safe procedure note should stay private.");
 
   await page.goto("/");
   await page.getByRole("button", { name: "User profile" }).click();
@@ -1754,6 +1848,15 @@ test("roleplays all persona samples through account logging, goals, and learning
       await expect(page.getByLabel("Active protocols")).toContainText("0 adherence check-in(s)");
       await page.getByRole("button", { name: "Protocol missed" }).click();
       await expect(page.getByLabel("Active protocols")).toContainText("1 adherence check-in(s)");
+    }
+
+    if (persona.id === "bodymod-artist") {
+      await page.getByLabel("Procedure type").selectOption("large-tattoo-session");
+      await page.getByLabel("Procedure date").fill("2026-06-10");
+      await page.getByLabel("Procedure note").fill("Jules sleeve session and before-photo plan.");
+      await page.getByRole("button", { name: "Log procedure" }).click();
+      await expect(page.getByLabel("Procedure logs")).toContainText("Large tattoo session");
+      await expect(page.getByLabel("Check-in history")).toContainText("Reliability event: procedure");
     }
 
     await expect(page.getByLabel("Workout library")).toBeVisible();

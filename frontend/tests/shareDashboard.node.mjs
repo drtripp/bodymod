@@ -69,6 +69,20 @@ test("builds a public dashboard payload without private account fields or notes"
         startingMeasurements: measurements
       }
     ],
+    procedures: [
+      {
+        id: "procedure-1",
+        accountId: "local-account-1",
+        label: "Large tattoo session",
+        category: "tattoo",
+        procedureDate: "2026-06-10",
+        healingDays: 28,
+        affectedFields: ["bicepCircumference"],
+        photoCategory: "body",
+        reviewStatus: "needs artist review",
+        note: "private procedure note"
+      }
+    ],
     checkIns: [
       {
         id: "checkin-1",
@@ -97,15 +111,20 @@ test("builds a public dashboard payload without private account fields or notes"
   assert.equal(payload.displayName, "Mason");
   assert.equal(payload.stats.snapshotCount, 1);
   assert.equal(payload.stats.workoutCount, 1);
+  assert.equal(payload.stats.procedureCount, 1);
   assert.equal(payload.stats.faceScanCount, 1);
   assert.equal(payload.goals[0].progressPercent, 100);
   assert.deepEqual(payload.goals[0].targetDistances, ["Waist: At target"]);
   assert.equal(payload.protocols[0].averageScore, 4.5);
+  assert.equal(payload.procedures[0].label, "Large tattoo session");
+  assert.equal(payload.procedures[0].healingDays, 28);
+  assert.equal(payload.procedures[0].note, undefined);
   assert.equal(payload.snapshots[0].note, undefined);
   assert.equal(serialized.includes("mason@example.com"), false);
   assert.equal(serialized.includes("local-account-1"), false);
   assert.equal(serialized.includes("private note should not publish"), false);
   assert.equal(serialized.includes("private goal note"), false);
+  assert.equal(serialized.includes("private procedure note"), false);
   assert.equal(serialized.includes("private check-in note"), false);
 });
 

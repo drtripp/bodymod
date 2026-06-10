@@ -98,6 +98,32 @@ Verification:
 .\verify.ps1
 ```
 
+## 5. Procedure Taxonomy Review
+
+Required input:
+
+- reviewed procedure categories and labels
+- default healing-window ranges by procedure/body area
+- affected measurement field mappings
+- approved photo stream guidance
+- clinical/body-mod safety copy and exclusion policy
+
+Use:
+
+- `backend/app/data/procedures.seed.json`
+- `backend/app/data/procedures.py`
+- `frontend/src/lib/procedures.js`
+- `frontend/src/components/AccountGoalPanel.jsx`
+
+Verification:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m pytest tests\test_api.py
+cd ..\frontend
+npm run test:procedures
+```
+
 ## Current Stop Condition
 
 Do not mark the active build goal complete until these manual inputs are either:

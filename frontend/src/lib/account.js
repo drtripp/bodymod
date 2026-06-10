@@ -9,6 +9,7 @@ const CHECKINS_KEY = "bodymod:checkins:v1";
 const WORKOUTS_KEY = "bodymod:workouts:v1";
 const PHOTOS_KEY = "bodymod:photos:v1";
 const FACE_MEASUREMENTS_KEY = "bodymod:face-measurements:v1";
+const PROCEDURES_KEY = "bodymod:procedures:v1";
 const STORAGE_VERSION = 1;
 
 function readStorage(key, fallback) {
@@ -136,6 +137,16 @@ export function loadUserWorkoutSessions(accountId) {
   const parsed = readStorage(WORKOUTS_KEY, { workouts: [] });
   const workouts = Array.isArray(parsed.workouts) ? parsed.workouts : [];
   return workouts.filter((workout) => workout.accountId === accountId);
+}
+
+export function loadUserProcedures(accountId) {
+  if (!accountId) {
+    return [];
+  }
+
+  const parsed = readStorage(PROCEDURES_KEY, { procedures: [] });
+  const procedures = Array.isArray(parsed.procedures) ? parsed.procedures : [];
+  return procedures.filter((procedure) => procedure.accountId === accountId);
 }
 
 export function loadUserPhotos(accountId) {
@@ -352,6 +363,12 @@ export function restoreUserBackupData(accountId, backup = {}) {
     accountId,
     records: backup.workoutSessions || backup.workouts
   });
+  const procedures = mergeAccountCollection({
+    storageKey: PROCEDURES_KEY,
+    collectionKey: "procedures",
+    accountId,
+    records: backup.procedures
+  });
   const faceMeasurements = mergeAccountCollection({
     storageKey: FACE_MEASUREMENTS_KEY,
     collectionKey: "faceMeasurements",
@@ -364,12 +381,14 @@ export function restoreUserBackupData(accountId, backup = {}) {
     protocols: protocols.records,
     checkIns: checkIns.records,
     workoutSessions: workouts.records,
+    procedures: procedures.records,
     faceMeasurements: faceMeasurements.records,
     imported: {
       goals: goals.importedCount,
       protocols: protocols.importedCount,
       checkIns: checkIns.importedCount,
       workoutSessions: workouts.importedCount,
+      procedures: procedures.importedCount,
       faceMeasurements: faceMeasurements.importedCount,
       photoManifest: Array.isArray(backup.photoManifest) ? backup.photoManifest.length : 0
     }
@@ -392,6 +411,24 @@ export function persistUserWorkoutSession(accountId, workout) {
   });
 
   return nextWorkout;
+}
+
+export function persistUserProcedure(accountId, procedure) {
+  const parsed = readStorage(PROCEDURES_KEY, { procedures: [] });
+  const procedures = Array.isArray(parsed.procedures) ? parsed.procedures : [];
+  const nextProcedure = {
+    id: crypto.randomUUID(),
+    accountId,
+    createdAt: new Date().toISOString(),
+    ...procedure
+  };
+
+  writeStorage(PROCEDURES_KEY, {
+    version: STORAGE_VERSION,
+    procedures: [nextProcedure, ...procedures]
+  });
+
+  return nextProcedure;
 }
 
 export function persistUserPhoto(accountId, photo) {

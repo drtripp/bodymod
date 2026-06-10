@@ -6,9 +6,11 @@ from app.data.exercises import EXERCISE_LIBRARY
 from app.data.food_usda import USDA_FOOD_LIBRARY
 from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TEMPLATES
+from app.data.procedures import PROCEDURE_LIBRARY
 from app.data.reference import REFERENCE_DATA
 from app.data.strategy_corpus import STRATEGY_CORPUS
 from app.main import allowed_cors_origins, app
+from app.measurement_schema import measurement_field_names
 from app.repositories import ClientErrorRepository, load_target_seed
 
 
@@ -166,6 +168,38 @@ def test_exercise_library_endpoint_returns_seeded_programs() -> None:
             assert {item["exerciseId"] for item in day["exercises"]}.issubset(
                 exercise_ids
             )
+
+
+def test_procedure_library_endpoint_returns_review_seed() -> None:
+    response = client.get("/api/procedure-library")
+
+    assert response.status_code == 200
+    payload = response.json()
+    procedure_ids = {item["id"] for item in payload["procedureTypes"]}
+    categories = {item["category"] for item in payload["procedureTypes"]}
+    schema_fields = set(measurement_field_names())
+
+    assert payload["version"] == PROCEDURE_LIBRARY["version"]
+    assert "Dummy procedure taxonomy seed" in payload["reference"]
+    assert {
+        "large-tattoo-session",
+        "piercing-or-dermal",
+        "facial-filler",
+        "orthognathic-or-jaw-surgery",
+        "body-contouring-procedure",
+    }.issubset(procedure_ids)
+    assert {"tattoo", "piercing", "filler", "surgery"}.issubset(categories)
+    assert all(item["requiresHumanReview"] for item in payload["procedureTypes"])
+    assert all(item["defaultHealingDays"] > 0 for item in payload["procedureTypes"])
+    assert all(item["timeline"] for item in payload["procedureTypes"])
+    assert all(
+        set(item["affectedFields"]).issubset(schema_fields)
+        for item in payload["procedureTypes"]
+    )
+    assert any(
+        item["photoCategory"] == "face" and "side-profile photo stream" in item["caseLogPrompts"]
+        for item in payload["procedureTypes"]
+    )
 
 
 def test_strategy_corpus_endpoint_returns_backend_seed() -> None:

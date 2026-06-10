@@ -49,6 +49,10 @@ export function fetchExerciseLibrary() {
   return request("/api/exercise-library");
 }
 
+export function fetchProcedureLibrary() {
+  return request("/api/procedure-library");
+}
+
 export function fetchStrategyCorpus() {
   return request("/api/strategy-corpus");
 }

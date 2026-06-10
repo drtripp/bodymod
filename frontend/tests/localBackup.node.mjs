@@ -6,6 +6,7 @@ import {
   loadUserCheckIns,
   loadUserFaceMeasurements,
   loadUserGoals,
+  loadUserProcedures,
   loadUserProtocols,
   loadUserWorkoutSessions,
   restoreUserBackupData
@@ -102,6 +103,16 @@ function sampleBundle() {
         exerciseLabel: "Lateral raise"
       }
     ],
+    procedures: [
+      {
+        id: "procedure-1",
+        accountId: "old-account",
+        createdAt: "2026-06-05T12:00:00.000Z",
+        label: "Large tattoo session",
+        procedureDate: "2026-06-05",
+        healingDays: 28
+      }
+    ],
     photos: [
       {
         id: "photo-1",
@@ -138,6 +149,7 @@ test("builds backup bundles with photo manifests instead of image payloads", () 
     protocols: 1,
     checkIns: 2,
     workoutSessions: 1,
+    procedures: 1,
     faceMeasurements: 1,
     photoManifest: 1
   });
@@ -162,6 +174,7 @@ test("builds readable JSON exports with or without an account", () => {
     snapshots: [{ id: "snapshot-1", createdAt: "2026-06-01", measurements: {} }],
     goals: [{ id: "goal-1" }],
     checkIns: [{ id: "check-1", type: "cycle-phase" }],
+    procedures: [{ id: "procedure-1", label: "Large tattoo session" }],
     photos: [{ id: "photo-1", dataUrl: "data:image/png;base64,secret", fileName: "front.png" }],
     dietLog: [],
     dietFoodLibrary: {},
@@ -181,6 +194,7 @@ test("builds readable JSON exports with or without an account", () => {
     protocols: 0,
     checkIns: 0,
     workoutSessions: 0,
+    procedures: 0,
     faceMeasurements: 0,
     photoManifest: 0,
     dietEntries: 1,
@@ -191,6 +205,7 @@ test("builds readable JSON exports with or without an account", () => {
   });
   assert.equal(signedInExport.accountData.goals.length, 1);
   assert.equal(signedInExport.accountData.checkIns[0].type, "cycle-phase");
+  assert.equal(signedInExport.accountData.procedures[0].label, "Large tattoo session");
   assert.equal(signedInExport.accountData.photoManifest[0].hasImageData, true);
   assert.equal(serializedSignedIn.includes("secret"), false);
 });
@@ -228,6 +243,7 @@ test("restores account-scoped backup data into the active account without duplic
   const restoredAgain = restoreUserBackupData("new-account", bundle);
 
   assert.equal(restored.imported.checkIns, 2);
+  assert.equal(restored.imported.procedures, 1);
   assert.equal(restored.imported.photoManifest, 1);
   assert.equal(restoredAgain.imported.checkIns, 0);
   assert.deepEqual(loadUserCheckIns("new-account").map((item) => item.accountId), [
@@ -237,5 +253,6 @@ test("restores account-scoped backup data into the active account without duplic
   assert.equal(loadUserGoals("new-account")[0].label, "Shoulder goal");
   assert.equal(loadUserProtocols("new-account")[0].label, "Training block");
   assert.equal(loadUserWorkoutSessions("new-account")[0].exerciseLabel, "Lateral raise");
+  assert.equal(loadUserProcedures("new-account")[0].label, "Large tattoo session");
   assert.equal(loadUserFaceMeasurements("new-account")[0].source, "photo");
 });

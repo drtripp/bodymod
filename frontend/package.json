@@ -30,6 +30,7 @@
     "test:local-backup": "node --test tests/localBackup.node.mjs",
     "test:tracking": "node --test tests/accountTracking.node.mjs",
     "test:protocols": "node --test tests/protocolPlanning.node.mjs",
+    "test:procedures": "node --test tests/procedures.node.mjs",
     "test:local-targets": "node --test tests/localTargets.node.mjs",
     "test:goal-targets": "node --test tests/goalTargets.node.mjs",
     "test:measurement-guides": "node --test tests/measurementGuides.node.mjs",

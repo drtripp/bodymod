@@ -30,6 +30,7 @@ export function buildPlainJsonExport({
   protocols = [],
   checkIns = [],
   workoutSessions = [],
+  procedures = [],
   photos = [],
   faceMeasurements = [],
   dietLog = loadDietLog(),
@@ -55,6 +56,7 @@ export function buildPlainJsonExport({
       protocols: account ? safeArray(protocols) : [],
       checkIns: account ? safeArray(checkIns) : [],
       workoutSessions: account ? safeArray(workoutSessions) : [],
+      procedures: account ? safeArray(procedures) : [],
       faceMeasurements: account ? safeArray(faceMeasurements) : [],
       photoManifest: account ? photoManifest(photos) : []
     },
@@ -85,6 +87,7 @@ export function summarizePlainJsonExport(bundle = {}) {
     protocols: safeArray(bundle.accountData?.protocols).length,
     checkIns: safeArray(bundle.accountData?.checkIns).length,
     workoutSessions: safeArray(bundle.accountData?.workoutSessions).length,
+    procedures: safeArray(bundle.accountData?.procedures).length,
     faceMeasurements: safeArray(bundle.accountData?.faceMeasurements).length,
     photoManifest: safeArray(bundle.accountData?.photoManifest).length,
     dietEntries: safeArray(bundle.diet?.entries).length,

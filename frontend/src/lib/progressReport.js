@@ -1,6 +1,7 @@
 import { summarizeSnapshotTrend } from "./comparison.js";
 import { formatFaceMetricSummary } from "./faceMeasurements.js";
 import { buildProtocolCaseLog } from "./protocolPlanning.js";
+import { buildProcedureCaseLog } from "./procedures.js";
 import { calculateWorkoutPrs } from "./workouts.js";
 import { photoCategoryCounts } from "./photos.js";
 
@@ -43,6 +44,7 @@ export function buildProgressReportModel({
   protocols = [],
   checkIns = [],
   workoutSessions = [],
+  procedures = [],
   photos = [],
   faceMeasurements = []
 }) {
@@ -51,6 +53,9 @@ export function buildProgressReportModel({
   const photoCounts = photoCategoryCounts(photos);
   const protocolCaseLogs = protocols.map((protocol) =>
     buildProtocolCaseLog(protocol, measurements, snapshots)
+  );
+  const procedureCaseLogs = procedures.map((procedure) =>
+    buildProcedureCaseLog(procedure, snapshots, photos)
   );
 
   return {
@@ -65,6 +70,8 @@ export function buildProgressReportModel({
       adherence: protocolAdherence(protocol)
     })),
     protocolCaseLogs,
+    procedures,
+    procedureCaseLogs,
     checkIns,
     workoutPrs,
     photoCounts,
@@ -184,6 +191,15 @@ export function buildProgressReportHtml(input) {
           model.protocolCaseLogs,
           (caseLog) => `<li><strong>${escapeHtml(caseLog.label)}</strong>: ${escapeHtml(caseLog.outcomeSummary)} / ${escapeHtml(caseLog.projectionSummary)}</li>`,
           "No protocol case logs yet."
+        )}
+      </section>
+
+      <section>
+        <h2>Procedure case logs</h2>
+        ${listItems(
+          model.procedureCaseLogs,
+          (caseLog) => `<li><strong>${escapeHtml(caseLog.label)}</strong>: ${escapeHtml(caseLog.summary)} / ${escapeHtml(caseLog.reviewStatus)}</li>`,
+          "No procedure case logs yet."
         )}
       </section>
 

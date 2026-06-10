@@ -358,6 +358,12 @@ Status:
 - account workspace supports passphrase-encrypted backup/restore through
   `frontend/src/lib/localBackup.js`; photos are exported as metadata manifests
   rather than image payloads
+- account workspace supports first-class procedure logs through
+  `backend/app/data/procedures.seed.json`, `/api/procedure-library`,
+  `frontend/src/lib/procedures.js`, and account-scoped local storage; surgery,
+  filler, piercing, tattoo, body contouring, jaw/profile, and hair-restoration
+  seed types create healing timelines, photo stream hints, generated
+  reliability events for affected fields, and progress-report case logs
 - saved goals use `frontend/src/lib/goalTargets.js` for progress rows and
   maintenance drift alerts once a target-band snapshot exists
 - saved goal rows include from-target, past-target, and at-target copy so
@@ -454,7 +460,8 @@ Status:
 - backend stores share dashboards in SQLite behind opaque public tokens and
   private revoke-token hashes
 - public `?share=` URLs render a read-only dashboard with current measurements,
-  recent snapshots, goal summaries, protocol summaries, and count stats
+  recent snapshots, goal summaries, protocol summaries, neutral procedure
+  summaries, and count stats
 - share-dashboard payloads omit account email, local account IDs, notes, photo
   files, and face scan images
 
