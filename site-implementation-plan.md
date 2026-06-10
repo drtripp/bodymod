@@ -374,6 +374,10 @@ Next:
 Source files:
 
 - `frontend/src/components/InfoFootnote.jsx`
+- `frontend/public/landing.html`
+- `frontend/public/landing.css`
+- `frontend/public/landing.js`
+- `frontend/public/landing-assets/*.png`
 - `frontend/public/methodology.html`
 - `frontend/public/legal/index.html`
 - `frontend/public/legal/privacy.html`
@@ -387,6 +391,9 @@ Status:
 - footnote links to draft legal pages for privacy, terms, and medical disclaimer
 - public methodology page documents scoring, similarity mapping, percentile
   scaffold sources, gender-score chart math, and privacy boundaries
+- public landing page at `/landing.html` describes the product, privacy
+  stance, current screenshots, planned native-store placeholders, and local-only
+  Pro waitlist capture
 - draft legal pages are implemented as static public routes pending human/legal
   review
 - local event count and clearing remain available inside the footnote

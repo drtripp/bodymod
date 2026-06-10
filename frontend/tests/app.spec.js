@@ -1830,6 +1830,42 @@ test("exposes method, privacy, and strategy corpus content", async ({ page }) =>
   await expect(page.getByText("Calorie surplus with resistance training")).toBeVisible();
 });
 
+test("exposes the public landing page and local Pro waitlist capture", async ({ page }) => {
+  await page.goto("/landing.html");
+
+  await expect(page.getByRole("heading", { name: "bodymod" })).toBeVisible();
+  await expect(page.getByText("Local-first measurement log")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open the app" })).toHaveAttribute("href", "/");
+  await expect(page.getByRole("link", { name: "Methodology" })).toHaveAttribute(
+    "href",
+    "/methodology.html"
+  );
+  await expect(
+    page.getByRole("img", { name: /Desktop bodymod app showing target comparison/i })
+  ).toBeVisible();
+  await expect(page.getByLabel("Planned app stores")).toContainText("iOS planned");
+  await expect(page.getByLabel("Planned app stores")).toContainText("Android planned");
+
+  await page.getByLabel("Pro waitlist email").fill("Landing@Example.com");
+  await page.getByRole("button", { name: "Join Pro waitlist" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "Saved to the local Pro waitlist. 1 saved signup(s) on this browser."
+  );
+
+  const landingSignup = await page.evaluate(() => {
+    const parsed = JSON.parse(window.localStorage.getItem("bodymod:pro-waitlist:v1"));
+    return parsed.signups[0];
+  });
+  expect(landingSignup.email).toBe("landing@example.com");
+  expect(landingSignup.source).toBe("landing-page");
+
+  await page.getByLabel("Pro waitlist email").fill("landing@example.com");
+  await page.getByRole("button", { name: "Join Pro waitlist" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "Already on the local Pro waitlist. 1 saved signup(s) on this browser."
+  );
+});
+
 test("keeps local form usable when backend is unavailable", async ({ page }) => {
   await page.route("**/api/**", (route) => route.abort());
   await page.goto("/");

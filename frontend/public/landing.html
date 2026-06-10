@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="bodymod is a local-first measurement, diet, workout, protocol, and progress log for body-shape tracking."
+    />
+    <title>bodymod | local-first body tracking</title>
+    <link rel="stylesheet" href="/landing.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero-inner">
+        <nav class="top-nav" aria-label="Landing page navigation">
+          <a class="brand-mark" href="/">bodymod</a>
+          <div class="top-nav-actions">
+            <a href="/methodology.html">Methodology</a>
+            <a href="/legal/privacy.html">Privacy</a>
+            <a href="#waitlist">Pro waitlist</a>
+          </div>
+        </nav>
+        <div class="hero-copy">
+          <p class="eyebrow">Local-first measurement log</p>
+          <h1>bodymod</h1>
+          <p class="lede">
+            Track measurements, diet, workouts, protocols, photos, goals, and
+            progress reports in one browser-first workspace. The current app is
+            built to work without an account, and exports stay readable.
+          </p>
+          <div class="hero-actions">
+            <a class="button-link primary" href="/">Open the app</a>
+            <a class="button-link" href="#screenshots">See screenshots</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="section-band" aria-labelledby="feature-heading">
+        <div class="section-inner">
+          <p class="eyebrow">What it does</p>
+          <h2 id="feature-heading">A body-change log built around measurements.</h2>
+          <p class="section-kicker">
+            Bodymod is for people who want an honest, inspectable record of
+            body-shape changes without turning the app into medical advice or
+            a black-box coaching feed.
+          </p>
+          <div class="feature-grid">
+            <article class="feature-card">
+              <h3>Measurements and silhouettes</h3>
+              <p>
+                Enter repeatable body measurements, inspect front and side SVG
+                silhouettes, compare against targets, and save local snapshots.
+              </p>
+            </article>
+            <article class="feature-card">
+              <h3>Diet and training logs</h3>
+              <p>
+                Search dummy USDA-style foods, log meals and fluids, track
+                workouts, and review progress without needing another app.
+              </p>
+            </article>
+            <article class="feature-card">
+              <h3>Protocols and reports</h3>
+              <p>
+                Attach protocols to goals, mark adherence, compare outcomes,
+                and print progress reports for trainers or appointments.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-band soft" id="screenshots" aria-labelledby="screenshots-heading">
+        <div class="section-inner">
+          <p class="eyebrow">Current product</p>
+          <h2 id="screenshots-heading">Real app screens, not mockups.</h2>
+          <p class="section-kicker">
+            These screenshots come from the same Playwright capture used for
+            frontend review. The target library and population data are still
+            labeled prototype scaffolds until source-reviewed data replaces them.
+          </p>
+          <div class="screenshot-layout">
+            <figure class="product-shot desktop">
+              <img
+                src="/landing-assets/desktop.png"
+                alt="Desktop bodymod app showing target comparison, measurement forms, and onboarding"
+              />
+            </figure>
+            <figure class="product-shot mobile">
+              <img
+                src="/landing-assets/mobile.png"
+                alt="Mobile bodymod app showing onboarding, measurements, and comparison sections"
+              />
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-band" aria-labelledby="privacy-heading">
+        <div class="section-inner">
+          <p class="eyebrow">Privacy stance</p>
+          <h2 id="privacy-heading">Useful before accounts exist.</h2>
+          <div class="privacy-grid">
+            <article class="privacy-card">
+              <h3>Local by default</h3>
+              <p>
+                Current snapshots, diet logs, goals, protocols, and waitlist
+                signups live in browser storage unless you export or share them.
+              </p>
+            </article>
+            <article class="privacy-card">
+              <h3>Readable exports</h3>
+              <p>
+                JSON exports and encrypted local backups are part of the core
+                product, not a paid escape hatch.
+              </p>
+            </article>
+            <article class="privacy-card">
+              <h3>Clear limits</h3>
+              <p>
+                Placeholder data, formula estimates, and strategy corpus entries
+                are labeled as informational and not medical advice.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-band soft" id="waitlist" aria-labelledby="waitlist-heading">
+        <div class="section-inner waitlist-layout">
+          <div>
+            <p class="eyebrow">Mobile and Pro</p>
+            <h2 id="waitlist-heading">Native apps are planned after the web app hardens.</h2>
+            <p class="section-kicker">
+              The current tier line is simple: all current tracking remains
+              free. Future Pro is for compute, curation, sync, automation, and
+              native integrations with marginal cost.
+            </p>
+            <div class="store-row" aria-label="Planned app stores">
+              <span class="store-badge">iOS planned</span>
+              <span class="store-badge">Android planned</span>
+            </div>
+          </div>
+          <form class="waitlist-form" aria-label="Landing Pro waitlist">
+            <label>
+              Pro waitlist email
+              <input
+                type="email"
+                name="email"
+                autocomplete="email"
+                placeholder="you@example.com"
+                required
+              />
+            </label>
+            <button type="submit">Join Pro waitlist</button>
+            <p class="waitlist-status" role="status" aria-live="polite"></p>
+            <p class="fine-print">
+              Stored locally in this browser for now. No email is sent and no
+              backend call is made from this page.
+            </p>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="section-inner">
+        <span>bodymod prototype</span>
+        <span><a href="/">Open app</a> / <a href="/legal/index.html">Legal drafts</a></span>
+      </div>
+    </footer>
+    <script src="/landing.js" defer></script>
+  </body>
+</html>

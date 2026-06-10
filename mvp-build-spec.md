@@ -17,6 +17,9 @@ The app currently lets a user:
 7. Inspect a seed informational strategy explorer organized by desired outcome.
 8. Create a share URL that encodes the current measurement payload.
 9. Switch from Body to Diet for food search, barcode lookup, and local nutrition logging.
+10. Open a separate public landing page at `/landing.html` for product
+    positioning, screenshots, privacy stance, planned store links, and local
+    Pro waitlist capture.
 
 The product is intentionally not a guidance platform. It does not recommend procedures, compounds, dosing, medical decisions, or interventions.
 

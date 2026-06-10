@@ -403,7 +403,7 @@ land. No social features, no marketplace.
 - [ ] Share URL decision: keep encoded-measurement URLs or move to server-side
       opaque snapshot IDs with expiry (open gate in
       `launch-decision-record.md`). **[human]** decision, agent implementation.
-- [ ] Marketing/landing site **(new)**: separate lightweight public page —
+- [x] Marketing/landing site **(new)**: separate lightweight public page —
       what it is, privacy stance, screenshots, app-store links, Pro waitlist
       email capture.
 - [x] Public methodology page **(new)**: `frontend/public/methodology.html`
