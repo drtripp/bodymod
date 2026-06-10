@@ -1,6 +1,6 @@
 from math import erf, sqrt
 
-from app.data.reference import REFERENCE_DISTRIBUTIONS, REFERENCE_LABEL
+from app.data.reference import REFERENCE_DATA, REFERENCE_DISTRIBUTIONS, REFERENCE_LABEL
 from app.models import MeasurementSet, PercentileSummary
 
 
@@ -14,22 +14,20 @@ def estimate_percentiles(current: MeasurementSet) -> PercentileSummary:
     reference = REFERENCE_DISTRIBUTIONS.get(
         current.sex, REFERENCE_DISTRIBUTIONS["male"]
     )
+    percentiles = {
+        field_name: normal_percentile(
+            float(getattr(current, field_name)),
+            distribution["mean"],
+            distribution["sd"],
+        )
+        for field_name, distribution in reference.items()
+    }
 
     return PercentileSummary(
-        height=normal_percentile(
-            current.height,
-            reference["height"]["mean"],
-            reference["height"]["sd"],
-        ),
-        waistCircumference=normal_percentile(
-            current.waistCircumference,
-            reference["waistCircumference"]["mean"],
-            reference["waistCircumference"]["sd"],
-        ),
-        bideltoidCircumference=normal_percentile(
-            current.bideltoidCircumference,
-            reference["bideltoidCircumference"]["mean"],
-            reference["bideltoidCircumference"]["sd"],
-        ),
+        height=percentiles["height"],
+        waistCircumference=percentiles["waistCircumference"],
+        bideltoidCircumference=percentiles["bideltoidCircumference"],
+        fields=percentiles,
         reference=REFERENCE_LABEL,
+        datasetId=REFERENCE_DATA["datasetId"],
     )

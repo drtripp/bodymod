@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { fallbackPopulationReference } from "../src/lib/populationCharts.js";
 import { strategyOutcomes } from "../src/lib/strategyCorpus.js";
 
 const targetMeasurements = {
@@ -114,6 +115,10 @@ async function mockApi(page) {
 
   await page.route("**/api/measurement-guides", async (route) => {
     await route.fulfill({ json: measurementGuideLibrary });
+  });
+
+  await page.route("**/api/reference-data", async (route) => {
+    await route.fulfill({ json: fallbackPopulationReference });
   });
 
   await page.route("**/api/entitlements", async (route) => {

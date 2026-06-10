@@ -1,0 +1,174 @@
+{
+  "version": 1,
+  "datasetId": "bodymod-dummy-reference-v1",
+  "label": "Dummy reference scaffold",
+  "reference": "Approximate adult reference model, not NHANES-calibrated",
+  "source": "Synthetic backend scaffold for user validation; replace with ANSUR/NHANES or another vetted source before production.",
+  "notes": [
+    "Values are simple sex-specific normal-distribution parameters for prototype validation only.",
+    "The seed is intentionally complete across numeric measurement schema fields so UI and API mappings can be tested before source review.",
+    "Do not present these values as representative population percentiles."
+  ],
+  "fields": {
+    "height": {
+      "label": "Height",
+      "unit": "cm",
+      "min": 120,
+      "max": 240,
+      "male": { "mean": 176, "sd": 7.5 },
+      "female": { "mean": 164, "sd": 7 }
+    },
+    "weight": {
+      "label": "Weight",
+      "unit": "kg",
+      "min": 35,
+      "max": 250,
+      "male": { "mean": 84, "sd": 17 },
+      "female": { "mean": 72, "sd": 15 }
+    },
+    "headCircumference": {
+      "label": "Head Circ",
+      "unit": "cm",
+      "min": 45,
+      "max": 70,
+      "male": { "mean": 57, "sd": 2.2 },
+      "female": { "mean": 55, "sd": 2 }
+    },
+    "neckCircumference": {
+      "label": "Neck Circ",
+      "unit": "cm",
+      "min": 25,
+      "max": 65,
+      "male": { "mean": 39, "sd": 4.5 },
+      "female": { "mean": 33, "sd": 3.5 }
+    },
+    "biacromialWidth": {
+      "label": "Biacromial Width",
+      "unit": "cm",
+      "min": 28,
+      "max": 65,
+      "male": { "mean": 40, "sd": 3 },
+      "female": { "mean": 35, "sd": 2.8 }
+    },
+    "bideltoidWidth": {
+      "label": "Bideltoid Width",
+      "unit": "cm",
+      "min": 34,
+      "max": 85,
+      "male": { "mean": 50, "sd": 4.5 },
+      "female": { "mean": 43, "sd": 4 }
+    },
+    "bideltoidCircumference": {
+      "label": "Bideltoid Circ",
+      "unit": "cm",
+      "min": 70,
+      "max": 180,
+      "male": { "mean": 116, "sd": 12 },
+      "female": { "mean": 98, "sd": 10 }
+    },
+    "armpitCircumference": {
+      "label": "Armpit Circ",
+      "unit": "cm",
+      "min": 50,
+      "max": 190,
+      "male": { "mean": 98, "sd": 13 },
+      "female": { "mean": 88, "sd": 12 }
+    },
+    "nippleCircumference": {
+      "label": "Nipple Circ",
+      "unit": "cm",
+      "min": 50,
+      "max": 190,
+      "male": { "mean": 96, "sd": 13 },
+      "female": { "mean": 91, "sd": 12 }
+    },
+    "underbustCircumference": {
+      "label": "Underbust",
+      "unit": "cm",
+      "min": 50,
+      "max": 180,
+      "male": { "mean": 92, "sd": 12 },
+      "female": { "mean": 80, "sd": 10 }
+    },
+    "waistCircumference": {
+      "label": "Waist",
+      "unit": "cm",
+      "min": 45,
+      "max": 180,
+      "male": { "mean": 99, "sd": 14 },
+      "female": { "mean": 89, "sd": 15 }
+    },
+    "pantWaistCircumference": {
+      "label": "Pant Waist",
+      "unit": "cm",
+      "min": 45,
+      "max": 190,
+      "male": { "mean": 96, "sd": 14 },
+      "female": { "mean": 88, "sd": 14 }
+    },
+    "hipCircumference": {
+      "label": "Hip/Buttock Circ",
+      "unit": "cm",
+      "min": 60,
+      "max": 200,
+      "male": { "mean": 102, "sd": 10 },
+      "female": { "mean": 106, "sd": 12 }
+    },
+    "upperThighCircumference": {
+      "label": "Upper Thigh Circ",
+      "unit": "cm",
+      "min": 30,
+      "max": 110,
+      "male": { "mean": 59, "sd": 7 },
+      "female": { "mean": 56, "sd": 7 }
+    },
+    "midThighCircumference": {
+      "label": "Mid Thigh Circ",
+      "unit": "cm",
+      "min": 25,
+      "max": 95,
+      "male": { "mean": 52, "sd": 6 },
+      "female": { "mean": 49, "sd": 6 }
+    },
+    "calfCircumference": {
+      "label": "Calf Circ",
+      "unit": "cm",
+      "min": 20,
+      "max": 70,
+      "male": { "mean": 39, "sd": 4.5 },
+      "female": { "mean": 36, "sd": 4 }
+    },
+    "ankleCircumference": {
+      "label": "Ankle Circ",
+      "unit": "cm",
+      "min": 14,
+      "max": 40,
+      "male": { "mean": 23, "sd": 2 },
+      "female": { "mean": 21, "sd": 1.8 }
+    },
+    "bicepCircumference": {
+      "label": "Bicep Circ",
+      "unit": "cm",
+      "min": 18,
+      "max": 75,
+      "male": { "mean": 34, "sd": 5 },
+      "female": { "mean": 29, "sd": 4 }
+    },
+    "upperForearmCircumference": {
+      "label": "Upper Forearm Circ",
+      "unit": "cm",
+      "min": 15,
+      "max": 55,
+      "male": { "mean": 29, "sd": 3.5 },
+      "female": { "mean": 24, "sd": 3 }
+    },
+    "wristCircumference": {
+      "label": "Wrist Circ",
+      "unit": "cm",
+      "min": 11,
+      "max": 30,
+      "male": { "mean": 17.5, "sd": 1.4 },
+      "female": { "mean": 15.5, "sd": 1.2 }
+    }
+  }
+}

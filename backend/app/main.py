@@ -9,6 +9,7 @@ from app.data.exercises import EXERCISE_LIBRARY
 from app.data.food_usda import USDA_FOOD_LIBRARY, search_usda_foods
 from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TAXONOMY, PROTOCOL_TEMPLATES
+from app.data.reference import REFERENCE_DATA
 from app.data.strategy_corpus import STRATEGY_CORPUS
 from app.models import ClothingSizeTables
 from app.models import ClientErrorReportRequest
@@ -19,6 +20,7 @@ from app.models import FoodSearchResponse
 from app.models import MeasurementGuideLibrary
 from app.models import MeasurementSet
 from app.models import PlanningData
+from app.models import PopulationReferenceData
 from app.models import ShareDashboardCreateRequest
 from app.models import ShareDashboardCreateResponse
 from app.models import ShareDashboardPublicRecord
@@ -111,6 +113,11 @@ def strategy_corpus() -> dict:
 @app.get("/api/measurement-guides")
 def measurement_guides() -> dict:
     return MeasurementGuideLibrary.model_validate(MEASUREMENT_GUIDES).model_dump()
+
+
+@app.get("/api/reference-data")
+def reference_data() -> dict:
+    return PopulationReferenceData.model_validate(REFERENCE_DATA).model_dump()
 
 
 @app.get("/api/entitlements")

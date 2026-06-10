@@ -57,6 +57,10 @@ export function fetchMeasurementGuides() {
   return request("/api/measurement-guides");
 }
 
+export function fetchReferenceData() {
+  return request("/api/reference-data");
+}
+
 export function fetchEntitlements() {
   return request("/api/entitlements");
 }

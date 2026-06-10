@@ -6,6 +6,7 @@ from app.data.exercises import EXERCISE_LIBRARY
 from app.data.food_usda import USDA_FOOD_LIBRARY
 from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TEMPLATES
+from app.data.reference import REFERENCE_DATA
 from app.data.strategy_corpus import STRATEGY_CORPUS
 from app.main import allowed_cors_origins, app
 from app.repositories import ClientErrorRepository, load_target_seed
@@ -57,6 +58,8 @@ def test_match_endpoint_returns_ranked_explanations_and_reference() -> None:
     assert all(0 <= match["similarity"] <= 100 for match in payload["matches"])
     assert payload["matches"][0]["explanation"]
     assert "reference" in payload["percentiles"]
+    assert "ankleCircumference" in payload["percentiles"]["fields"]
+    assert payload["percentiles"]["fields"]["height"] == payload["percentiles"]["height"]
 
 
 def test_match_endpoint_rate_limits_repeated_requests(monkeypatch) -> None:
@@ -236,6 +239,26 @@ def test_measurement_guides_endpoint_returns_field_guides() -> None:
     }.issubset(guide_fields)
     assert all(guide["steps"] for guide in payload["guides"])
     assert all(guide["illustration"] for guide in payload["guides"])
+
+
+def test_reference_data_endpoint_returns_schema_wide_dummy_seed() -> None:
+    response = client.get("/api/reference-data")
+
+    assert response.status_code == 200
+    payload = response.json()
+
+    assert payload["version"] == REFERENCE_DATA["version"]
+    assert payload["datasetId"] == "bodymod-dummy-reference-v1"
+    assert "not NHANES-calibrated" in payload["reference"]
+    assert "Synthetic backend scaffold" in payload["source"]
+    assert {"height", "weight", "ankleCircumference", "wristCircumference"}.issubset(
+        payload["fields"]
+    )
+    assert (
+        payload["fields"]["height"]["male"]["mean"]
+        > payload["fields"]["height"]["female"]["mean"]
+    )
+    assert payload["fields"]["waistCircumference"]["male"]["sd"] > 0
 
 
 def test_entitlements_endpoint_keeps_current_tools_free() -> None:

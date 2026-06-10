@@ -3533,8 +3533,8 @@ textarea {
 }
 
 .dataset-field {
-  min-width: 150px;
-  max-width: 190px;
+  min-width: min(100%, 300px);
+  max-width: 360px;
 }
 
 .gender-score-panel {

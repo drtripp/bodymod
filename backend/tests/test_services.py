@@ -1,4 +1,5 @@
 from app.models import MeasurementSet
+from app.measurement_schema import load_measurement_schema
 from app.percentiles import estimate_percentiles, normal_percentile
 from app.repositories import load_target_seed
 from app.services import (
@@ -109,8 +110,16 @@ def test_normal_percentile_is_monotonic() -> None:
 
 def test_estimated_percentiles_are_bounded() -> None:
     summary = estimate_percentiles(measurement(0))
+    numeric_fields = {
+        field["name"]
+        for field in load_measurement_schema()["fields"]
+        if field.get("type") != "select"
+    }
 
     assert 1 <= summary.height <= 99
     assert 1 <= summary.waistCircumference <= 99
     assert 1 <= summary.bideltoidCircumference <= 99
+    assert set(summary.fields) == numeric_fields
+    assert all(1 <= percentile <= 99 for percentile in summary.fields.values())
+    assert summary.fields["height"] == summary.height
     assert "Approximate adult reference model" in summary.reference

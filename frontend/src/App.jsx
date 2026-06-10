@@ -17,6 +17,7 @@ import {
   fetchMatchPriorities,
   fetchMatches,
   fetchMeasurementGuides,
+  fetchReferenceData,
   fetchShareDashboard,
   fetchTargets
 } from "./lib/api";
@@ -90,6 +91,7 @@ export default function App() {
   const [measurementGuideLibrary, setMeasurementGuideLibrary] = useState(
     emptyMeasurementGuideLibrary
   );
+  const [populationReferenceData, setPopulationReferenceData] = useState(null);
   const [entitlements, setEntitlements] = useState(fallbackEntitlementConfig);
   const [onboardingProfile, setOnboardingProfile] = useState(() => loadOnboardingProfile());
   const [publicShareRecord, setPublicShareRecord] = useState(null);
@@ -228,6 +230,10 @@ export default function App() {
     fetchMeasurementGuides()
       .then((response) => setMeasurementGuideLibrary(normalizeMeasurementGuideLibrary(response)))
       .catch(() => setMeasurementGuideLibrary(emptyMeasurementGuideLibrary));
+
+    fetchReferenceData()
+      .then((response) => setPopulationReferenceData(response))
+      .catch(() => setPopulationReferenceData(null));
 
     fetchEntitlements()
       .then((response) => setEntitlements(normalizeEntitlementConfig(response)))
@@ -487,7 +493,10 @@ export default function App() {
                     onSilhouetteViewChange={handleSilhouetteViewChange}
                   />
                 ) : (
-                  <PopulationPanel measurements={currentMeasurements} />
+                  <PopulationPanel
+                    measurements={currentMeasurements}
+                    referenceData={populationReferenceData}
+                  />
                 )}
               </div>
             </section>

@@ -2,6 +2,7 @@ import { chromium } from "@playwright/test";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { DEFAULT_CLOTHING_SIZE_TABLES } from "../src/lib/clothingSizes.js";
+import { fallbackPopulationReference } from "../src/lib/populationCharts.js";
 
 const APP_URL = "http://127.0.0.1:5173";
 
@@ -176,6 +177,9 @@ try {
     );
     await page.route("**/api/measurement-guides", (route) =>
       route.fulfill({ json: measurementGuideLibrary })
+    );
+    await page.route("**/api/reference-data", (route) =>
+      route.fulfill({ json: fallbackPopulationReference })
     );
     await page.route("**/api/entitlements", (route) =>
       route.fulfill({ json: entitlementConfig })

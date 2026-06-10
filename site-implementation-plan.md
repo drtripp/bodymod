@@ -56,6 +56,7 @@ backend/
     services.py
     data/
       reference.py
+      reference.seed.json
       targets.seed.json
   tests/
     test_api.py
@@ -100,7 +101,8 @@ The main visual column uses tabs for the result, vs Target, and vs US Population
 tab owns the current silhouette, large top-match name, placeholder similarity
 score, runner-up match, and six compact metric blocks. The vs Target tab owns target comparison
 and snapshot diff output. The vs US Population tab owns first-draft scatter and
-normal-distribution reference plots; it intentionally does not use silhouettes.
+normal-distribution reference plots backed by the backend dummy reference seed
+when available; it intentionally does not use silhouettes.
 
 ## Current Backend API
 
@@ -111,9 +113,13 @@ Implemented endpoints:
 - `POST /api/match`
 - `GET /api/entitlements`
 - `POST /api/client-errors`
+- `GET /api/reference-data`
 
 The backend seeds target data from `backend/app/data/targets.seed.json` into
 SQLite through `backend/app/repositories.py`.
+The backend serves dummy sex-specific reference distributions from
+`backend/app/data/reference.seed.json`; these cover every numeric measurement
+schema field for validation but remain explicitly not NHANES-calibrated.
 Client error reports are stored through `ClientErrorRepository` as sanitized
 envelopes only; the model forbids raw message, stack, measurement, and form
 payload fields.

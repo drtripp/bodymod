@@ -41,7 +41,33 @@ class PercentileSummary(BaseModel):
     height: int
     waistCircumference: int
     bideltoidCircumference: int
+    fields: dict[str, int] = Field(default_factory=dict)
     reference: str = "Approximate adult reference model, not NHANES-calibrated"
+    datasetId: str = "bodymod-dummy-reference-v1"
+
+
+class ReferenceSexDistribution(BaseModel):
+    mean: float
+    sd: float = Field(gt=0)
+
+
+class ReferenceFieldDistribution(BaseModel):
+    label: str
+    unit: str
+    min: float
+    max: float
+    male: ReferenceSexDistribution
+    female: ReferenceSexDistribution
+
+
+class PopulationReferenceData(BaseModel):
+    version: int
+    datasetId: str
+    label: str
+    reference: str
+    source: str
+    notes: list[str] = []
+    fields: dict[str, ReferenceFieldDistribution]
 
 
 class MatchResponse(BaseModel):

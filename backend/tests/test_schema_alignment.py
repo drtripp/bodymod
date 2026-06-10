@@ -2,6 +2,7 @@ from typing import get_args
 
 from app.measurement_schema import load_measurement_schema
 from app.models import MeasurementSet
+from app.data.reference import REFERENCE_DATA
 
 
 def schema_fields() -> dict[str, dict]:
@@ -52,3 +53,20 @@ def test_shared_schema_defaults_validate_against_measurement_model() -> None:
         }
         model = MeasurementSet.model_validate(payload)
         assert model.sex == sex
+
+
+def test_reference_seed_covers_numeric_measurement_schema() -> None:
+    fields = schema_fields()
+    numeric_field_names = {
+        name
+        for name, field in fields.items()
+        if field.get("type") != "select"
+    }
+
+    assert set(REFERENCE_DATA["fields"]) == numeric_field_names
+
+    for name, distribution in REFERENCE_DATA["fields"].items():
+        schema_field = fields[name]
+        assert distribution["unit"] == schema_field["unit"]
+        assert float(distribution["min"]) == float(schema_field["min"])
+        assert float(distribution["max"]) == float(schema_field["max"])

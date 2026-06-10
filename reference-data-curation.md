@@ -1,12 +1,13 @@
 # Reference Data Curation Guide
 
 This guide defines the standard for replacing the current approximate percentile
-model in `backend/app/data/reference.py`.
+model in `backend/app/data/reference.py` and
+`backend/app/data/reference.seed.json`.
 
 The current reference model is a scaffold. It uses simple sex-specific normal
-distributions and is explicitly labeled as not NHANES-calibrated. Production
-percentiles need a documented source, transformation method, and validation
-against representative fixtures.
+distributions from a backend JSON seed and is explicitly labeled as not
+NHANES-calibrated. Production percentiles need a documented source,
+transformation method, and validation against representative fixtures.
 
 ## Replacement Workflow
 
@@ -40,13 +41,11 @@ For each source, capture:
 
 ## Measurement Mapping
 
-Production data should map only supported fields:
-
-- `height`
-- `waistCircumference`
-- `bideltoidCircumference`
-
-Do not expose percentiles for fields without a credible reference distribution.
+The current dummy seed covers every numeric measurement schema field so the API
+and frontend can validate full-field wiring. Production data should only expose
+percentiles for fields with a credible reference distribution. If a vetted
+source covers fewer fields than the dummy seed, remove unsupported fields from
+production output and update UI copy/tests accordingly.
 
 ## Validation Requirements
 
@@ -80,8 +79,10 @@ Not allowed:
 Current files:
 
 - `backend/app/data/reference.py`
+- `backend/app/data/reference.seed.json`
 - `backend/app/percentiles.py`
 - `backend/tests/test_services.py`
+- `backend/tests/test_schema_alignment.py`
 
 The current label is:
 
@@ -91,4 +92,3 @@ Approximate adult reference model, not NHANES-calibrated
 
 That label must remain until a vetted replacement source is implemented and
 documented.
-

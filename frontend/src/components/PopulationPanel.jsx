@@ -1,7 +1,7 @@
 import { useId, useMemo, useState } from "react";
 import {
-  POPULATION_METRICS,
   aggregateGenderScore,
+  buildPopulationMetrics,
   buildGenderScoreRows,
   buildScatterPoints,
   clampMetricValue,
@@ -106,12 +106,12 @@ function GenderScoreChart({ score }) {
   );
 }
 
-function ScatterPlot({ measurements, xMetric, yMetric }) {
+function ScatterPlot({ measurements, xMetric, yMetric, metrics }) {
   const titleId = useId();
   const descriptionId = useId();
   const points = useMemo(
-    () => buildScatterPoints(xMetric.key, yMetric.key),
-    [xMetric.key, yMetric.key]
+    () => buildScatterPoints(xMetric.key, yMetric.key, metrics),
+    [metrics, xMetric.key, yMetric.key]
   );
   const width = 560;
   const height = 340;
@@ -232,16 +232,29 @@ function DistributionPlot({ measurements, metric }) {
   );
 }
 
-export default function PopulationPanel({ measurements }) {
+export default function PopulationPanel({ measurements, referenceData = null }) {
   const [mode, setMode] = useState("gender");
   const [xMetricKey, setXMetricKey] = useState("height");
   const [yMetricKey, setYMetricKey] = useState("weight");
   const [distributionMetricKey, setDistributionMetricKey] = useState("height");
-  const xMetric = getPopulationMetric(xMetricKey);
-  const yMetric = getPopulationMetric(yMetricKey);
-  const distributionMetric = getPopulationMetric(distributionMetricKey);
-  const genderRows = useMemo(() => buildGenderScoreRows(measurements), [measurements]);
-  const genderScore = useMemo(() => aggregateGenderScore(measurements), [measurements]);
+  const populationMetrics = useMemo(
+    () => buildPopulationMetrics(referenceData),
+    [referenceData]
+  );
+  const referenceLabel = referenceData?.label || "Dummy reference scaffold";
+  const referenceCopy =
+    referenceData?.reference || "Approximate adult reference model, not NHANES-calibrated";
+  const xMetric = getPopulationMetric(xMetricKey, populationMetrics);
+  const yMetric = getPopulationMetric(yMetricKey, populationMetrics);
+  const distributionMetric = getPopulationMetric(distributionMetricKey, populationMetrics);
+  const genderRows = useMemo(
+    () => buildGenderScoreRows(measurements, populationMetrics),
+    [measurements, populationMetrics]
+  );
+  const genderScore = useMemo(
+    () => aggregateGenderScore(measurements, populationMetrics),
+    [measurements, populationMetrics]
+  );
 
   return (
     <section className="panel population-panel">
@@ -271,8 +284,10 @@ export default function PopulationPanel({ measurements }) {
         </div>
         <label className="field compact-field dataset-field">
           <span className="field-label">Dataset</span>
-          <select value="ansur-draft" onChange={() => {}}>
-            <option value="ansur-draft">ANSUR draft</option>
+          <select value={referenceData?.datasetId || "bodymod-dummy-reference-v1"} onChange={() => {}}>
+            <option value={referenceData?.datasetId || "bodymod-dummy-reference-v1"}>
+              {referenceLabel}
+            </option>
           </select>
         </label>
       </div>
@@ -295,6 +310,7 @@ export default function PopulationPanel({ measurements }) {
                 distribution scaffolds. It is not identity inference, medical
                 advice, or a transition target.
               </p>
+              <p>{referenceCopy}</p>
             </div>
             <table>
               <thead>
@@ -309,14 +325,14 @@ export default function PopulationPanel({ measurements }) {
                 {genderRows.map((row) => (
                   <tr key={row.key}>
                     <th scope="row">{row.label}</th>
-                    <td>{formatMetricValue(row.value, getPopulationMetric(row.key))}</td>
+                    <td>{formatMetricValue(row.value, getPopulationMetric(row.key, populationMetrics))}</td>
                     <td>{row.note}</td>
-                    <td>{formatScore(metricSexScore(row.value, getPopulationMetric(row.key)))}</td>
+                    <td>{formatScore(metricSexScore(row.value, getPopulationMetric(row.key, populationMetrics)))}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <p className="muted-text">{genderRows.length} of {POPULATION_METRICS.length} metrics, including derived FFMI and frame index.</p>
+            <p className="muted-text">{genderRows.length} of {populationMetrics.length} metrics, including derived FFMI and frame index.</p>
           </div>
         </div>
       ) : mode === "scatter" ? (
@@ -325,7 +341,7 @@ export default function PopulationPanel({ measurements }) {
             <label className="field compact-field">
               <span className="field-label">X axis</span>
               <select value={xMetricKey} onChange={(event) => setXMetricKey(event.target.value)}>
-                {POPULATION_METRICS.map((metric) => (
+                {populationMetrics.map((metric) => (
                   <option key={metric.key} value={metric.key}>{metric.label}</option>
                 ))}
               </select>
@@ -333,13 +349,18 @@ export default function PopulationPanel({ measurements }) {
             <label className="field compact-field">
               <span className="field-label">Y axis</span>
               <select value={yMetricKey} onChange={(event) => setYMetricKey(event.target.value)}>
-                {POPULATION_METRICS.map((metric) => (
+                {populationMetrics.map((metric) => (
                   <option key={metric.key} value={metric.key}>{metric.label}</option>
                 ))}
               </select>
             </label>
           </div>
-          <ScatterPlot measurements={measurements} xMetric={xMetric} yMetric={yMetric} />
+          <ScatterPlot
+            measurements={measurements}
+            xMetric={xMetric}
+            yMetric={yMetric}
+            metrics={populationMetrics}
+          />
         </>
       ) : (
         <>
@@ -347,7 +368,7 @@ export default function PopulationPanel({ measurements }) {
             <label className="field compact-field">
               <span className="field-label">Measurement</span>
               <select value={distributionMetricKey} onChange={(event) => setDistributionMetricKey(event.target.value)}>
-                {POPULATION_METRICS.map((metric) => (
+                {populationMetrics.map((metric) => (
                   <option key={metric.key} value={metric.key}>{metric.label}</option>
                 ))}
               </select>

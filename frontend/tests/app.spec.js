@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { Buffer } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import { DEFAULT_CLOTHING_SIZE_TABLES } from "../src/lib/clothingSizes.js";
+import { POPULATION_METRICS, fallbackPopulationReference } from "../src/lib/populationCharts.js";
 import { silhouetteQaProfiles } from "../src/lib/silhouetteQaProfiles.js";
 import { strategyCaseLogs, strategyOutcomes } from "../src/lib/strategyCorpus.js";
 
@@ -651,6 +652,10 @@ async function mockApi(page) {
     await route.fulfill({ json: measurementGuideLibrary });
   });
 
+  await page.route("**/api/reference-data", async (route) => {
+    await route.fulfill({ json: fallbackPopulationReference });
+  });
+
   await page.route("**/api/entitlements", async (route) => {
     await route.fulfill({ json: entitlementConfig });
   });
@@ -1019,7 +1024,9 @@ test("supports population chart axis and distribution controls", async ({ page }
   await expect(page.locator(".visual-column").getByRole("img", { name: /silhouette/i })).toHaveCount(0);
   await expect(page.getByLabel("Gender score distribution")).toBeVisible();
   await expect(page.getByLabel("Gender measurement scores")).toContainText("Derived waist-to-hip ratio");
-  await expect(page.getByLabel("Gender measurement scores")).toContainText("11 of 11 metrics");
+  await expect(page.getByLabel("Gender measurement scores")).toContainText(
+    `${POPULATION_METRICS.length} of ${POPULATION_METRICS.length} metrics`
+  );
 
   await page.getByRole("button", { name: "Scatter" }).click();
   const chart = page.locator(".population-chart");

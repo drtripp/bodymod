@@ -4,73 +4,234 @@ function round(value, digits = 2) {
   return Number(value.toFixed(digits));
 }
 
-export const POPULATION_METRICS = [
-  {
-    key: "height",
-    label: "Height",
-    unit: "cm",
-    min: 145,
-    max: 205,
-    male: { mean: 176, sd: 7.5 },
-    female: { mean: 163, sd: 7 },
-    scoreWeight: 0.8,
-    note: "Adult height scaffold"
-  },
-  {
-    key: "weight",
-    label: "Weight",
-    unit: "kg",
-    min: 40,
-    max: 130,
-    male: { mean: 84, sd: 17 },
-    female: { mean: 72, sd: 15 },
-    scoreWeight: 0.45,
-    note: "Body mass varies strongly with height and composition"
-  },
-  {
-    key: "waistCircumference",
-    label: "Waist",
-    unit: "cm",
-    min: 55,
-    max: 125,
-    male: { mean: 99, sd: 14 },
-    female: { mean: 89, sd: 15 },
-    scoreWeight: 0.8,
-    note: "Waist circumference scaffold"
-  },
-  {
-    key: "bideltoidCircumference",
-    label: "Shoulder mass",
-    unit: "cm",
-    min: 75,
-    max: 150,
-    male: { mean: 116, sd: 12 },
-    female: { mean: 98, sd: 10 },
-    scoreWeight: 1,
-    note: "Shoulder circumference proxy"
-  },
-  {
-    key: "hipCircumference",
-    label: "Hip",
-    unit: "cm",
-    min: 75,
-    max: 135,
-    male: { mean: 102, sd: 10 },
-    female: { mean: 106, sd: 12 },
-    scoreWeight: 0.9,
-    note: "Hip circumference scaffold"
-  },
-  {
-    key: "neckCircumference",
-    label: "Neck",
-    unit: "cm",
-    min: 25,
-    max: 55,
-    male: { mean: 39, sd: 4.5 },
-    female: { mean: 33, sd: 3.5 },
-    scoreWeight: 0.6,
-    note: "Neck circumference scaffold"
-  },
+export const fallbackPopulationReference = {
+  version: 1,
+  datasetId: "bodymod-dummy-reference-v1",
+  label: "Dummy reference scaffold",
+  reference: "Approximate adult reference model, not NHANES-calibrated",
+  source: "Frontend fallback copy of the backend dummy reference scaffold.",
+  notes: [
+    "Prototype-only sex-specific normal distributions.",
+    "Replace with vetted reference data before production."
+  ],
+  fields: {
+    height: {
+      label: "Height",
+      unit: "cm",
+      min: 120,
+      max: 240,
+      male: { mean: 176, sd: 7.5 },
+      female: { mean: 164, sd: 7 }
+    },
+    weight: {
+      label: "Weight",
+      unit: "kg",
+      min: 35,
+      max: 250,
+      male: { mean: 84, sd: 17 },
+      female: { mean: 72, sd: 15 }
+    },
+    headCircumference: {
+      label: "Head Circ",
+      unit: "cm",
+      min: 45,
+      max: 70,
+      male: { mean: 57, sd: 2.2 },
+      female: { mean: 55, sd: 2 }
+    },
+    neckCircumference: {
+      label: "Neck Circ",
+      unit: "cm",
+      min: 25,
+      max: 65,
+      male: { mean: 39, sd: 4.5 },
+      female: { mean: 33, sd: 3.5 }
+    },
+    biacromialWidth: {
+      label: "Biacromial Width",
+      unit: "cm",
+      min: 28,
+      max: 65,
+      male: { mean: 40, sd: 3 },
+      female: { mean: 35, sd: 2.8 }
+    },
+    bideltoidWidth: {
+      label: "Bideltoid Width",
+      unit: "cm",
+      min: 34,
+      max: 85,
+      male: { mean: 50, sd: 4.5 },
+      female: { mean: 43, sd: 4 }
+    },
+    bideltoidCircumference: {
+      label: "Bideltoid Circ",
+      unit: "cm",
+      min: 70,
+      max: 180,
+      male: { mean: 116, sd: 12 },
+      female: { mean: 98, sd: 10 }
+    },
+    armpitCircumference: {
+      label: "Armpit Circ",
+      unit: "cm",
+      min: 50,
+      max: 190,
+      male: { mean: 98, sd: 13 },
+      female: { mean: 88, sd: 12 }
+    },
+    nippleCircumference: {
+      label: "Nipple Circ",
+      unit: "cm",
+      min: 50,
+      max: 190,
+      male: { mean: 96, sd: 13 },
+      female: { mean: 91, sd: 12 }
+    },
+    underbustCircumference: {
+      label: "Underbust",
+      unit: "cm",
+      min: 50,
+      max: 180,
+      male: { mean: 92, sd: 12 },
+      female: { mean: 80, sd: 10 }
+    },
+    waistCircumference: {
+      label: "Waist",
+      unit: "cm",
+      min: 45,
+      max: 180,
+      male: { mean: 99, sd: 14 },
+      female: { mean: 89, sd: 15 }
+    },
+    pantWaistCircumference: {
+      label: "Pant Waist",
+      unit: "cm",
+      min: 45,
+      max: 190,
+      male: { mean: 96, sd: 14 },
+      female: { mean: 88, sd: 14 }
+    },
+    hipCircumference: {
+      label: "Hip/Buttock Circ",
+      unit: "cm",
+      min: 60,
+      max: 200,
+      male: { mean: 102, sd: 10 },
+      female: { mean: 106, sd: 12 }
+    },
+    upperThighCircumference: {
+      label: "Upper Thigh Circ",
+      unit: "cm",
+      min: 30,
+      max: 110,
+      male: { mean: 59, sd: 7 },
+      female: { mean: 56, sd: 7 }
+    },
+    midThighCircumference: {
+      label: "Mid Thigh Circ",
+      unit: "cm",
+      min: 25,
+      max: 95,
+      male: { mean: 52, sd: 6 },
+      female: { mean: 49, sd: 6 }
+    },
+    calfCircumference: {
+      label: "Calf Circ",
+      unit: "cm",
+      min: 20,
+      max: 70,
+      male: { mean: 39, sd: 4.5 },
+      female: { mean: 36, sd: 4 }
+    },
+    ankleCircumference: {
+      label: "Ankle Circ",
+      unit: "cm",
+      min: 14,
+      max: 40,
+      male: { mean: 23, sd: 2 },
+      female: { mean: 21, sd: 1.8 }
+    },
+    bicepCircumference: {
+      label: "Bicep Circ",
+      unit: "cm",
+      min: 18,
+      max: 75,
+      male: { mean: 34, sd: 5 },
+      female: { mean: 29, sd: 4 }
+    },
+    upperForearmCircumference: {
+      label: "Upper Forearm Circ",
+      unit: "cm",
+      min: 15,
+      max: 55,
+      male: { mean: 29, sd: 3.5 },
+      female: { mean: 24, sd: 3 }
+    },
+    wristCircumference: {
+      label: "Wrist Circ",
+      unit: "cm",
+      min: 11,
+      max: 30,
+      male: { mean: 17.5, sd: 1.4 },
+      female: { mean: 15.5, sd: 1.2 }
+    }
+  }
+};
+
+const scoreWeights = {
+  height: 0.8,
+  weight: 0.45,
+  headCircumference: 0.2,
+  neckCircumference: 0.6,
+  biacromialWidth: 0.75,
+  bideltoidWidth: 0.8,
+  bideltoidCircumference: 1,
+  armpitCircumference: 0.7,
+  nippleCircumference: 0.6,
+  underbustCircumference: 0.45,
+  waistCircumference: 0.8,
+  pantWaistCircumference: 0.5,
+  hipCircumference: 0.9,
+  upperThighCircumference: 0.4,
+  midThighCircumference: 0.35,
+  calfCircumference: 0.35,
+  ankleCircumference: 0.2,
+  bicepCircumference: 0.45,
+  upperForearmCircumference: 0.35,
+  wristCircumference: 0.25
+};
+
+const metricNotes = {
+  height: "Adult height scaffold",
+  weight: "Body mass varies strongly with height and composition",
+  bideltoidCircumference: "Shoulder circumference proxy",
+  waistCircumference: "Waist circumference scaffold",
+  hipCircumference: "Hip circumference scaffold",
+  neckCircumference: "Neck circumference scaffold"
+};
+
+const metricLabels = {
+  headCircumference: "Head",
+  neckCircumference: "Neck",
+  biacromialWidth: "Biacromial width",
+  bideltoidWidth: "Shoulder width",
+  bideltoidCircumference: "Shoulder mass",
+  armpitCircumference: "Upper chest",
+  nippleCircumference: "Chest",
+  underbustCircumference: "Underbust",
+  waistCircumference: "Waist",
+  pantWaistCircumference: "Pant waist",
+  hipCircumference: "Hip",
+  upperThighCircumference: "Upper thigh",
+  midThighCircumference: "Mid thigh",
+  calfCircumference: "Calf",
+  ankleCircumference: "Ankle",
+  bicepCircumference: "Bicep",
+  upperForearmCircumference: "Forearm",
+  wristCircumference: "Wrist"
+};
+
+const derivedMetrics = [
   {
     key: "shoulderWaistRatio",
     label: "Shoulder / waist",
@@ -128,6 +289,55 @@ export const POPULATION_METRICS = [
   }
 ];
 
+function numberOrFallback(value, fallback) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : fallback;
+}
+
+function normalizeDistribution(distribution = {}, fallback = {}) {
+  return {
+    mean: numberOrFallback(distribution.mean, fallback.mean ?? 0),
+    sd: Math.max(0.001, numberOrFallback(distribution.sd, fallback.sd ?? 1))
+  };
+}
+
+export function normalizePopulationReference(referenceData = fallbackPopulationReference) {
+  const fields =
+    referenceData?.fields && Object.keys(referenceData.fields).length
+      ? referenceData.fields
+      : fallbackPopulationReference.fields;
+
+  return {
+    ...fallbackPopulationReference,
+    ...referenceData,
+    fields
+  };
+}
+
+export function buildPopulationMetrics(referenceData = fallbackPopulationReference) {
+  const reference = normalizePopulationReference(referenceData);
+  const fallbackFields = fallbackPopulationReference.fields;
+  const baseMetrics = Object.entries(reference.fields).map(([key, field]) => {
+    const fallbackField = fallbackFields[key] || field;
+
+    return {
+      key,
+      label: metricLabels[key] || String(field.label || fallbackField.label || key),
+      unit: String(field.unit || fallbackField.unit || "cm"),
+      min: numberOrFallback(field.min, fallbackField.min ?? 0),
+      max: numberOrFallback(field.max, fallbackField.max ?? 1),
+      male: normalizeDistribution(field.male, fallbackField.male),
+      female: normalizeDistribution(field.female, fallbackField.female),
+      scoreWeight: scoreWeights[key] ?? 0.3,
+      note: metricNotes[key] || "Backend dummy reference scaffold"
+    };
+  });
+
+  return [...baseMetrics, ...derivedMetrics];
+}
+
+export const POPULATION_METRICS = buildPopulationMetrics();
+
 const scatterOffsets = [
   [-1.55, -1.05],
   [-1.05, -0.15],
@@ -139,8 +349,8 @@ const scatterOffsets = [
   [1.45, 0.45]
 ];
 
-export function getPopulationMetric(key) {
-  return POPULATION_METRICS.find((metric) => metric.key === key) || POPULATION_METRICS[0];
+export function getPopulationMetric(key, metrics = POPULATION_METRICS) {
+  return metrics.find((metric) => metric.key === key) || metrics[0] || POPULATION_METRICS[0];
 }
 
 export function populationMetricValue(measurements, metric) {
@@ -190,9 +400,9 @@ export function clampMetricValue(value, metric) {
   return Math.min(metric.max, Math.max(metric.min, value));
 }
 
-export function buildScatterPoints(xKey, yKey) {
-  const xMetric = getPopulationMetric(xKey);
-  const yMetric = getPopulationMetric(yKey);
+export function buildScatterPoints(xKey, yKey, metrics = POPULATION_METRICS) {
+  const xMetric = getPopulationMetric(xKey, metrics);
+  const yMetric = getPopulationMetric(yKey, metrics);
 
   return ["female", "male"].flatMap((sex) =>
     scatterOffsets.map(([xOffset, yOffset], index) => ({
@@ -221,8 +431,8 @@ export function metricSexScore(value, metric) {
   return Math.max(-3, Math.min(3, (clamped - midpoint) / femaleDirection));
 }
 
-export function buildGenderScoreRows(measurements) {
-  return POPULATION_METRICS.map((metric) => ({
+export function buildGenderScoreRows(measurements, metrics = POPULATION_METRICS) {
+  return metrics.map((metric) => ({
     key: metric.key,
     label: metric.label,
     unit: metric.unit,
@@ -233,8 +443,8 @@ export function buildGenderScoreRows(measurements) {
   }));
 }
 
-export function aggregateGenderScore(measurements) {
-  const rows = buildGenderScoreRows(measurements);
+export function aggregateGenderScore(measurements, metrics = POPULATION_METRICS) {
+  const rows = buildGenderScoreRows(measurements, metrics);
   const weightTotal = rows.reduce((sum, row) => sum + row.weight, 0);
   const total = rows.reduce((sum, row) => sum + row.score * row.weight, 0);
 

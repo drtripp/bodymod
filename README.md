@@ -80,7 +80,8 @@ Implemented now:
 - curated placeholder and archetype target profiles served through a SQLite repository
 - height-normalized and ratio-aware match scoring with explanation bullets
 - configurable match-priority presets for balanced, shoulders, and waist/hip scoring
-- approximate adult-reference percentile output
+- backend-served dummy adult reference distributions for every numeric measurement field
+- schema-wide approximate percentile output, with legacy height/waist/shoulder keys preserved
 - simplified result pane with large top-match name and bounded similarity score
 - runner-up match shown directly under the top match
 - 2x3 metric block grid for height, BMI, estimated body fat, SHR, WHR, and SWR
@@ -119,6 +120,7 @@ Implemented now:
 - target type, placeholder notes, and largest score-driver bullets in the vs Target pane
 - result, vs Target, and vs US Population panes are presented as tabs
 - first-draft US population scatter and distribution plots with sex-colored reference bands
+- population charts load the backend dummy reference scaffold when available and fall back locally when offline
 - Body/Diet top-level switcher
 - Diet tracker with backend USDA-style generic food search, Open Food Facts search, barcode lookup, optional browser barcode scanner, CSV import, local food log, macro targets, and expanded micronutrient target rows
 - public marketing page at `/landing.html` with current app screenshots, privacy stance, planned store links, and local Pro waitlist capture

@@ -66,9 +66,14 @@ Protocol Tracker → Diet upgrades → Native app.
 - [ ] NHANES supplement for general-US height/weight/waist (ANSUR is a
       military population; show both labels honestly).
 - [ ] Replace population-panel scatter/distribution scaffold values with the
-      vetted tables; update copy and reference labels.
-- [ ] Sex-specific percentile output for every schema field the data supports
-      (currently only height/waist/bideltoid).
+      vetted tables; update copy and reference labels. Backend dummy reference
+      data now feeds the panel through `GET /api/reference-data`, but vetted
+      ANSUR/NHANES replacement data remains open.
+- [x] Sex-specific percentile output for every schema field the data supports
+      (currently dummy scaffold data): `backend/app/data/reference.seed.json`
+      covers every numeric measurement schema field, `/api/match` returns a
+      `percentiles.fields` map, and legacy height/waist/shoulder percentile
+      keys remain for existing result-card UI.
 - [x] Calibrated similarity score per `similarity-score-spec.md` (mapping,
       API field, frontend display, calibration script, tests). Implemented as
       backend `similarity_from_distance`, API `similarity` fields, frontend
