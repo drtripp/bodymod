@@ -389,7 +389,7 @@ land. No social features, no marketplace.
       meta tags, share-card branding.
 - [x] Warm "cafe" theme as default (see Infrastructure item 1), graphite as
       toggle.
-- [ ] Silhouette restyle: illustrated line-art treatment to match the warm
+- [x] Silhouette restyle: illustrated line-art treatment to match the warm
       theme (renderer geometry unchanged, stroke/fill treatment themed).
 - [ ] Copy/tone pass: competence + non-judgment; "check-in"/"log", never
       "cheat" or moralized food language; tea-voice for insights. **[human]**

@@ -9,7 +9,7 @@ Bodymod is a measurement-driven body comparison and tracking tool.
 The app currently lets a user:
 
 1. Enter an expanded set of body measurements.
-2. See a deterministic front-view SVG silhouette.
+2. See a deterministic front-view SVG silhouette with themed line-art styling.
 3. Fetch a ranked list of curated target profiles from the backend.
 4. Compare the current profile against targets in side-by-side or overlap mode.
 5. Save, label, note, load, compare, export, import, and delete local measurement snapshots in the browser.

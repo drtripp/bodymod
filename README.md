@@ -71,8 +71,8 @@ Implemented now:
 - expanded measurement form with metric/imperial display controls
 - per-field measurement help text
 - inline validation in frontend and backend
-- deterministic front-view SVG silhouette
-- deterministic side-view SVG silhouette estimated from circumference vs width
+- deterministic front-view SVG silhouette with themed line-art styling
+- deterministic side-view SVG silhouette estimated from circumference vs width, with the same themed line-art treatment
 - hover-linked measurement anchors between form and silhouette
 - FastAPI health, target-list, and match endpoints
 - curated placeholder and archetype target profiles served through a SQLite repository

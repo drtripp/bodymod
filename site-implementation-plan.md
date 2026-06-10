@@ -120,6 +120,7 @@ Current choices:
 - modest rounded geometry in cafe, squared geometry in graphite
 - no decorative animation
 - no gradients beyond the silhouette centerline background
+- themed line-art silhouette washes and contour strokes
 - sage/clay cafe accents and cool graphite accents for hover/anchor states
 
 ## Implemented Modules
@@ -186,10 +187,12 @@ Status:
 - side view estimates profile depth from circumference relative to available
   width fields; it is deterministic projection, not camera-measured depth
 - deterministic
+- themed line-art wash, contour, and guide strokes are layered in the SVG
+  component without changing the projection geometry
 - measurement anchors are interactive
 - SVG title/description and human-readable anchor labels are exposed for assistive technology
 - Playwright covers minimum and maximum valid measurement profiles plus the
-  front/side view toggle
+  front/side view toggle and themed line-art layer
 
 Next:
 
@@ -484,7 +487,7 @@ Next:
 - backend imports compile
 - backend endpoints return expected payloads
 - form works on mobile
-- silhouette renders correctly at small and large widths
+- silhouette renders correctly at small and large widths, including themed line-art treatment
 - local snapshots survive refresh
 - comparison panel is visible and usable
 - method/privacy information is visible

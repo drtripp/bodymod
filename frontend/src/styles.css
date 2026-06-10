@@ -2530,7 +2530,8 @@ textarea {
 
 .silhouette-card-stack {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: start;
   gap: 8px;
   min-width: 0;
 }
@@ -2804,6 +2805,14 @@ textarea {
   stroke: var(--color-info-glow);
 }
 
+.target-silhouette-card .silhouette-line-art-path {
+  stroke: var(--color-info);
+}
+
+.target-silhouette-card .silhouette-line-art-guide {
+  stroke: var(--color-accent-soft);
+}
+
 .visual-column .panel {
   min-height: 0;
 }
@@ -2813,7 +2822,7 @@ textarea {
 }
 
 .visual-column .silhouette-figure {
-  min-height: 100%;
+  min-height: 0;
 }
 
 .result-copy {
@@ -3065,11 +3074,18 @@ textarea {
 }
 
 .silhouette-figure {
+  display: grid;
+  align-content: start;
+  gap: 8px;
   margin: 0;
   border: 1px solid var(--color-border-strong);
   padding: 12px;
-  background:
-    linear-gradient(to right, transparent calc(50% - 0.5px), var(--color-border) calc(50% - 0.5px), var(--color-border) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+  background-color: var(--color-panel);
+  box-shadow: inset 0 0 0 1px var(--color-border-glow);
+}
+
+.silhouette-figure figcaption {
+  line-height: 1.2;
 }
 
 .silhouette-view-toggle {
@@ -3088,23 +3104,75 @@ textarea {
 .silhouette-svg {
   display: block;
   width: 100%;
-  height: 100%;
-  min-height: 360px;
+  height: auto;
+  min-height: 320px;
   max-height: 64vh;
+  aspect-ratio: 2 / 3;
+  background:
+    linear-gradient(to right, transparent calc(50% - 0.5px), var(--color-border) calc(50% - 0.5px), var(--color-border) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+  color: var(--color-text);
 }
 
 .silhouette-axis {
   stroke: var(--color-border);
+  stroke-dasharray: 1 7;
+  stroke-linecap: round;
   stroke-width: 1;
+  opacity: 0.7;
+}
+
+.silhouette-head-wash,
+.silhouette-body-wash {
+  fill: var(--color-panel-deep);
+  opacity: 0.44;
+  pointer-events: none;
+  stroke: none;
 }
 
 .silhouette-head,
 .silhouette-body {
   fill: none;
-  stroke: var(--color-text);
-  stroke-width: 2;
+  stroke: currentColor;
+  stroke-width: 2.2;
   stroke-linejoin: round;
   stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.silhouette-line-art {
+  pointer-events: none;
+}
+
+.silhouette-line-art-path,
+.silhouette-line-art-guide {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.silhouette-line-art-path {
+  stroke: var(--color-rose);
+  stroke-width: 1.05;
+  opacity: 0.58;
+}
+
+.silhouette-line-art-center {
+  stroke: var(--color-accent);
+  stroke-dasharray: 5 6;
+  opacity: 0.42;
+}
+
+.silhouette-line-art-contour {
+  stroke: var(--color-highlight);
+  opacity: 0.5;
+}
+
+.silhouette-line-art-guide {
+  stroke: var(--color-accent-soft);
+  stroke-dasharray: 2 5;
+  stroke-width: 0.85;
+  opacity: 0.5;
 }
 
 .silhouette-anchor {
@@ -3448,6 +3516,11 @@ textarea {
 
 .prior-snapshot-card .silhouette-axis {
   stroke: var(--color-pink-glow);
+}
+
+.prior-snapshot-card .silhouette-line-art-path,
+.prior-snapshot-card .silhouette-line-art-guide {
+  stroke: var(--color-pink);
 }
 
 .comparison-diff-card {

@@ -732,10 +732,16 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   const bideltoidGuidePage = await bideltoidGuideResponse.text();
   expect(bideltoidGuidePage).toContain("Keep arms down and relaxed");
   expect(bideltoidGuidePage).toContain("shoulder-to-waist context");
-  await expect(page.getByRole("img", { name: "Current profile silhouette" })).toBeVisible();
+  const currentFrontSilhouette = page.getByRole("img", { name: "Current profile silhouette" });
+  await expect(currentFrontSilhouette).toBeVisible();
+  await expect(currentFrontSilhouette.locator(".silhouette-line-art-front")).toHaveCount(1);
+  await expect(currentFrontSilhouette.locator(".silhouette-line-art-path")).toHaveCount(3);
   await expect(page.getByRole("button", { name: "Waist: 80 cm" }).first()).toBeVisible();
   await page.getByRole("button", { name: "Side view" }).click();
-  await expect(page.getByRole("img", { name: "Current profile side silhouette" })).toBeVisible();
+  const currentSideSilhouette = page.getByRole("img", { name: "Current profile side silhouette" });
+  await expect(currentSideSilhouette).toBeVisible();
+  await expect(currentSideSilhouette.locator(".silhouette-line-art-side")).toHaveCount(1);
+  await expect(currentSideSilhouette.locator(".silhouette-line-art-guide")).toHaveCount(4);
   await expect(page.locator(".top-match-block").getByText("Astarion")).toBeVisible();
   await expect(page.locator(".runner-up-block").getByText("Classic Physique Archetype")).toBeVisible();
   await expect(page.locator(".top-match-block > span")).toHaveText("Similarity score: 89%");
