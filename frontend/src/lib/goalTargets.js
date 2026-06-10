@@ -48,16 +48,21 @@ function targetRows(goal, measurements) {
       const target = start + delta;
       const progress = clampProgress(((current - start) / delta) * 100);
       const drift = Number((current - target).toFixed(2));
-
-      return {
+      const row = {
         key,
         label,
         unit,
         start,
         current,
         target,
+        delta,
         progress,
         drift
+      };
+
+      return {
+        ...row,
+        targetDistance: targetDistanceLabel(row)
       };
     })
     .filter(Boolean);
@@ -75,6 +80,22 @@ function driftBand(row, bands = {}) {
 function formatSigned(value) {
   const sign = value > 0 ? "+" : "";
   return `${sign}${value.toFixed(1)}`;
+}
+
+function formatDistance(value, unit) {
+  const suffix = unit ? ` ${unit}` : "";
+  return `${Math.abs(value).toFixed(1)}${suffix}`;
+}
+
+function targetDistanceLabel(row) {
+  if (Math.abs(row.drift) < 0.05) {
+    return "At target";
+  }
+
+  const isPastTarget = Math.sign(row.drift) === Math.sign(row.delta);
+  const distance = formatDistance(row.drift, row.unit);
+
+  return isPastTarget ? `${distance} past target` : `${distance} from target`;
 }
 
 function timestampMs(value) {

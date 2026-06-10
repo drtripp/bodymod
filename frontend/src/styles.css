@@ -872,6 +872,15 @@ textarea {
   color: var(--color-muted);
 }
 
+.goal-progress li {
+  display: grid;
+  gap: 1px;
+}
+
+.goal-progress small {
+  color: var(--color-muted);
+}
+
 .face-measurement-section {
   border: 1px solid var(--color-border);
   background: var(--color-page);

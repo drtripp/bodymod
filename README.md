@@ -100,7 +100,7 @@ Implemented now:
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
 - reliability events pause affected weight and tape trend inference during healing or disruption windows, and pause saved goals whose target metrics are affected
 - projected silhouettes for calorie-target protocol planning bands, with uncertainty copy
-- local goals can target preset deltas, custom deltas, target profiles, or saved past-self snapshots
+- local goals can target preset deltas, custom deltas, target profiles, or saved past-self snapshots, with distance-to-target progress copy
 - readable local JSON export for snapshots and diet data without an account, plus account-scoped logs when signed in
 - local browser face measurement logger using self-hosted MediaPipe assets for camera/photo landmark scans
 - local progress photo streams for body, face, and hair with ghost overlay and comparison slider

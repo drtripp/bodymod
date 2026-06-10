@@ -332,6 +332,8 @@ Status:
   rather than image payloads
 - saved goals use `frontend/src/lib/goalTargets.js` for progress rows and
   maintenance drift alerts once a target-band snapshot exists
+- saved goal rows include from-target, past-target, and at-target copy so
+  progress is framed against the user's chosen target set
 - saved goals pause progress and maintenance alerts while active life-event
   reliability windows affect any of their target metrics
 

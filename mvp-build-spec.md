@@ -187,6 +187,8 @@ Implemented:
   to account-scoped logs after local sign-in
 - local life-event windows pause goal progress and maintenance alerts when
   they affect a saved goal's target metrics
+- saved goal progress rows show distance-to-target wording such as from
+  target, past target, or at target
 - compact SVG trend chart for weight, waist, shoulder mass, and hip measurements
 - optional local account left/right bicep, forearm, thigh, and calf split logs
   with side-delta symmetry summaries

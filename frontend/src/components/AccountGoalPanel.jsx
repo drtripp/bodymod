@@ -2256,7 +2256,10 @@ export default function AccountGoalPanel({
                                   <ul>
                                     {progress.rows.map((row) => (
                                       <li key={row.key}>
-                                        {row.label}: {row.current.toFixed(1)} / target {row.target.toFixed(1)} {row.unit}
+                                        <span>
+                                          {row.label}: {row.current.toFixed(1)} / target {row.target.toFixed(1)} {row.unit}
+                                        </span>
+                                        <small>{row.targetDistance}</small>
                                       </li>
                                     ))}
                                   </ul>

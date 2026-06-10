@@ -1221,6 +1221,9 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Improve shoulder-to-waist ratio progress")).toContainText(
     "Bideltoid Circ: 120.0 / target 124.0 cm"
   );
+  await expect(page.getByLabel("Improve shoulder-to-waist ratio progress")).toContainText(
+    "4.0 cm from target"
+  );
   await expect(page.getByLabel("Saved goals")).toContainText("0 check-in(s)");
   await expect(page.getByLabel("Insight drops")).toContainText("1 saved goal(s)");
   await page.getByRole("button", { name: "On track" }).click();

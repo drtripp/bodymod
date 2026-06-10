@@ -187,12 +187,12 @@ Protocol Tracker → Diet upgrades → Native app.
 - [x] Case logs: structured n=1 reports (protocol, adherence, before/after,
       timeframe, source) renderable from corpus entries and from the user's
       own completed protocols.
-- [ ] Goal system: target measurement set (pick a target profile or custom
+- [x] Goal system: target measurement set (pick a target profile or custom
       deltas), progress-toward-goal display, goal-relative framing everywhere
       ("4 cm from your target", never "below average"). **First pass:**
       saved local snapshots, backend target profiles, and custom deltas can
-      now be used as target measurement sets with progress display; global
-      framing remains open.
+      now be used as target measurement sets with progress display; saved-goal
+      rows show from-target / past-target / at-target framing.
 - [x] Plan retro **(new)**: when a protocol ends, show predicted band vs
       actual outcome for the defensible projections. Closes the loop, builds
       trust, and labels the training data.

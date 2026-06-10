@@ -55,6 +55,32 @@ test("builds target-relative progress rows from saved goal metrics", () => {
       "Bideltoid Circ:122/124/50"
     ]
   );
+  assert.deepEqual(
+    progress.rows.map((row) => row.targetDistance),
+    ["1.0 kg from target", "2.0 cm from target", "2.0 cm from target"]
+  );
+
+  const pastTarget = buildGoalProgress(
+    {
+      startingMeasurements: {
+        weight: 86,
+        bideltoidCircumference: 120
+      },
+      targetMetrics: {
+        weight: -2,
+        bideltoidCircumference: 4
+      }
+    },
+    {
+      weight: 83,
+      bideltoidCircumference: 124
+    }
+  );
+
+  assert.deepEqual(
+    pastTarget.rows.map((row) => row.targetDistance),
+    ["1.0 kg past target", "At target"]
+  );
 });
 
 test("formats saved goal source labels", () => {
