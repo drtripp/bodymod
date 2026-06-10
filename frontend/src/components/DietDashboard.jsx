@@ -465,12 +465,12 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
         <div>
           <h2>Diet</h2>
           <p>
-            Search Open Food Facts, save custom foods, scan or enter barcodes, and build a local macro and micronutrient log.
+            Search USDA-style generic foods and Open Food Facts, save custom foods, scan or enter barcodes, and build a local macro and micronutrient log.
           </p>
         </div>
         <div className="diet-source-note">
           <strong>Database</strong>
-          <span>Open Food Facts lookup plus custom, favorite, and recent foods stored locally.</span>
+          <span>Backend USDA-style samples, Open Food Facts lookup, and custom foods stored locally.</span>
         </div>
       </section>
 
@@ -734,7 +734,7 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
               <li key={food.id} className={selectedFood?.id === food.id ? "is-selected" : ""}>
                 <button type="button" onClick={() => setSelectedFood(food)}>
                   <strong>{food.name}</strong>
-                  <span>{food.brand} / {food.serving}</span>
+                  <span>{food.brand} / {food.serving} / {food.source || "Local"}</span>
                   <small>{macroLine(food)}</small>
                 </button>
                 <div className="food-row-actions">

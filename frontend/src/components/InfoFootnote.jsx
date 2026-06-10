@@ -29,6 +29,9 @@ export default function InfoFootnote() {
             are approximate until vetted reference data is wired in. Similarity is
             mapped as 100 * exp(-(distance ^ 1.5)).
           </p>
+          <a className="button methodology-link" href="/methodology.html">
+            Open methodology
+          </a>
         </div>
         <div>
           <h2>Privacy</h2>
@@ -42,6 +45,11 @@ export default function InfoFootnote() {
               Clear local events
             </button>
           </div>
+          <nav className="legal-links" aria-label="Legal drafts">
+            <a href="/legal/privacy.html">Privacy</a>
+            <a href="/legal/terms.html">Terms</a>
+            <a href="/legal/medical-disclaimer.html">Medical disclaimer</a>
+          </nav>
           {status ? <p className="muted-text">{status}</p> : null}
         </div>
       </div>

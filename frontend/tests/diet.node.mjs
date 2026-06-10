@@ -17,9 +17,11 @@ import {
   normalizeMealTemplate,
   normalizeFoodProduct,
   normalizeCustomFood,
+  normalizeUsdaFood,
   removeMeal,
   removeFood,
   scaleFood,
+  searchFoods,
   sumNutrition,
   upsertFood,
   upsertMeal
@@ -63,6 +65,74 @@ test("normalizes Open Food Facts products into app nutrition rows", () => {
   assert.equal(food.micros.vitaminC, 12);
   assert.equal(food.micros.vitaminD, 1.5);
   assert.equal(food.micros.vitaminB12, 1.2);
+});
+
+test("normalizes USDA-style backend foods into app nutrition rows", () => {
+  const food = normalizeUsdaFood({
+    id: "fdc-rolled-oats-dry",
+    fdcId: "dummy-11001",
+    name: "Rolled oats, dry",
+    brand: "USDA generic",
+    serving: "40 g",
+    source: "USDA FoodData Central",
+    macros: { calories: 150, protein: 5, carbs: 27, fat: 3 },
+    micros: { fiber: 4, potassium: 140, magnesium: 55 }
+  });
+
+  assert.equal(food.id, "fdc-rolled-oats-dry");
+  assert.equal(food.fdcId, "dummy-11001");
+  assert.equal(food.source, "USDA FoodData Central");
+  assert.equal(food.macros.calories, 150);
+  assert.equal(food.micros.fiber, 4);
+  assert.equal(food.micros.vitaminD, 0);
+});
+
+test("searches backend USDA foods and Open Food Facts together", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const href = String(url);
+
+    if (href.includes("/api/food/search")) {
+      return new Response(
+        JSON.stringify({
+          foods: [
+            {
+              id: "fdc-rolled-oats-dry",
+              fdcId: "dummy-11001",
+              name: "Rolled oats, dry",
+              brand: "USDA generic",
+              serving: "40 g",
+              source: "USDA FoodData Central",
+              macros: { calories: 150, protein: 5, carbs: 27, fat: 3 },
+              micros: { fiber: 4, potassium: 140, magnesium: 55 }
+            }
+          ]
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    if (href.includes("world.openfoodfacts.org")) {
+      return new Response(
+        JSON.stringify({ products: [openFoodFactsProduct] }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    throw new Error(`Unexpected fetch ${href}`);
+  };
+
+  try {
+    const foods = await searchFoods("oats");
+    assert.deepEqual(foods.map((food) => food.id), [
+      "fdc-rolled-oats-dry",
+      "off-1234567890123"
+    ]);
+    assert.equal(foods[0].source, "USDA FoodData Central");
+    assert.equal(foods[1].source, "Open Food Facts");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("scales macros and micros by serving count", () => {

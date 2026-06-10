@@ -568,6 +568,32 @@ const entitlementConfig = {
   }
 };
 
+const usdaFoodSearchRows = [
+  {
+    id: "fdc-rolled-oats-dry",
+    fdcId: "dummy-11001",
+    name: "Rolled oats, dry",
+    brand: "USDA generic",
+    serving: "40 g",
+    source: "USDA FoodData Central",
+    keywords: ["oats", "oatmeal", "grain"],
+    macros: { calories: 150, protein: 5, carbs: 27, fat: 3 },
+    micros: {
+      fiber: 4,
+      sugar: 1,
+      sodium: 2,
+      potassium: 140,
+      calcium: 20,
+      iron: 1.7,
+      magnesium: 55,
+      zinc: 1.2,
+      vitaminC: 0,
+      vitaminD: 0,
+      vitaminB12: 0
+    }
+  }
+];
+
 function progressPhotoFile(name, color = "#8da9c4") {
   return {
     name,
@@ -601,6 +627,25 @@ async function mockApi(page) {
 
   await page.route("**/api/entitlements", async (route) => {
     await route.fulfill({ json: entitlementConfig });
+  });
+
+  await page.route("**/api/food/search**", async (route) => {
+    const url = new URL(route.request().url());
+    const query = (url.searchParams.get("query") || "").toLowerCase();
+    const foods = usdaFoodSearchRows.filter((food) =>
+      [food.name, food.brand, food.source, ...(food.keywords || [])].some((value) =>
+        String(value).toLowerCase().includes(query)
+      )
+    );
+
+    await route.fulfill({
+      json: {
+        version: 1,
+        source: "Dummy USDA FoodData Central-style seed data for generic food lookup.",
+        notes: ["Mocked Playwright food source."],
+        foods
+      }
+    });
   });
 
   await page.route("**/api/targets", async (route) => {
@@ -664,9 +709,29 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(guidePanel).toBeVisible();
   await expect(guidePanel).toContainText("Narrowest relaxed torso circumference");
   await expect(page.getByLabel("Selected measurement guide")).toContainText("weekly");
+  await expect(guidePanel.getByRole("link", { name: "Public guide" })).toHaveAttribute(
+    "href",
+    "/measurement-guides/waist-circumference.html"
+  );
   await page.getByLabel("Measurement guide field").selectOption("bideltoidCircumference");
   await expect(guidePanel).toContainText("widest deltoid line");
   await expect(page.getByLabel("Selected measurement guide")).toContainText("raising the arms");
+  await expect(guidePanel.getByRole("link", { name: "Public guide" })).toHaveAttribute(
+    "href",
+    "/measurement-guides/bideltoid-circumference.html"
+  );
+  const guideIndexResponse = await page.request.get("/measurement-guides/index.html");
+  expect(guideIndexResponse.ok()).toBeTruthy();
+  const guideIndexPage = await guideIndexResponse.text();
+  expect(guideIndexPage).toContain("Measurement Guides");
+  expect(guideIndexPage).toContain("How to measure bideltoid circumference");
+  const bideltoidGuideResponse = await page.request.get(
+    "/measurement-guides/bideltoid-circumference.html"
+  );
+  expect(bideltoidGuideResponse.ok()).toBeTruthy();
+  const bideltoidGuidePage = await bideltoidGuideResponse.text();
+  expect(bideltoidGuidePage).toContain("Keep arms down and relaxed");
+  expect(bideltoidGuidePage).toContain("shoulder-to-waist context");
   await expect(page.getByRole("img", { name: "Current profile silhouette" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Waist: 80 cm" }).first()).toBeVisible();
   await page.getByRole("button", { name: "Side view" }).click();
@@ -1439,7 +1504,14 @@ test("searches food data, looks up barcodes, and logs diet totals", async ({ pag
       return;
     }
 
-    await route.fulfill({ json: { products: [product] } });
+    const searchUrl = new URL(url);
+    const searchTerm = (searchUrl.searchParams.get("search_terms") || "").toLowerCase();
+
+    await route.fulfill({
+      json: {
+        products: searchTerm.includes("skyr") ? [product] : []
+      }
+    });
   });
 
   await page.getByRole("tab", { name: "Diet" }).click();
@@ -1447,6 +1519,12 @@ test("searches food data, looks up barcodes, and logs diet totals", async ({ pag
   await expect(page.getByLabel("Diet macro targets")).toContainText("2790");
   await expect(page.getByLabel("Diet macro targets")).toContainText("0 kg/week");
   await expect(page.getByLabel("Diet macro totals")).toBeVisible();
+
+  await page.getByRole("textbox", { name: "Food search" }).fill("oats");
+  await page.getByRole("button", { name: "Search foods" }).click();
+  await expect(page.getByText("Found 1 food(s).")).toBeVisible();
+  await expect(page.getByLabel("Food search results").getByText("Rolled oats, dry")).toBeVisible();
+  await expect(page.getByLabel("Food search results")).toContainText("USDA FoodData Central");
 
   await page.getByRole("textbox", { name: "Food search" }).fill("skyr");
   await page.getByRole("button", { name: "Search foods" }).click();
@@ -1553,7 +1631,32 @@ test("exposes method, privacy, and strategy corpus content", async ({ page }) =>
   await page.getByRole("button", { name: "Method / privacy" }).hover();
   await expect(page.getByRole("heading", { name: "Method" })).toBeVisible();
   await expect(page.getByText("100 * exp(-(distance ^ 1.5))")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open methodology" })).toHaveAttribute(
+    "href",
+    "/methodology.html"
+  );
+  const methodologyResponse = await page.request.get("/methodology.html");
+  expect(methodologyResponse.ok()).toBeTruthy();
+  const methodologyPage = await methodologyResponse.text();
+  expect(methodologyPage).toContain("Similarity Score");
+  expect(methodologyPage).toContain("Percentile Sources");
+  expect(methodologyPage).toContain("Gender Score Charts");
+  expect(methodologyPage).toContain("Approximate adult reference model, not NHANES-calibrated");
   await expect(page.getByText("Share links encode measurement values")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Legal drafts" })).toContainText("Privacy");
+  await expect(page.getByRole("link", { name: "Privacy" })).toHaveAttribute(
+    "href",
+    "/legal/privacy.html"
+  );
+  for (const [path, expectedText] of [
+    ["/legal/privacy.html", "local browser storage"],
+    ["/legal/terms.html", "Terms Of Use Draft"],
+    ["/legal/medical-disclaimer.html", "Not Medical Advice"]
+  ]) {
+    const legalResponse = await page.request.get(path);
+    expect(legalResponse.ok()).toBeTruthy();
+    expect(await legalResponse.text()).toContain(expectedText);
+  }
   await expect(page.getByText(/Local usage events stored: \d+/)).toBeVisible();
   await page.getByRole("button", { name: "Clear local events" }).click();
   await expect(page.getByText("Local usage events stored: 0")).toBeVisible();

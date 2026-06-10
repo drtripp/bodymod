@@ -81,11 +81,14 @@ Required input:
 - production analytics decision
 - account/sync decision
 - photo/vision upload decision
+- legal owner/contact details
+- approval of privacy policy, terms, and medical disclaimer drafts
 - corpus moderation and exclusion policy
 
 Use:
 
 - `launch-decision-record.md`
+- `frontend/public/legal/`
 - `deployment.md`
 - `README.md`
 

@@ -79,7 +79,7 @@ Implemented now:
 - height-normalized and ratio-aware match scoring with explanation bullets
 - configurable match-priority presets for balanced, shoulders, and waist/hip scoring
 - approximate adult-reference percentile output
-- simplified result pane with large top-match name and placeholder similarity score
+- simplified result pane with large top-match name and bounded similarity score
 - runner-up match shown directly under the top match
 - 2x3 metric block grid for height, BMI, estimated body fat, SHR, WHR, and SWR
 - local snapshot save, label, note, load, compare, export, import, and delete in browser storage
@@ -112,7 +112,7 @@ Implemented now:
 - result, vs Target, and vs US Population panes are presented as tabs
 - first-draft US population scatter and distribution plots with sex-colored reference bands
 - Body/Diet top-level switcher
-- Diet tracker with Open Food Facts search, barcode lookup, optional browser barcode scanner, CSV import, local food log, macro targets, and expanded micronutrient target rows
+- Diet tracker with backend USDA-style generic food search, Open Food Facts search, barcode lookup, optional browser barcode scanner, CSV import, local food log, macro targets, and expanded micronutrient target rows
 - method/privacy content collapsed into a hover footnote
 - header share icon that copies an encoded measurement URL without showing a share panel
 - local-only lightweight usage event logging
@@ -140,6 +140,9 @@ Implemented now:
 - graceful no-backend state for local form and snapshots
 - offline comparison copy that keeps target comparison separate from local snapshot comparison
 - CSS-custom-property theme system with cafe and graphite palettes
+- public `/methodology.html` page for scoring, similarity, percentile, gender-score, and privacy methodology
+- public `/measurement-guides/index.html` route plus core height, weight, waist, and bideltoid circumference how-to pages
+- public draft legal pages for privacy, terms, and medical disclaimer review
 
 Not implemented yet:
 
@@ -148,7 +151,9 @@ Not implemented yet:
 - production-quality target dataset
 - server-side accounts, encrypted sync, or cross-device history
 - hosted photo/body inference work; current face scans are browser-local only
-- first-party food database ownership; Diet currently depends on Open Food Facts and local browser storage
+- production FoodData Central import/API ownership; Diet currently has dummy backend USDA-style seed rows plus Open Food Facts lookup
+- full public measurement-guide coverage with reviewed illustrations and final copy
+- human/legal review of draft privacy, terms, and medical disclaimer pages
 
 ## Current Measurement Schema
 

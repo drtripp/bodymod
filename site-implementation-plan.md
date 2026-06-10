@@ -148,6 +148,9 @@ Source files:
 
 - `frontend/src/components/MeasurementForm.jsx`
 - `frontend/src/lib/measurements.js`
+- `frontend/src/lib/measurementGuides.js`
+- `frontend/public/measurement-guides/index.html`
+- `frontend/public/measurement-guides/*.html`
 - `frontend/src/lib/units.js`
 - `backend/app/models.py`
 
@@ -158,11 +161,16 @@ Status:
 - supports field-level unit overrides
 - validates ranges
 - displays per-field help text
+- links selected core measurement guides to static public guide pages
+- public guide batch covers height, weight, waist circumference, and bideltoid
+  circumference
 - Playwright covers decimal and paste-replacement numeric entry
 
 Next:
 
 - continue mobile polish from the phone-viewport Playwright coverage
+- complete static public guide coverage for every backend guide field after
+  public copy and illustration review
 
 ### Silhouette Generator
 
@@ -326,8 +334,9 @@ Source files:
 Status:
 
 - implemented as local-first browser storage
-- Open Food Facts search and barcode lookup normalize macros and selected
-  micronutrients
+- backend USDA-style dummy generic food search and Open Food Facts search
+  normalize macros and selected micronutrients into one result list
+- barcode lookup still uses Open Food Facts
 - custom foods, recent foods, favorites, saved meals, and latest-day copy are
   local-only
 - pasted/file CSV import accepts flexible MFP/Cronometer-style date, meal, food,
@@ -341,22 +350,36 @@ Status:
 
 Next:
 
-- add a second food source once credential and data-source decisions are made
+- replace dummy USDA-style rows with a production FDC import/API pipeline after
+  credential and nutrient-validation decisions are made
 
 ### Method And Privacy Content
 
 Source files:
 
 - `frontend/src/components/InfoFootnote.jsx`
+- `frontend/public/methodology.html`
+- `frontend/public/legal/index.html`
+- `frontend/public/legal/privacy.html`
+- `frontend/public/legal/terms.html`
+- `frontend/public/legal/medical-disclaimer.html`
 
 Status:
 
 - method and privacy copy is collapsed into a hover/focus footnote
+- footnote links to `/methodology.html`
+- footnote links to draft legal pages for privacy, terms, and medical disclaimer
+- public methodology page documents scoring, similarity mapping, percentile
+  scaffold sources, gender-score chart math, and privacy boundaries
+- draft legal pages are implemented as static public routes pending human/legal
+  review
 - local event count and clearing remain available inside the footnote
 
 Next:
 
 - update copy after share/analytics decisions
+- replace draft legal copy with approved launch copy and ownership/contact
+  details after review
 
 ### Share Action
 
@@ -452,6 +475,7 @@ Next:
 - local snapshots survive refresh
 - comparison panel is visible and usable
 - method/privacy information is visible
+- draft privacy, terms, and medical disclaimer pages are reviewed
 - placeholder math is clearly labeled
 - local analytics and the share icon are implemented, with public-launch privacy decisions documented
 - cafe and graphite themes are available, persisted locally, and covered by tests

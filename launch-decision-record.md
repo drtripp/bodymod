@@ -106,6 +106,20 @@ Before public launch, decide:
 - who can approve clinical or surgical entries
 - whether user-submitted entries are allowed
 
+### Legal Pages
+
+Current behavior:
+
+- draft privacy, terms, and medical disclaimer pages exist under `/legal/`
+- the drafts describe the current local-first prototype and unresolved launch gates
+
+Before public launch, decide:
+
+- final legal owner/entity and contact details
+- jurisdiction and consumer-rights language
+- whether medical-disclaimer wording is sufficient for corpus, diet, workout, face, and procedure-adjacent content
+- whether accounts, payments, analytics, native apps, or sync require additional terms
+
 ## Pre-Launch Verification
 
 Before launch, run:
@@ -122,4 +136,4 @@ Then manually inspect:
 - target profile uncertainty labels
 - share-link behavior in a fresh browser profile
 - privacy copy
-
+- draft legal pages under `/legal/`

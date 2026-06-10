@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Draft bodymod privacy policy describing local-first storage, share-link behavior, face scans, and analytics boundaries."
+    />
+    <title>Privacy policy draft | bodymod</title>
+    <link rel="stylesheet" href="legal.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <p><a href="/">bodymod</a> / <a href="index.html">legal drafts</a></p>
+        <h1>Privacy Policy Draft</h1>
+        <p class="lede">
+          This draft describes the current local-first prototype. It is not a
+          final legal policy and must be reviewed before public launch.
+        </p>
+      </header>
+
+      <section class="callout">
+        <h2>Current Prototype Summary</h2>
+        <p>
+          Bodymod is designed around local browser storage. Local accounts,
+          measurements, snapshots, food logs, goals, protocols, workouts,
+          progress photos, face measurement records, and lightweight usage
+          events stay in the browser unless the user exports or shares data.
+        </p>
+      </section>
+
+      <section>
+        <h2>Data Stored Locally</h2>
+        <ul>
+          <li>Manual body measurements and unit preferences.</li>
+          <li>Local snapshots, check-ins, goals, protocol logs, workouts, and progress reports.</li>
+          <li>Diet foods, meal templates, fluid logs, and imported CSV rows.</li>
+          <li>Face measurement values derived in browser. The current app stores measurements, not image payloads.</li>
+          <li>Local usage events used for in-browser debugging and product inspection.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Sharing And Export</h2>
+        <ul>
+          <li>Share links encode measurement values in the URL, so anyone with the link can read those values.</li>
+          <li>JSON exports and encrypted local backups are user-controlled downloads.</li>
+          <li>Progress reports are generated locally for the user's own use.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>External Services</h2>
+        <ul>
+          <li>The prototype calls the bodymod backend for targets, matching, dummy data libraries, and configuration.</li>
+          <li>Diet search can call Open Food Facts for branded food lookup.</li>
+          <li>No production external analytics provider is approved in the current launch decision record.</li>
+          <li>No server account sync or payment processor is implemented in the current prototype.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>User Controls</h2>
+        <ul>
+          <li>Users can clear local usage events from the Method / privacy footnote.</li>
+          <li>Users can delete local snapshots and logs from the app UI.</li>
+          <li>Clearing browser storage removes local prototype data for that browser profile.</li>
+        </ul>
+      </section>
+
+      <footer>
+        <p class="muted">
+          Draft review needed: jurisdiction, data-controller identity, retention
+          language, contact address, user rights, analytics, payment, mobile
+          app, and account/sync terms before public launch.
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

@@ -216,3 +216,43 @@ class EntitlementConfig(BaseModel):
     features: list[EntitlementFeature]
     nonPaywalledFeatureIds: list[str] = []
     waitlist: EntitlementWaitlist
+
+
+class FoodMacros(BaseModel):
+    calories: float = 0
+    protein: float = 0
+    carbs: float = 0
+    fat: float = 0
+
+
+class FoodMicros(BaseModel):
+    fiber: float = 0
+    sugar: float = 0
+    sodium: float = 0
+    potassium: float = 0
+    calcium: float = 0
+    iron: float = 0
+    magnesium: float = 0
+    zinc: float = 0
+    vitaminC: float = 0
+    vitaminD: float = 0
+    vitaminB12: float = 0
+
+
+class FoodSearchItem(BaseModel):
+    id: str
+    fdcId: str | None = None
+    name: str
+    brand: str
+    serving: str
+    source: str
+    keywords: list[str] = []
+    macros: FoodMacros
+    micros: FoodMicros
+
+
+class FoodSearchResponse(BaseModel):
+    version: int
+    source: str
+    notes: list[str] = []
+    foods: list[FoodSearchItem]

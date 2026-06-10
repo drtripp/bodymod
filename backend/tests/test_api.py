@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY
+from app.data.food_usda import USDA_FOOD_LIBRARY
 from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TEMPLATES
 from app.main import allowed_cors_origins, app
@@ -189,3 +190,29 @@ def test_entitlements_endpoint_keeps_current_tools_free() -> None:
         for feature in payload["features"]
     )
     assert payload["version"] == ENTITLEMENT_CONFIG["version"]
+
+
+def test_food_search_endpoint_returns_usda_style_dummy_foods() -> None:
+    response = client.get("/api/food/search?query=oats")
+
+    assert response.status_code == 200
+    payload = response.json()
+    food = payload["foods"][0]
+
+    assert payload["version"] == USDA_FOOD_LIBRARY["version"]
+    assert "USDA FoodData Central-style" in payload["source"]
+    assert food["id"] == "fdc-rolled-oats-dry"
+    assert food["source"] == "USDA FoodData Central"
+    assert food["macros"]["calories"] == 150
+    assert food["micros"]["fiber"] == 4
+    assert food["fdcId"].startswith("dummy-")
+
+
+def test_food_search_endpoint_filters_without_external_api() -> None:
+    response = client.get("/api/food/search?query=salmon")
+
+    assert response.status_code == 200
+    payload = response.json()
+
+    assert [food["name"] for food in payload["foods"]] == ["Salmon, cooked"]
+    assert payload["foods"][0]["micros"]["vitaminD"] > 0

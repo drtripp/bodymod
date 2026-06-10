@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "../config.js";
+
 const FOOD_FIELDS = [
   "code",
   "product_name",
@@ -13,6 +15,7 @@ export const sampleFoods = [
     name: "Greek yogurt, plain",
     brand: "Sample food",
     serving: "170 g",
+    source: "Sample",
     macros: { calories: 100, protein: 17, carbs: 6, fat: 0 },
     micros: {
       fiber: 0,
@@ -33,6 +36,7 @@ export const sampleFoods = [
     name: "Chicken breast with rice",
     brand: "Sample meal",
     serving: "350 g",
+    source: "Sample",
     macros: { calories: 520, protein: 43, carbs: 58, fat: 11 },
     micros: {
       fiber: 3,
@@ -53,6 +57,7 @@ export const sampleFoods = [
     name: "Oats",
     brand: "Sample food",
     serving: "40 g",
+    source: "Sample",
     macros: { calories: 150, protein: 5, carbs: 27, fat: 3 },
     micros: {
       fiber: 4,
@@ -457,10 +462,56 @@ export function normalizeFoodProduct(product) {
   };
 }
 
-export async function searchFoods(query) {
+export function normalizeUsdaFood(food = {}) {
+  const micros = Object.fromEntries(
+    micronutrientTargets.map((target) => [
+      target.id,
+      numberField(food.micros?.[target.id])
+    ])
+  );
+  const fdcId = cleanText(food.fdcId);
+
+  return {
+    id: cleanText(food.id, fdcId ? `fdc-${fdcId}` : stableFoodId("fdc")),
+    fdcId,
+    barcode: "",
+    name: cleanText(food.name, "USDA food"),
+    brand: cleanText(food.brand, "USDA generic"),
+    serving: cleanText(food.serving, "100 g"),
+    imageUrl: "",
+    source: cleanText(food.source, "USDA FoodData Central"),
+    macros: {
+      calories: numberField(food.macros?.calories),
+      protein: numberField(food.macros?.protein),
+      carbs: numberField(food.macros?.carbs),
+      fat: numberField(food.macros?.fat)
+    },
+    micros
+  };
+}
+
+export async function searchUsdaFoods(query) {
   const term = query.trim();
   if (!term) {
     return sampleFoods;
+  }
+
+  const url = new URL(`${API_BASE_URL.replace(/\/$/, "")}/api/food/search`);
+  url.searchParams.set("query", term);
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error("USDA food search failed.");
+  }
+
+  const payload = await response.json();
+  return (payload.foods || []).map(normalizeUsdaFood);
+}
+
+async function searchOpenFoodFacts(query) {
+  const term = query.trim();
+  if (!term) {
+    return [];
   }
 
   const url = new URL("https://world.openfoodfacts.org/cgi/search.pl");
@@ -478,6 +529,29 @@ export async function searchFoods(query) {
 
   const payload = await response.json();
   return (payload.products || []).map(normalizeFoodProduct);
+}
+
+export async function searchFoods(query) {
+  const term = query.trim();
+  if (!term) {
+    return sampleFoods;
+  }
+
+  const results = await Promise.allSettled([
+    searchUsdaFoods(term),
+    searchOpenFoodFacts(term)
+  ]);
+  const foods = mergeFoodLists(
+    ...results
+      .filter((result) => result.status === "fulfilled")
+      .map((result) => result.value)
+  );
+
+  if (foods.length || results.some((result) => result.status === "fulfilled")) {
+    return foods;
+  }
+
+  throw new Error("Food search failed.");
 }
 
 export async function lookupBarcode(barcode) {

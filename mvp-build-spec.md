@@ -41,10 +41,10 @@ Earlier planning recommended Next.js and TypeScript. That is no longer the curre
    - current silhouette
    - backend connection status
    - large top-match name
-   - placeholder similarity score
+   - bounded similarity score
    - runner-up match
    - six metric blocks for height, BMI, estimated body fat, SHR, WHR, and SWR
-   - methodology note
+   - methodology note with a public methodology page link
 5. The vs Target tab shows target comparison controls and measurement deltas.
 6. User can select a target for comparison from the target selector.
 7. The vs US Population tab shows approximate sex-colored scatter and distribution plots.
@@ -62,6 +62,10 @@ Earlier planning recommended Next.js and TypeScript. That is no longer the curre
 The implemented schema has expanded beyond the original seven fields.
 `shared/measurement_schema.json` is the source of truth for frontend field
 metadata, frontend defaults, and backend Pydantic validation.
+
+The in-app measurement guide selector is backed by dummy backend guide copy.
+Core public guide pages are currently available for height, weight, waist
+circumference, and bideltoid circumference under `/measurement-guides/`.
 
 Canonical fields:
 
@@ -154,6 +158,7 @@ Implemented:
 - explicit reference label noting the model is not NHANES-calibrated
 - percentile monotonicity and bounds tests
 - replacement data curation guide in `reference-data-curation.md`
+- public `/methodology.html` page documents the current percentile scaffold and production replacement caveat
 
 Still needed:
 
@@ -213,21 +218,24 @@ Implemented:
 Implemented:
 
 - Body/Diet top-level switcher
-- Open Food Facts text search for food database lookup
+- backend USDA-style dummy generic food search as a first-party lookup source
+- Open Food Facts text search for branded food database lookup
 - barcode number lookup against Open Food Facts
 - browser `BarcodeDetector` scanner path when available, with manual-entry fallback
 - local food log stored in browser storage
 - serving multiplier
 - macro totals for calories, protein, carbs, and fat
-- micronutrient totals for fiber, sugar, sodium, calcium, and iron
+- micronutrient totals for fiber, sugar, sodium, potassium, calcium, iron,
+  magnesium, zinc, vitamin C, vitamin D, and B12
 - local sample foods when remote lookup is unavailable
-- Node tests for nutrition normalization, serving scaling, and totals
+- Node tests for USDA/Open Food Facts normalization, serving scaling, and totals
 - Playwright user-flow coverage for search, barcode lookup, logging, and totals
 
 Still needed:
 
 - source-reviewed strategy corpus entries
 - controlled backend/source-of-truth decision for curated corpus beyond local import
+- production FoodData Central import/API pipeline and nutrient validation
 - vetted ANSUR, NHANES, or equivalent source tables for the population charts
 - production analytics decision
 - share-link privacy decision before public launch
@@ -281,6 +289,7 @@ Exit condition:
 
 - decide whether encoded measurement URLs are acceptable for public launch or whether server-side snapshot IDs are needed
 - decide whether local-only analytics are sufficient or whether a production analytics provider is justified
+- review and approve the draft privacy, terms, and medical disclaimer pages
 - harden deployment beyond the prototype notes in `deployment.md`
 - run a final copy pass
 

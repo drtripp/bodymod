@@ -6,11 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY
+from app.data.food_usda import USDA_FOOD_LIBRARY, search_usda_foods
 from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TAXONOMY, PROTOCOL_TEMPLATES
 from app.models import ClothingSizeTables
 from app.models import EntitlementConfig
 from app.models import ExerciseLibrary
+from app.models import FoodSearchResponse
 from app.models import MeasurementGuideLibrary
 from app.models import MeasurementSet
 from app.models import PlanningData
@@ -94,3 +96,15 @@ def measurement_guides() -> dict:
 @app.get("/api/entitlements")
 def entitlement_config() -> dict:
     return EntitlementConfig.model_validate(ENTITLEMENT_CONFIG).model_dump()
+
+
+@app.get("/api/food/search")
+def food_search(query: str = "") -> dict:
+    return FoodSearchResponse.model_validate(
+        {
+            "version": USDA_FOOD_LIBRARY["version"],
+            "source": USDA_FOOD_LIBRARY["source"],
+            "notes": USDA_FOOD_LIBRARY["notes"],
+            "foods": search_usda_foods(query),
+        }
+    ).model_dump()

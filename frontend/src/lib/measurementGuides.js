@@ -2,6 +2,13 @@ import { measurementFields } from "./measurements.js";
 
 const knownFieldNames = new Set(measurementFields.map((field) => field.name));
 
+export const publicMeasurementGuideSlugs = {
+  height: "height",
+  weight: "weight",
+  waistCircumference: "waist-circumference",
+  bideltoidCircumference: "bideltoid-circumference"
+};
+
 export const emptyMeasurementGuideLibrary = {
   version: 0,
   reference: "",
@@ -60,4 +67,9 @@ export function getDefaultMeasurementGuideField(
   }
 
   return guides[0]?.field || "";
+}
+
+export function publicMeasurementGuidePath(field) {
+  const slug = publicMeasurementGuideSlugs[field];
+  return slug ? `/measurement-guides/${slug}.html` : "/measurement-guides/index.html";
 }

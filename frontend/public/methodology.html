@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Bodymod methodology for measurement matching, similarity scores, percentile scaffolds, and gender-score charts."
+    />
+    <title>bodymod methodology</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4efe5;
+        --panel: #fffaf1;
+        --soft: #ebe8d8;
+        --text: #211b14;
+        --muted: #665f53;
+        --border: #bdb49f;
+        --strong: #223a32;
+        --accent: #b8702c;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Georgia, "Times New Roman", serif;
+        line-height: 1.45;
+      }
+
+      main {
+        width: min(980px, calc(100vw - 28px));
+        margin: 0 auto;
+        padding: 28px 0 48px;
+      }
+
+      header,
+      section {
+        border: 1px solid var(--border);
+        background: var(--panel);
+        padding: 18px;
+        margin-bottom: 14px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        font-size: clamp(2rem, 5vw, 3.3rem);
+        margin-bottom: 8px;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        margin-bottom: 10px;
+      }
+
+      h3 {
+        font-size: 1.05rem;
+        margin-bottom: 6px;
+      }
+
+      a {
+        color: var(--strong);
+      }
+
+      code {
+        background: var(--soft);
+        border: 1px solid var(--border);
+        padding: 1px 5px;
+      }
+
+      ul,
+      ol {
+        padding-left: 22px;
+      }
+
+      li + li {
+        margin-top: 6px;
+      }
+
+      .lede {
+        max-width: 760px;
+        color: var(--muted);
+      }
+
+      .callout {
+        border-color: var(--accent);
+        background: #f8ead8;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .metric-card {
+        border: 1px solid var(--border);
+        background: var(--soft);
+        padding: 12px;
+      }
+
+      .metric-card strong {
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      footer {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      @media (max-width: 720px) {
+        main {
+          width: min(100vw - 16px, 640px);
+          padding-top: 8px;
+        }
+
+        header,
+        section {
+          padding: 13px;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p><a href="/">bodymod</a></p>
+        <h1>Methodology</h1>
+        <p class="lede">
+          This page documents the current prototype math and data sources used
+          by bodymod. It is written for inspection, not marketing. The current
+          target profiles, percentiles, and population charts are scaffolds
+          until the source-review work listed in the project backlog is done.
+        </p>
+      </header>
+
+      <section class="callout" aria-label="Prototype limitations">
+        <h2>Current Status</h2>
+        <ul>
+          <li>Target profiles are placeholder estimates, not production reference data.</li>
+          <li>Percentiles use an approximate adult reference model and are not NHANES-calibrated.</li>
+          <li>Population charts use deterministic scaffold data for interface testing.</li>
+          <li>Strategy corpus entries are informational and not advice, coaching, dosing, or protocol generation.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Measurement Matching</h2>
+        <p>
+          The backend compares the user's measurement set with each target
+          profile. Numeric measurements are converted into normalized distance
+          terms so larger and smaller body fields can be compared in one score.
+          Lower raw distance means a closer match.
+        </p>
+        <p>
+          The score also includes selected proportion ratios, including
+          shoulder-to-waist and waist-to-hip. Match-priority presets can raise
+          the weight of specific fields or ratios while preserving the same
+          scoring structure.
+        </p>
+        <div class="grid">
+          <div class="metric-card">
+            <strong>Raw distance</strong>
+            Smaller is closer. This is the internal ranking value used to sort
+            target matches.
+          </div>
+          <div class="metric-card">
+            <strong>Explanation bullets</strong>
+            The UI lists the largest measurement gaps so users can inspect why
+            a profile ranked where it did.
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Similarity Score</h2>
+        <p>
+          Similarity is a bounded display mapping of the raw distance. The
+          backend returns it with every match, and the frontend displays the
+          rounded percentage.
+        </p>
+        <p>
+          Current mapping: <code>100 * exp(-(distance ^ 1.5))</code>.
+          A score of 100 means identical measurements. A score around 95 or
+          higher is intended to sit inside ordinary tape-measure re-entry
+          noise. A score near 40 is roughly a different build within the
+          current placeholder target set.
+        </p>
+        <p>
+          The mapping is documented in <code>similarity-score-spec.md</code>.
+          It should be recalibrated whenever target profiles, measurement
+          schema fields, or scoring weights change meaningfully.
+        </p>
+      </section>
+
+      <section>
+        <h2>Percentile Sources</h2>
+        <p>
+          Current percentiles are limited to height, waist circumference, and
+          bideltoid circumference. They use sex-specific normal-distribution
+          parameters from the scaffold in <code>backend/app/data/reference.py</code>.
+          The API response label remains:
+        </p>
+        <p><code>Approximate adult reference model, not NHANES-calibrated</code></p>
+        <p>
+          Production replacement requires a documented source, license review,
+          field mapping, unit conversion rules, and validation fixtures. The
+          required workflow is recorded in <code>reference-data-curation.md</code>.
+        </p>
+      </section>
+
+      <section>
+        <h2>Gender Score Charts</h2>
+        <p>
+          The Gender tab compares selected body measurements against two
+          scaffold distribution bands labeled male and female. The chart is a
+          measurement-pattern comparison, not identity inference, medical
+          classification, or attractiveness ranking.
+        </p>
+        <p>
+          The signed rows are computed by comparing where each measurement sits
+          relative to the scaffold male and female distribution centers. The
+          resulting display is useful for interface testing and trend context,
+          but it must be replaced with vetted population data before any public
+          production claim.
+        </p>
+      </section>
+
+      <section>
+        <h2>Privacy Boundaries</h2>
+        <ul>
+          <li>Local accounts, snapshots, goals, and food logs are stored in the browser.</li>
+          <li>Share links encode measurement values in the URL so the link itself carries data.</li>
+          <li>Face measurement scans run locally in the browser and store measurements, not image payloads.</li>
+          <li>Lightweight usage events are local-only and can be cleared from the Method / privacy footnote.</li>
+        </ul>
+      </section>
+
+      <footer>
+        <p>
+          Last updated with the current prototype implementation. Human review
+          is still required for production target data, public reference
+          datasets, legal copy, analytics, and launch policy decisions.
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

@@ -3,7 +3,8 @@ import test from "node:test";
 import {
   getDefaultMeasurementGuideField,
   indexMeasurementGuides,
-  normalizeMeasurementGuideLibrary
+  normalizeMeasurementGuideLibrary,
+  publicMeasurementGuidePath
 } from "../src/lib/measurementGuides.js";
 
 test("normalizes measurement guide libraries to known schema fields", () => {
@@ -84,4 +85,13 @@ test("indexes guides and resolves the default field", () => {
     getDefaultMeasurementGuideField({ guides: [library.guides[0]] }),
     "bideltoidCircumference"
   );
+});
+
+test("resolves public measurement guide routes for SEO pages", () => {
+  assert.equal(publicMeasurementGuidePath("waistCircumference"), "/measurement-guides/waist-circumference.html");
+  assert.equal(
+    publicMeasurementGuidePath("bideltoidCircumference"),
+    "/measurement-guides/bideltoid-circumference.html"
+  );
+  assert.equal(publicMeasurementGuidePath("hipCircumference"), "/measurement-guides/index.html");
 });

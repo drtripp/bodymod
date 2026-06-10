@@ -1953,6 +1953,12 @@ textarea {
   width: 100%;
 }
 
+.public-guide-link {
+  min-height: 30px;
+  padding: 5px 8px;
+  text-decoration: none;
+}
+
 .measurement-guide-body {
   display: grid;
   grid-template-columns: 118px minmax(0, 1fr);
@@ -3647,6 +3653,18 @@ textarea {
   margin-top: 12px;
 }
 
+.legal-links {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font-size: 0.88rem;
+}
+
+.legal-links a {
+  color: var(--color-muted);
+}
+
 .info-footnote {
   position: relative;
   margin-top: 14px;
@@ -3686,6 +3704,11 @@ textarea {
 .info-footnote-popover h2 {
   margin: 0 0 6px;
   font-size: 1rem;
+}
+
+.methodology-link {
+  margin-top: 10px;
+  text-decoration: none;
 }
 
 .strategy-explorer-overlay {

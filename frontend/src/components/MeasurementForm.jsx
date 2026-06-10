@@ -3,7 +3,8 @@ import { measurementCategories, measurementFields } from "../lib/measurements";
 import {
   emptyMeasurementGuideLibrary,
   getDefaultMeasurementGuideField,
-  indexMeasurementGuides
+  indexMeasurementGuides,
+  publicMeasurementGuidePath
 } from "../lib/measurementGuides";
 import { getFieldUnitLabel, resolveFieldUnitSystem } from "../lib/units";
 
@@ -114,6 +115,12 @@ export default function MeasurementForm({
                   </option>
                 ))}
               </select>
+              <a
+                className="button public-guide-link"
+                href={publicMeasurementGuidePath(selectedGuide.field)}
+              >
+                Public guide
+              </a>
             </label>
           </div>
 

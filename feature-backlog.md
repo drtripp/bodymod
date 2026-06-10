@@ -120,8 +120,7 @@ Protocol Tracker → Diet upgrades → Native app.
       a metadata manifest only, not embedded image data.
 - [x] Measurement how-to guides: backend serves dummy per-field guide copy and
       the browser renders selectable schematic instructions in the dense
-      measurement form. **[human]** still needed for final illustration
-      direction before public SEO reuse.
+      measurement form.
 - [x] Local browser face measurements **(new)**: copy the troontraits
       approach, not its source code - use MediaPipe Face Landmarker /
       `@mediapipe/tasks-vision` in-browser with a self-hosted model to collect
@@ -308,8 +307,11 @@ Protocol Tracker → Diet upgrades → Native app.
       fresh search.
 - [x] Meals/recipes: save multi-food combos as local meal templates, log them
       in one tap, and copy the latest logged day.
-- [ ] USDA FoodData Central as a second lookup source **(new)** (OFF is weak
-      on US generic/raw foods; FDC is public domain).
+- [x] USDA FoodData Central as a second lookup source **(new)**: backend
+      now serves dummy FDC-style generic foods and Diet merges them with Open
+      Food Facts results.
+- [ ] Production FDC import/API pipeline, API-key decision, and nutrient
+      validation. **[human]**
 - [x] Water/fluid logging **(new)**: Diet has local fluid entries, quick ml
       presets, manual labels, and target-vs-actual progress.
 - [x] Micronutrient panel expansion beyond the current five, with %-of-target
@@ -400,9 +402,15 @@ land. No social features, no marketplace.
 - [ ] Marketing/landing site **(new)**: separate lightweight public page —
       what it is, privacy stance, screenshots, app-store links, Pro waitlist
       email capture.
-- [ ] Public SEO pages **(new)**: the measurement how-to guides and
-      methodology pages rendered as indexable public routes; this niche
-      searches "how to measure bideltoid" and nobody serves it well.
+- [x] Public methodology page **(new)**: `frontend/public/methodology.html`
+      renders scoring, similarity, percentile-source, gender-score, and
+      privacy methodology as an indexable public route.
+- [x] Public measurement how-to guide pages **(new)**: core guide batch is
+      rendered as indexable routes for height, weight, waist circumference,
+      and bideltoid circumference, plus a guide index.
+- [ ] Complete public guide-page coverage for every backend guide field and
+      replace schematic/dummy copy with reviewed public illustrations and
+      wording. **[human]**
 - [x] PDF progress report **(new)**: printable summary of trends,
       measurements, and protocol adherence — for trainers and doctors;
       endocrinologist visits are a recurring real use for the transition
@@ -496,11 +504,13 @@ land. No social features, no marketplace.
 
 ## 18. Compliance, Trust & Launch
 
-- [ ] ToS, privacy policy, and medical disclaimer pages. **[human]** review
-      (template-based drafting is delegable).
+- [x] Draft ToS, privacy policy, and medical disclaimer pages:
+      `frontend/public/legal/` now contains review-ready static draft pages.
+- [ ] Human/legal review and final ownership details for ToS, privacy policy,
+      and medical disclaimer pages. **[human]**
 - [x] Age gate (18+) before corpus content, stored locally per browser.
 - [ ] Store rating set accordingly before native submission. **[human]**
-- [ ] Methodology page: scoring, similarity, percentile sources, gender score
+- [x] Methodology page: scoring, similarity, percentile sources, gender score
       math — public and indexable (trust + SEO).
 - [ ] Accessibility pass **(new)**: keyboard navigation, contrast in both
       themes, screen-reader flows for the form and charts (builds on the
