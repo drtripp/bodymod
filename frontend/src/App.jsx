@@ -399,6 +399,36 @@ export default function App() {
     reader.readAsText(file);
   }
 
+  function handleRestoreSnapshots(importedSnapshots = []) {
+    const validSnapshots = importedSnapshots.filter(
+      (snapshot) => snapshot?.id && snapshot?.createdAt && snapshot?.measurements
+    );
+    const existingIds = new Set(snapshots.map((snapshot) => snapshot.id));
+    const uniqueImportedSnapshots = validSnapshots.filter(
+      (snapshot) => !existingIds.has(snapshot.id)
+    );
+    const skippedCount = validSnapshots.length - uniqueImportedSnapshots.length;
+    const nextSnapshots = [...uniqueImportedSnapshots, ...snapshots].sort(
+      (left, right) => new Date(right.createdAt) - new Date(left.createdAt)
+    );
+
+    if (uniqueImportedSnapshots.length) {
+      setSnapshots(nextSnapshots);
+      persistSnapshots(nextSnapshots);
+      trackEvent("snapshots_imported", {
+        count: uniqueImportedSnapshots.length,
+        skipped: skippedCount,
+        source: "encrypted-backup"
+      });
+    }
+
+    return {
+      snapshots: nextSnapshots,
+      importedCount: uniqueImportedSnapshots.length,
+      skippedCount
+    };
+  }
+
   function handleGlobalUnitChange(nextUnitSystem) {
     setGlobalUnitSystem(nextUnitSystem);
     setDisplayFormState(buildDisplayFormState(formState, nextUnitSystem, fieldUnitOverrides));
@@ -709,6 +739,7 @@ export default function App() {
             onCompareSnapshot: handleCompareSnapshot,
             onExportSnapshots: handleExportSnapshots,
             onImportSnapshots: handleImportSnapshots,
+            onRestoreSnapshots: handleRestoreSnapshots,
             importStatus
           }}
         />

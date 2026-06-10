@@ -20,6 +20,8 @@
     "test:onboarding": "node --test tests/onboarding.node.mjs",
     "test:storage": "node --test tests/storageAdapter.node.mjs",
     "test:snapshot-trends": "node --test tests/snapshotTrends.node.mjs",
+    "test:history-import": "node --test tests/historyImport.node.mjs",
+    "test:local-backup": "node --test tests/localBackup.node.mjs",
     "test:tracking": "node --test tests/accountTracking.node.mjs",
     "test:protocols": "node --test tests/protocolPlanning.node.mjs",
     "test:local-targets": "node --test tests/localTargets.node.mjs",

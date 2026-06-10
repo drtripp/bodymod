@@ -99,20 +99,22 @@ Protocol Tracker → Diet upgrades → Native app.
 - [ ] Optional left/right split for limb fields **(new)**: bicep, forearm,
       thigh, calf enterable as L/R pairs (single value stays the default);
       symmetry tracking for physique users.
-- [ ] Richer longitudinal charts: per-metric history charts with range
-      selection, annotations from snapshot notes (extends the compact trend
-      chart).
+- [x] Richer longitudinal charts: snapshot history now includes a per-metric
+      chart with all/90-day/180-day/1-year range selection, note annotation
+      markers, and measurement-noise bands alongside the compact overview.
 - [x] Per-field noise bands in trend charts **(new)**: snapshot trend charts
       shade typical tape/scale re-measurement error per field so users don't
       chase noise; reuses the noise model documented in
       `similarity-score-spec.md`.
-- [ ] Historical data import **(new)**: CSV import for weight history (Happy
-      Scale, Libra, MFP export formats) and HealthKit historical weight once
-      native ships. Instant value for switchers and the strongest lock-in
-      moment in the funnel.
-- [ ] Encrypted local backup **(new)**: passphrase-encrypted export file
-      (snapshots + logs + photos manifest) for the privacy-conscious; restores
-      on any device.
+- [x] Historical data import **(new)**: CSV import for weight history now
+      accepts common date/weight/calorie/note exports, converts pounds when
+      headers or unit columns label lb/lbs, skips duplicate daily dates, and
+      stores imported rows as normal local daily check-ins. HealthKit
+      historical weight remains native-app scope.
+- [x] Encrypted local backup **(new)**: account panel can download and restore
+      a passphrase-encrypted AES-GCM backup covering snapshots, check-ins,
+      goals, protocols, workouts, and face metric logs. Photos are included as
+      a metadata manifest only, not embedded image data.
 - [x] Measurement how-to guides: backend serves dummy per-field guide copy and
       the browser renders selectable schematic instructions in the dense
       measurement form. **[human]** still needed for final illustration
@@ -224,9 +226,10 @@ Protocol Tracker → Diet upgrades → Native app.
 - [x] Past self as target **(confirmed)**: any saved snapshot usable as a
       match/comparison target — enables "maintain" and "return to form" goals
       with zero new data requirements.
-- [ ] Maintenance drift alerts **(new)**: at-goal users get band alerts
-      ("waist drifted +3 cm over 6 months") instead of goal-progress framing;
-      the honest retention mode for people who arrived.
+- [x] Maintenance drift alerts **(new)**: saved goals now show local
+      maintenance-band alerts after a target-band snapshot exists and the
+      current measurement drifts outside the band, e.g. waist drifted +3 cm
+      outside the maintenance range.
 - [x] Silhouette morph animation **(new)**: interpolate measurements between
       current and target/projection with the existing renderer; use in-app
       and in share cards. High visual payoff for low engineering cost.

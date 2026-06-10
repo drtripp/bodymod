@@ -25,16 +25,28 @@ import {
   loadUserWorkoutSessions,
   loginLocalAccount,
   persistUserCheckIn,
+  persistUserCheckIns,
   persistUserFaceMeasurement,
   persistUserGoal,
   persistUserPhoto,
   persistUserProtocol,
   persistUserWorkoutSession,
+  restoreUserBackupData,
   updateUserProtocol
 } from "../lib/account";
 import {
   buildMeasurementDueState
 } from "../lib/measurementCadence";
+import {
+  parseHistoricalWeightCsv,
+  summarizeHistoricalWeightImport
+} from "../lib/historyImport";
+import {
+  buildLocalBackupBundle,
+  decryptLocalBackup,
+  encryptLocalBackup,
+  summarizeLocalBackupBundle
+} from "../lib/localBackup";
 import {
   buildCheckInHeatmap,
   buildCheckInInsights,
@@ -59,6 +71,7 @@ import {
   buildSnapshotTargets
 } from "../lib/localTargets";
 import {
+  buildMaintenanceDriftAlerts,
   buildGoalProgress,
   CUSTOM_GOAL_TARGET_ID,
   customGoalMetricOptions,
@@ -262,6 +275,10 @@ export default function AccountGoalPanel({
   const [dailyWeight, setDailyWeight] = useState("");
   const [dailyCalories, setDailyCalories] = useState("");
   const [checkInNote, setCheckInNote] = useState("");
+  const [historyImportText, setHistoryImportText] = useState("");
+  const [historyImportStatus, setHistoryImportStatus] = useState("");
+  const [backupPassphrase, setBackupPassphrase] = useState("");
+  const [backupStatus, setBackupStatus] = useState("");
   const [selectedProtocolIds, setSelectedProtocolIds] = useState([]);
   const [status, setStatus] = useState("");
 
@@ -680,6 +697,55 @@ export default function AccountGoalPanel({
     setStatus("Daily check-in logged.");
   }
 
+  function importHistoricalWeightCsv(rawValue) {
+    if (!account) {
+      return;
+    }
+
+    const result = parseHistoricalWeightCsv(rawValue, {
+      existingCheckIns: checkIns
+    });
+
+    if (!result.entries.length) {
+      const reason =
+        result.invalidRows[0]?.reason ||
+        (result.duplicateRows ? "All dated rows were already logged." : "No weight rows found.");
+      setHistoryImportStatus(reason);
+      setStatus(`Historical import skipped: ${reason}`);
+      return;
+    }
+
+    const nextCheckIns = persistUserCheckIns(account.id, result.entries);
+    setCheckIns(nextCheckIns);
+    setHistoryImportText("");
+    const summary = summarizeHistoricalWeightImport(result);
+    setHistoryImportStatus(summary);
+    setStatus(summary);
+  }
+
+  function handleHistoricalWeightImport(event) {
+    event.preventDefault();
+    importHistoricalWeightCsv(historyImportText);
+  }
+
+  function handleHistoricalWeightFile(event) {
+    const [file] = event.target.files || [];
+    if (!file || !account) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      importHistoricalWeightCsv(String(reader.result || ""));
+    };
+    reader.onerror = () => {
+      setHistoryImportStatus("CSV file import failed.");
+      setStatus("Historical import failed.");
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+  }
+
   function createWeeklyCheckIn({ source = "quick", saveSnapshot = false } = {}) {
     if (!account) {
       return;
@@ -965,6 +1031,84 @@ export default function AccountGoalPanel({
     setFaceMeasurements([nextFaceMeasurement, ...faceMeasurements]);
   }
 
+  function currentBackupBundle() {
+    return buildLocalBackupBundle({
+      account,
+      snapshots: snapshotProps.snapshots,
+      goals,
+      protocols,
+      checkIns,
+      workoutSessions,
+      photos,
+      faceMeasurements
+    });
+  }
+
+  async function handleDownloadEncryptedBackup() {
+    if (!account) {
+      return;
+    }
+
+    try {
+      const bundle = currentBackupBundle();
+      const encryptedBackup = await encryptLocalBackup(bundle, backupPassphrase);
+      const summary = summarizeLocalBackupBundle(bundle);
+      const blob = new Blob([encryptedBackup], {
+        type: "application/json"
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "bodymod-encrypted-backup.json";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setBackupStatus(
+        `Encrypted backup downloaded: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.goals} goal(s), ${summary.protocols} protocol(s), and ${summary.photoManifest} photo manifest item(s).`
+      );
+    } catch (error) {
+      setBackupStatus(error.message);
+    }
+  }
+
+  function handleRestoreEncryptedBackup(event) {
+    const [file] = event.target.files || [];
+    if (!account || !file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const bundle = await decryptLocalBackup(String(reader.result || ""), backupPassphrase);
+        const snapshotRestore = snapshotProps.onRestoreSnapshots
+          ? snapshotProps.onRestoreSnapshots(bundle.snapshots)
+          : { importedCount: 0, skippedCount: bundle.snapshots.length };
+        const restoreResult = restoreUserBackupData(account.id, bundle);
+        const summary = summarizeLocalBackupBundle(bundle);
+
+        setGoals(restoreResult.goals);
+        setProtocols(restoreResult.protocols);
+        setCheckIns(restoreResult.checkIns);
+        setWorkoutSessions(restoreResult.workoutSessions);
+        setFaceMeasurements(restoreResult.faceMeasurements);
+        setBackupStatus(
+          `Restored backup: ${snapshotRestore.importedCount} snapshot(s), ${restoreResult.imported.checkIns} check-in(s), ${restoreResult.imported.goals} goal(s), ${restoreResult.imported.protocols} protocol(s), ${restoreResult.imported.workoutSessions} workout(s), ${restoreResult.imported.faceMeasurements} face scan(s). Photo manifest: ${summary.photoManifest} item(s); image files are not included.`
+        );
+      } catch (error) {
+        setBackupStatus(error.message);
+      } finally {
+        event.target.value = "";
+      }
+    };
+    reader.onerror = () => {
+      setBackupStatus("Encrypted backup restore failed.");
+      event.target.value = "";
+    };
+    reader.readAsText(file);
+  }
+
   function handleDownloadProgressReport() {
     downloadProgressReport({
       account,
@@ -1091,6 +1235,44 @@ export default function AccountGoalPanel({
               </button>
             </section>
 
+            <section className="encrypted-backup-section" aria-label="Encrypted local backup">
+              <div>
+                <h3>Encrypted backup</h3>
+                <p>
+                  Download a passphrase-encrypted local backup for snapshots,
+                  check-ins, goals, protocols, workouts, and face metric logs.
+                  Photos are included as a manifest only.
+                </p>
+              </div>
+              <label className="field">
+                <span className="field-label">Backup passphrase</span>
+                <input
+                  aria-label="Backup passphrase"
+                  type="password"
+                  value={backupPassphrase}
+                  onChange={(event) => setBackupPassphrase(event.target.value)}
+                  placeholder="8+ characters"
+                />
+              </label>
+              <div className="encrypted-backup-actions">
+                <button className="button" type="button" onClick={handleDownloadEncryptedBackup}>
+                  Download encrypted backup
+                </button>
+                <label className="button file-button">
+                  Restore encrypted backup
+                  <input
+                    aria-label="Restore encrypted backup file"
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={handleRestoreEncryptedBackup}
+                  />
+                </label>
+              </div>
+              {backupStatus ? (
+                <small className="encrypted-backup-status">{backupStatus}</small>
+              ) : null}
+            </section>
+
             <section className="persona-loader" aria-label="Persona sample loader">
               <label className="field">
                 <span className="field-label">Persona sample</span>
@@ -1184,6 +1366,45 @@ export default function AccountGoalPanel({
                 <button className="button" type="button" onClick={handleGuidedWeeklyCheckIn}>
                   Finish guided weekly check-in
                 </button>
+              </form>
+              <form
+                className="history-import-card"
+                aria-label="Historical weight CSV import"
+                onSubmit={handleHistoricalWeightImport}
+              >
+                <div className="history-import-copy">
+                  <strong>Import weight history</strong>
+                  <p>
+                    Paste a CSV with date and weight columns. Weight in pounds is converted when the header
+                    or unit column says lb/lbs; calories or kcal are optional.
+                  </p>
+                </div>
+                <label className="field history-import-input">
+                  <span className="field-label">Historical CSV</span>
+                  <textarea
+                    aria-label="Historical weight CSV"
+                    value={historyImportText}
+                    onChange={(event) => setHistoryImportText(event.target.value)}
+                    placeholder={"date,weight_lbs,calories,note\n2026-06-01,190.2,2400,scale import"}
+                  />
+                </label>
+                <div className="history-import-actions">
+                  <button className="button" type="submit">
+                    Import pasted CSV
+                  </button>
+                  <label className="button file-button">
+                    Import CSV file
+                    <input
+                      aria-label="Import historical weight CSV file"
+                      type="file"
+                      accept=".csv,text/csv,text/plain"
+                      onChange={handleHistoricalWeightFile}
+                    />
+                  </label>
+                </div>
+                {historyImportStatus ? (
+                  <small className="history-import-status">{historyImportStatus}</small>
+                ) : null}
               </form>
               <div className="guided-checkin-card" aria-label="Guided weekly check-in">
                 <div>
@@ -1482,21 +1703,46 @@ export default function AccountGoalPanel({
                       <div>
                         {(() => {
                           const progress = buildGoalProgress(goal, currentMeasurements);
-                          return progress ? (
-                            <div className="goal-progress" aria-label={`${goal.label} progress`}>
-                              <strong>Progress: {Math.round(progress.average)}%</strong>
-                              <div className="goal-progress-track">
-                                <i style={{ width: `${progress.average}%` }} />
-                              </div>
-                              <ul>
-                                {progress.rows.map((row) => (
-                                  <li key={row.key}>
-                                    {row.label}: {row.current.toFixed(1)} / target {row.target.toFixed(1)} {row.unit}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          ) : null;
+                          const driftAlerts = buildMaintenanceDriftAlerts(
+                            goal,
+                            currentMeasurements,
+                            snapshotProps.snapshots
+                          );
+                          return (
+                            <>
+                              {progress ? (
+                                <div className="goal-progress" aria-label={`${goal.label} progress`}>
+                                  <strong>Progress: {Math.round(progress.average)}%</strong>
+                                  <div className="goal-progress-track">
+                                    <i style={{ width: `${progress.average}%` }} />
+                                  </div>
+                                  <ul>
+                                    {progress.rows.map((row) => (
+                                      <li key={row.key}>
+                                        {row.label}: {row.current.toFixed(1)} / target {row.target.toFixed(1)} {row.unit}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ) : null}
+                              {driftAlerts ? (
+                                <div
+                                  className="maintenance-alerts"
+                                  aria-label={`${goal.label} maintenance drift alerts`}
+                                >
+                                  <strong>Maintenance drift alert</strong>
+                                  <span>
+                                    Target band last seen at {driftAlerts.reachedLabel} on {formatDate(driftAlerts.reachedAt)}.
+                                  </span>
+                                  <ul>
+                                    {driftAlerts.alerts.map((alert) => (
+                                      <li key={alert.key}>{alert.message}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ) : null}
+                            </>
+                          );
                         })()}
                         <strong>{goal.label}</strong>
                         <span>{goal.category} / created {formatDate(goal.createdAt)}</span>

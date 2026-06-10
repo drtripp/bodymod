@@ -248,14 +248,40 @@ textarea {
   padding: 12px;
 }
 
+.encrypted-backup-section {
+  border: 1px solid #344454;
+  background: #101923;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(180px, 0.34fr) minmax(190px, 0.34fr);
+  gap: 12px;
+  align-items: end;
+  padding: 12px;
+}
+
 .progress-report-section h3 {
   margin: 0 0 4px;
   font-size: 1rem;
 }
 
+.encrypted-backup-section h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
 .progress-report-section p,
-.progress-report-section span {
+.progress-report-section span,
+.encrypted-backup-section p,
+.encrypted-backup-status {
   color: #c7d0d9;
+}
+
+.encrypted-backup-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.encrypted-backup-status {
+  grid-column: 1 / -1;
 }
 
 .persona-loader {
@@ -323,6 +349,41 @@ textarea {
 .checkin-note textarea {
   min-height: 38px;
   resize: vertical;
+}
+
+.history-import-card {
+  border: 1px solid #344454;
+  background: #101923;
+  display: grid;
+  grid-template-columns: minmax(240px, 0.42fr) minmax(260px, 1fr) minmax(150px, 0.22fr);
+  gap: 10px;
+  align-items: end;
+  margin-top: 10px;
+  padding: 10px;
+}
+
+.history-import-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.history-import-copy p,
+.history-import-status {
+  color: #c7d0d9;
+}
+
+.history-import-input textarea {
+  min-height: 74px;
+  resize: vertical;
+}
+
+.history-import-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.history-import-status {
+  grid-column: 1 / -1;
 }
 
 .checkin-summary {
@@ -813,6 +874,24 @@ textarea {
   display: grid;
   gap: 5px;
   margin: 4px 0 8px;
+}
+
+.maintenance-alerts {
+  border-left: 3px solid #d4a762;
+  display: grid;
+  gap: 4px;
+  margin: 2px 0 8px;
+  padding-left: 10px;
+}
+
+.maintenance-alerts span,
+.maintenance-alerts li {
+  color: #c7d0d9;
+}
+
+.maintenance-alerts ul {
+  margin: 0;
+  padding-left: 18px;
 }
 
 .goal-progress-track {
@@ -3220,6 +3299,67 @@ textarea {
   display: inline-block;
 }
 
+.snapshot-history {
+  border-top: 1px solid #344454;
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+}
+
+.snapshot-history-controls {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.45fr) minmax(140px, 0.25fr);
+  gap: 10px;
+  align-items: end;
+}
+
+.snapshot-history-chart {
+  display: grid;
+  gap: 8px;
+}
+
+.snapshot-history-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.snapshot-history-summary span {
+  color: #c7d0d9;
+}
+
+.snapshot-history-point {
+  fill: #f2f0e8;
+  stroke: #101923;
+  stroke-width: 0.8;
+}
+
+.snapshot-history-note {
+  fill: none;
+  stroke: #d4a762;
+  stroke-width: 1.4;
+}
+
+.snapshot-annotation-list {
+  border-left: 3px solid #d4a762;
+  display: grid;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 10px;
+}
+
+.snapshot-annotation-list li {
+  display: grid;
+  gap: 2px;
+}
+
+.snapshot-annotation-list span {
+  color: #c7d0d9;
+}
+
 .file-button {
   position: relative;
   overflow: hidden;
@@ -3692,6 +3832,7 @@ textarea {
   .account-auth-grid,
   .cadence-grid,
   .checkin-form,
+  .history-import-card,
   .guided-checkin-card,
   .streak-panel,
   .goal-form,
@@ -3711,6 +3852,7 @@ textarea {
   .photo-gallery-list li,
   .face-scan-grid,
   .progress-report-section,
+  .encrypted-backup-section,
   .persona-loader,
   .composition-grid,
   .protocol-row,
@@ -3818,6 +3960,10 @@ textarea {
   }
 
   .snapshot-trend ul {
+    grid-template-columns: 1fr;
+  }
+
+  .snapshot-history-controls {
     grid-template-columns: 1fr;
   }
 

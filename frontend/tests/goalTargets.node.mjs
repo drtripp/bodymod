@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildMaintenanceDriftAlerts,
   buildGoalProgress,
   goalTargetSourceLabel,
   parseCustomGoalMetrics
@@ -71,5 +72,88 @@ test("formats saved goal source labels", () => {
       targetSource: { type: "past-self", label: "Past self: Baseline" }
     }),
     "Past self target: Past self: Baseline"
+  );
+});
+
+test("builds maintenance drift alerts after a target-band snapshot exists", () => {
+  const goal = {
+    id: "goal-1",
+    startingMeasurements: {
+      waistCircumference: 90,
+      bideltoidCircumference: 120
+    },
+    targetMetrics: {
+      waistCircumference: -6,
+      bideltoidCircumference: 5
+    }
+  };
+  const snapshots = [
+    {
+      id: "baseline",
+      label: "Baseline",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      measurements: {
+        waistCircumference: 90,
+        bideltoidCircumference: 120
+      }
+    },
+    {
+      id: "at-goal",
+      label: "At goal",
+      createdAt: "2026-04-01T00:00:00.000Z",
+      measurements: {
+        waistCircumference: 84,
+        bideltoidCircumference: 125
+      }
+    }
+  ];
+
+  assert.equal(
+    buildMaintenanceDriftAlerts(
+      goal,
+      { waistCircumference: 87, bideltoidCircumference: 125 },
+      snapshots.slice(0, 1)
+    ),
+    null
+  );
+
+  const alerts = buildMaintenanceDriftAlerts(
+    goal,
+    { waistCircumference: 87, bideltoidCircumference: 125 },
+    snapshots
+  );
+
+  assert.equal(alerts.reachedLabel, "At goal");
+  assert.equal(alerts.alerts.length, 1);
+  assert.equal(alerts.alerts[0].key, "waistCircumference");
+  assert.equal(
+    alerts.alerts[0].message,
+    "Waist drifted +3.0 cm outside +/-2.0 cm maintenance band."
+  );
+});
+
+test("does not alert while current measurements remain inside the maintenance band", () => {
+  const goal = {
+    startingMeasurements: {
+      weight: 90
+    },
+    targetMetrics: {
+      weight: -5
+    }
+  };
+  const snapshots = [
+    {
+      id: "at-goal",
+      label: "At goal",
+      createdAt: "2026-04-01T00:00:00.000Z",
+      measurements: {
+        weight: 85
+      }
+    }
+  ];
+
+  assert.equal(
+    buildMaintenanceDriftAlerts(goal, { weight: 86.5 }, snapshots),
+    null
   );
 });

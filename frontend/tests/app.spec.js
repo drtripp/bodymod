@@ -921,6 +921,13 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Check-in summary")).toContainText("Trend weight: 86.3 kg");
   await expect(page.getByLabel("Trend weight line vs raw daily weight dots")).toBeVisible();
   await expect(page.getByLabel("Insight drops")).toContainText("Trend weight is down");
+  await page.getByRole("textbox", { name: "Historical weight CSV" }).fill(
+    ["date,weight_lbs,calories,note", "2026-05-30,191.5,2450,old scale", "2026-05-31,191,2380,old scale"].join("\n")
+  );
+  await page.getByRole("button", { name: "Import pasted CSV" }).click();
+  await expect(page.getByLabel("Historical weight CSV import")).toContainText("Imported 2 historical log(s).");
+  await expect(page.getByLabel("Check-in summary")).toContainText("4 log(s)");
+  await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 86.6 kg / 2380 kcal");
   await page.getByRole("button", { name: "Finish guided weekly check-in" }).click();
   await expect(page.getByLabel("Check-in history")).toContainText("Guided weekly measurements: waist 86.0 cm");
   await expect(accountDialog.locator(".snapshot-row").getByText("Weekly check-in")).toBeVisible();
@@ -931,7 +938,7 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Check-in milestones")).toContainText("Weekly snapshot saved");
 
   await page.getByLabel("Snapshot label").fill("Baseline");
-  await page.getByLabel("Snapshot note").fill("First persona walkthrough log.");
+  await page.getByRole("textbox", { name: "Snapshot note" }).fill("First persona walkthrough log.");
   await page.getByRole("button", { name: "Save current snapshot" }).click();
   await expect(
     accountDialog.locator(".snapshot-row").filter({ hasText: "Baseline" })
@@ -988,6 +995,26 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Saved goals")).toContainText("Custom target deltas");
   await expect(page.getByLabel("Saved goals")).toContainText("Waist: 90.0 / target 84.0 cm");
   await expect(page.getByLabel("Saved goals")).toContainText("Bideltoid Circ: 120.0 / target 125.0 cm");
+  await page.getByRole("button", { name: "Close account panel" }).click();
+  await page.locator('input[name="waistCircumference"]').fill("84");
+  await page.locator('input[name="bideltoidCircumference"]').fill("125");
+  await page.locator('input[name="bideltoidCircumference"]').blur();
+  await page.getByRole("button", { name: "User profile" }).click();
+  await page.getByLabel("Snapshot label").fill("At goal");
+  await page.getByRole("button", { name: "Save current snapshot" }).click();
+  await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "At goal" })).toBeVisible();
+  await page.getByLabel("Snapshot history metric").selectOption("waistCircumference");
+  await page.getByLabel("Snapshot history range").selectOption("90d");
+  await expect(page.getByRole("img", { name: "Waist snapshot history chart" })).toBeVisible();
+  await expect(page.getByLabel("Snapshot note annotations")).toContainText("First persona walkthrough log.");
+  await page.getByRole("button", { name: "Close account panel" }).click();
+  await page.locator('input[name="waistCircumference"]').fill("87");
+  await page.locator('input[name="waistCircumference"]').blur();
+  await page.getByRole("button", { name: "User profile" }).click();
+  await expect(page.getByLabel("Saved goals")).toContainText("Maintenance drift alert");
+  await expect(page.getByLabel("Improve shoulder-to-waist ratio maintenance drift alerts")).toContainText(
+    "Waist drifted +3.0 cm outside +/-2.0 cm maintenance band."
+  );
 
   await page.getByLabel("Protocol template").selectOption("resistance-training");
   await expect(page.getByLabel("Protocol schema")).toContainText("Intervention taxonomy");
@@ -1063,7 +1090,7 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Photo stream counts")).toContainText("Body 2");
   await expect(page.getByLabel("Photo beside silhouette")).toContainText("body");
 
-  await expect(page.getByLabel("Progress report")).toContainText("3 snapshot(s)");
+  await expect(page.getByLabel("Progress report")).toContainText("4 snapshot(s)");
   const reportDownloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download progress report" }).click();
   const reportDownload = await reportDownloadPromise;
@@ -1089,10 +1116,61 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Progress photo gallery")).toContainText("Week 1 front pose.");
   await expect(page.getByLabel("Photo comparison slider")).toBeVisible();
   await expect(page.getByLabel("Check-in history")).toContainText("Guided weekly measurements: waist 86.0 cm");
-  await expect(page.getByLabel("Check-in summary")).toContainText("2 log(s)");
+  await expect(page.getByLabel("Check-in summary")).toContainText("4 log(s)");
 
   await page.getByRole("button", { name: "Close account panel" }).click();
   await expect(page.locator('input[name="height"]')).toHaveValue("181");
+});
+
+test("exports and restores encrypted local backups through the account UI", async ({ page }) => {
+  await page.getByRole("button", { name: "User profile" }).click();
+  let accountDialog = page.getByRole("dialog", { name: "Account, logs, and goals" });
+
+  await page.getByLabel("Display name").fill("Backup Source");
+  await page.getByLabel("Account email").fill("backup-source@example.com");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await page.getByLabel("Daily weight").fill("82.4");
+  await page.getByLabel("Daily calories").fill("2400");
+  await page.getByRole("button", { name: "Log daily check-in" }).click();
+  await page.getByLabel("Snapshot label").fill("Backup baseline");
+  await page.getByRole("button", { name: "Save current snapshot" }).click();
+  await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Backup baseline" })).toBeVisible();
+
+  await page.getByLabel("Backup passphrase").fill("correct horse battery staple");
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download encrypted backup" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("bodymod-encrypted-backup.json");
+  await expect(page.getByLabel("Encrypted local backup")).toContainText("Encrypted backup downloaded");
+  const backupPath = await download.path();
+
+  await page.evaluate(() => {
+    [
+      "bodymod:accounts:v1",
+      "bodymod:session:v1",
+      "bodymod:goals:v1",
+      "bodymod:protocols:v1",
+      "bodymod:checkins:v1",
+      "bodymod:workouts:v1",
+      "bodymod:photos:v1",
+      "bodymod:face-measurements:v1",
+      "bodymod:snapshots:v1"
+    ].forEach((key) => window.localStorage.removeItem(key));
+  });
+  await page.reload();
+  await page.getByRole("button", { name: "User profile" }).click();
+  accountDialog = page.getByRole("dialog", { name: "Account, logs, and goals" });
+  await page.getByLabel("Display name").fill("Backup Restore");
+  await page.getByLabel("Account email").fill("backup-restore@example.com");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await page.getByLabel("Backup passphrase").fill("correct horse battery staple");
+  await page.getByLabel("Restore encrypted backup file").setInputFiles(backupPath);
+
+  await expect(page.getByLabel("Encrypted local backup")).toContainText(
+    "Restored backup: 1 snapshot(s), 1 check-in(s)"
+  );
+  await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 82.4 kg / 2400 kcal");
+  await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Backup baseline" })).toBeVisible();
 });
 
 test("roleplays all persona samples through account logging, goals, and learning", async ({ page }) => {
@@ -1128,7 +1206,7 @@ test("roleplays all persona samples through account logging, goals, and learning
     await expect(page.getByLabel("Check-in history")).toContainText("Weekly measurements");
 
     await page.getByLabel("Snapshot label").fill(`${persona.id} baseline`);
-    await page.getByLabel("Snapshot note").fill(`${persona.segment} persona walkthrough.`);
+    await page.getByRole("textbox", { name: "Snapshot note" }).fill(`${persona.segment} persona walkthrough.`);
     await page.getByRole("button", { name: "Save current snapshot" }).click();
     await expect(
       accountDialog.locator(".snapshot-row").filter({ hasText: `${persona.id} baseline` })

@@ -1,5 +1,11 @@
+import { useState } from "react";
 import { comparisonMetrics, summarizeSnapshotTrend } from "../lib/comparison";
-import { buildSnapshotTrendChart } from "../lib/snapshotTrends";
+import {
+  buildSnapshotHistoryChart,
+  buildSnapshotTrendChart,
+  snapshotHistoryMetricOptions,
+  snapshotHistoryRangeOptions
+} from "../lib/snapshotTrends";
 
 function formatTimestamp(timestamp) {
   return new Intl.DateTimeFormat(undefined, {
@@ -39,8 +45,14 @@ export default function SnapshotPanel({
   onImportSnapshots,
   importStatus
 }) {
+  const [historyMetric, setHistoryMetric] = useState("weight");
+  const [historyRange, setHistoryRange] = useState("all");
   const trend = summarizeSnapshotTrend(snapshots);
   const trendChart = buildSnapshotTrendChart(snapshots);
+  const historyChart = buildSnapshotHistoryChart(snapshots, {
+    metricKey: historyMetric,
+    rangeId: historyRange
+  });
 
   return (
     <section className="panel">
@@ -137,6 +149,98 @@ export default function SnapshotPanel({
               <p className="muted-text">Bands show typical re-measurement noise, not a target range.</p>
             </div>
           ) : null}
+          <div className="snapshot-history" aria-label="Snapshot metric history">
+            <div className="snapshot-history-controls">
+              <label className="field">
+                <span className="field-label">History metric</span>
+                <select
+                  aria-label="Snapshot history metric"
+                  value={historyMetric}
+                  onChange={(event) => setHistoryMetric(event.target.value)}
+                >
+                  {snapshotHistoryMetricOptions.map((metric) => (
+                    <option key={metric.key} value={metric.key}>
+                      {metric.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                <span className="field-label">Range</span>
+                <select
+                  aria-label="Snapshot history range"
+                  value={historyRange}
+                  onChange={(event) => setHistoryRange(event.target.value)}
+                >
+                  {snapshotHistoryRangeOptions.map((range) => (
+                    <option key={range.id} value={range.id}>
+                      {range.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {historyChart ? (
+              <div className="snapshot-history-chart">
+                <div className="snapshot-history-summary">
+                  <strong>
+                    {historyChart.label}: {formatDelta(historyChart.delta, historyChart.unit)}
+                  </strong>
+                  <span>
+                    {historyChart.count} snapshot(s), {historyChart.rangeLabel}; {historyChart.noiseLabel} typical noise
+                  </span>
+                </div>
+                <svg
+                  viewBox={`0 0 ${historyChart.width} ${historyChart.height}`}
+                  role="img"
+                  aria-label={`${historyChart.label} snapshot history chart`}
+                >
+                  <line x1="18" y1="18" x2="18" y2="132" />
+                  <line x1="18" y1="132" x2="342" y2="132" />
+                  <path className="snapshot-chart-noise noise-0" d={historyChart.noiseBandPath} />
+                  <polyline className="snapshot-chart-line line-0" points={historyChart.pointString} />
+                  {historyChart.points.map((point) => (
+                    <circle
+                      key={point.id}
+                      className="snapshot-history-point"
+                      cx={point.x}
+                      cy={point.y}
+                      r="2.4"
+                    >
+                      <title>
+                        {`${point.value.toFixed(1)} ${historyChart.unit} on ${formatTimestamp(point.createdAt)}`}
+                      </title>
+                    </circle>
+                  ))}
+                  {historyChart.notePoints.map((point) => (
+                    <circle
+                      key={`${point.id}-note`}
+                      className="snapshot-history-note"
+                      cx={point.x}
+                      cy={point.y}
+                      r="4.2"
+                    >
+                      <title>{point.note}</title>
+                    </circle>
+                  ))}
+                </svg>
+                {historyChart.notePoints.length ? (
+                  <ul className="snapshot-annotation-list" aria-label="Snapshot note annotations">
+                    {historyChart.notePoints.map((point) => (
+                      <li key={point.id}>
+                        <strong>{point.label || formatTimestamp(point.createdAt)}</strong>
+                        <span>{point.note}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="muted-text">Add snapshot notes to annotate this history chart.</p>
+                )}
+              </div>
+            ) : (
+              <p className="muted-text">Save at least two snapshots with this metric to build a history chart.</p>
+            )}
+          </div>
         </div>
       ) : null}
 

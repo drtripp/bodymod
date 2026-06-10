@@ -19,6 +19,11 @@ function writeStorage(key, value) {
   writeJsonSync(key, value);
 }
 
+function timestampMs(record) {
+  const parsed = new Date(record?.createdAt || record?.loggedAt || 0).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
 }
@@ -239,6 +244,121 @@ export function persistUserCheckIn(accountId, checkIn) {
   });
 
   return nextCheckIn;
+}
+
+export function persistUserCheckIns(accountId, importedCheckIns = []) {
+  const parsed = readStorage(CHECKINS_KEY, { checkIns: [] });
+  const checkIns = Array.isArray(parsed.checkIns) ? parsed.checkIns : [];
+  const nextCheckIns = importedCheckIns.map((checkIn) => ({
+    id: crypto.randomUUID(),
+    accountId,
+    createdAt: new Date().toISOString(),
+    ...checkIn
+  }));
+
+  const mergedCheckIns = [...nextCheckIns, ...checkIns].sort(
+    (left, right) => new Date(right.createdAt) - new Date(left.createdAt)
+  );
+
+  writeStorage(CHECKINS_KEY, {
+    version: STORAGE_VERSION,
+    checkIns: mergedCheckIns
+  });
+
+  return mergedCheckIns.filter((checkIn) => checkIn.accountId === accountId);
+}
+
+function mergeAccountCollection({
+  storageKey,
+  collectionKey,
+  accountId,
+  records = []
+}) {
+  const parsed = readStorage(storageKey, { [collectionKey]: [] });
+  const collection = Array.isArray(parsed[collectionKey]) ? parsed[collectionKey] : [];
+  const existingForAccount = collection.filter((record) => record.accountId === accountId);
+  const otherAccounts = collection.filter((record) => record.accountId !== accountId);
+  const existingIds = new Set(existingForAccount.map((record) => record.id).filter(Boolean));
+  const restoredRecords = records
+    .filter((record) => record && typeof record === "object")
+    .map((record) => ({
+      ...record,
+      id: record.id || crypto.randomUUID(),
+      accountId
+    }))
+    .filter((record) => {
+      if (existingIds.has(record.id)) {
+        return false;
+      }
+      existingIds.add(record.id);
+      return true;
+    });
+  const mergedForAccount = [...restoredRecords, ...existingForAccount].sort(
+    (left, right) => timestampMs(right) - timestampMs(left)
+  );
+
+  writeStorage(storageKey, {
+    version: STORAGE_VERSION,
+    [collectionKey]: [...mergedForAccount, ...otherAccounts]
+  });
+
+  return {
+    records: mergedForAccount,
+    importedCount: restoredRecords.length
+  };
+}
+
+export function restoreUserBackupData(accountId, backup = {}) {
+  if (!accountId) {
+    throw new Error("Sign in before restoring a backup.");
+  }
+
+  const goals = mergeAccountCollection({
+    storageKey: GOALS_KEY,
+    collectionKey: "goals",
+    accountId,
+    records: backup.goals
+  });
+  const protocols = mergeAccountCollection({
+    storageKey: PROTOCOLS_KEY,
+    collectionKey: "protocols",
+    accountId,
+    records: backup.protocols
+  });
+  const checkIns = mergeAccountCollection({
+    storageKey: CHECKINS_KEY,
+    collectionKey: "checkIns",
+    accountId,
+    records: backup.checkIns
+  });
+  const workouts = mergeAccountCollection({
+    storageKey: WORKOUTS_KEY,
+    collectionKey: "workouts",
+    accountId,
+    records: backup.workoutSessions || backup.workouts
+  });
+  const faceMeasurements = mergeAccountCollection({
+    storageKey: FACE_MEASUREMENTS_KEY,
+    collectionKey: "faceMeasurements",
+    accountId,
+    records: backup.faceMeasurements
+  });
+
+  return {
+    goals: goals.records,
+    protocols: protocols.records,
+    checkIns: checkIns.records,
+    workoutSessions: workouts.records,
+    faceMeasurements: faceMeasurements.records,
+    imported: {
+      goals: goals.importedCount,
+      protocols: protocols.importedCount,
+      checkIns: checkIns.importedCount,
+      workoutSessions: workouts.importedCount,
+      faceMeasurements: faceMeasurements.importedCount,
+      photoManifest: Array.isArray(backup.photoManifest) ? backup.photoManifest.length : 0
+    }
+  };
 }
 
 export function persistUserWorkoutSession(accountId, workout) {

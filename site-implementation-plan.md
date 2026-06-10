@@ -285,9 +285,19 @@ Status:
 - supports current-vs-selected-snapshot silhouette comparison in the vs Target pane
 - supports compact newest-vs-oldest trend summary
 - supports compact SVG trend chart for key local tracking metrics
+- supports per-metric snapshot history charts with range selection and note
+  annotations from snapshot notes
 - supports JSON export/import
 - skips duplicate snapshot imports with an explicit status message
 - restores most recent snapshot on return visit
+- account check-ins support historical weight CSV import through
+  `frontend/src/lib/historyImport.js`, storing imported rows as normal
+  daily-weight logs for trend weight and adaptive TDEE
+- account workspace supports passphrase-encrypted backup/restore through
+  `frontend/src/lib/localBackup.js`; photos are exported as metadata manifests
+  rather than image payloads
+- saved goals use `frontend/src/lib/goalTargets.js` for progress rows and
+  maintenance drift alerts once a target-band snapshot exists
 
 Next:
 

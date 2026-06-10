@@ -84,10 +84,14 @@ Implemented now:
 - local snapshot trend summary across saved entries
 - compact local trend chart for key saved-snapshot metrics
 - per-field noise bands on snapshot trend charts using the documented re-measurement error model
+- per-metric snapshot history charts with range filters and note annotations
 - local account workspace for persona walkthroughs, goals, protocols, check-ins, workouts, photos, and reports
 - daily weight trend smoothing with raw-dot vs smoothed-line display
+- historical weight CSV import for local daily logs, with lb/kg handling, optional calories, and duplicate-date skipping
+- passphrase-encrypted local backup and restore for snapshots and account logs, with photo metadata manifest only
 - adaptive TDEE estimate from reliable daily weight and calorie logs, with reliability-window exclusions
 - guided weekly check-in flow with snapshot save, streak/grace state, heatmap, milestones, insight drops, and weekly digest
+- maintenance drift alerts for saved goals once an at-target snapshot exists
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
 - reliability events pause affected weight and tape trend inference during healing or disruption windows
 - projected silhouettes for calorie-target protocol planning bands, with uncertainty copy

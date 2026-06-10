@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildSnapshotHistoryChart,
   buildSnapshotTrendChart,
   noiseSdForMetric
 } from "../src/lib/snapshotTrends.js";
@@ -52,4 +53,45 @@ test("uses documented fallback and returns null without enough snapshots", () =>
   assert.equal(noiseSdForMetric("unknownMetric"), 1);
   assert.equal(buildSnapshotTrendChart([]), null);
   assert.equal(buildSnapshotTrendChart([{ id: "only", measurements }]), null);
+});
+
+test("builds range-filtered single-metric history charts with note annotations", () => {
+  const chart = buildSnapshotHistoryChart(
+    [
+      {
+        id: "old",
+        label: "Old baseline",
+        createdAt: "2025-01-01T00:00:00.000Z",
+        measurements: { ...measurements, weight: 90 }
+      },
+      {
+        id: "mid",
+        label: "Cut start",
+        note: "Started calorie target.",
+        createdAt: "2026-05-01T00:00:00.000Z",
+        measurements: { ...measurements, weight: 86 }
+      },
+      {
+        id: "latest",
+        label: "Latest",
+        note: "Travel week.",
+        createdAt: "2026-06-10T00:00:00.000Z",
+        measurements: { ...measurements, weight: 84 }
+      }
+    ],
+    { metricKey: "weight", rangeId: "90d" }
+  );
+
+  assert.ok(chart);
+  assert.equal(chart.label, "Weight");
+  assert.equal(chart.rangeLabel, "90 days");
+  assert.equal(chart.count, 2);
+  assert.equal(chart.delta, -2);
+  assert.equal(chart.noiseLabel, "+/-0.7 kg");
+  assert.deepEqual(
+    chart.notePoints.map((point) => `${point.id}:${point.note}`),
+    ["mid:Started calorie target.", "latest:Travel week."]
+  );
+  assert.match(chart.noiseBandPath, /^M /);
+  assert.ok(chart.pointString.includes(","));
 });
