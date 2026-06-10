@@ -42,11 +42,23 @@ import {
 import {
   buildEnergyProjection,
   buildPlanRetro,
+  buildProjectedMeasurements,
   buildProtocolCaseLog,
   buildProtocolOutcomeSummary,
   formatProtocolSchemaSummary,
   splitAffectedFields
 } from "../lib/protocolPlanning";
+import {
+  buildMeasurementTargetMetrics,
+  buildSnapshotTargets
+} from "../lib/localTargets";
+import {
+  buildGoalProgress,
+  CUSTOM_GOAL_TARGET_ID,
+  customGoalMetricOptions,
+  goalTargetSourceLabel,
+  parseCustomGoalMetrics
+} from "../lib/goalTargets";
 import {
   createPhotoRecord,
   defaultPhotoComparison,
@@ -72,15 +84,6 @@ const emptyPlanningData = {
   goalPresets: [],
   protocolTemplates: [],
   protocolTaxonomy: []
-};
-
-const goalMetricLabels = {
-  weight: ["Weight", "kg"],
-  waistCircumference: ["Waist", "cm"],
-  hipCircumference: ["Hip", "cm"],
-  bideltoidCircumference: ["Bideltoid Circ", "cm"],
-  bicepCircumference: ["Bicep Circ", "cm"],
-  upperThighCircumference: ["Upper Thigh Circ", "cm"]
 };
 
 function formatDate(timestamp) {
@@ -151,50 +154,6 @@ function findPhoto(photos, photoId) {
   return photos.find((photo) => photo.id === photoId) || null;
 }
 
-function clampProgress(value) {
-  return Math.max(0, Math.min(100, value));
-}
-
-function buildGoalProgress(goal, currentMeasurements) {
-  const starting = goal.startingMeasurements;
-  const targetMetrics = goal.targetMetrics || {};
-  const rows = Object.entries(targetMetrics)
-    .map(([key, targetDelta]) => {
-      const [label, unit] = goalMetricLabels[key] || [key, ""];
-      const start = Number(starting?.[key]);
-      const current = Number(currentMeasurements[key]);
-      const delta = Number(targetDelta);
-
-      if (!Number.isFinite(start) || !Number.isFinite(current) || !Number.isFinite(delta) || delta === 0) {
-        return null;
-      }
-
-      const target = start + delta;
-      const progress = clampProgress(((current - start) / delta) * 100);
-
-      return {
-        key,
-        label,
-        unit,
-        start,
-        current,
-        target,
-        progress
-      };
-    })
-    .filter(Boolean);
-
-  if (!rows.length) {
-    return null;
-  }
-
-  const average = rows.reduce((total, row) => total + row.progress, 0) / rows.length;
-  return {
-    average,
-    rows
-  };
-}
-
 function formatCadenceFields(fields) {
   return fields.map((field) => field.label).join(", ");
 }
@@ -236,6 +195,7 @@ export default function AccountGoalPanel({
   currentMeasurements,
   onApplyMeasurements,
   snapshotProps,
+  targetProfiles = [],
   onOpenStrategies,
   onClose
 }) {
@@ -261,6 +221,8 @@ export default function AccountGoalPanel({
   const [loginEmail, setLoginEmail] = useState("");
   const [selectedPersonaId, setSelectedPersonaId] = useState("");
   const [selectedGoalId, setSelectedGoalId] = useState("");
+  const [selectedGoalTargetId, setSelectedGoalTargetId] = useState("");
+  const [customGoalDeltas, setCustomGoalDeltas] = useState({});
   const [selectedProtocolTemplateId, setSelectedProtocolTemplateId] = useState("");
   const [targetDate, setTargetDate] = useState("");
   const [goalNote, setGoalNote] = useState("");
@@ -358,6 +320,31 @@ export default function AccountGoalPanel({
     (persona) => persona.id === selectedPersonaId
   );
   const selectedGoal = planningData.goalPresets.find((goal) => goal.id === selectedGoalId);
+  const profileGoalTargets = useMemo(
+    () =>
+      targetProfiles
+        .filter((target) => target?.id && target?.measurements)
+        .map((target) => ({
+          ...target,
+          id: `target:${target.id}`,
+          targetId: target.id,
+          label: `Target profile: ${target.label}`,
+          goalTargetType: "target-profile"
+        })),
+    [targetProfiles]
+  );
+  const snapshotGoalTargets = useMemo(
+    () => buildSnapshotTargets(snapshotProps.snapshots),
+    [snapshotProps.snapshots]
+  );
+  const measurementGoalTargets = useMemo(
+    () => [...profileGoalTargets, ...snapshotGoalTargets],
+    [profileGoalTargets, snapshotGoalTargets]
+  );
+  const selectedGoalTarget = measurementGoalTargets.find(
+    (target) => target.id === selectedGoalTargetId
+  );
+  const isCustomGoalTarget = selectedGoalTargetId === CUSTOM_GOAL_TARGET_ID;
   const selectedProtocolTemplate = planningData.protocolTemplates.find(
     (protocol) => protocol.id === selectedProtocolTemplateId
   );
@@ -446,6 +433,16 @@ export default function AccountGoalPanel({
   useEffect(() => {
     setSelectedProtocolIds(selectedGoal?.suggestedProtocols || []);
   }, [selectedGoal?.id]);
+
+  useEffect(() => {
+    if (
+      selectedGoalTargetId &&
+      selectedGoalTargetId !== CUSTOM_GOAL_TARGET_ID &&
+      !measurementGoalTargets.some((target) => target.id === selectedGoalTargetId)
+    ) {
+      setSelectedGoalTargetId("");
+    }
+  }, [measurementGoalTargets, selectedGoalTargetId]);
 
   useEffect(() => {
     setSelectedProgramId((current) => {
@@ -550,10 +547,57 @@ export default function AccountGoalPanel({
     setStatus("Logged out of this browser profile.");
   }
 
+  function handleCustomGoalDeltaChange(metric, value) {
+    setCustomGoalDeltas((current) => ({
+      ...current,
+      [metric]: value
+    }));
+  }
+
   function handleSetGoal(event) {
     event.preventDefault();
     if (!account || !selectedGoal) {
       return;
+    }
+
+    let targetMetrics = selectedGoal.targetMetrics;
+    let targetSource = {
+      type: "preset",
+      label: "Preset deltas"
+    };
+    let targetMeasurements = null;
+
+    if (isCustomGoalTarget) {
+      targetMetrics = parseCustomGoalMetrics(customGoalDeltas);
+      if (!Object.keys(targetMetrics).length) {
+        setStatus("Enter at least one custom target delta.");
+        return;
+      }
+
+      targetSource = {
+        type: "custom",
+        label: "Custom deltas"
+      };
+    } else if (selectedGoalTarget) {
+      targetMetrics = buildMeasurementTargetMetrics(
+        currentMeasurements,
+        selectedGoalTarget.measurements
+      );
+      targetMeasurements = selectedGoalTarget.measurements;
+      targetSource =
+        selectedGoalTarget.goalTargetType === "target-profile"
+          ? {
+              type: "target-profile",
+              targetId: selectedGoalTarget.targetId,
+              label: selectedGoalTarget.label.replace(/^Target profile:\s*/, ""),
+              sourceType: selectedGoalTarget.source_type
+            }
+          : {
+              type: "past-self",
+              snapshotId: selectedGoalTarget.snapshotId,
+              label: selectedGoalTarget.label,
+              createdAt: selectedGoalTarget.createdAt
+            };
     }
 
     const nextGoal = persistUserGoal(account.id, {
@@ -561,7 +605,9 @@ export default function AccountGoalPanel({
       label: selectedGoal.label,
       category: selectedGoal.category,
       summary: selectedGoal.summary,
-      targetMetrics: selectedGoal.targetMetrics,
+      targetMetrics,
+      targetSource,
+      targetMeasurements,
       targetDate,
       note: goalNote.trim(),
       protocolIds: selectedProtocolIds,
@@ -570,7 +616,14 @@ export default function AccountGoalPanel({
 
     setGoals([nextGoal, ...goals]);
     setGoalNote("");
-    setStatus(`Goal saved: ${selectedGoal.label}.`);
+    if (isCustomGoalTarget) {
+      setCustomGoalDeltas({});
+    }
+    setStatus(
+      targetSource.type !== "preset"
+        ? `Goal saved: ${selectedGoal.label} toward ${targetSource.label}.`
+        : `Goal saved: ${selectedGoal.label}.`
+    );
   }
 
   function handleGoalCheckIn(goalId, adherence) {
@@ -1290,6 +1343,54 @@ export default function AccountGoalPanel({
                     onChange={(event) => setTargetDate(event.target.value)}
                   />
                 </label>
+                <label className="field">
+                  <span className="field-label">Target measurement set</span>
+                  <select
+                    aria-label="Goal target source"
+                    value={selectedGoalTargetId}
+                    onChange={(event) => setSelectedGoalTargetId(event.target.value)}
+                  >
+                    <option value="">Preset deltas</option>
+                    <option value={CUSTOM_GOAL_TARGET_ID}>Custom deltas</option>
+                    {profileGoalTargets.length ? (
+                      <optgroup label="Target profiles">
+                        {profileGoalTargets.map((target) => (
+                          <option key={target.id} value={target.id}>
+                            {target.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ) : null}
+                    {snapshotGoalTargets.length ? (
+                      <optgroup label="Past self snapshots">
+                        {snapshotGoalTargets.map((target) => (
+                          <option key={target.id} value={target.id}>
+                            {target.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ) : null}
+                  </select>
+                </label>
+                {isCustomGoalTarget ? (
+                  <div className="custom-goal-delta-grid" aria-label="Custom goal deltas">
+                    {customGoalMetricOptions.map((option) => (
+                      <label key={option.key} className="field">
+                        <span className="field-label">{option.label} delta</span>
+                        <input
+                          aria-label={`Custom ${option.label} delta`}
+                          inputMode="decimal"
+                          value={customGoalDeltas[option.key] || ""}
+                          onChange={(event) =>
+                            handleCustomGoalDeltaChange(option.key, event.target.value)
+                          }
+                          placeholder={option.key === "waistCircumference" ? "-4" : "0"}
+                        />
+                        <small>{option.unit}</small>
+                      </label>
+                    ))}
+                  </div>
+                ) : null}
                 <label className="field goal-note">
                   <span className="field-label">Goal note</span>
                   <textarea
@@ -1300,6 +1401,16 @@ export default function AccountGoalPanel({
                 </label>
                 {selectedGoal ? (
                   <p className="muted-text">{selectedGoal.summary}</p>
+                ) : null}
+                {selectedGoalTarget ? (
+                  <p className="muted-text goal-target-copy">
+                    Using {selectedGoalTarget.label} as the target measurement set.
+                  </p>
+                ) : null}
+                {isCustomGoalTarget ? (
+                  <p className="muted-text goal-target-copy">
+                    Enter signed deltas from the current measurements. Leave unused fields blank.
+                  </p>
                 ) : null}
                 <button className="button" type="submit">
                   Save goal
@@ -1350,6 +1461,7 @@ export default function AccountGoalPanel({
                         })()}
                         <strong>{goal.label}</strong>
                         <span>{goal.category} / created {formatDate(goal.createdAt)}</span>
+                        {goalTargetSourceLabel(goal) ? <span>{goalTargetSourceLabel(goal)}</span> : null}
                         {goal.targetDate ? <span>Target date: {goal.targetDate}</span> : null}
                         {goal.protocolIds?.length ? (
                           <span>{protocolLabels(goal.protocolIds, planningData.protocolTemplates)}</span>
@@ -1544,6 +1656,10 @@ export default function AccountGoalPanel({
                         snapshotProps.snapshots
                       );
                       const projection = buildEnergyProjection(protocol, currentMeasurements);
+                      const projectedSilhouette = buildProjectedMeasurements(
+                        protocol,
+                        currentMeasurements
+                      );
                       const retro =
                         protocol.status === "archived"
                           ? buildPlanRetro(protocol, currentMeasurements, snapshotProps.snapshots)
@@ -1645,6 +1761,28 @@ export default function AccountGoalPanel({
                                   {projection.model}: {projection.lowDeltaKg} to {projection.highDeltaKg} kg over {projection.durationDays} days.
                                 </p>
                                 <small>{projection.note}</small>
+                                {projectedSilhouette ? (
+                                  <div
+                                    className="projection-silhouette-card"
+                                    aria-label={`${protocol.label} projected silhouette`}
+                                  >
+                                    <div className="projection-silhouette-grid">
+                                      <SilhouetteView
+                                        label={`${protocol.label} protocol start`}
+                                        measurements={protocol.startingMeasurements || currentMeasurements}
+                                      />
+                                      <SilhouetteView
+                                        label={`${protocol.label} projected endpoint`}
+                                        measurements={projectedSilhouette.measurements}
+                                      />
+                                    </div>
+                                    <p>
+                                      Projected endpoint: {projectedSilhouette.measurements.weight.toFixed(1)} kg,
+                                      waist {projectedSilhouette.measurements.waistCircumference.toFixed(1)} cm.
+                                    </p>
+                                    <small>{projectedSilhouette.note}</small>
+                                  </div>
+                                ) : null}
                               </div>
                             ) : null}
                             {retro ? (

@@ -53,6 +53,26 @@ const targets = [
       bideltoidCircumference: 128,
       waistCircumference: 78
     }
+  },
+  {
+    id: "shadowheart",
+    label: "Shadowheart",
+    source_type: "character",
+    notes: "Estimated female placeholder profile.",
+    score: 0.512,
+    similarity: 70.4,
+    explanation: ["hip: 12 above target", "waist: 16 below target"],
+    measurements: {
+      ...targetMeasurements,
+      height: 163,
+      weight: 56,
+      sex: "female",
+      bideltoidCircumference: 96,
+      waistCircumference: 64,
+      hipCircumference: 92,
+      upperThighCircumference: 53,
+      bicepCircumference: 27
+    }
   }
 ];
 
@@ -589,7 +609,10 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.getByText("Sexed measurements")).not.toBeVisible();
   await page.getByRole("tab", { name: "vs Target" }).click();
   await expect(page.getByRole("heading", { name: "vs Target" })).toHaveCount(0);
-  await expect(page.locator(".comparison-toolbar select")).toHaveValue("astarion");
+  const targetSelect = page.locator(".target-select-field select");
+  await expect(page.getByLabel("Target filters")).toBeVisible();
+  await expect(page.getByLabel("Filtered target count")).toContainText("3 of 3 targets");
+  await expect(targetSelect).toHaveValue("astarion");
   await expect(page.getByLabel("Selected target metadata")).toContainText("Astarion");
   await expect(page.getByLabel("Selected target metadata")).toContainText("character");
   await expect(page.getByLabel("Selected target metadata")).toContainText("Estimated placeholder profile.");
@@ -603,9 +626,28 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.getByLabel("Target measurement difference").getByText("71.0 kg")).toBeVisible();
   await expect(page.getByLabel("Target measurement difference").getByText("+11.0 kg")).toBeVisible();
 
+  await page.getByLabel("Target source filter").selectOption("archetype");
+  await expect(page.getByLabel("Filtered target count")).toContainText("1 of 3 targets");
+  await expect(targetSelect).toHaveValue("classic-physique");
+  await expect(page.getByLabel("Selected target metadata")).toContainText("archetype / Muscular");
+
+  await page.getByLabel("Target source filter").selectOption("all");
+  await page.getByLabel("Target sex filter").selectOption("female");
+  await expect(page.getByLabel("Filtered target count")).toContainText("1 of 3 targets");
+  await expect(targetSelect).toHaveValue("shadowheart");
+  await expect(page.getByLabel("Selected target metadata")).toContainText("character / Curvy");
+  await expect(page.getByLabel("Selected target metadata")).toContainText("Estimated female placeholder profile.");
+  await page.getByLabel("Target build filter").selectOption("curvy");
+  await expect(page.getByLabel("Filtered target count")).toContainText("1 of 3 targets");
+  await page.getByLabel("Target sex filter").selectOption("all");
+  await page.getByLabel("Target build filter").selectOption("all");
+  await targetSelect.selectOption("astarion");
+
   await page.getByRole("button", { name: "Overlap" }).click();
   await expect(page.getByLabel("Overlap comparison")).toBeVisible();
-  await expect(page.getByLabel("Overlap difference regions")).toHaveCount(0);
+  await expect(page.getByLabel("Overlap difference regions")).toBeVisible();
+  await expect(page.getByLabel("Overlap difference regions")).toContainText("Weight");
+  await expect(page.getByLabel("Overlap difference regions")).toContainText("+11.0 kg");
   await expect(page.getByLabel("Target measurement difference")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Current vs target" })).toHaveCount(0);
   await expect
@@ -617,7 +659,23 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
     )
     .toBeLessThan(2);
 
-  await page.locator(".comparison-toolbar select").selectOption("classic-physique");
+  await page.getByRole("button", { name: "Morph" }).click();
+  await expect(page.getByLabel("Morph comparison")).toBeVisible();
+  await expect(page.getByLabel("Morph animation controls")).toContainText("Animated interpolation");
+  await expect(page.getByLabel("Morph progress readout")).toContainText("50%");
+  await page.getByRole("button", { name: "Play morph" }).click();
+  await expect(page.getByRole("button", { name: "Pause morph" })).toBeVisible();
+  await page.getByRole("button", { name: "Pause morph" }).click();
+  const morphDownloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download morph card" }).click();
+  const morphDownload = await morphDownloadPromise;
+  expect(morphDownload.suggestedFilename()).toBe("bodymod-morph-card.svg");
+  const morphSvg = await readFile(await morphDownload.path(), "utf8");
+  expect(morphSvg).toContain("Morph comparison");
+  expect(morphSvg).toContain("<animate");
+  await page.getByRole("button", { name: "Side by side" }).click();
+
+  await targetSelect.selectOption("classic-physique");
   await expect(page.getByRole("img", { name: "Classic Physique Archetype silhouette" })).toBeVisible();
   await expect(page.getByLabel("Selected target metadata")).toContainText("Broad-shouldered placeholder profile.");
 
@@ -875,23 +933,61 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await page.getByLabel("Snapshot label").fill("Baseline");
   await page.getByLabel("Snapshot note").fill("First persona walkthrough log.");
   await page.getByRole("button", { name: "Save current snapshot" }).click();
-  await expect(accountDialog.getByText("Baseline")).toBeVisible();
+  await expect(
+    accountDialog.locator(".snapshot-row").filter({ hasText: "Baseline" })
+  ).toBeVisible();
   await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Baseline" })).toContainText(
     "181 cm / 86 kg / male / waist 86"
   );
 
+  await page.getByRole("button", { name: "Close account panel" }).click();
+  await page.locator('input[name="waistCircumference"]').fill("90");
+  await page.locator('input[name="bideltoidCircumference"]').fill("120");
+  await page.locator('input[name="bideltoidCircumference"]').blur();
+  await page.getByRole("tab", { name: "vs Target" }).click();
+  await page.locator(".target-select-field select").selectOption({ label: "Past self: Baseline" });
+  await expect(page.getByLabel("Selected target metadata")).toContainText("past self");
+  await expect(page.getByLabel("Selected target metadata")).toContainText("First persona walkthrough log.");
+  await page.getByRole("button", { name: "Overlap" }).click();
+  await expect(page.getByLabel("Overlap difference regions")).toContainText("Waist");
+  await page.getByRole("button", { name: "User profile" }).click();
+
   await page.getByLabel("Goal preset").selectOption("shoulder-waist-ratio");
+  await page.getByLabel("Goal target source").selectOption({ label: "Past self: Baseline" });
+  await expect(page.getByLabel("Goal builder")).toContainText(
+    "Using Past self: Baseline as the target measurement set."
+  );
   await page.getByLabel("Goal note").fill("Prioritize waist trend and deltoid circumference.");
   await expect(page.getByLabel("Suggested protocols")).toContainText("Progressive resistance training");
   await expect(page.getByLabel("Suggested protocols")).toContainText("Calorie target with weekly trend review");
   await page.getByRole("button", { name: "Save goal" }).click();
   await expect(page.getByLabel("Saved goals")).toContainText("Improve shoulder-to-waist ratio");
+  await expect(page.getByLabel("Saved goals")).toContainText("Past self target: Past self: Baseline");
   await expect(page.getByLabel("Saved goals")).toContainText("Progress: 0%");
-  await expect(page.getByLabel("Improve shoulder-to-waist ratio progress")).toContainText("Waist: 86.0 / target 82.0 cm");
+  await expect(page.getByLabel("Improve shoulder-to-waist ratio progress")).toContainText("Waist: 90.0 / target 86.0 cm");
+  await expect(page.getByLabel("Improve shoulder-to-waist ratio progress")).toContainText(
+    "Bideltoid Circ: 120.0 / target 124.0 cm"
+  );
   await expect(page.getByLabel("Saved goals")).toContainText("0 check-in(s)");
   await expect(page.getByLabel("Insight drops")).toContainText("1 saved goal(s)");
   await page.getByRole("button", { name: "On track" }).click();
   await expect(page.getByLabel("Saved goals")).toContainText("1 check-in(s)");
+
+  await page.getByLabel("Goal target source").selectOption({ label: "Target profile: Classic Physique Archetype" });
+  await expect(page.getByLabel("Goal builder")).toContainText(
+    "Using Target profile: Classic Physique Archetype as the target measurement set."
+  );
+  await page.getByRole("button", { name: "Save goal" }).click();
+  await expect(page.getByLabel("Saved goals")).toContainText("Target profile: Classic Physique Archetype");
+
+  await page.getByLabel("Goal target source").selectOption("custom-deltas");
+  await expect(page.getByLabel("Custom goal deltas")).toBeVisible();
+  await page.getByLabel("Custom Waist delta").fill("-6");
+  await page.getByLabel("Custom Bideltoid Circ delta").fill("5");
+  await page.getByRole("button", { name: "Save goal" }).click();
+  await expect(page.getByLabel("Saved goals")).toContainText("Custom target deltas");
+  await expect(page.getByLabel("Saved goals")).toContainText("Waist: 90.0 / target 84.0 cm");
+  await expect(page.getByLabel("Saved goals")).toContainText("Bideltoid Circ: 120.0 / target 125.0 cm");
 
   await page.getByLabel("Protocol template").selectOption("resistance-training");
   await expect(page.getByLabel("Protocol schema")).toContainText("Intervention taxonomy");
@@ -907,6 +1003,11 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Active protocols")).toContainText("Daily energy delta: -300 kcal");
   await expect(page.getByLabel("Progressive resistance training outcome attribution")).toContainText("snapshot(s) linked");
   await expect(page.getByLabel("Progressive resistance training projection band")).toContainText("NIDDK/Hall-inspired");
+  await expect(page.getByLabel("Progressive resistance training projected silhouette")).toContainText("Projected endpoint:");
+  await expect(page.getByRole("img", { name: "Progressive resistance training projected endpoint silhouette" })).toBeVisible();
+  await expect(page.getByLabel("Progressive resistance training projected silhouette")).toContainText(
+    "adjusts only calorie-linked weight and waist"
+  );
   await expect(page.getByLabel("Progressive resistance training case log")).toContainText("Weight");
   await page.getByLabel("Protocol adherence score").selectOption("5");
   await page.getByRole("button", { name: "Finish guided weekly check-in" }).click();
@@ -1029,7 +1130,9 @@ test("roleplays all persona samples through account logging, goals, and learning
     await page.getByLabel("Snapshot label").fill(`${persona.id} baseline`);
     await page.getByLabel("Snapshot note").fill(`${persona.segment} persona walkthrough.`);
     await page.getByRole("button", { name: "Save current snapshot" }).click();
-    await expect(accountDialog.getByText(`${persona.id} baseline`)).toBeVisible();
+    await expect(
+      accountDialog.locator(".snapshot-row").filter({ hasText: `${persona.id} baseline` })
+    ).toBeVisible();
 
     await page.getByLabel("Goal preset").selectOption(goal.id);
     await page.getByLabel("Goal note").fill(`Roleplaying ${persona.segment}.`);

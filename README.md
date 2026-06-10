@@ -81,11 +81,17 @@ Implemented now:
 - daily weight trend smoothing with raw-dot vs smoothed-line display
 - guided weekly check-in flow with snapshot save, streak/grace state, heatmap, milestones, insight drops, and weekly digest
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
+- projected silhouettes for calorie-target protocol planning bands, with uncertainty copy
+- local goals can target preset deltas, custom deltas, target profiles, or saved past-self snapshots
 - local browser face measurement logger using self-hosted MediaPipe assets for camera/photo landmark scans
 - local progress photo streams for body, face, and hair with ghost overlay and comparison slider
 - current-vs-selected-snapshot silhouette comparison
 - side-by-side and overlap comparison modes
+- animated current-to-target morph mode with an SVG morph share-card download
 - current-vs-target measurement difference table in the comparison panel
+- overlap-mode measurement-band diff for current-vs-target region gaps
+- saved snapshots usable as local "past self" comparison and goal targets
+- vs Target filters for source type, sex, and inferred build category
 - target type, placeholder notes, and largest score-driver bullets in the vs Target pane
 - result, vs Target, and vs US Population panes are presented as tabs
 - first-draft US population scatter and distribution plots with sex-colored reference bands

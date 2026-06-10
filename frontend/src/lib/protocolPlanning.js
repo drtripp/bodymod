@@ -30,6 +30,14 @@ function signed(value, unit) {
   return `${sign}${value.toFixed(1)} ${unit}`;
 }
 
+function roundTenth(value) {
+  return Number(value.toFixed(1));
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
 export function splitAffectedFields(value) {
   return String(value || "")
     .split(",")
@@ -139,6 +147,55 @@ export function buildEnergyProjection(protocol, currentMeasurements = {}) {
     waistDeltaCm: Number(waistDelta.toFixed(1)),
     points,
     note: "Planning context only; not the full NIH Body Weight Planner and not medical advice."
+  };
+}
+
+export function buildProjectedMeasurements(protocol, currentMeasurements = {}) {
+  const projection = buildEnergyProjection(protocol, currentMeasurements);
+  if (!projection) {
+    return null;
+  }
+
+  const baseline = {
+    ...currentMeasurements,
+    ...(protocol.startingMeasurements || {})
+  };
+  const startWaist =
+    numeric(protocol.startingMeasurements?.waistCircumference) ??
+    numeric(currentMeasurements.waistCircumference);
+  const startPantWaist =
+    numeric(protocol.startingMeasurements?.pantWaistCircumference) ??
+    numeric(currentMeasurements.pantWaistCircumference);
+
+  if (startWaist === null) {
+    return null;
+  }
+
+  const projectedWeight = clamp(
+    projection.startWeight + projection.projectedDeltaKg,
+    35,
+    250
+  );
+  const projectedWaist = clamp(startWaist + projection.waistDeltaCm, 45, 180);
+  const measurements = {
+    ...baseline,
+    weight: roundTenth(projectedWeight),
+    waistCircumference: roundTenth(projectedWaist)
+  };
+
+  if (startPantWaist !== null) {
+    measurements.pantWaistCircumference = roundTenth(
+      clamp(startPantWaist + projection.waistDeltaCm, 45, 190)
+    );
+  }
+
+  return {
+    measurements,
+    projection,
+    adjustedFields: ["weight", "waistCircumference", "pantWaistCircumference"].filter(
+      (field) => field in measurements
+    ),
+    note: "Projected silhouette adjusts only calorie-linked weight and waist fields; other measurements are held at the protocol start."
   };
 }
 

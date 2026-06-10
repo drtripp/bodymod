@@ -172,14 +172,17 @@ Protocol Tracker → Diet upgrades → Native app.
       **First pass:** local calorie-target protocols show a conservative
       NIDDK/Hall-inspired planning band with explicit caveats in
       `protocol-planning-notes.md`; exact equation-port remains open.
-- [ ] Projected-silhouette rendering for the defensible projections, using the
+- [x] Projected-silhouette rendering for the defensible projections, using the
       existing SVG renderer, with explicit uncertainty copy.
 - [x] Case logs: structured n=1 reports (protocol, adherence, before/after,
       timeframe, source) renderable from corpus entries and from the user's
       own completed protocols.
 - [ ] Goal system: target measurement set (pick a target profile or custom
       deltas), progress-toward-goal display, goal-relative framing everywhere
-      ("4 cm from your target", never "below average").
+      ("4 cm from your target", never "below average"). **First pass:**
+      saved local snapshots, backend target profiles, and custom deltas can
+      now be used as target measurement sets with progress display; global
+      framing remains open.
 - [x] Plan retro **(new)**: when a protocol ends, show predicted band vs
       actual outcome for the defensible projections. Closes the loop, builds
       trust, and labels the training data.
@@ -205,8 +208,8 @@ Protocol Tracker → Diet upgrades → Native app.
 - [ ] Production target library per `target-profile-curation.md` +
       `target-profiles-template.json`: scope, estimation method, uncertainty
       labels, named-person policy. **[human]** — this is curation.
-- [ ] Target filtering UI (by source type, sex, build) as the library grows.
-- [ ] Measurement-band diff: upgrade overlap mode from silhouette overlay to
+- [x] Target filtering UI (by source type, sex, build) as the library grows.
+- [x] Measurement-band diff: upgrade overlap mode from silhouette overlay to
       per-region band diff showing where and how much bodies differ (decision
       flagged in `site-implementation-plan.md` — resolve it as: build it).
 - [ ] Comparison rendering variants and silhouette QA across more real-world
@@ -214,13 +217,13 @@ Protocol Tracker → Diet upgrades → Native app.
 - [ ] Side-view silhouette **(new)**: second deterministic projection
       (requires a depth-related field or estimation from circumference vs
       width); doubles comparison fidelity. Spec carefully before building.
-- [ ] Past self as target **(confirmed)**: any saved snapshot usable as a
+- [x] Past self as target **(confirmed)**: any saved snapshot usable as a
       match/comparison target — enables "maintain" and "return to form" goals
       with zero new data requirements.
 - [ ] Maintenance drift alerts **(new)**: at-goal users get band alerts
       ("waist drifted +3 cm over 6 months") instead of goal-progress framing;
       the honest retention mode for people who arrived.
-- [ ] Silhouette morph animation **(new)**: interpolate measurements between
+- [x] Silhouette morph animation **(new)**: interpolate measurements between
       current and target/projection with the existing renderer; use in-app
       and in share cards. High visual payoff for low engineering cost.
 

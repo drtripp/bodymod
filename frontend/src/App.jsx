@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AccountGoalPanel from "./components/AccountGoalPanel";
 import ComparisonPanel from "./components/ComparisonPanel";
 import DietDashboard from "./components/DietDashboard";
@@ -50,6 +50,12 @@ import {
   formatDisplayValue,
   resolveFieldUnitSystem
 } from "./lib/units";
+import { buildSnapshotTargets } from "./lib/localTargets";
+import {
+  buildTargetFilterOptions,
+  defaultTargetFilters,
+  filterTargets
+} from "./lib/targetFilters";
 
 export default function App() {
   const [formState, setFormState] = useState(defaultMeasurements);
@@ -70,6 +76,7 @@ export default function App() {
   const [comparisonSnapshotId, setComparisonSnapshotId] = useState("");
   const [comparisonMode, setComparisonMode] = useState("side-by-side");
   const [selectedTargetId, setSelectedTargetId] = useState("");
+  const [targetFilters, setTargetFilters] = useState(defaultTargetFilters);
   const [shareStatus, setShareStatus] = useState("");
   const [globalUnitSystem, setGlobalUnitSystem] = useState("metric");
   const [fieldUnitOverrides, setFieldUnitOverrides] = useState({});
@@ -484,9 +491,22 @@ export default function App() {
 
   const currentMeasurements = coerceMeasurements(formState);
   const rankedMatches = result.matches.length ? result.matches : targets;
+  const snapshotTargets = useMemo(() => buildSnapshotTargets(snapshots), [snapshots]);
+  const allComparisonTargets = useMemo(
+    () => [...rankedMatches, ...snapshotTargets],
+    [rankedMatches, snapshotTargets]
+  );
+  const targetFilterOptions = useMemo(
+    () => buildTargetFilterOptions(allComparisonTargets),
+    [allComparisonTargets]
+  );
+  const comparisonTargets = useMemo(
+    () => filterTargets(allComparisonTargets, targetFilters),
+    [allComparisonTargets, targetFilters]
+  );
   const selectedTarget =
-    rankedMatches.find((match) => match.id === selectedTargetId) ||
-    rankedMatches[0] ||
+    comparisonTargets.find((match) => match.id === selectedTargetId) ||
+    comparisonTargets[0] ||
     null;
   const comparisonSnapshot = snapshots.find(
     (snapshot) => snapshot.id === comparisonSnapshotId
@@ -495,12 +515,33 @@ export default function App() {
     currentMeasurements,
     comparisonSnapshot?.measurements
   );
+
+  useEffect(() => {
+    if (!comparisonTargets.length) {
+      return;
+    }
+
+    setSelectedTargetId((current) =>
+      comparisonTargets.some((target) => target.id === current)
+        ? current
+        : comparisonTargets[0].id
+    );
+  }, [comparisonTargets]);
+
   const shareUrl =
     typeof window !== "undefined" ? buildShareUrl(currentMeasurements) : "";
 
   function handleTargetChange(event) {
     setSelectedTargetId(event.target.value);
     trackEvent("comparison_target_selected", { id: event.target.value });
+  }
+
+  function handleTargetFilterChange(name, value) {
+    setTargetFilters((current) => ({
+      ...current,
+      [name]: value
+    }));
+    trackEvent("comparison_target_filter_changed", { name, value });
   }
 
   function handleComparisonModeChange(nextMode) {
@@ -579,7 +620,11 @@ export default function App() {
                     onModeChange={handleComparisonModeChange}
                     selectedTarget={selectedTarget}
                     onTargetChange={handleTargetChange}
-                    rankedMatches={rankedMatches}
+                    rankedMatches={comparisonTargets}
+                    totalTargetCount={allComparisonTargets.length}
+                    targetFilters={targetFilters}
+                    targetFilterOptions={targetFilterOptions}
+                    onTargetFilterChange={handleTargetFilterChange}
                     currentMeasurements={currentMeasurements}
                     snapshotComparison={snapshotComparison}
                     comparisonSnapshot={comparisonSnapshot}
@@ -645,6 +690,7 @@ export default function App() {
         <AccountGoalPanel
           currentMeasurements={currentMeasurements}
           onApplyMeasurements={applyMeasurementSet}
+          targetProfiles={rankedMatches}
           onOpenStrategies={() => {
             setIsAccountPanelOpen(false);
             setIsStrategyExplorerOpen(true);

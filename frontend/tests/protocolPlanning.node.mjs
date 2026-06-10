@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   buildEnergyProjection,
   buildPlanRetro,
+  buildProjectedMeasurements,
   buildProtocolCaseLog,
   buildProtocolOutcomeSummary,
   formatProtocolSchemaSummary,
@@ -11,13 +12,31 @@ import {
 } from "../src/lib/protocolPlanning.js";
 
 const startingMeasurements = {
+  height: 180,
   weight: 90,
+  sex: "male",
+  headCircumference: 57,
+  neckCircumference: 39,
+  biacromialWidth: 40,
+  bideltoidWidth: 50,
   waistCircumference: 100,
+  pantWaistCircumference: 104,
   hipCircumference: 106,
-  bideltoidCircumference: 122
+  bideltoidCircumference: 122,
+  armpitCircumference: 100,
+  nippleCircumference: 98,
+  underbustCircumference: 94,
+  upperThighCircumference: 60,
+  midThighCircumference: 52,
+  calfCircumference: 39,
+  ankleCircumference: 24,
+  bicepCircumference: 35,
+  upperForearmCircumference: 29,
+  wristCircumference: 17
 };
 
 const currentMeasurements = {
+  ...startingMeasurements,
   weight: 87,
   waistCircumference: 95,
   hipCircumference: 105,
@@ -76,6 +95,23 @@ test("builds conservative energy projections, retros, and case logs", () => {
   assert.match(retro.projectedBand, /kg/);
   assert.equal(caseLog.adherenceCount, 2);
   assert.match(caseLog.projectionSummary, /NIDDK/);
+});
+
+test("builds a projected silhouette measurement set for calorie-linked fields only", () => {
+  const projected = buildProjectedMeasurements(protocol, currentMeasurements);
+
+  assert.ok(projected);
+  assert.equal(projected.measurements.height, startingMeasurements.height);
+  assert.equal(projected.measurements.bideltoidCircumference, startingMeasurements.bideltoidCircumference);
+  assert.ok(projected.measurements.weight < startingMeasurements.weight);
+  assert.ok(projected.measurements.waistCircumference < startingMeasurements.waistCircumference);
+  assert.ok(projected.measurements.pantWaistCircumference < startingMeasurements.pantWaistCircumference);
+  assert.deepEqual(projected.adjustedFields, [
+    "weight",
+    "waistCircumference",
+    "pantWaistCircumference"
+  ]);
+  assert.match(projected.note, /only calorie-linked weight and waist/);
 });
 
 test("formats protocol taxonomy and life-event field input", () => {

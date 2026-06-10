@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  buildMorphShareCardSvg,
   buildResultCardModel,
   buildResultCardSvg,
+  morphShareCardDataUrl,
   resultCardDataUrl
 } from "../src/lib/resultCard.js";
 
@@ -62,4 +64,24 @@ test("encodes the result card as an SVG data URL", () => {
 
   assert.ok(dataUrl.startsWith("data:image/svg+xml;charset=utf-8,"));
   assert.ok(decodeURIComponent(dataUrl).includes("Measurement profile"));
+});
+
+test("builds an animated morph share card SVG", () => {
+  const target = {
+    label: "Classic Physique Archetype",
+    measurements: {
+      ...measurements,
+      weight: 88,
+      waistCircumference: 78,
+      bideltoidCircumference: 128
+    }
+  };
+  const svg = buildMorphShareCardSvg(measurements, target);
+  const dataUrl = morphShareCardDataUrl(measurements, target);
+
+  assert.match(svg, /Morph comparison/);
+  assert.match(svg, /Classic Physique Archetype/);
+  assert.match(svg, /<animate attributeName="d"/);
+  assert.match(svg, /Waist delta/);
+  assert.ok(decodeURIComponent(dataUrl).includes("animated morph share card"));
 });

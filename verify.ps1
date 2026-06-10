@@ -28,12 +28,15 @@ try {
     Invoke-Checked { npm run test:diet }
     Invoke-Checked { npm run test:ratios }
     Invoke-Checked { npm run test:body-composition }
+    Invoke-Checked { npm run test:comparison }
     Invoke-Checked { npm run test:sizes }
     Invoke-Checked { npm run test:workouts }
     Invoke-Checked { npm run test:photos }
     Invoke-Checked { npm run test:onboarding }
     Invoke-Checked { npm run test:tracking }
     Invoke-Checked { npm run test:protocols }
+    Invoke-Checked { npm run test:local-targets }
+    Invoke-Checked { npm run test:goal-targets }
     Invoke-Checked { npm run test:measurement-guides }
     Invoke-Checked { npm run test:face-measurements }
     Invoke-Checked { npm run test:result-card }
