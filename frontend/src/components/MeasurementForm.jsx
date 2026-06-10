@@ -1,4 +1,10 @@
+import { useEffect, useMemo, useState } from "react";
 import { measurementCategories, measurementFields } from "../lib/measurements";
+import {
+  emptyMeasurementGuideLibrary,
+  getDefaultMeasurementGuideField,
+  indexMeasurementGuides
+} from "../lib/measurementGuides";
 import { getFieldUnitLabel, resolveFieldUnitSystem } from "../lib/units";
 
 function buildCategoryGroups() {
@@ -22,9 +28,44 @@ export default function MeasurementForm({
   onFieldUnitChange,
   onFieldUnitReset,
   hoveredMeasurement,
-  onMeasurementHover
+  onMeasurementHover,
+  measurementGuideLibrary = emptyMeasurementGuideLibrary
 }) {
   const categoryGroups = buildCategoryGroups();
+  const guidesByField = useMemo(
+    () => indexMeasurementGuides(measurementGuideLibrary),
+    [measurementGuideLibrary]
+  );
+  const guideOptions = useMemo(
+    () =>
+      measurementFields
+        .filter((field) => guidesByField[field.name])
+        .map((field) => ({
+          field: field.name,
+          label: guidesByField[field.name].label || field.label
+        })),
+    [guidesByField]
+  );
+  const defaultGuideField = useMemo(
+    () => getDefaultMeasurementGuideField(measurementGuideLibrary),
+    [measurementGuideLibrary]
+  );
+  const [selectedGuideField, setSelectedGuideField] = useState("");
+  const selectedGuide =
+    guidesByField[selectedGuideField] ||
+    guidesByField[defaultGuideField] ||
+    null;
+
+  useEffect(() => {
+    if (!guideOptions.length) {
+      setSelectedGuideField("");
+      return;
+    }
+
+    if (!guidesByField[selectedGuideField]) {
+      setSelectedGuideField(defaultGuideField || guideOptions[0].field);
+    }
+  }, [defaultGuideField, guideOptions, guidesByField, selectedGuideField]);
 
   return (
     <section className="panel">
@@ -51,6 +92,76 @@ export default function MeasurementForm({
           </button>
         </div>
       </div>
+
+      {selectedGuide ? (
+        <div className="measurement-guide-panel" aria-label="Measurement guides">
+          <div className="measurement-guide-header">
+            <div>
+              <h3>Measurement guides</h3>
+              <p>{selectedGuide.summary}</p>
+            </div>
+
+            <label className="measurement-guide-select">
+              <span>Field</span>
+              <select
+                aria-label="Measurement guide field"
+                value={selectedGuide.field}
+                onChange={(event) => setSelectedGuideField(event.target.value)}
+              >
+                {guideOptions.map((option) => (
+                  <option key={option.field} value={option.field}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="measurement-guide-body" aria-label="Selected measurement guide">
+            <div
+              className={`guide-illustration guide-illustration--${selectedGuide.illustration}`}
+              aria-hidden="true"
+            >
+              <i className="guide-head" />
+              <i className="guide-torso" />
+              <i className="guide-limb guide-limb-left" />
+              <i className="guide-limb guide-limb-right" />
+              <i className="guide-tape guide-tape-primary" />
+              <i className="guide-tape guide-tape-secondary" />
+              <i className="guide-wall" />
+            </div>
+
+            <div className="measurement-guide-copy">
+              <div className="guide-meta">
+                <strong>{selectedGuide.label}</strong>
+                <span>{selectedGuide.cadence}</span>
+              </div>
+
+              <div className="guide-list-grid">
+                <div>
+                  <h4>Steps</h4>
+                  <ol>
+                    {selectedGuide.steps.map((step) => (
+                      <li key={step}>{step}</li>
+                    ))}
+                  </ol>
+                </div>
+
+                {selectedGuide.commonMistakes.length ? (
+                  <div>
+                    <h4>Common mistakes</h4>
+                    <ul>
+                      {selectedGuide.commonMistakes.map((mistake) => (
+                        <li key={mistake}>{mistake}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <form className="measurement-form" onSubmit={onSubmit}>
         {categoryGroups.map((group) => (

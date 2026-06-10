@@ -6,6 +6,7 @@ import {
   appendGoalCheckIn,
   appendProtocolCheckIn,
   archiveUserProtocol,
+  buildTrendWeightSeries,
   calculateTrendWeight,
   clearSession,
   createLocalAccount,
@@ -24,6 +25,9 @@ import {
   persistUserProtocol,
   persistUserWorkoutSession
 } from "../lib/account";
+import {
+  buildMeasurementDueState
+} from "../lib/measurementCadence";
 import {
   createPhotoRecord,
   defaultPhotoComparison,
@@ -48,12 +52,6 @@ const emptyPlanningData = {
   personas: [],
   goalPresets: [],
   protocolTemplates: []
-};
-
-const cadenceFields = {
-  daily: ["Weight"],
-  weekly: ["Waist", "Hip/Buttock Circ", "Bideltoid Circ", "Neck Circ"],
-  monthly: ["Height", "Head Circ", "Wrist Circ", "Biacromial Width"]
 };
 
 const goalMetricLabels = {
@@ -93,14 +91,6 @@ function protocolDelta(protocol, currentMeasurements) {
     Number(currentMeasurements.waistCircumference) - Number(starting.waistCircumference);
 
   return `Since start: weight ${formatSignedDelta(weightDelta)} kg, waist ${formatSignedDelta(waistDelta)} cm`;
-}
-
-function daysSince(timestamp) {
-  if (!timestamp) {
-    return Number.POSITIVE_INFINITY;
-  }
-
-  return (Date.now() - new Date(timestamp).getTime()) / (1000 * 60 * 60 * 24);
 }
 
 function formatCheckIn(checkIn) {
@@ -203,6 +193,43 @@ function buildInsightDrops({ checkIns, trendWeight, goals, protocols }) {
   }
 
   return insights;
+}
+
+function formatCadenceFields(fields) {
+  return fields.map((field) => field.label).join(", ");
+}
+
+function buildTrendWeightChart(series) {
+  if (series.length < 2) {
+    return null;
+  }
+
+  const values = series.flatMap((point) => [point.raw, point.trend]);
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const range = Math.max(0.1, maxValue - minValue);
+  const xStep = series.length > 1 ? 92 / (series.length - 1) : 0;
+
+  const toPoint = (point, index, key) => {
+    const x = 4 + index * xStep;
+    const y = 32 - ((point[key] - minValue) / range) * 26;
+    return {
+      x: Number(x.toFixed(2)),
+      y: Number(y.toFixed(2)),
+      value: point[key],
+      createdAt: point.createdAt
+    };
+  };
+
+  const rawPoints = series.map((point, index) => toPoint(point, index, "raw"));
+  const trendPoints = series.map((point, index) => toPoint(point, index, "trend"));
+
+  return {
+    rawPoints,
+    trendPoints: trendPoints.map((point) => `${point.x},${point.y}`).join(" "),
+    minValue,
+    maxValue
+  };
 }
 
 export default function AccountGoalPanel({
@@ -356,14 +383,16 @@ export default function AccountGoalPanel({
   const afterPhoto = findPhoto(photos, photoAfterId) || visiblePhotos[0] || null;
   const latestPhoto = visiblePhotos[0] || photosForCategory(photos, "all")[0] || null;
   const trendWeight = useMemo(() => calculateTrendWeight(checkIns), [checkIns]);
+  const trendWeightSeries = useMemo(() => buildTrendWeightSeries(checkIns), [checkIns]);
+  const trendWeightChart = useMemo(
+    () => buildTrendWeightChart(trendWeightSeries),
+    [trendWeightSeries]
+  );
+  const cadenceDueState = useMemo(() => buildMeasurementDueState(checkIns), [checkIns]);
   const insightDrops = useMemo(
     () => buildInsightDrops({ checkIns, trendWeight, goals, protocols }),
     [checkIns, goals, protocols, trendWeight]
   );
-  const latestDailyCheckIn = checkIns.find((checkIn) => checkIn.type === "daily-weight");
-  const latestWeeklyCheckIn = checkIns.find((checkIn) => checkIn.type === "weekly-measurements");
-  const dailyDue = daysSince(latestDailyCheckIn?.createdAt) >= 0.75;
-  const weeklyDue = daysSince(latestWeeklyCheckIn?.createdAt) >= 6;
 
   useEffect(() => {
     setSelectedProtocolIds(selectedGoal?.suggestedProtocols || []);
@@ -540,7 +569,7 @@ export default function AccountGoalPanel({
     const nextCheckIn = persistUserCheckIn(account.id, {
       type: "weekly-measurements",
       measurements: currentMeasurements,
-      dueFields: cadenceFields.weekly,
+      dueFields: cadenceDueState.weekly.fields.map((field) => field.label),
       note: checkInNote.trim()
     });
 
@@ -845,16 +874,31 @@ export default function AccountGoalPanel({
               </div>
               <div className="cadence-grid" aria-label="Measurement cadence">
                 <div>
-                  <strong>{dailyDue ? "Due today" : "Logged today"}</strong>
-                  <span>Daily: {cadenceFields.daily.join(", ")}</span>
+                  <strong>{cadenceDueState.daily.isDue ? "Due today" : "Logged today"}</strong>
+                  <span>Daily: {formatCadenceFields(cadenceDueState.daily.fields)}</span>
+                  <small>
+                    {cadenceDueState.daily.latestAt
+                      ? `Last ${formatDate(cadenceDueState.daily.latestAt)}`
+                      : "No daily log yet"}
+                  </small>
                 </div>
                 <div>
-                  <strong>{weeklyDue ? "Weekly due" : "Weekly current"}</strong>
-                  <span>{cadenceFields.weekly.join(", ")}</span>
+                  <strong>{cadenceDueState.weekly.isDue ? "Weekly due" : "Weekly current"}</strong>
+                  <span>{formatCadenceFields(cadenceDueState.weekly.fields)}</span>
+                  <small>
+                    {cadenceDueState.weekly.latestAt
+                      ? `Last ${formatDate(cadenceDueState.weekly.latestAt)}`
+                      : "No weekly log yet"}
+                  </small>
                 </div>
                 <div>
-                  <strong>Monthly</strong>
-                  <span>{cadenceFields.monthly.join(", ")}</span>
+                  <strong>{cadenceDueState.monthly.isDue ? "Monthly due" : "Monthly current"}</strong>
+                  <span>{formatCadenceFields(cadenceDueState.monthly.fields)}</span>
+                  <small>
+                    {cadenceDueState.monthly.latestAt
+                      ? `Last ${formatDate(cadenceDueState.monthly.latestAt)}`
+                      : "No monthly proxy yet"}
+                  </small>
                 </div>
               </div>
               <form className="checkin-form" onSubmit={handleDailyCheckIn}>
@@ -903,6 +947,38 @@ export default function AccountGoalPanel({
                     : "No daily logs yet."}
                 </span>
               </div>
+              {trendWeightChart ? (
+                <div
+                  className="trend-weight-panel"
+                  aria-label="Trend weight line vs raw daily weight dots"
+                >
+                  <svg
+                    className="trend-weight-chart"
+                    role="img"
+                    aria-label="Trend weight chart"
+                    viewBox="0 0 100 36"
+                    preserveAspectRatio="none"
+                  >
+                    <line x1="4" y1="32" x2="96" y2="32" />
+                    <polyline className="trend-weight-line" points={trendWeightChart.trendPoints} />
+                    {trendWeightChart.rawPoints.map((point) => (
+                      <circle
+                        key={`${point.createdAt}-${point.value}`}
+                        className="trend-weight-dot"
+                        cx={point.x}
+                        cy={point.y}
+                        r="1.8"
+                      >
+                        <title>{`${point.value.toFixed(1)} kg on ${formatDate(point.createdAt)}`}</title>
+                      </circle>
+                    ))}
+                  </svg>
+                  <div className="trend-weight-legend">
+                    <span>Raw daily dots</span>
+                    <span>Smoothed trend line</span>
+                  </div>
+                </div>
+              ) : null}
               <div aria-label="Check-in history">
                 {checkIns.length ? (
                   <ul className="checkin-list">

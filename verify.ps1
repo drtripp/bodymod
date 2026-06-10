@@ -27,10 +27,13 @@ try {
     Invoke-Checked { npm run test:corpus }
     Invoke-Checked { npm run test:diet }
     Invoke-Checked { npm run test:ratios }
+    Invoke-Checked { npm run test:body-composition }
     Invoke-Checked { npm run test:sizes }
     Invoke-Checked { npm run test:workouts }
     Invoke-Checked { npm run test:photos }
     Invoke-Checked { npm run test:onboarding }
+    Invoke-Checked { npm run test:tracking }
+    Invoke-Checked { npm run test:measurement-guides }
     Invoke-Checked { npm run test:result-card }
     Invoke-Checked { npm run test:progress-report }
     Invoke-Checked { npm run test:population }

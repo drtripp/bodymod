@@ -17,6 +17,7 @@ const PROFILE_DEFAULTS = {
       upperThighCircumference: 58,
       midThighCircumference: 50,
       calfCircumference: 38,
+      ankleCircumference: 23,
       bicepCircumference: 34,
       upperForearmCircumference: 29,
       wristCircumference: 17
@@ -70,6 +71,7 @@ const PROFILE_DEFAULTS = {
       upperThighCircumference: 56,
       midThighCircumference: 48,
       calfCircumference: 35,
+      ankleCircumference: 21,
       bicepCircumference: 28,
       upperForearmCircumference: 23,
       wristCircumference: 15
@@ -227,6 +229,11 @@ function buildHalfWidths(measurements, profile) {
     average.calfCircumference,
     0.96
   );
+  const ankleInfluence = measurementInfluence(
+    measurements.ankleCircumference ?? average.ankleCircumference,
+    average.ankleCircumference,
+    0.82
+  );
 
   const frameScale = heightScale * (0.72 + biacromialInfluence * 0.28);
   const torsoMassScale = 0.84 + massScale * 0.16;
@@ -266,7 +273,7 @@ function buildHalfWidths(measurements, profile) {
       (midThighInfluence * 0.76 + upperThighInfluence * 0.24),
     knee: widths.knee * heightScale * (0.9 + massScale * 0.1),
     calf: widths.calf * heightScale * calfInfluence,
-    ankle: widths.ankle * heightScale
+    ankle: widths.ankle * heightScale * ankleInfluence
   };
 }
 
@@ -359,6 +366,7 @@ export function buildFrontSilhouette(measurements) {
     upperThighCircumference: sideSpan("upperThigh"),
     midThighCircumference: sideSpan("midThigh"),
     calfCircumference: sideSpan("calf"),
+    ankleCircumference: sideSpan("ankle"),
     bicepCircumference: limbSpan(
       bodyY(0.24),
       armOffset,

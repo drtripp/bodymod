@@ -24,6 +24,7 @@ SCORING_KEYS = [
     ("upperThighCircumference", 0.7, "upper thigh"),
     ("midThighCircumference", 0.55, "mid thigh"),
     ("calfCircumference", 0.55, "calf"),
+    ("ankleCircumference", 0.25, "ankle"),
     ("bicepCircumference", 0.65, "bicep"),
     ("upperForearmCircumference", 0.45, "forearm"),
     ("wristCircumference", 0.35, "wrist"),

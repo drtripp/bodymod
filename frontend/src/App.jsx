@@ -9,7 +9,13 @@ import PopulationPanel from "./components/PopulationPanel";
 import ResultSummary from "./components/ResultSummary";
 import SiteHeader from "./components/SiteHeader";
 import StrategyCorpus from "./components/StrategyCorpus";
-import { fetchClothingSizeTables, fetchHealth, fetchMatches, fetchTargets } from "./lib/api";
+import {
+  fetchClothingSizeTables,
+  fetchHealth,
+  fetchMatches,
+  fetchMeasurementGuides,
+  fetchTargets
+} from "./lib/api";
 import { summarizeMeasurementDiff } from "./lib/comparison";
 import { trackEvent } from "./lib/analytics";
 import { DEFAULT_CLOTHING_SIZE_TABLES } from "./lib/clothingSizes";
@@ -19,6 +25,10 @@ import {
   normalizeMeasurements,
   validateMeasurements
 } from "./lib/measurements";
+import {
+  emptyMeasurementGuideLibrary,
+  normalizeMeasurementGuideLibrary
+} from "./lib/measurementGuides";
 import {
   buildShareUrl,
   decodeMeasurementsFromUrl
@@ -69,6 +79,9 @@ export default function App() {
   const [isAccountPanelOpen, setIsAccountPanelOpen] = useState(false);
   const [isStrategyExplorerOpen, setIsStrategyExplorerOpen] = useState(false);
   const [clothingSizeTables, setClothingSizeTables] = useState(DEFAULT_CLOTHING_SIZE_TABLES);
+  const [measurementGuideLibrary, setMeasurementGuideLibrary] = useState(
+    emptyMeasurementGuideLibrary
+  );
   const [onboardingProfile, setOnboardingProfile] = useState(() => loadOnboardingProfile());
 
   useEffect(() => {
@@ -108,6 +121,10 @@ export default function App() {
     fetchClothingSizeTables()
       .then((response) => setClothingSizeTables(response))
       .catch(() => setClothingSizeTables(DEFAULT_CLOTHING_SIZE_TABLES));
+
+    fetchMeasurementGuides()
+      .then((response) => setMeasurementGuideLibrary(normalizeMeasurementGuideLibrary(response)))
+      .catch(() => setMeasurementGuideLibrary(emptyMeasurementGuideLibrary));
   }, []);
 
   useEffect(() => {
@@ -584,6 +601,7 @@ export default function App() {
                 onFieldUnitReset={handleFieldUnitReset}
                 hoveredMeasurement={hoveredMeasurement}
                 onMeasurementHover={setHoveredMeasurement}
+                measurementGuideLibrary={measurementGuideLibrary}
               />
 
             </section>

@@ -87,6 +87,11 @@ export const optionalUnlockFields = [
     unlock: "adds frame-size and potential-model context"
   },
   {
+    name: "ankleCircumference",
+    label: "Ankle",
+    unlock: "adds Casey Butt potential-model context"
+  },
+  {
     name: "upperThighCircumference",
     label: "Upper thigh",
     unlock: "adds leg-program and physique tracking context"
@@ -116,6 +121,7 @@ export const demoMeasurements = {
   upperThighCircumference: 56,
   midThighCircumference: 48,
   calfCircumference: 35,
+  ankleCircumference: 21,
   bicepCircumference: 28,
   upperForearmCircumference: 23,
   wristCircumference: 15

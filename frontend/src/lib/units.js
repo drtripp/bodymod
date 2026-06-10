@@ -100,6 +100,7 @@ export function buildDisplayFormState(formState, globalUnitSystem, fieldUnitOver
     "upperThighCircumference",
     "midThighCircumference",
     "calfCircumference",
+    "ankleCircumference",
     "bicepCircumference",
     "upperForearmCircumference",
     "wristCircumference"

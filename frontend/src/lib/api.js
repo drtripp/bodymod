@@ -42,3 +42,7 @@ export function fetchClothingSizeTables() {
 export function fetchExerciseLibrary() {
   return request("/api/exercise-library");
 }
+
+export function fetchMeasurementGuides() {
+  return request("/api/measurement-guides");
+}

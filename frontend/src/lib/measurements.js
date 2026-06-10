@@ -2,7 +2,7 @@ import {
   formatDisplayValue,
   getFieldUnitLabel,
   resolveFieldUnitSystem
-} from "./units";
+} from "./units.js";
 
 export const measurementFields = [
   {
@@ -161,6 +161,15 @@ export const measurementFields = [
     max: 70
   },
   {
+    name: "ankleCircumference",
+    label: "Ankle Circ",
+    category: "Legs",
+    unit: "cm",
+    help: "Ankle circumference at the narrowest point above the ankle bones.",
+    min: 14,
+    max: 40
+  },
+  {
     name: "bicepCircumference",
     label: "Bicep Circ",
     category: "Arms",
@@ -215,6 +224,7 @@ const measurementDefaultsBySex = {
     upperThighCircumference: 58,
     midThighCircumference: 50,
     calfCircumference: 38,
+    ankleCircumference: 23,
     bicepCircumference: 34,
     upperForearmCircumference: 29,
     wristCircumference: 17
@@ -234,6 +244,7 @@ const measurementDefaultsBySex = {
     upperThighCircumference: 56,
     midThighCircumference: 48,
     calfCircumference: 35,
+    ankleCircumference: 21,
     bicepCircumference: 28,
     upperForearmCircumference: 23,
     wristCircumference: 15

@@ -69,6 +69,7 @@ const targetMeasurements = {
   upperThighCircumference: 52,
   midThighCircumference: 46,
   calfCircumference: 36,
+  ankleCircumference: 22,
   bicepCircumference: 31,
   upperForearmCircumference: 27,
   wristCircumference: 16
@@ -103,6 +104,29 @@ const targets = [
   }
 ];
 
+const measurementGuideLibrary = {
+  version: 1,
+  reference: "Dummy measurement how-to guide copy for screenshots.",
+  guides: [
+    {
+      field: "waistCircumference",
+      label: "Waist",
+      cadence: "weekly",
+      illustration: "waist-tape",
+      summary: "Narrowest relaxed torso circumference.",
+      steps: ["Find the narrowest relaxed point between ribs and hips."]
+    },
+    {
+      field: "bideltoidCircumference",
+      label: "Bideltoid circumference",
+      cadence: "weekly",
+      illustration: "shoulder-loop",
+      summary: "Tape around shoulders at the widest deltoid line.",
+      steps: ["Keep arms down and relaxed."]
+    }
+  ]
+};
+
 let server = null;
 let browser = null;
 try {
@@ -119,6 +143,9 @@ try {
     );
     await page.route("**/api/clothing-sizes", (route) =>
       route.fulfill({ json: DEFAULT_CLOTHING_SIZE_TABLES })
+    );
+    await page.route("**/api/measurement-guides", (route) =>
+      route.fulfill({ json: measurementGuideLibrary })
     );
     await page.route("**/api/targets", (route) =>
       route.fulfill({

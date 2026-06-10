@@ -24,6 +24,7 @@ const measurements = {
   upperThighCircumference: 58,
   midThighCircumference: 50,
   calfCircumference: 38,
+  ankleCircumference: 23,
   bicepCircumference: 34,
   upperForearmCircumference: 29,
   wristCircumference: 17

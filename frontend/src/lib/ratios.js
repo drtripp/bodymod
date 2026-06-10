@@ -1,3 +1,5 @@
+import { calculateBodyComposition } from "./bodyComposition.js";
+
 function round(value, digits = 2) {
   return Number(value.toFixed(digits));
 }
@@ -8,15 +10,8 @@ export function calculateRatios(measurements) {
   const waist = Number(measurements.waistCircumference);
   const hip = Number(measurements.hipCircumference);
   const shoulders = Number(measurements.bideltoidCircumference);
-  const neck = Number(measurements.neckCircumference);
-  const sex = measurements.sex;
+  const bodyComposition = calculateBodyComposition(measurements);
   const bmi = heightMeters > 0 ? round(weight / (heightMeters * heightMeters), 1) : null;
-  const estimatedBodyFat =
-    heightMeters > 0 && waist > 0 && neck > 0
-      ? sex === "female"
-        ? round(Math.max(8, Math.min(55, 0.42 * waist + 0.18 * hip - 0.24 * neck - 10)), 1)
-        : round(Math.max(5, Math.min(45, 0.45 * waist - 0.28 * neck - 8)), 1)
-      : null;
 
   return [
     {
@@ -28,8 +23,8 @@ export function calculateRatios(measurements) {
     {
       id: "bodyFat",
       label: "Est BF%",
-      value: estimatedBodyFat,
-      note: "Rough circumference estimate"
+      value: bodyComposition.bodyFatAverage,
+      note: "Average of Navy and RFM circumference estimates"
     },
     {
       id: "shoulderHip",

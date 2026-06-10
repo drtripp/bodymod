@@ -24,6 +24,7 @@ class MeasurementSet(BaseModel):
     upperThighCircumference: float = Field(ge=30, le=110)
     midThighCircumference: float = Field(ge=25, le=95)
     calfCircumference: float = Field(ge=20, le=70)
+    ankleCircumference: float = Field(ge=14, le=40)
     bicepCircumference: float = Field(ge=18, le=75)
     upperForearmCircumference: float = Field(ge=15, le=55)
     wristCircumference: float = Field(ge=11, le=30)

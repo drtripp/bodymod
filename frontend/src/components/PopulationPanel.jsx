@@ -8,7 +8,8 @@ import {
   genderScoreLabel,
   getPopulationMetric,
   metricSexScore,
-  normalPdf
+  normalPdf,
+  populationMetricValue
 } from "../lib/populationCharts";
 
 const sexStyles = {
@@ -35,6 +36,10 @@ function scale(value, min, max, outMin, outMax) {
 function formatMetricValue(value, metric) {
   if (!Number.isFinite(value)) {
     return "n/a";
+  }
+
+  if (metric.unit === "ratio" || metric.unit === "index") {
+    return `${value.toFixed(2).replace(/0$/, "").replace(/\.$/, "")} ${metric.unit}`;
   }
 
   return `${Math.round(value)} ${metric.unit}`;
@@ -101,8 +106,8 @@ function ScatterPlot({ measurements, xMetric, yMetric }) {
   const bounds = { left: 58, right: 522, top: 28, bottom: 288 };
   const xFor = (value) => scale(value, xMetric.min, xMetric.max, bounds.left, bounds.right);
   const yFor = (value) => scale(value, yMetric.min, yMetric.max, bounds.bottom, bounds.top);
-  const userX = xFor(clampMetricValue(Number(measurements[xMetric.key]), xMetric));
-  const userY = yFor(clampMetricValue(Number(measurements[yMetric.key]), yMetric));
+  const userX = xFor(clampMetricValue(populationMetricValue(measurements, xMetric), xMetric));
+  const userY = yFor(clampMetricValue(populationMetricValue(measurements, yMetric), yMetric));
 
   return (
     <svg
@@ -159,7 +164,7 @@ function DistributionPlot({ measurements, metric }) {
     normalPdf(metric.female.mean, metric.female.mean, metric.female.sd)
   );
   const yForDensity = (density) => scale(density, 0, maxDensity, bounds.bottom, bounds.top);
-  const userValue = clampMetricValue(Number(measurements[metric.key]), metric);
+  const userValue = clampMetricValue(populationMetricValue(measurements, metric), metric);
   const userX = xFor(userValue);
 
   const buildPath = (sex) => {
@@ -256,12 +261,20 @@ export default function PopulationPanel({ measurements }) {
             </div>
           </div>
           <div className="gender-measurement-table" aria-label="Gender measurement scores">
+            <div className="gender-method-note" aria-label="Gender score methodology">
+              <strong>Measurement pattern only</strong>
+              <p>
+                This score compares entered measurements with draft sex-coded
+                distribution scaffolds. It is not identity inference, medical
+                advice, or a transition target.
+              </p>
+            </div>
             <table>
               <thead>
                 <tr>
                   <th>Name</th>
                   <th>Value</th>
-                  <th>Mode</th>
+                  <th>Basis</th>
                   <th>Score</th>
                 </tr>
               </thead>
@@ -269,14 +282,14 @@ export default function PopulationPanel({ measurements }) {
                 {genderRows.map((row) => (
                   <tr key={row.key}>
                     <th scope="row">{row.label}</th>
-                    <td>{Math.round(row.value)} {row.unit}</td>
-                    <td>include</td>
+                    <td>{formatMetricValue(row.value, getPopulationMetric(row.key))}</td>
+                    <td>{row.note}</td>
                     <td>{formatScore(metricSexScore(row.value, getPopulationMetric(row.key)))}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <p className="muted-text">{genderRows.length} of {POPULATION_METRICS.length} measurements</p>
+            <p className="muted-text">{genderRows.length} of {POPULATION_METRICS.length} metrics, including derived FFMI and frame index.</p>
           </div>
         </div>
       ) : mode === "scatter" ? (

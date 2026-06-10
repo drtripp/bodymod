@@ -80,16 +80,19 @@ Protocol Tracker → Diet upgrades → Native app.
 
 ## 3. Measurement & Tracking Core
 
-- [ ] Measurement cadence tiers: classify each schema field as daily (weight),
-      weekly (tape circumferences), monthly (slow-changing: height, head,
-      wrist, ankle); the check-in flow only asks for what is due.
-- [ ] Quick daily log: single-field weight (and optional calories) entry that
-      creates a lightweight log entry, not a full snapshot.
+- [x] Measurement cadence tiers: frontend helper classifies each schema field
+      as daily (weight), weekly (tape circumferences), monthly
+      (slow-changing: height, head, wrist/frame widths); the account check-in
+      loop shows only the due cadence buckets.
+- [x] Quick daily log: single-field weight (and optional calories) entry that
+      creates a lightweight account check-in, not a full snapshot.
 - [ ] Trend weight algorithm **(new)**: exponentially smoothed daily weight
       (Happy Scale/MacroFactor style) so daily fluctuation never reads as
-      gain/loss; show trend line vs raw dots everywhere weight appears.
-- [ ] Ankle circumference field (needed for Casey Butt potential model);
-      update schema both sides + drift test.
+      gain/loss; account check-ins now calculate trend weight and show raw
+      dots vs smoothed line, but broader weight-surface integration remains.
+- [x] Ankle circumference field (needed for Casey Butt potential model):
+      schema, target/persona dummy data, measuring guide, cadence tier,
+      silhouette anchor, and schema drift tests updated.
 - [ ] Optional left/right split for limb fields **(new)**: bicep, forearm,
       thigh, calf enterable as L/R pairs (single value stays the default);
       symmetry tracking for physique users.
@@ -106,9 +109,10 @@ Protocol Tracker → Diet upgrades → Native app.
 - [ ] Encrypted local backup **(new)**: passphrase-encrypted export file
       (snapshots + logs + photos manifest) for the privacy-conscious; restores
       on any device.
-- [ ] Measurement how-to guides: illustrated per-field measuring instructions
-      (extends existing help text); doubles as public SEO content (see
-      Growth). **[human]** for illustrations or illustration direction.
+- [x] Measurement how-to guides: backend serves dummy per-field guide copy and
+      the browser renders selectable schematic instructions in the dense
+      measurement form. **[human]** still needed for final illustration
+      direction before public SEO reuse.
 - [ ] Local browser face measurements **(new)**: copy the troontraits
       approach, not its source code - use MediaPipe Face Landmarker /
       `@mediapipe/tasks-vision` in-browser with a self-hosted model to collect
@@ -209,14 +213,18 @@ Protocol Tracker → Diet upgrades → Native app.
 
 ## 7. Insights & Calculators
 
-- [ ] FFMI calculator with natural-ceiling context.
-- [ ] Casey Butt natural-potential model (needs wrist — exists — and ankle);
-      render "estimated natural ceiling" as a target silhouette.
-- [ ] Body-fat estimation, multi-method: Navy formula + RFM alongside the
-      current estimate; show the spread, not one false-precision number.
-- [ ] Gender score expansion: more metrics in the signed score, FFMI/frame
-      adjustment, clearer methodology copy. Core feature for the transition
-      audience — treat respectfully and label approximations.
+- [x] FFMI calculator with natural-ceiling context: result summary now shows
+      FFMI, normalized FFMI, lean mass, and non-diagnostic natural-ceiling
+      context.
+- [x] Casey Butt natural-potential model: male-only frame estimate uses height,
+      wrist, ankle, and estimated body fat; labeled as planning context only.
+      Target-silhouette rendering remains covered by the projection backlog.
+- [x] Body-fat estimation, multi-method: Navy formula + RFM are shown
+      alongside the averaged estimate and labeled as formulas, not diagnostics.
+- [x] Gender score expansion: signed score now includes raw and derived
+      metrics including SWR, WHR, WHTR, FFMI, and wrist/ankle frame index;
+      methodology copy says this is measurement-pattern comparison only, not
+      identity inference or medical advice.
 - [ ] Adaptive TDEE engine **(new)**: estimate true energy expenditure from
       logged weights + logged calories over time (the MacroFactor killer
       feature; pure algorithm, very agent-buildable). Flagship Pro feature.

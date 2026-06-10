@@ -290,7 +290,8 @@ textarea {
   padding: 10px;
 }
 
-.cadence-grid span {
+.cadence-grid span,
+.cadence-grid small {
   color: #c7d0d9;
 }
 
@@ -318,6 +319,50 @@ textarea {
 
 .checkin-summary span {
   color: #c7d0d9;
+}
+
+.trend-weight-panel {
+  border-top: 1px solid #344454;
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.trend-weight-chart {
+  width: 100%;
+  height: 78px;
+  border: 1px solid #344454;
+  background: #0f1822;
+  display: block;
+}
+
+.trend-weight-chart line {
+  stroke: #344454;
+  stroke-width: 1;
+}
+
+.trend-weight-line {
+  fill: none;
+  stroke: #8da9c4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.trend-weight-dot {
+  fill: #f2f0e8;
+  stroke: #101923;
+  stroke-width: 0.8;
+}
+
+.trend-weight-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: #c7d0d9;
+  flex-wrap: wrap;
+  font-size: 0.86rem;
 }
 
 .checkin-list {
@@ -1253,6 +1298,225 @@ textarea {
   margin: 0;
 }
 
+.measurement-guide-panel {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid #344454;
+  border-bottom: 1px solid #344454;
+  margin-bottom: 12px;
+  padding: 10px 0;
+}
+
+.measurement-guide-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.38fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.measurement-guide-header h3 {
+  margin: 0 0 3px;
+  font-size: 0.98rem;
+}
+
+.measurement-guide-header p,
+.measurement-guide-select span,
+.guide-meta span,
+.guide-list-grid li {
+  color: #c7d0d9;
+}
+
+.measurement-guide-select {
+  display: grid;
+  gap: 4px;
+  font-size: 0.86rem;
+}
+
+.measurement-guide-select select {
+  width: 100%;
+}
+
+.measurement-guide-body {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.guide-illustration {
+  position: relative;
+  min-height: 118px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid #344454;
+  background:
+    linear-gradient(90deg, transparent 49%, #263647 50%, transparent 51%),
+    linear-gradient(#111b25, #101923);
+}
+
+.guide-illustration i {
+  position: absolute;
+  display: block;
+}
+
+.guide-head {
+  top: 13px;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #f2f0e8;
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+
+.guide-torso {
+  top: 37px;
+  left: 50%;
+  width: 44px;
+  height: 57px;
+  border: 1px solid #8da9c4;
+  border-radius: 22px 22px 15px 15px;
+  transform: translateX(-50%);
+}
+
+.guide-limb {
+  top: 43px;
+  width: 1px;
+  height: 45px;
+  background: #8da9c4;
+}
+
+.guide-limb-left {
+  left: 31px;
+  transform: rotate(8deg);
+}
+
+.guide-limb-right {
+  right: 31px;
+  transform: rotate(-8deg);
+}
+
+.guide-tape {
+  left: 18%;
+  right: 18%;
+  height: 2px;
+  border-top: 2px dashed #f2f0e8;
+}
+
+.guide-tape-primary {
+  top: 58px;
+}
+
+.guide-tape-secondary {
+  top: 75px;
+  opacity: 0.42;
+}
+
+.guide-wall {
+  display: none;
+  top: 9px;
+  bottom: 9px;
+  left: 18px;
+  width: 2px;
+  background: #526170;
+}
+
+.guide-illustration--standing-wall .guide-wall,
+.guide-illustration--scale .guide-wall {
+  display: block;
+}
+
+.guide-illustration--standing-wall .guide-tape-primary {
+  top: 12px;
+  left: 22px;
+  right: 35%;
+}
+
+.guide-illustration--scale .guide-tape-primary {
+  top: auto;
+  bottom: 14px;
+  left: 32%;
+  right: 32%;
+  border-top-style: solid;
+}
+
+.guide-illustration--head-tape .guide-tape-primary {
+  top: 25px;
+  left: 30%;
+  right: 30%;
+}
+
+.guide-illustration--neck-tape .guide-tape-primary {
+  top: 41px;
+  left: 31%;
+  right: 31%;
+}
+
+.guide-illustration--shoulder-width .guide-tape-primary,
+.guide-illustration--shoulder-loop .guide-tape-primary {
+  top: 47px;
+  left: 20%;
+  right: 20%;
+}
+
+.guide-illustration--waist-tape .guide-tape-primary,
+.guide-illustration--pant-waist .guide-tape-primary {
+  top: 72px;
+}
+
+.guide-illustration--hip-tape .guide-tape-primary,
+.guide-illustration--thigh-tape .guide-tape-primary {
+  top: 86px;
+}
+
+.guide-illustration--calf-tape .guide-tape-primary,
+.guide-illustration--ankle-tape .guide-tape-primary,
+.guide-illustration--wrist-tape .guide-tape-primary,
+.guide-illustration--forearm-tape .guide-tape-primary,
+.guide-illustration--arm-tape .guide-tape-primary {
+  top: 76px;
+  left: 26%;
+  right: 26%;
+}
+
+.measurement-guide-copy {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.guide-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.guide-meta span {
+  border: 1px solid #344454;
+  padding: 2px 7px;
+  text-transform: capitalize;
+}
+
+.guide-list-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.guide-list-grid h4 {
+  margin: 0 0 5px;
+  font-size: 0.86rem;
+}
+
+.guide-list-grid ol,
+.guide-list-grid ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+}
+
 .measurement-form {
   display: grid;
   grid-template-columns: 1fr;
@@ -1751,6 +2015,48 @@ textarea {
   padding: 10px;
 }
 
+.body-composition-panel {
+  border: 1px solid #344454;
+  background: #101923;
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+}
+
+.composition-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.composition-grid article {
+  border: 1px solid #344454;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px;
+}
+
+.composition-grid article.is-muted {
+  opacity: 0.72;
+}
+
+.composition-grid span {
+  color: #c7d0d9;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.composition-grid strong {
+  font-size: 1.15rem;
+  line-height: 1.05;
+}
+
+.composition-grid small {
+  color: #c7d0d9;
+  font-size: 0.76rem;
+}
+
 .fit-panel-header {
   display: flex;
   justify-content: space-between;
@@ -2093,6 +2399,22 @@ textarea {
   border-top: 1px solid #344454;
 }
 
+.gender-method-note {
+  display: grid;
+  gap: 3px;
+  border-bottom: 1px solid #344454;
+  padding: 10px 0;
+}
+
+.gender-method-note strong {
+  font-size: 0.88rem;
+}
+
+.gender-method-note p {
+  color: #c7d0d9;
+  font-size: 0.84rem;
+}
+
 .gender-measurement-table table {
   width: 100%;
   border-collapse: collapse;
@@ -2104,10 +2426,18 @@ textarea {
   border-bottom: 1px solid #243342;
   padding: 8px 8px;
   text-align: right;
+  vertical-align: top;
 }
 
 .gender-measurement-table th:first-child,
 .gender-measurement-table td:first-child {
+  text-align: left;
+}
+
+.gender-measurement-table td:nth-child(3) {
+  max-width: 260px;
+  color: #c7d0d9;
+  font-size: 0.82rem;
   text-align: left;
 }
 
@@ -2808,6 +3138,9 @@ textarea {
 
   .site-header,
   .panel-header-row,
+  .measurement-guide-header,
+  .measurement-guide-body,
+  .guide-list-grid,
   .account-header,
   .diet-hero,
   .diet-search-grid,
@@ -2846,6 +3179,7 @@ textarea {
   .photo-gallery-list li,
   .progress-report-section,
   .persona-loader,
+  .composition-grid,
   .protocol-row,
   .goal-row {
     grid-template-columns: 1fr;
@@ -2862,6 +3196,11 @@ textarea {
 
   .photo-ghost-frame {
     min-height: 220px;
+  }
+
+  .guide-illustration {
+    width: min(180px, 100%);
+    justify-self: center;
   }
 
   .account-status {

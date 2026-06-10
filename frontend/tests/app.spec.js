@@ -21,6 +21,7 @@ const targetMeasurements = {
   upperThighCircumference: 52,
   midThighCircumference: 46,
   calfCircumference: 36,
+  ankleCircumference: 22,
   bicepCircumference: 31,
   upperForearmCircumference: 27,
   wristCircumference: 16
@@ -423,6 +424,46 @@ const exerciseLibrary = {
   ]
 };
 
+const measurementGuideLibrary = {
+  version: 1,
+  reference: "Dummy measurement how-to guide copy for user validation.",
+  notes: ["Keep tape level and relaxed unless a field says otherwise."],
+  guides: [
+    {
+      field: "waistCircumference",
+      label: "Waist",
+      cadence: "weekly",
+      illustration: "waist-tape",
+      summary: "Narrowest relaxed torso circumference.",
+      steps: [
+        "Find the narrowest relaxed point between ribs and hips.",
+        "Keep tape level and do not suck in."
+      ],
+      commonMistakes: ["measuring pants waistband", "bracing abs"]
+    },
+    {
+      field: "bideltoidCircumference",
+      label: "Bideltoid circumference",
+      cadence: "weekly",
+      illustration: "shoulder-loop",
+      summary: "Tape around the shoulders at the widest deltoid line.",
+      steps: [
+        "Wrap tape around the shoulders and upper chest at the deltoid peak.",
+        "Keep arms down and relaxed."
+      ],
+      commonMistakes: ["measuring chest only", "raising the arms"]
+    },
+    {
+      field: "height",
+      label: "Height",
+      cadence: "monthly",
+      illustration: "standing-wall",
+      summary: "Standing height without shoes, measured against a wall.",
+      steps: ["Stand barefoot with heels near a flat wall."]
+    }
+  ]
+};
+
 function progressPhotoFile(name, color = "#8da9c4") {
   return {
     name,
@@ -448,6 +489,10 @@ async function mockApi(page) {
 
   await page.route("**/api/exercise-library", async (route) => {
     await route.fulfill({ json: exerciseLibrary });
+  });
+
+  await page.route("**/api/measurement-guides", async (route) => {
+    await route.fulfill({ json: measurementGuideLibrary });
   });
 
   await page.route("**/api/targets", async (route) => {
@@ -482,6 +527,14 @@ test.beforeEach(async ({ page }) => {
 test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "bodymod" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Measurements", exact: true })).toBeVisible();
+  await expect(page.locator('input[name="ankleCircumference"]')).toBeVisible();
+  const guidePanel = page.getByLabel("Measurement guides");
+  await expect(guidePanel).toBeVisible();
+  await expect(guidePanel).toContainText("Narrowest relaxed torso circumference");
+  await expect(page.getByLabel("Selected measurement guide")).toContainText("weekly");
+  await page.getByLabel("Measurement guide field").selectOption("bideltoidCircumference");
+  await expect(guidePanel).toContainText("widest deltoid line");
+  await expect(page.getByLabel("Selected measurement guide")).toContainText("raising the arms");
   await expect(page.getByRole("img", { name: "Current profile silhouette" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Waist: 80 cm" }).first()).toBeVisible();
   await expect(page.locator(".top-match-block").getByText("Astarion")).toBeVisible();
@@ -492,10 +545,16 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.getByLabel("Result metric blocks")).toBeVisible();
   const metricBlocks = page.getByLabel("Result metric blocks");
   await expect(metricBlocks.getByText("Est BF%")).toBeVisible();
+  await expect(metricBlocks.getByText("FFMI")).toBeVisible();
+  await expect(metricBlocks.getByText("Frame", { exact: true })).toBeVisible();
   await expect(metricBlocks.getByText("SHR")).toBeVisible();
   await expect(metricBlocks.getByText("WHR")).toBeVisible();
   await expect(metricBlocks.getByText("SWR")).toBeVisible();
   await expect(metricBlocks.getByText("WHTR")).toBeVisible();
+  await expect(page.getByLabel("Body composition estimates")).toContainText("Navy");
+  await expect(page.getByLabel("Body composition estimates")).toContainText("RFM");
+  await expect(page.getByLabel("Body composition estimates")).toContainText("Frame potential");
+  await expect(page.getByLabel("Body composition estimates")).toContainText("Potential FFMI");
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download result card" }).click();
   const download = await downloadPromise;
@@ -552,7 +611,10 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Gender" })).toHaveCount(0);
   await expect(page.getByLabel("Gender score distribution")).toBeVisible();
   await expect(page.getByLabel("Gender score readout")).toBeVisible();
+  await expect(page.getByLabel("Gender score methodology")).toContainText("not identity inference");
   await expect(page.getByLabel("Gender measurement scores").getByText("Shoulder mass")).toBeVisible();
+  await expect(page.getByRole("rowheader", { name: "FFMI" })).toBeVisible();
+  await expect(page.getByRole("rowheader", { name: "Frame index" })).toBeVisible();
   await page.getByRole("button", { name: "Scatter" }).click();
   await expect(page.getByLabel("US population scatter plot")).toBeVisible();
   await expect(page.getByLabel("Population chart legend")).toBeVisible();
@@ -583,8 +645,8 @@ test("supports population chart axis and distribution controls", async ({ page }
   await page.getByRole("tab", { name: "Gender" }).click();
   await expect(page.locator(".visual-column").getByRole("img", { name: /silhouette/i })).toHaveCount(0);
   await expect(page.getByLabel("Gender score distribution")).toBeVisible();
-  await expect(page.getByLabel("Gender measurement scores")).toContainText("include");
-  await expect(page.getByLabel("Gender measurement scores")).toContainText("5 of 5 measurements");
+  await expect(page.getByLabel("Gender measurement scores")).toContainText("Derived waist-to-hip ratio");
+  await expect(page.getByLabel("Gender measurement scores")).toContainText("11 of 11 metrics");
 
   await page.getByRole("button", { name: "Scatter" }).click();
   const chart = page.locator(".population-chart");
@@ -650,6 +712,7 @@ test("renders silhouettes for extreme but valid measurement profiles", async ({ 
       upperThighCircumference: 30,
       midThighCircumference: 25,
       calfCircumference: 20,
+      ankleCircumference: 14,
       bicepCircumference: 18,
       upperForearmCircumference: 15,
       wristCircumference: 11
@@ -671,6 +734,7 @@ test("renders silhouettes for extreme but valid measurement profiles", async ({ 
       upperThighCircumference: 110,
       midThighCircumference: 95,
       calfCircumference: 70,
+      ankleCircumference: 40,
       bicepCircumference: 75,
       upperForearmCircumference: 55,
       wristCircumference: 30
@@ -681,7 +745,7 @@ test("renders silhouettes for extreme but valid measurement profiles", async ({ 
     for (const [field, value] of Object.entries(profile)) {
       await page.locator(`input[name="${field}"]`).fill(String(value));
     }
-    await page.locator('input[name="wristCircumference"]').blur();
+    await page.locator('input[name="ankleCircumference"]').blur();
 
     await expect(page.locator(".field-error")).toHaveCount(0);
     await expect(page.getByRole("img", { name: "Current profile silhouette" })).toBeVisible();
@@ -779,6 +843,7 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await page.getByLabel("Daily weight").fill("85.9");
   await page.getByRole("button", { name: "Log daily check-in" }).click();
   await expect(page.getByLabel("Check-in summary")).toContainText("Trend weight: 86.3 kg");
+  await expect(page.getByLabel("Trend weight line vs raw daily weight dots")).toBeVisible();
   await expect(page.getByLabel("Insight drops")).toContainText("Trend weight is down");
   await page.getByRole("button", { name: "Save weekly check-in" }).click();
   await expect(page.getByLabel("Check-in history")).toContainText("Weekly measurements: waist 86.0 cm");

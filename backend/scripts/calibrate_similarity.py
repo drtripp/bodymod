@@ -41,6 +41,7 @@ NOISE_SDS = {
     "upperThighCircumference": 1.0,
     "midThighCircumference": 1.0,
     "calfCircumference": 0.7,
+    "ankleCircumference": 0.5,
     "bicepCircumference": 0.7,
     "upperForearmCircumference": 0.6,
     "wristCircumference": 0.5,

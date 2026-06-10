@@ -254,5 +254,18 @@ MEASUREMENT_GUIDES = {
             ],
             "commonMistakes": ["measuring over watch marks", "pulling the tape tight"],
         },
+        {
+            "field": "ankleCircumference",
+            "label": "Ankle circumference",
+            "cadence": "monthly",
+            "illustration": "ankle-tape",
+            "summary": "Ankle circumference at the narrowest point above the ankle bones.",
+            "steps": [
+                "Stand or sit with the foot relaxed and flat.",
+                "Wrap tape around the narrowest point just above the ankle bones.",
+                "Keep the tape snug without pressing into skin.",
+            ],
+            "commonMistakes": ["measuring over socks", "placing tape too high on the calf"],
+        },
     ],
 }

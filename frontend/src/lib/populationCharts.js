@@ -1,3 +1,9 @@
+import { calculateBodyComposition } from "./bodyComposition.js";
+
+function round(value, digits = 2) {
+  return Number(value.toFixed(digits));
+}
+
 export const POPULATION_METRICS = [
   {
     key: "height",
@@ -6,7 +12,9 @@ export const POPULATION_METRICS = [
     min: 145,
     max: 205,
     male: { mean: 176, sd: 7.5 },
-    female: { mean: 163, sd: 7 }
+    female: { mean: 163, sd: 7 },
+    scoreWeight: 0.8,
+    note: "Adult height scaffold"
   },
   {
     key: "weight",
@@ -15,7 +23,9 @@ export const POPULATION_METRICS = [
     min: 40,
     max: 130,
     male: { mean: 84, sd: 17 },
-    female: { mean: 72, sd: 15 }
+    female: { mean: 72, sd: 15 },
+    scoreWeight: 0.45,
+    note: "Body mass varies strongly with height and composition"
   },
   {
     key: "waistCircumference",
@@ -24,7 +34,9 @@ export const POPULATION_METRICS = [
     min: 55,
     max: 125,
     male: { mean: 99, sd: 14 },
-    female: { mean: 89, sd: 15 }
+    female: { mean: 89, sd: 15 },
+    scoreWeight: 0.8,
+    note: "Waist circumference scaffold"
   },
   {
     key: "bideltoidCircumference",
@@ -33,7 +45,9 @@ export const POPULATION_METRICS = [
     min: 75,
     max: 150,
     male: { mean: 116, sd: 12 },
-    female: { mean: 98, sd: 10 }
+    female: { mean: 98, sd: 10 },
+    scoreWeight: 1,
+    note: "Shoulder circumference proxy"
   },
   {
     key: "hipCircumference",
@@ -42,7 +56,75 @@ export const POPULATION_METRICS = [
     min: 75,
     max: 135,
     male: { mean: 102, sd: 10 },
-    female: { mean: 106, sd: 12 }
+    female: { mean: 106, sd: 12 },
+    scoreWeight: 0.9,
+    note: "Hip circumference scaffold"
+  },
+  {
+    key: "neckCircumference",
+    label: "Neck",
+    unit: "cm",
+    min: 25,
+    max: 55,
+    male: { mean: 39, sd: 4.5 },
+    female: { mean: 33, sd: 3.5 },
+    scoreWeight: 0.6,
+    note: "Neck circumference scaffold"
+  },
+  {
+    key: "shoulderWaistRatio",
+    label: "Shoulder / waist",
+    unit: "ratio",
+    min: 0.75,
+    max: 1.75,
+    male: { mean: 1.18, sd: 0.16 },
+    female: { mean: 1.1, sd: 0.14 },
+    scoreWeight: 0.85,
+    note: "Derived from shoulder circumference and waist"
+  },
+  {
+    key: "waistHipRatio",
+    label: "Waist / hip",
+    unit: "ratio",
+    min: 0.55,
+    max: 1.15,
+    male: { mean: 0.96, sd: 0.09 },
+    female: { mean: 0.84, sd: 0.08 },
+    scoreWeight: 0.95,
+    note: "Derived waist-to-hip ratio"
+  },
+  {
+    key: "waistHeightRatio",
+    label: "Waist / height",
+    unit: "ratio",
+    min: 0.32,
+    max: 0.78,
+    male: { mean: 0.56, sd: 0.08 },
+    female: { mean: 0.55, sd: 0.09 },
+    scoreWeight: 0.4,
+    note: "Derived waist-to-height ratio"
+  },
+  {
+    key: "ffmi",
+    label: "FFMI",
+    unit: "index",
+    min: 13,
+    max: 28,
+    male: { mean: 20.2, sd: 2.1 },
+    female: { mean: 16.8, sd: 1.8 },
+    scoreWeight: 0.75,
+    note: "Derived from weight and estimated body fat"
+  },
+  {
+    key: "frameIndex",
+    label: "Frame index",
+    unit: "index",
+    min: 16,
+    max: 30,
+    male: { mean: 22.7, sd: 1.7 },
+    female: { mean: 22.1, sd: 1.5 },
+    scoreWeight: 0.45,
+    note: "Wrist plus ankle circumference relative to height"
   }
 ];
 
@@ -59,6 +141,45 @@ const scatterOffsets = [
 
 export function getPopulationMetric(key) {
   return POPULATION_METRICS.find((metric) => metric.key === key) || POPULATION_METRICS[0];
+}
+
+export function populationMetricValue(measurements, metric) {
+  if (metric.key === "shoulderWaistRatio") {
+    return Number(measurements.waistCircumference) > 0
+      ? round(Number(measurements.bideltoidCircumference) / Number(measurements.waistCircumference))
+      : Number.NaN;
+  }
+
+  if (metric.key === "waistHipRatio") {
+    return Number(measurements.hipCircumference) > 0
+      ? round(Number(measurements.waistCircumference) / Number(measurements.hipCircumference))
+      : Number.NaN;
+  }
+
+  if (metric.key === "waistHeightRatio") {
+    return Number(measurements.height) > 0
+      ? round(Number(measurements.waistCircumference) / Number(measurements.height))
+      : Number.NaN;
+  }
+
+  if (metric.key === "ffmi") {
+    return calculateBodyComposition(measurements).ffmi?.ffmi ?? Number.NaN;
+  }
+
+  if (metric.key === "frameIndex") {
+    const height = Number(measurements.height);
+    if (height <= 0) {
+      return Number.NaN;
+    }
+
+    return round(
+      ((Number(measurements.wristCircumference) + Number(measurements.ankleCircumference)) /
+        height) *
+        100
+    );
+  }
+
+  return Number(measurements[metric.key]);
 }
 
 export function clampMetricValue(value, metric) {
@@ -105,16 +226,19 @@ export function buildGenderScoreRows(measurements) {
     key: metric.key,
     label: metric.label,
     unit: metric.unit,
-    value: clampMetricValue(Number(measurements[metric.key]), metric),
-    score: metricSexScore(measurements[metric.key], metric)
+    note: metric.note,
+    weight: metric.scoreWeight ?? 1,
+    value: clampMetricValue(populationMetricValue(measurements, metric), metric),
+    score: metricSexScore(populationMetricValue(measurements, metric), metric)
   }));
 }
 
 export function aggregateGenderScore(measurements) {
   const rows = buildGenderScoreRows(measurements);
-  const total = rows.reduce((sum, row) => sum + row.score, 0);
+  const weightTotal = rows.reduce((sum, row) => sum + row.weight, 0);
+  const total = rows.reduce((sum, row) => sum + row.score * row.weight, 0);
 
-  return rows.length ? total / rows.length : 0;
+  return weightTotal ? total / weightTotal : 0;
 }
 
 export function genderScoreLabel(score) {

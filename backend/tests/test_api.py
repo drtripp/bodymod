@@ -146,6 +146,7 @@ def test_measurement_guides_endpoint_returns_field_guides() -> None:
         "waistCircumference",
         "bideltoidCircumference",
         "hipCircumference",
+        "ankleCircumference",
     }.issubset(guide_fields)
     assert all(guide["steps"] for guide in payload["guides"])
     assert all(guide["illustration"] for guide in payload["guides"])

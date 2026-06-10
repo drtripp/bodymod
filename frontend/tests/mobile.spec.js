@@ -18,6 +18,7 @@ const targetMeasurements = {
   upperThighCircumference: 52,
   midThighCircumference: 46,
   calfCircumference: 36,
+  ankleCircumference: 22,
   bicepCircumference: 31,
   upperForearmCircumference: 27,
   wristCircumference: 16
@@ -52,6 +53,21 @@ const targets = [
   }
 ];
 
+const measurementGuideLibrary = {
+  version: 1,
+  reference: "Dummy measurement how-to guide copy for mobile tests.",
+  guides: [
+    {
+      field: "waistCircumference",
+      label: "Waist",
+      cadence: "weekly",
+      illustration: "waist-tape",
+      summary: "Narrowest relaxed torso circumference.",
+      steps: ["Find the narrowest relaxed point between ribs and hips."]
+    }
+  ]
+};
+
 async function mockApi(page) {
   await page.route("**/api/health", async (route) => {
     await route.fulfill({ json: { status: "ok" } });
@@ -63,6 +79,10 @@ async function mockApi(page) {
         targets: targets.map(({ score, similarity, explanation, ...target }) => target)
       }
     });
+  });
+
+  await page.route("**/api/measurement-guides", async (route) => {
+    await route.fulfill({ json: measurementGuideLibrary });
   });
 
   await page.route("**/api/match", async (route) => {

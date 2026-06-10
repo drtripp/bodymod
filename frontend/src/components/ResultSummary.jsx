@@ -1,5 +1,6 @@
 import { useState } from "react";
 import SilhouetteView from "./SilhouetteView";
+import { calculateBodyComposition } from "../lib/bodyComposition";
 import { estimateClothingSizes } from "../lib/clothingSizes";
 import { calculateRatios } from "../lib/ratios";
 import { downloadResultCard } from "../lib/resultCard";
@@ -12,6 +13,14 @@ function formatScore(similarity) {
   return `${Math.round(similarity)}%`;
 }
 
+function formatPercent(value) {
+  return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)}%` : "--";
+}
+
+function formatKg(value) {
+  return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)} kg` : "--";
+}
+
 export default function ResultSummary({
   measurements,
   result,
@@ -22,8 +31,12 @@ export default function ResultSummary({
 }) {
   const [shareStatus, setShareStatus] = useState("");
   const ratios = calculateRatios(measurements);
+  const bodyComposition = calculateBodyComposition(measurements);
   const clothingSizes = estimateClothingSizes(measurements, clothingSizeTables);
   const ratioById = Object.fromEntries(ratios.map((ratio) => [ratio.id, ratio]));
+  const bodyFatMethodSummary = bodyComposition.methods
+    .map((method) => `${method.label} ${formatPercent(method.value)}`)
+    .join(" / ");
   const runnerUp = result?.matches?.[1] || null;
   const metricBlocks = [
     {
@@ -41,8 +54,26 @@ export default function ResultSummary({
     {
       id: "bodyFat",
       label: "Est BF%",
-      value: ratioById.bodyFat?.value ? `${ratioById.bodyFat.value}%` : "--",
-      note: `${ratioById.bodyFat?.note}. Population percentile TBD`
+      value: formatPercent(ratioById.bodyFat?.value),
+      note: `${bodyFatMethodSummary}. Population percentile TBD`
+    },
+    {
+      id: "ffmi",
+      label: "FFMI",
+      value: bodyComposition.ffmi?.ffmi ?? "--",
+      note: bodyComposition.ffmi
+        ? `Normalized ${bodyComposition.ffmi.normalizedFfmi}; ${bodyComposition.ffmi.context}`
+        : "Needs body-fat estimate"
+    },
+    {
+      id: "framePotential",
+      label: "Frame",
+      value: bodyComposition.potential?.eligible
+        ? `${bodyComposition.potential.remainingLeanMassKg >= 0 ? "+" : ""}${bodyComposition.potential.remainingLeanMassKg.toFixed(1)} kg`
+        : "--",
+      note: bodyComposition.potential?.eligible
+        ? "Estimated lean-mass room from wrist/ankle frame"
+        : bodyComposition.potential?.note || "Needs wrist and ankle"
     },
     {
       id: "shoulderHip",
@@ -111,6 +142,44 @@ export default function ResultSummary({
                 <small>{metric.note}</small>
               </article>
             ))}
+          </div>
+
+          <div className="body-composition-panel" aria-label="Body composition estimates">
+            <div className="fit-panel-header">
+              <h3>Body composition</h3>
+              <span>Formulas, not diagnostics</span>
+            </div>
+            <div className="composition-grid">
+              {bodyComposition.methods.map((method) => (
+                <article key={method.id}>
+                  <span>{method.label}</span>
+                  <strong>{formatPercent(method.value)}</strong>
+                  <small>{method.note}</small>
+                </article>
+              ))}
+              <article>
+                <span>FFMI</span>
+                <strong>{bodyComposition.ffmi?.ffmi ?? "--"}</strong>
+                <small>
+                  {bodyComposition.ffmi
+                    ? `Lean mass ${formatKg(bodyComposition.ffmi.leanMassKg)}; normalized ${bodyComposition.ffmi.normalizedFfmi}`
+                    : "Needs a body-fat estimate"}
+                </small>
+              </article>
+              <article className={bodyComposition.potential?.eligible ? "" : "is-muted"}>
+                <span>Frame potential</span>
+                <strong>
+                  {bodyComposition.potential?.eligible
+                    ? formatKg(bodyComposition.potential.leanMassPotentialKg)
+                    : "Male-only"}
+                </strong>
+                <small>
+                  {bodyComposition.potential?.eligible
+                    ? `Potential FFMI ${bodyComposition.potential.potentialFfmi}; ${bodyComposition.potential.note}`
+                    : bodyComposition.potential?.note}
+                </small>
+              </article>
+            </div>
           </div>
 
           <div className="fit-panel" aria-label="Clothing size estimates">

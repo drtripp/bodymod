@@ -160,28 +160,50 @@ export function loadUserPhotos(accountId) {
   return photos.filter((photo) => photo.accountId === accountId);
 }
 
-export function calculateTrendWeight(checkIns, alpha = 0.25) {
-  const dailyWeights = checkIns
+function dailyWeightEntries(checkIns) {
+  return checkIns
     .filter((checkIn) => checkIn.type === "daily-weight" && Number.isFinite(Number(checkIn.weight)))
     .slice()
     .sort((left, right) => new Date(left.createdAt) - new Date(right.createdAt));
+}
+
+export function buildTrendWeightSeries(checkIns, alpha = 0.25) {
+  const dailyWeights = dailyWeightEntries(checkIns);
 
   if (!dailyWeights.length) {
-    return null;
+    return [];
   }
 
   let trend = Number(dailyWeights[0].weight);
-  let previousTrend = trend;
 
-  for (const entry of dailyWeights.slice(1)) {
-    previousTrend = trend;
-    trend = alpha * Number(entry.weight) + (1 - alpha) * trend;
+  return dailyWeights.map((entry, index) => {
+    if (index > 0) {
+      trend = alpha * Number(entry.weight) + (1 - alpha) * trend;
+    }
+
+    return {
+      id: entry.id,
+      createdAt: entry.createdAt,
+      raw: Number(entry.weight),
+      trend: Number(trend.toFixed(2))
+    };
+  });
+}
+
+export function calculateTrendWeight(checkIns, alpha = 0.25) {
+  const series = buildTrendWeightSeries(checkIns, alpha);
+
+  if (!series.length) {
+    return null;
   }
 
+  const latest = series[series.length - 1];
+  const previous = series[series.length - 2] || latest;
+
   return {
-    value: Number(trend.toFixed(1)),
-    delta: dailyWeights.length > 1 ? Number((trend - previousTrend).toFixed(1)) : 0,
-    count: dailyWeights.length
+    value: Number(latest.trend.toFixed(1)),
+    delta: series.length > 1 ? Number((latest.trend - previous.trend).toFixed(1)) : 0,
+    count: series.length
   };
 }
 

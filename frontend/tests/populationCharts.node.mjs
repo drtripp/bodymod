@@ -9,7 +9,8 @@ import {
   genderScoreLabel,
   getPopulationMetric,
   metricSexScore,
-  normalPdf
+  normalPdf,
+  populationMetricValue
 } from "../src/lib/populationCharts.js";
 
 test("resolves known and fallback population metrics", () => {
@@ -52,24 +53,37 @@ test("normal density peaks at the mean", () => {
 });
 
 test("computes signed gender score rows", () => {
-  const rows = buildGenderScoreRows({
+  const measurements = {
     height: 176,
     weight: 84,
+    sex: "male",
+    neckCircumference: 39,
     waistCircumference: 99,
     bideltoidCircumference: 116,
-    hipCircumference: 106
-  });
+    hipCircumference: 106,
+    wristCircumference: 17,
+    ankleCircumference: 23
+  };
+  const rows = buildGenderScoreRows(measurements);
 
   assert.equal(rows.length, POPULATION_METRICS.length);
+  assert.ok(rows.some((row) => row.key === "ffmi"));
+  assert.ok(rows.some((row) => row.key === "frameIndex"));
+  assert.equal(populationMetricValue(measurements, getPopulationMetric("waistHipRatio")), 0.93);
+  assert.equal(populationMetricValue(measurements, getPopulationMetric("frameIndex")), 22.73);
   assert.ok(metricSexScore(116, getPopulationMetric("bideltoidCircumference")) < 0);
   assert.ok(metricSexScore(106, getPopulationMetric("hipCircumference")) > 0);
   assert.ok(
     aggregateGenderScore({
       height: 176,
       weight: 84,
+      sex: "male",
+      neckCircumference: 39,
       waistCircumference: 99,
       bideltoidCircumference: 116,
-      hipCircumference: 102
+      hipCircumference: 102,
+      wristCircumference: 17,
+      ankleCircumference: 23
     }) < 0
   );
   assert.equal(genderScoreLabel(0), "Androgynous range");
