@@ -99,9 +99,11 @@ Protocol Tracker → Diet upgrades → Native app.
 - [x] Ankle circumference field (needed for Casey Butt potential model):
       schema, target/persona dummy data, measuring guide, cadence tier,
       silhouette anchor, and schema drift tests updated.
-- [ ] Optional left/right split for limb fields **(new)**: bicep, forearm,
-      thigh, calf enterable as L/R pairs (single value stays the default);
-      symmetry tracking for physique users.
+- [x] Optional left/right split for limb fields **(new)**: bicep, forearm,
+      thigh, calf enterable as L/R pairs in the local account check-in loop
+      while the single measurement value stays the default for matching;
+      dated limb-symmetry logs show side deltas and ride along in local
+      check-in backups.
 - [x] Richer longitudinal charts: snapshot history now includes a per-metric
       chart with all/90-day/180-day/1-year range selection, note annotation
       markers, and measurement-noise bands alongside the compact overview.

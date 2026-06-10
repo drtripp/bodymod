@@ -91,6 +91,7 @@ Implemented now:
 - local account workspace for persona walkthroughs, goals, protocols, check-ins, workouts, photos, and reports
 - daily weight trend smoothing with raw-dot vs smoothed-line display
 - historical weight CSV import for local daily logs, with lb/kg handling, optional calories, and duplicate-date skipping
+- optional left/right bicep, forearm, thigh, and calf split logs with local symmetry summaries
 - passphrase-encrypted local backup and restore for snapshots and account logs, with photo metadata manifest only
 - adaptive TDEE estimate from reliable daily weight and calorie logs, with reliability-window exclusions
 - guided weekly check-in flow with snapshot save, streak/grace state, heatmap, milestones, insight drops, and weekly digest

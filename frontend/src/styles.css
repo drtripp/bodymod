@@ -543,6 +543,70 @@ textarea {
   grid-column: 1 / -1;
 }
 
+.limb-symmetry-card {
+  border: 1px solid var(--color-border);
+  background: var(--color-page);
+  display: grid;
+  grid-template-columns: minmax(180px, 0.35fr) minmax(320px, 1fr) minmax(180px, 0.32fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 10px;
+  padding: 10px;
+}
+
+.limb-symmetry-copy,
+.limb-split-label,
+.limb-symmetry-summary {
+  display: grid;
+  gap: 4px;
+}
+
+.limb-symmetry-copy p,
+.limb-split-label span,
+.limb-symmetry-summary span,
+.limb-symmetry-summary p,
+.limb-symmetry-summary li {
+  color: var(--color-muted);
+}
+
+.limb-split-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.limb-split-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.7fr) minmax(88px, 0.5fr) minmax(88px, 0.5fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.limb-split-note textarea {
+  min-height: 78px;
+  resize: vertical;
+}
+
+.limb-symmetry-summary {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--color-border);
+  padding-top: 8px;
+}
+
+.limb-symmetry-summary ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.limb-symmetry-summary li {
+  border: 1px solid var(--color-border);
+  background: var(--color-panel);
+  padding: 5px 7px;
+}
+
 .checkin-summary {
   display: flex;
   gap: 12px;
@@ -4104,6 +4168,8 @@ textarea {
   .account-auth-grid,
   .cadence-grid,
   .checkin-form,
+  .limb-symmetry-card,
+  .limb-split-row,
   .history-import-card,
   .guided-checkin-card,
   .streak-panel,

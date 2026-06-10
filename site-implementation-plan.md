@@ -313,6 +313,10 @@ Status:
 - account check-ins support historical weight CSV import through
   `frontend/src/lib/historyImport.js`, storing imported rows as normal
   daily-weight logs for trend weight and adaptive TDEE
+- account check-ins support optional left/right bicep, forearm, thigh, and
+  calf split logs through `frontend/src/lib/limbSymmetry.js`; the single
+  measurement value remains the default for matching while dated split logs
+  show symmetry deltas for physique tracking
 - account workspace supports passphrase-encrypted backup/restore through
   `frontend/src/lib/localBackup.js`; photos are exported as metadata manifests
   rather than image payloads

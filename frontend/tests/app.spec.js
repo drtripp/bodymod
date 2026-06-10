@@ -1115,6 +1115,15 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Historical weight CSV import")).toContainText("Imported 2 historical log(s).");
   await expect(page.getByLabel("Check-in summary")).toContainText("4 log(s)");
   await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 86.6 kg / 2380 kcal");
+  await page.getByLabel("Bicep left").fill("34");
+  await page.getByLabel("Bicep right").fill("36");
+  await page.getByLabel("Calf left").fill("38");
+  await page.getByLabel("Calf right").fill("38.2");
+  await page.getByLabel("Limb split note").fill("Right arm dominant after tennis.");
+  await page.getByRole("button", { name: "Log limb symmetry" }).click();
+  await expect(accountDialog).toContainText("Limb symmetry split logged.");
+  await expect(page.getByLabel("Latest limb symmetry")).toContainText("Bicep right +2.0 cm (5.7%)");
+  await expect(page.getByLabel("Check-in history")).toContainText("Limb symmetry: Bicep right +2.0 cm");
   await page.getByRole("button", { name: "Finish guided weekly check-in" }).click();
   await expect(page.getByLabel("Check-in history")).toContainText("Guided weekly measurements: waist 86.0 cm");
   await expect(accountDialog.locator(".snapshot-row").getByText("Weekly check-in")).toBeVisible();

@@ -38,6 +38,13 @@ import {
   buildMeasurementDueState
 } from "../lib/measurementCadence";
 import {
+  buildLimbSymmetryCheckIn,
+  formatLimbSymmetryItem,
+  latestLimbSymmetryCheckIn,
+  limbSplitFields,
+  summarizeLimbSymmetrySplits
+} from "../lib/limbSymmetry";
+import {
   parseHistoricalWeightCsv,
   summarizeHistoricalWeightImport
 } from "../lib/historyImport";
@@ -164,6 +171,12 @@ function formatCheckIn(checkIn) {
     return `Reliability event: ${checkIn.eventMode} / ${Number(checkIn.durationDays || 0)} day window`;
   }
 
+  if (checkIn.type === "limb-symmetry") {
+    const summary = summarizeLimbSymmetrySplits(checkIn.splits);
+    const summaryText = summary.items.slice(0, 2).map(formatLimbSymmetryItem).join("; ");
+    return `Limb symmetry: ${summaryText || "split log"}`;
+  }
+
   const prefix = checkIn.source === "guided" ? "Guided weekly measurements" : "Weekly measurements";
   return `${prefix}: waist ${Number(checkIn.measurements?.waistCircumference).toFixed(1)} cm`;
 }
@@ -285,6 +298,9 @@ export default function AccountGoalPanel({
   const [dailyWeight, setDailyWeight] = useState("");
   const [dailyCalories, setDailyCalories] = useState("");
   const [checkInNote, setCheckInNote] = useState("");
+  const [limbSplitValues, setLimbSplitValues] = useState({});
+  const [limbSplitNote, setLimbSplitNote] = useState("");
+  const [limbSplitErrors, setLimbSplitErrors] = useState({});
   const [historyImportText, setHistoryImportText] = useState("");
   const [historyImportStatus, setHistoryImportStatus] = useState("");
   const [backupPassphrase, setBackupPassphrase] = useState("");
@@ -446,6 +462,14 @@ export default function AccountGoalPanel({
     [trendWeightSeries]
   );
   const cadenceDueState = useMemo(() => buildMeasurementDueState(checkIns), [checkIns]);
+  const latestLimbSymmetry = useMemo(
+    () => latestLimbSymmetryCheckIn(checkIns),
+    [checkIns]
+  );
+  const latestLimbSymmetrySummary = useMemo(
+    () => summarizeLimbSymmetrySplits(latestLimbSymmetry?.splits),
+    [latestLimbSymmetry]
+  );
   const weeklyStreak = useMemo(() => buildWeeklyStreak(checkIns), [checkIns]);
   const checkInHeatmap = useMemo(() => buildCheckInHeatmap(checkIns), [checkIns]);
   const milestones = useMemo(
@@ -722,6 +746,45 @@ export default function AccountGoalPanel({
     setDailyWeight("");
     setDailyCalories("");
     setStatus("Daily check-in logged.");
+  }
+
+  function handleLimbSplitChange(name, value) {
+    setLimbSplitValues((current) => ({
+      ...current,
+      [name]: value
+    }));
+
+    setLimbSplitErrors((current) => {
+      if (!current[name] && !current.form) {
+        return current;
+      }
+
+      const nextErrors = { ...current };
+      delete nextErrors[name];
+      delete nextErrors.form;
+      return nextErrors;
+    });
+  }
+
+  function handleLimbSymmetryCheckIn(event) {
+    event.preventDefault();
+    if (!account) {
+      return;
+    }
+
+    const result = buildLimbSymmetryCheckIn(limbSplitValues, limbSplitNote);
+    setLimbSplitErrors(result.errors);
+
+    if (!result.checkIn) {
+      setStatus(result.errors.form || "Fix the highlighted limb split values.");
+      return;
+    }
+
+    const nextCheckIn = persistUserCheckIn(account.id, result.checkIn);
+    setCheckIns([nextCheckIn, ...checkIns]);
+    setLimbSplitValues({});
+    setLimbSplitNote("");
+    setStatus("Limb symmetry split logged.");
   }
 
   function importHistoricalWeightCsv(rawValue) {
@@ -1469,6 +1532,100 @@ export default function AccountGoalPanel({
                 <button className="button" type="button" onClick={handleGuidedWeeklyCheckIn}>
                   Finish guided weekly check-in
                 </button>
+              </form>
+              <form
+                className="limb-symmetry-card"
+                aria-label="Limb symmetry tracker"
+                onSubmit={handleLimbSymmetryCheckIn}
+              >
+                <div className="limb-symmetry-copy">
+                  <strong>Optional left/right limb splits</strong>
+                  <p>
+                    Keep the single body measurement as the default, or log dated
+                    side-to-side values for symmetry tracking.
+                  </p>
+                </div>
+                <div className="limb-split-grid">
+                  {limbSplitFields.map((field) => {
+                    const singleValue = Number(currentMeasurements[field.id]);
+                    const singleLabel = Number.isFinite(singleValue)
+                      ? `${singleValue.toFixed(1)} cm single value`
+                      : "single value unchanged";
+
+                    return (
+                      <div key={field.id} className="limb-split-row">
+                        <div className="limb-split-label">
+                          <strong>{field.label}</strong>
+                          <span>{singleLabel}</span>
+                        </div>
+                        <label className="field compact-field">
+                          <span className="field-label">Left</span>
+                          <input
+                            aria-label={`${field.label} left`}
+                            inputMode="decimal"
+                            value={limbSplitValues[field.leftKey] || ""}
+                            onChange={(event) =>
+                              handleLimbSplitChange(field.leftKey, event.target.value)
+                            }
+                            placeholder={Number.isFinite(singleValue) ? singleValue.toFixed(1) : ""}
+                          />
+                          {limbSplitErrors[field.leftKey] ? (
+                            <span className="field-error">{limbSplitErrors[field.leftKey]}</span>
+                          ) : null}
+                        </label>
+                        <label className="field compact-field">
+                          <span className="field-label">Right</span>
+                          <input
+                            aria-label={`${field.label} right`}
+                            inputMode="decimal"
+                            value={limbSplitValues[field.rightKey] || ""}
+                            onChange={(event) =>
+                              handleLimbSplitChange(field.rightKey, event.target.value)
+                            }
+                            placeholder={Number.isFinite(singleValue) ? singleValue.toFixed(1) : ""}
+                          />
+                          {limbSplitErrors[field.rightKey] ? (
+                            <span className="field-error">{limbSplitErrors[field.rightKey]}</span>
+                          ) : null}
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+                <label className="field limb-split-note">
+                  <span className="field-label">Limb split note</span>
+                  <textarea
+                    aria-label="Limb split note"
+                    value={limbSplitNote}
+                    onChange={(event) => setLimbSplitNote(event.target.value)}
+                    placeholder="Right arm usually pumped after tennis."
+                  />
+                </label>
+                <button className="button" type="submit">
+                  Log limb symmetry
+                </button>
+                {limbSplitErrors.form ? (
+                  <small className="history-import-status">{limbSplitErrors.form}</small>
+                ) : null}
+                {latestLimbSymmetry ? (
+                  <div className="limb-symmetry-summary" aria-label="Latest limb symmetry">
+                    <strong>
+                      Latest symmetry: {latestLimbSymmetrySummary.status === "watch" ? "watch" : "balanced"}
+                    </strong>
+                    <span>{formatDate(latestLimbSymmetry.createdAt)}</span>
+                    <ul>
+                      {latestLimbSymmetrySummary.items.map((item) => (
+                        <li key={item.field}>{formatLimbSymmetryItem(item)}</li>
+                      ))}
+                    </ul>
+                    {latestLimbSymmetry.note ? <p>{latestLimbSymmetry.note}</p> : null}
+                  </div>
+                ) : (
+                  <p className="muted-text">
+                    No limb split logs yet. Leave this blank unless side-to-side
+                    tracking matters for your current goal.
+                  </p>
+                )}
               </form>
               <form
                 className="history-import-card"

@@ -181,6 +181,8 @@ Implemented:
 - JSON export/import
 - duplicate snapshot imports are skipped with an explicit skipped-count status
 - compact SVG trend chart for weight, waist, shoulder mass, and hip measurements
+- optional local account left/right bicep, forearm, thigh, and calf split logs
+  with side-delta symmetry summaries
 
 ### Comparison, Trust, Share, And Corpus
 

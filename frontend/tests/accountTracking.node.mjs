@@ -15,6 +15,13 @@ import {
   buildReliabilityPauseSummary
 } from "../src/lib/reliabilityEvents.js";
 import {
+  buildLimbSymmetryCheckIn,
+  formatLimbSymmetryItem,
+  latestLimbSymmetryCheckIn,
+  parseLimbSymmetryInput,
+  summarizeLimbSymmetrySplits
+} from "../src/lib/limbSymmetry.js";
+import {
   buildMeasurementCadenceGroups,
   buildMeasurementDueState,
   getMeasurementCadence
@@ -74,6 +81,68 @@ test("builds sorted raw and smoothed trend weight series", () => {
   assert.deepEqual(series.map((point) => point.raw), [100, 99, 98]);
   assert.deepEqual(series.map((point) => point.trend), [100, 99.75, 99.31]);
   assert.deepEqual(trend, { value: 99.3, delta: -0.4, count: 3 });
+});
+
+test("parses optional left/right limb split logs and summarizes asymmetry", () => {
+  const parsed = parseLimbSymmetryInput({
+    bicepLeft: "34",
+    bicepRight: "36",
+    forearmLeft: "",
+    forearmRight: "",
+    upperThighLeft: "58",
+    upperThighRight: "57",
+    calfLeft: "38",
+    calfRight: "38.2"
+  });
+  const summary = summarizeLimbSymmetrySplits(parsed.splits);
+
+  assert.equal(parsed.isValid, true);
+  assert.deepEqual(
+    parsed.splits.map((split) => [split.field, split.average]),
+    [
+      ["bicepCircumference", 35],
+      ["upperThighCircumference", 57.5],
+      ["calfCircumference", 38.1]
+    ]
+  );
+  assert.equal(summary.status, "watch");
+  assert.equal(summary.largest.field, "bicepCircumference");
+  assert.equal(formatLimbSymmetryItem(summary.largest), "Bicep right +2.0 cm (5.7%)");
+});
+
+test("builds dated limb symmetry check-ins without making split fields required", () => {
+  const empty = buildLimbSymmetryCheckIn({});
+  const invalidPair = buildLimbSymmetryCheckIn({ bicepLeft: "35" });
+  const valid = buildLimbSymmetryCheckIn(
+    {
+      bicepLeft: "35",
+      bicepRight: "35.2"
+    },
+    "Even enough for this block."
+  );
+  const latest = latestLimbSymmetryCheckIn([
+    {
+      id: "older",
+      type: "limb-symmetry",
+      createdAt: "2026-06-01T00:00:00.000Z",
+      splits: [{ field: "bicepCircumference", label: "Bicep", left: 34, right: 35 }]
+    },
+    {
+      id: "newer",
+      type: "limb-symmetry",
+      createdAt: "2026-06-05T00:00:00.000Z",
+      splits: valid.checkIn.splits
+    }
+  ]);
+
+  assert.equal(empty.checkIn, null);
+  assert.equal(empty.errors.form, "Enter at least one left/right pair.");
+  assert.equal(invalidPair.checkIn, null);
+  assert.equal(invalidPair.errors.bicepRight, "Enter a number");
+  assert.equal(valid.checkIn.type, "limb-symmetry");
+  assert.deepEqual(valid.checkIn.measurements, { bicepCircumference: 35.1 });
+  assert.equal(valid.checkIn.note, "Even enough for this block.");
+  assert.equal(latest.id, "newer");
 });
 
 test("pauses affected trend inference inside reliability event windows", () => {
