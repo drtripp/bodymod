@@ -1,7 +1,12 @@
+from math import exp
+
 from app.data.targets import TARGETS
 from app.models import MatchResponse, MatchResult, MeasurementSet, TargetProfile
 from app.percentiles import estimate_percentiles
 
+
+SIMILARITY_EXPONENT = 1.5
+SIMILARITY_SCALE = 1.0
 
 SCORING_KEYS = [
     ("weight", 0.65, "body weight"),
@@ -88,6 +93,15 @@ def score_match(current: MeasurementSet, target: TargetProfile) -> float:
     return round(total, 4)
 
 
+def similarity_from_distance(distance: float) -> float:
+    safe_distance = max(distance, 0.0)
+    return round(
+        100
+        * exp(-((safe_distance / SIMILARITY_SCALE) ** SIMILARITY_EXPONENT)),
+        1,
+    )
+
+
 def explain_match(current: MeasurementSet, target: TargetProfile) -> list[str]:
     largest_gaps = sorted(score_parts(current, target), key=lambda item: item[2], reverse=True)[:3]
     explanations = []
@@ -116,19 +130,25 @@ def explain_match(current: MeasurementSet, target: TargetProfile) -> list[str]:
 
 def build_match_response(current: MeasurementSet) -> MatchResponse:
     targets = get_targets()
-    ranked = sorted(
-        [
+    matches = []
+
+    for target in targets:
+        distance = score_match(current, target)
+        matches.append(
             MatchResult(
                 id=target.id,
                 label=target.label,
-                score=score_match(current, target),
+                score=distance,
+                similarity=similarity_from_distance(distance),
                 notes=target.notes,
                 source_type=target.source_type,
                 measurements=target.measurements,
                 explanation=explain_match(current, target),
             )
-            for target in targets
-        ],
+        )
+
+    ranked = sorted(
+        matches,
         key=lambda item: item.score,
     )
 

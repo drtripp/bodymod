@@ -30,6 +30,7 @@ const targets = [
     source_type: "character",
     notes: "Estimated placeholder profile.",
     score: 0.242,
+    similarity: 88.8,
     explanation: ["waist: 4 below target", "shoulder mass: 10 above target"],
     measurements: targetMeasurements
   },
@@ -39,6 +40,7 @@ const targets = [
     source_type: "archetype",
     notes: "Broad-shouldered placeholder profile.",
     score: 0.411,
+    similarity: 76.8,
     explanation: ["body weight: 6 below target", "deltoid width: 8 below target"],
     measurements: {
       ...targetMeasurements,
@@ -50,15 +52,242 @@ const targets = [
   }
 ];
 
+const personaSeeds = [
+  {
+    id: "recomp-lifter",
+    label: "Mason, recomp-focused lifter",
+    segment: "Measurement-driven lifter",
+    motivation: "Wants shoulder-to-waist changes and a tighter weekly check-in loop.",
+    measurements: { height: 181, weight: 86, waistCircumference: 86, bideltoidCircumference: 124 },
+    likelyGoals: ["shoulder-waist-ratio"]
+  },
+  {
+    id: "hrt-tracker",
+    label: "Riley, HRT body-shape tracker",
+    segment: "Gender-transition tracker",
+    motivation: "Needs private longitudinal waist, hip, and shoulder trend data.",
+    measurements: { height: 173, weight: 68, sex: "female", waistCircumference: 72, hipCircumference: 99 },
+    likelyGoals: ["waist-hip-ratio"]
+  },
+  {
+    id: "glow-up-planner",
+    label: "Avery, glow-up routine planner",
+    segment: "Glow-up and recomp",
+    motivation: "Wants body, diet, skin, and progress photos in one private place.",
+    measurements: { height: 166, weight: 62, sex: "female", waistCircumference: 68, hipCircumference: 97 },
+    likelyGoals: ["skin-appearance"]
+  },
+  {
+    id: "physique-competitor",
+    label: "Noah, physique competitor",
+    segment: "Physique competitor",
+    motivation: "Tracks delts, waist, and legs across prep without spreadsheet drift.",
+    measurements: { height: 176, weight: 78, waistCircumference: 75, bideltoidCircumference: 121 },
+    likelyGoals: ["shoulder-waist-ratio"]
+  },
+  {
+    id: "postpartum-return",
+    label: "Sam, postpartum return-to-training",
+    segment: "Life-event tracker",
+    motivation: "Needs nonjudgmental measurements with life-event annotations.",
+    measurements: { height: 164, weight: 74, sex: "female", waistCircumference: 88, hipCircumference: 108 },
+    likelyGoals: ["weekly-check-in"]
+  },
+  {
+    id: "bodymod-artist",
+    label: "Jules, tattoo and procedure planner",
+    segment: "Body-mod subculture",
+    motivation: "Wants procedure notes, healing windows, and before/after body logs.",
+    measurements: { height: 170, weight: 70, sex: "female", waistCircumference: 76, hipCircumference: 101 },
+    likelyGoals: ["procedure-log"]
+  },
+  {
+    id: "data-exporter",
+    label: "Quinn, quantified-self exporter",
+    segment: "Quantified self",
+    motivation: "Wants local-first logs with exportable JSON.",
+    measurements: { height: 188, weight: 92, waistCircumference: 94, bideltoidCircumference: 132 },
+    likelyGoals: ["weekly-check-in"]
+  },
+  {
+    id: "weight-loss-starter",
+    label: "Jordan, weight-loss starter",
+    segment: "Mainstream fitness",
+    motivation: "Needs simple waist, weight, diet, and trend feedback.",
+    measurements: { height: 172, weight: 96, waistCircumference: 108, hipCircumference: 112 },
+    likelyGoals: ["waist-hip-ratio"]
+  },
+  {
+    id: "face-metric-curious",
+    label: "Kai, face-metric curious user",
+    segment: "Looksmaxxing traffic",
+    motivation: "Arrives for face analysis but needs safety rails and local-only framing.",
+    measurements: { height: 179, weight: 73, waistCircumference: 79, hipCircumference: 94 },
+    likelyGoals: ["face-measurements"]
+  },
+  {
+    id: "coach-client",
+    label: "Morgan, coach tracking a client",
+    segment: "Coach / multi-profile",
+    motivation: "Needs repeatable check-ins and a client-friendly summary.",
+    measurements: { height: 168, weight: 64, sex: "female", waistCircumference: 70, hipCircumference: 98 },
+    likelyGoals: ["weekly-check-in"]
+  }
+];
+
+const planningData = {
+  personas: personaSeeds.map((persona) => ({
+    ...persona,
+    startingMeasurements: {
+      ...targetMeasurements,
+      ...persona.measurements
+    },
+    walkthrough: [
+      "Create account",
+      "Save first body snapshot",
+      "Set goal",
+      "Learn from strategy corpus"
+    ]
+  })),
+  goalPresets: [
+    {
+      id: "shoulder-waist-ratio",
+      label: "Improve shoulder-to-waist ratio",
+      category: "Body proportions",
+      summary: "Track waist, deltoid circumference, and shoulder-to-waist ratio across weekly snapshots.",
+      targetMetrics: {
+        waistCircumference: -4,
+        bideltoidCircumference: 4
+      },
+      suggestedProtocols: ["resistance-training", "calorie-target"],
+      requiresHumanReview: false
+    },
+    {
+      id: "waist-hip-ratio",
+      label: "Track waist-to-hip change",
+      category: "Body proportions",
+      summary: "Follow waist, hip, and WHR without treating any single ratio as a prescription.",
+      targetMetrics: {
+        waistCircumference: -3,
+        hipCircumference: 2
+      },
+      suggestedProtocols: ["weekly-measurement-cadence", "calorie-target"],
+      requiresHumanReview: false
+    },
+    {
+      id: "weekly-check-in",
+      label: "Weekly measurement check-in",
+      category: "Tracking",
+      summary: "Save snapshots on a predictable cadence so trend charts become meaningful.",
+      targetMetrics: {},
+      suggestedProtocols: ["weekly-measurement-cadence"],
+      requiresHumanReview: false
+    },
+    {
+      id: "skin-appearance",
+      label: "Skin appearance research log",
+      category: "Appearance",
+      summary: "Store notes and photos later; use strategy cards for informational review only.",
+      targetMetrics: {},
+      suggestedProtocols: ["topical-retinoid-research"],
+      requiresHumanReview: true
+    },
+    {
+      id: "procedure-log",
+      label: "Procedure or body-mod log",
+      category: "Procedure",
+      summary: "Track dates, notes, and affected measurements during healing windows.",
+      targetMetrics: {},
+      suggestedProtocols: ["procedure-healing-note"],
+      requiresHumanReview: true
+    },
+    {
+      id: "face-measurements",
+      label: "Local face-measurement backlog",
+      category: "Face",
+      summary: "Future browser-local face metric logs with local-only safety framing.",
+      targetMetrics: {},
+      suggestedProtocols: ["face-landmark-research"],
+      requiresHumanReview: true
+    }
+  ],
+  protocolTemplates: [
+    {
+      id: "resistance-training",
+      label: "Progressive resistance training",
+      category: "Workout",
+      summary: "Structured lifting block tracked against circumference and weight changes.",
+      cadence: "3-5 sessions/week; review weekly",
+      evidence: "moderate",
+      riskLevel: "low",
+      requiresHumanReview: false
+    },
+    {
+      id: "calorie-target",
+      label: "Calorie target with weekly trend review",
+      category: "Diet",
+      summary: "Use diet logs and weekly snapshots to watch trend movement without daily overreaction.",
+      cadence: "daily food log; weekly measurement check-in",
+      evidence: "moderate",
+      riskLevel: "low",
+      requiresHumanReview: false
+    },
+    {
+      id: "weekly-measurement-cadence",
+      label: "Weekly tape-measurement cadence",
+      category: "Tracking",
+      summary: "Repeat the same fields under similar conditions and log confounder notes.",
+      cadence: "weekly",
+      evidence: "operational",
+      riskLevel: "low",
+      requiresHumanReview: false
+    },
+    {
+      id: "topical-retinoid-research",
+      label: "Topical retinoid research note",
+      category: "Skin",
+      summary: "Placeholder skin protocol research note requiring source review.",
+      cadence: "human-reviewed before use",
+      evidence: "needs source review",
+      riskLevel: "moderate",
+      requiresHumanReview: true
+    },
+    {
+      id: "procedure-healing-note",
+      label: "Procedure healing-window note",
+      category: "Procedure",
+      summary: "Annotate swelling/healing windows so affected measurements are not overinterpreted.",
+      cadence: "event-based",
+      evidence: "operational",
+      riskLevel: "human review",
+      requiresHumanReview: true
+    },
+    {
+      id: "face-landmark-research",
+      label: "Browser-local face landmark research",
+      category: "Face",
+      summary: "MediaPipe-style landmark collection for future local face metric logs.",
+      cadence: "research spike",
+      evidence: "implementation research",
+      riskLevel: "privacy-sensitive",
+      requiresHumanReview: true
+    }
+  ]
+};
+
 async function mockApi(page) {
   await page.route("**/api/health", async (route) => {
     await route.fulfill({ json: { status: "ok" } });
   });
 
+  await page.route("**/api/planning", async (route) => {
+    await route.fulfill({ json: planningData });
+  });
+
   await page.route("**/api/targets", async (route) => {
     await route.fulfill({
       json: {
-        targets: targets.map(({ score, explanation, ...target }) => target)
+        targets: targets.map(({ score, similarity, explanation, ...target }) => target)
       }
     });
   });
@@ -91,7 +320,9 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Waist: 80 cm" }).first()).toBeVisible();
   await expect(page.locator(".top-match-block").getByText("Astarion")).toBeVisible();
   await expect(page.locator(".runner-up-block").getByText("Classic Physique Archetype")).toBeVisible();
-  await expect(page.locator(".top-match-block > span").getByText("Similarity score:")).toBeVisible();
+  await expect(page.locator(".top-match-block > span")).toHaveText("Similarity score: 89%");
+  await expect(page.locator(".runner-up-block small")).toHaveText("Similarity score: 77%");
+  await expect(page.locator(".top-match-block")).not.toContainText("TBD");
   await expect(page.getByLabel("Result metric blocks")).toBeVisible();
   await expect(page.getByText("Est BF%")).toBeVisible();
   await expect(page.getByText("SHR")).toBeVisible();
@@ -297,6 +528,165 @@ test("shares measurements from the header icon and restores them from the URL", 
   await expect(page).toHaveURL(/m=/);
 });
 
+test("creates a local account, logs a snapshot, sets a goal, and logs back in", async ({ page }) => {
+  await page.getByRole("button", { name: "User profile" }).click();
+  const accountDialog = page.getByRole("dialog", { name: "Account, logs, and goals" });
+  await expect(accountDialog).toBeVisible();
+  await expect(accountDialog).toContainText("Loaded 10 personas, 6 goals, and 6 protocols.");
+
+  await page.getByLabel("Display name").fill("Mason");
+  await page.getByLabel("Account email").fill("mason@example.com");
+  await page.getByLabel("Persona sample").selectOption("recomp-lifter");
+  await page.getByRole("button", { name: "Create account" }).click();
+
+  await expect(accountDialog).toContainText("Persona measurements loaded.");
+  await expect(accountDialog).toContainText("Mason");
+  await expect(accountDialog).toContainText("Snapshots");
+  await expect(page.getByLabel("Account email")).not.toBeVisible();
+
+  await page.getByLabel("Daily weight").fill("86.4");
+  await page.getByLabel("Daily calories").fill("2400");
+  await page.getByLabel("Check-in note").fill("Low sodium day.");
+  await page.getByRole("button", { name: "Log daily check-in" }).click();
+  await expect(page.getByLabel("Check-in summary")).toContainText("Trend weight: 86.4 kg");
+  await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 86.4 kg / 2400 kcal");
+  await page.getByLabel("Daily weight").fill("85.9");
+  await page.getByRole("button", { name: "Log daily check-in" }).click();
+  await expect(page.getByLabel("Check-in summary")).toContainText("Trend weight: 86.3 kg");
+  await expect(page.getByLabel("Insight drops")).toContainText("Trend weight is down");
+  await page.getByRole("button", { name: "Save weekly check-in" }).click();
+  await expect(page.getByLabel("Check-in history")).toContainText("Weekly measurements: waist 86.0 cm");
+  await expect(page.getByLabel("Insight drops")).toContainText("Latest weekly check-in saved waist 86.0 cm");
+
+  await page.getByLabel("Snapshot label").fill("Baseline");
+  await page.getByLabel("Snapshot note").fill("First persona walkthrough log.");
+  await page.getByRole("button", { name: "Save current snapshot" }).click();
+  await expect(accountDialog.getByText("Baseline")).toBeVisible();
+  await expect(accountDialog.getByText("181 cm / 86 kg / male / waist 86")).toBeVisible();
+
+  await page.getByLabel("Goal preset").selectOption("shoulder-waist-ratio");
+  await page.getByLabel("Goal note").fill("Prioritize waist trend and deltoid circumference.");
+  await expect(page.getByLabel("Suggested protocols")).toContainText("Progressive resistance training");
+  await expect(page.getByLabel("Suggested protocols")).toContainText("Calorie target with weekly trend review");
+  await page.getByRole("button", { name: "Save goal" }).click();
+  await expect(page.getByLabel("Saved goals")).toContainText("Improve shoulder-to-waist ratio");
+  await expect(page.getByLabel("Saved goals")).toContainText("Progress: 0%");
+  await expect(page.getByLabel("Improve shoulder-to-waist ratio progress")).toContainText("Waist: 86.0 / target 82.0 cm");
+  await expect(page.getByLabel("Saved goals")).toContainText("0 check-in(s)");
+  await expect(page.getByLabel("Insight drops")).toContainText("1 saved goal(s)");
+  await page.getByRole("button", { name: "On track" }).click();
+  await expect(page.getByLabel("Saved goals")).toContainText("1 check-in(s)");
+
+  await page.getByLabel("Protocol template").selectOption("resistance-training");
+  await page.getByLabel("Protocol dose").fill("4-day upper/lower split");
+  await page.getByLabel("Protocol frequency").fill("4 sessions/week");
+  await page.getByLabel("Protocol confounders").fill("Travel week noted.");
+  await page.getByRole("button", { name: "Start protocol" }).click();
+  await expect(page.getByLabel("Active protocols")).toContainText("Progressive resistance training");
+  await expect(page.getByLabel("Insight drops")).toContainText("1 active protocol(s)");
+  await expect(page.getByLabel("Active protocols")).toContainText("0 adherence check-in(s)");
+  await expect(page.getByLabel("Active protocols")).toContainText("Dose: 4-day upper/lower split; frequency: 4 sessions/week");
+  await page.getByRole("button", { name: "Protocol on track" }).click();
+  await expect(page.getByLabel("Active protocols")).toContainText("1 adherence check-in(s)");
+  await page.getByRole("button", { name: "Archive protocol" }).click();
+  await expect(page.getByLabel("Active protocols")).toContainText("archived");
+
+  await page.getByRole("button", { name: "Log out" }).click();
+  await expect(accountDialog).toContainText("Logged out of this browser profile.");
+  await page.getByLabel("Login email").fill("mason@example.com");
+  await page.getByRole("button", { name: "Log in" }).click();
+  await expect(accountDialog).toContainText("Signed in as Mason.");
+  await expect(page.getByLabel("Saved goals")).toContainText("Improve shoulder-to-waist ratio");
+  await expect(page.getByLabel("Active protocols")).toContainText("Progressive resistance training");
+  await expect(page.getByLabel("Active protocols")).toContainText("1 adherence check-in(s)");
+  await expect(page.getByLabel("Check-in history")).toContainText("Weekly measurements: waist 86.0 cm");
+  await expect(page.getByLabel("Check-in summary")).toContainText("2 log(s)");
+
+  await page.getByRole("button", { name: "Close account panel" }).click();
+  await expect(page.locator('input[name="height"]')).toHaveValue("181");
+});
+
+test("roleplays all persona samples through account logging, goals, and learning", async ({ page }) => {
+  await page.getByRole("button", { name: "User profile" }).click();
+  const accountDialog = page.getByRole("dialog", { name: "Account, logs, and goals" });
+  await expect(accountDialog).toContainText("Loaded 10 personas, 6 goals, and 6 protocols.");
+
+  for (const persona of planningData.personas) {
+    const displayName = persona.label.split(",")[0];
+    const email = `${persona.id}@example.com`;
+    const goal =
+      planningData.goalPresets.find((preset) => persona.likelyGoals.includes(preset.id)) ||
+      planningData.goalPresets[0];
+
+    await page.getByLabel("Display name").fill(displayName);
+    await page.getByLabel("Account email").fill(email);
+    await page.getByLabel("Persona sample").selectOption(persona.id);
+    await page.getByRole("button", { name: "Create account" }).click();
+
+    await expect(accountDialog).toContainText("Persona measurements loaded.");
+    await expect(page.locator('input[name="height"]')).toHaveValue(String(persona.startingMeasurements.height));
+    await expect(page.locator('input[name="waistCircumference"]')).toHaveValue(
+      String(persona.startingMeasurements.waistCircumference)
+    );
+
+    await page.getByLabel("Daily weight").fill(String(persona.startingMeasurements.weight));
+    await page.getByLabel("Daily calories").fill("2300");
+    await page.getByLabel("Check-in note").fill(`${persona.segment} check-in.`);
+    await page.getByRole("button", { name: "Log daily check-in" }).click();
+    await expect(page.getByLabel("Check-in history")).toContainText("Daily weight");
+    await expect(page.getByLabel("Insight drops")).toContainText("Trend weight");
+    await page.getByRole("button", { name: "Save weekly check-in" }).click();
+    await expect(page.getByLabel("Check-in history")).toContainText("Weekly measurements");
+
+    await page.getByLabel("Snapshot label").fill(`${persona.id} baseline`);
+    await page.getByLabel("Snapshot note").fill(`${persona.segment} persona walkthrough.`);
+    await page.getByRole("button", { name: "Save current snapshot" }).click();
+    await expect(accountDialog.getByText(`${persona.id} baseline`)).toBeVisible();
+
+    await page.getByLabel("Goal preset").selectOption(goal.id);
+    await page.getByLabel("Goal note").fill(`Roleplaying ${persona.segment}.`);
+    await expect(page.getByLabel("Suggested protocols")).toBeVisible();
+    await page.getByRole("button", { name: "Save goal" }).click();
+    await expect(page.getByLabel("Saved goals")).toContainText(goal.label);
+    if (Object.keys(goal.targetMetrics || {}).length) {
+      await expect(page.getByLabel("Saved goals")).toContainText("Progress:");
+    }
+    await expect(page.getByLabel("Saved goals")).toContainText("0 check-in(s)");
+
+    await page.getByRole("button", { name: "Needs adjustment" }).click();
+    await expect(page.getByLabel("Saved goals")).toContainText("1 check-in(s)");
+
+    const protocolId = goal.suggestedProtocols[0];
+    if (protocolId) {
+      await page.getByLabel("Protocol template").selectOption(protocolId);
+      await page.getByLabel("Protocol dose").fill(`${persona.segment} starter plan`);
+      await page.getByLabel("Protocol frequency").fill("weekly review");
+      await page.getByLabel("Protocol confounders").fill(`${persona.id} confounder note.`);
+      await page.getByRole("button", { name: "Start protocol" }).click();
+      await expect(page.getByLabel("Active protocols")).toContainText("0 adherence check-in(s)");
+      await page.getByRole("button", { name: "Protocol missed" }).click();
+      await expect(page.getByLabel("Active protocols")).toContainText("1 adherence check-in(s)");
+    }
+
+    await page.getByLabel("Signed-in persona sample").selectOption(persona.id);
+    await page.getByRole("button", { name: "Load persona measurements" }).click();
+    await expect(accountDialog).toContainText(`${persona.label} measurements loaded into the form.`);
+
+    await page.getByRole("button", { name: "Log out" }).click();
+    await expect(accountDialog).toContainText("Logged out of this browser profile.");
+  }
+
+  await page.getByLabel("Login email").fill("coach-client@example.com");
+  await page.getByRole("button", { name: "Log in" }).click();
+  await expect(accountDialog).toContainText("Signed in as Morgan.");
+  await expect(page.getByLabel("Saved goals")).toContainText("Weekly measurement check-in");
+  await expect(page.getByLabel("Active protocols")).toContainText("Weekly tape-measurement cadence");
+
+  await page.getByRole("button", { name: "Learn from strategy corpus" }).click();
+  await expect(page.getByRole("heading", { name: "Strategy explorer" })).toBeVisible();
+  await expect(page.getByText("This is not advice")).toBeVisible();
+});
+
 test("searches food data, looks up barcodes, and logs diet totals", async ({ page }) => {
   await page.route("https://world.openfoodfacts.org/**", async (route) => {
     const url = route.request().url();
@@ -363,6 +753,7 @@ test("searches food data, looks up barcodes, and logs diet totals", async ({ pag
 test("exposes method, privacy, and strategy corpus content", async ({ page }) => {
   await page.getByRole("button", { name: "Method / privacy" }).hover();
   await expect(page.getByRole("heading", { name: "Method" })).toBeVisible();
+  await expect(page.getByText("100 * exp(-(distance ^ 1.5))")).toBeVisible();
   await expect(page.getByText("Share links encode measurement values")).toBeVisible();
   await expect(page.getByText(/Local usage events stored: \d+/)).toBeVisible();
   await page.getByRole("button", { name: "Clear local events" }).click();

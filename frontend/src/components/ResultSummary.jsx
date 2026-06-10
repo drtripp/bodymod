@@ -1,12 +1,12 @@
 import SilhouetteView from "./SilhouetteView";
 import { calculateRatios } from "../lib/ratios";
 
-function formatScore(score) {
-  if (typeof score !== "number") {
-    return "TBD";
+function formatScore(similarity) {
+  if (typeof similarity !== "number") {
+    return "--";
   }
 
-  return `${Math.max(0, Math.round((1 - score) * 100))}% TBD`;
+  return `${Math.round(similarity)}%`;
 }
 
 export default function ResultSummary({
@@ -72,12 +72,12 @@ export default function ResultSummary({
           <div className="top-match-block">
             <h3>Top match</h3>
             <p>{result?.top_match?.label || "No match yet"}</p>
-            <span>Similarity score: {formatScore(result?.top_match?.score)}</span>
+            <span>Similarity score: {formatScore(result?.top_match?.similarity)}</span>
             {runnerUp ? (
               <div className="runner-up-block">
                 <span>Runner up</span>
                 <strong>{runnerUp.label}</strong>
-                <small>Similarity score: {formatScore(runnerUp.score)}</small>
+                <small>Similarity score: {formatScore(runnerUp.similarity)}</small>
               </div>
             ) : null}
           </div>
@@ -98,8 +98,9 @@ export default function ResultSummary({
               <p className="result-status">Backend unavailable. Results are limited.</p>
             ) : null}
             <p>
-              Population context is approximate. Similarity scoring is currently
-              a placeholder pending richer target and reference data.
+              Similarity: 100 means identical measurements, 95+ is within typical
+              re-measurement error, around 40 is a different build. Target profiles
+              are still placeholder estimates.
             </p>
             {result?.percentiles?.reference ? (
               <p className="muted-text">{result.percentiles.reference}</p>

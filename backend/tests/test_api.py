@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TEMPLATES
 from app.data.targets import TARGETS
 from app.main import allowed_cors_origins, app
 
@@ -44,5 +45,37 @@ def test_match_endpoint_returns_ranked_explanations_and_reference() -> None:
     payload = response.json()
     assert payload["top_match"]["id"] == TARGETS[0]["id"]
     assert payload["matches"][0]["score"] <= payload["matches"][-1]["score"]
+    assert payload["matches"][0]["similarity"] >= payload["matches"][-1]["similarity"]
+    assert all(0 <= match["similarity"] <= 100 for match in payload["matches"])
     assert payload["matches"][0]["explanation"]
     assert "reference" in payload["percentiles"]
+
+
+def test_planning_endpoint_returns_personas_goals_and_protocols() -> None:
+    response = client.get("/api/planning")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload["personas"]) == 10
+    assert payload["goalPresets"]
+    assert payload["protocolTemplates"]
+    assert payload["personas"][0]["startingMeasurements"]["height"] >= 120
+    assert {
+        "create account",
+        "save first body snapshot",
+        "set shoulder-to-waist goal",
+    }.issubset({step.lower() for step in payload["personas"][0]["walkthrough"]})
+
+
+def test_planning_data_references_are_consistent() -> None:
+    goal_ids = {goal["id"] for goal in GOAL_PRESETS}
+    protocol_ids = {protocol["id"] for protocol in PROTOCOL_TEMPLATES}
+
+    assert len(PERSONAS) == 10
+    assert all(persona["likelyGoals"] for persona in PERSONAS)
+
+    for persona in PERSONAS:
+        assert set(persona["likelyGoals"]).issubset(goal_ids)
+
+    for goal in GOAL_PRESETS:
+        assert set(goal["suggestedProtocols"]).issubset(protocol_ids)

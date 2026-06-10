@@ -141,6 +141,293 @@ textarea {
   white-space: nowrap;
 }
 
+.account-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 14;
+  background: rgba(16, 25, 35, 0.86);
+  padding: 28px;
+  overflow: auto;
+}
+
+.account-panel {
+  position: relative;
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+}
+
+.account-close {
+  z-index: 2;
+}
+
+.account-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+  padding-right: 44px;
+}
+
+.account-status {
+  color: #c7d0d9;
+  font-size: 0.84rem;
+  max-width: 360px;
+  text-align: right;
+}
+
+.account-status-line {
+  border-top: 1px solid #344454;
+  padding-top: 10px;
+  color: #f2f0e8;
+}
+
+.account-auth-grid,
+.account-workspace {
+  display: grid;
+  gap: 12px;
+}
+
+.account-auth-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.auth-card,
+.checkin-loop,
+.goal-builder,
+.goal-list-section,
+.protocol-tracker,
+.persona-walkthrough {
+  border: 1px solid #344454;
+  background: #182430;
+  padding: 12px;
+}
+
+.auth-card {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-card h3,
+.account-summary h3,
+.checkin-loop h3,
+.goal-builder h3,
+.goal-list-section h3,
+.protocol-tracker h3,
+.persona-walkthrough h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.account-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+  border: 1px solid #344454;
+  background: #101923;
+  padding: 12px;
+}
+
+.account-summary p {
+  color: #c7d0d9;
+}
+
+.persona-loader {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.45fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  border: 1px solid #344454;
+  background: #101923;
+  padding: 12px;
+}
+
+.goal-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(160px, 0.35fr);
+  gap: 10px;
+  align-items: end;
+}
+
+.cadence-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.cadence-grid > div {
+  display: grid;
+  gap: 2px;
+  border: 1px solid #344454;
+  background: #101923;
+  padding: 10px;
+}
+
+.cadence-grid span {
+  color: #c7d0d9;
+}
+
+.checkin-form {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.35fr) minmax(160px, 0.35fr) minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.checkin-note textarea {
+  min-height: 38px;
+  resize: vertical;
+}
+
+.checkin-summary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  border-top: 1px solid #344454;
+  margin-top: 12px;
+  padding-top: 10px;
+}
+
+.checkin-summary span {
+  color: #c7d0d9;
+}
+
+.checkin-list {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+.checkin-list li {
+  border: 1px solid #344454;
+  background: #101923;
+  padding: 8px;
+  display: grid;
+  gap: 2px;
+}
+
+.checkin-list span {
+  color: #c7d0d9;
+}
+
+.insight-drop-list {
+  border-top: 1px solid #344454;
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.insight-drop-list h4 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+
+.insight-drop-list ul,
+.goal-progress ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #c7d0d9;
+}
+
+.protocol-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) repeat(2, minmax(160px, 0.55fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.goal-note,
+.protocol-confounders {
+  grid-column: 1 / -1;
+}
+
+.goal-note textarea,
+.protocol-confounders textarea {
+  min-height: 58px;
+  resize: vertical;
+}
+
+.protocol-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.protocol-card {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #526170;
+  background: #101923;
+  padding: 10px;
+}
+
+.protocol-card span,
+.protocol-card small,
+.goal-row span,
+.protocol-row span {
+  color: #c7d0d9;
+}
+
+.goal-list,
+.protocol-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.goal-row,
+.protocol-row {
+  border: 1px solid #344454;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.goal-row > div:first-child,
+.protocol-row > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.goal-progress {
+  display: grid;
+  gap: 5px;
+  margin: 4px 0 8px;
+}
+
+.goal-progress-track {
+  height: 8px;
+  border: 1px solid #526170;
+  background: #101923;
+  overflow: hidden;
+}
+
+.goal-progress-track i {
+  display: block;
+  height: 100%;
+  background: #8da9c4;
+}
+
+.protocol-row--archived {
+  opacity: 0.68;
+}
+
+.persona-walkthrough ol {
+  margin: 0;
+  padding-left: 22px;
+  color: #c7d0d9;
+}
+
 .workspace {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.85fr);
@@ -1835,6 +2122,7 @@ textarea {
 
   .site-header,
   .panel-header-row,
+  .account-header,
   .diet-hero,
   .diet-search-grid,
   .diet-grid,
@@ -1852,6 +2140,22 @@ textarea {
 
   .panel-header-row {
     gap: 8px;
+  }
+
+  .account-auth-grid,
+  .cadence-grid,
+  .checkin-form,
+  .goal-form,
+  .protocol-form,
+  .persona-loader,
+  .protocol-row,
+  .goal-row {
+    grid-template-columns: 1fr;
+  }
+
+  .account-status {
+    max-width: none;
+    text-align: left;
   }
 
   .field-label {
@@ -1886,6 +2190,10 @@ textarea {
   }
 
   .strategy-explorer-overlay {
+    padding: 10px;
+  }
+
+  .account-overlay {
     padding: 10px;
   }
 

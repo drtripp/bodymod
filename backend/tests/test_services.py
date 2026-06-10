@@ -1,7 +1,13 @@
 from app.data.targets import TARGETS
 from app.models import MeasurementSet
 from app.percentiles import estimate_percentiles, normal_percentile
-from app.services import build_match_response, get_targets, score_match, score_parts
+from app.services import (
+    build_match_response,
+    get_targets,
+    score_match,
+    score_parts,
+    similarity_from_distance,
+)
 
 
 def measurement(index: int = 0) -> MeasurementSet:
@@ -15,13 +21,23 @@ def test_exact_target_match_scores_zero() -> None:
     assert score_match(current, target) == 0
 
 
+def test_similarity_mapping_matches_calibration_anchors() -> None:
+    assert similarity_from_distance(0.0) == 100.0
+    assert 94.5 <= similarity_from_distance(0.139) <= 95.5
+    assert 39.5 <= similarity_from_distance(0.941) <= 40.5
+    assert 95.5 <= similarity_from_distance(0.12) <= 96.5
+
+
 def test_build_match_response_is_ranked_and_explained() -> None:
     response = build_match_response(measurement(0))
 
     assert response.top_match is not None
     assert response.top_match.id == TARGETS[0]["id"]
+    assert response.top_match.similarity == 100.0
     assert response.matches == sorted(response.matches, key=lambda item: item.score)
+    assert response.matches == sorted(response.matches, key=lambda item: item.similarity, reverse=True)
     assert response.matches[1].explanation
+    assert all(0 < match.similarity <= 100 for match in response.matches)
 
 
 def test_score_includes_ratio_distance() -> None:

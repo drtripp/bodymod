@@ -30,3 +30,7 @@ export function fetchMatches(payload) {
     body: JSON.stringify(payload)
   });
 }
+
+export function fetchPlanningData() {
+  return request("/api/planning");
+}

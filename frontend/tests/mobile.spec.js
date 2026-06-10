@@ -30,6 +30,7 @@ const targets = [
     source_type: "character",
     notes: "Estimated placeholder profile.",
     score: 0.242,
+    similarity: 88.8,
     explanation: ["waist: 4 below target", "shoulder mass: 10 above target"],
     measurements: targetMeasurements
   },
@@ -39,6 +40,7 @@ const targets = [
     source_type: "archetype",
     notes: "Broad-shouldered placeholder profile.",
     score: 0.411,
+    similarity: 76.8,
     explanation: ["body weight: 6 below target", "deltoid width: 8 below target"],
     measurements: {
       ...targetMeasurements,
@@ -58,7 +60,7 @@ async function mockApi(page) {
   await page.route("**/api/targets", async (route) => {
     await route.fulfill({
       json: {
-        targets: targets.map(({ score, explanation, ...target }) => target)
+        targets: targets.map(({ score, similarity, explanation, ...target }) => target)
       }
     });
   });

@@ -1,6 +1,7 @@
 export default function SiteHeader({
   activeSection,
   onSectionChange,
+  onOpenAccount,
   onOpenStrategies,
   onShare,
   shareStatus
@@ -31,7 +32,7 @@ export default function SiteHeader({
         </button>
       </div>
       <nav className="site-nav header-actions" aria-label="Account and planning actions">
-        <button className="icon-button user-icon" type="button" aria-label="User profile">
+        <button className="icon-button user-icon" type="button" aria-label="User profile" onClick={onOpenAccount}>
           <span aria-hidden="true" />
         </button>
         <button className="icon-button share-icon" type="button" aria-label="Share current measurements" onClick={onShare}>

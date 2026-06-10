@@ -3,7 +3,9 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TEMPLATES
 from app.models import MeasurementSet
+from app.models import PlanningData
 from app.services import build_match_response, get_targets
 
 app = FastAPI(title="bodymod api", version="0.1.0")
@@ -46,3 +48,14 @@ def list_targets() -> dict[str, list[dict]]:
 @app.post("/api/match")
 def match_profile(measurements: MeasurementSet) -> dict:
     return build_match_response(measurements).model_dump()
+
+
+@app.get("/api/planning")
+def planning_data() -> dict:
+    return PlanningData.model_validate(
+        {
+            "personas": PERSONAS,
+            "goalPresets": GOAL_PRESETS,
+            "protocolTemplates": PROTOCOL_TEMPLATES,
+        }
+    ).model_dump()

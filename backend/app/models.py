@@ -41,6 +41,7 @@ class MatchResult(BaseModel):
     id: str
     label: str
     score: float
+    similarity: float = Field(ge=0, le=100)
     notes: str | None = None
     source_type: str
     measurements: MeasurementSet
@@ -58,3 +59,40 @@ class MatchResponse(BaseModel):
     top_match: MatchResult | None
     matches: list[MatchResult]
     percentiles: PercentileSummary
+
+
+class PersonaProfile(BaseModel):
+    id: str
+    label: str
+    segment: str
+    motivation: str
+    startingMeasurements: MeasurementSet
+    likelyGoals: list[str] = []
+    walkthrough: list[str] = []
+
+
+class GoalPreset(BaseModel):
+    id: str
+    label: str
+    category: str
+    summary: str
+    targetMetrics: dict[str, float] = {}
+    suggestedProtocols: list[str] = []
+    requiresHumanReview: bool = False
+
+
+class ProtocolTemplate(BaseModel):
+    id: str
+    label: str
+    category: str
+    summary: str
+    cadence: str
+    evidence: str
+    riskLevel: str
+    requiresHumanReview: bool = False
+
+
+class PlanningData(BaseModel):
+    personas: list[PersonaProfile]
+    goalPresets: list[GoalPreset]
+    protocolTemplates: list[ProtocolTemplate]

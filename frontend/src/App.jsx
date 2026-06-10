@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import AccountGoalPanel from "./components/AccountGoalPanel";
 import ComparisonPanel from "./components/ComparisonPanel";
 import DietDashboard from "./components/DietDashboard";
 import InfoFootnote from "./components/InfoFootnote";
@@ -59,6 +60,7 @@ export default function App() {
   const [hoveredMeasurement, setHoveredMeasurement] = useState(null);
   const [insightTab, setInsightTab] = useState("result");
   const [activeSection, setActiveSection] = useState("body");
+  const [isAccountPanelOpen, setIsAccountPanelOpen] = useState(false);
   const [isStrategyExplorerOpen, setIsStrategyExplorerOpen] = useState(false);
 
   useEffect(() => {
@@ -357,6 +359,15 @@ export default function App() {
     }));
   }
 
+  function applyMeasurementSet(measurements) {
+    const normalized = normalizeMeasurements(measurements);
+    setFormState(normalized);
+    setDisplayFormState(
+      buildDisplayFormState(normalized, globalUnitSystem, fieldUnitOverrides)
+    );
+    setErrors({});
+  }
+
   const currentMeasurements = coerceMeasurements(formState);
   const rankedMatches = result.matches.length ? result.matches : targets;
   const selectedTarget =
@@ -398,6 +409,7 @@ export default function App() {
       <SiteHeader
         activeSection={activeSection}
         onSectionChange={setActiveSection}
+        onOpenAccount={() => setIsAccountPanelOpen(true)}
         onOpenStrategies={() => setIsStrategyExplorerOpen(true)}
         onShare={handleCopyShareLink}
         shareStatus={shareStatus}
@@ -501,6 +513,33 @@ export default function App() {
             <StrategyCorpus />
           </div>
         </div>
+      ) : null}
+
+      {isAccountPanelOpen ? (
+        <AccountGoalPanel
+          currentMeasurements={currentMeasurements}
+          onApplyMeasurements={applyMeasurementSet}
+          onOpenStrategies={() => {
+            setIsAccountPanelOpen(false);
+            setIsStrategyExplorerOpen(true);
+          }}
+          onClose={() => setIsAccountPanelOpen(false)}
+          snapshotProps={{
+            snapshotLabel,
+            onSnapshotLabelChange: setSnapshotLabel,
+            snapshotNote,
+            onSnapshotNoteChange: setSnapshotNote,
+            snapshots,
+            onSaveSnapshot: handleSaveSnapshot,
+            onLoadSnapshot: handleLoadSnapshot,
+            onDeleteSnapshot: handleDeleteSnapshot,
+            comparisonSnapshotId,
+            onCompareSnapshot: handleCompareSnapshot,
+            onExportSnapshots: handleExportSnapshots,
+            onImportSnapshots: handleImportSnapshots,
+            importStatus
+          }}
+        />
       ) : null}
     </div>
   );

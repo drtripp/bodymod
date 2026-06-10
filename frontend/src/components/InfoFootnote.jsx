@@ -26,13 +26,14 @@ export default function InfoFootnote() {
           <p>
             Matches use normalized measurement distance plus shoulder-to-waist and
             waist-to-hip ratio distance. Percentiles and population comparisons
-            are approximate until vetted reference data is wired in.
+            are approximate until vetted reference data is wired in. Similarity is
+            mapped as 100 * exp(-(distance ^ 1.5)).
           </p>
         </div>
         <div>
           <h2>Privacy</h2>
           <p>
-            No accounts are included. Snapshots and lightweight usage events stay
+            Local accounts, snapshots, goals, and lightweight usage events stay
             in this browser. Share links encode measurement values in the URL.
           </p>
           <div className="privacy-actions">
