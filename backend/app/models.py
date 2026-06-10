@@ -93,10 +93,21 @@ class ProtocolTemplate(BaseModel):
     requiresHumanReview: bool = False
 
 
+class ProtocolTaxonomyItem(BaseModel):
+    id: str
+    label: str
+    doseFields: list[str] = []
+    adherencePrompt: str
+    outcomeMetrics: list[str] = []
+    projectionModel: str | None = None
+    notes: str | None = None
+
+
 class PlanningData(BaseModel):
     personas: list[PersonaProfile]
     goalPresets: list[GoalPreset]
     protocolTemplates: list[ProtocolTemplate]
+    protocolTaxonomy: list[ProtocolTaxonomyItem] = []
 
 
 class ClothingSizeBand(BaseModel):

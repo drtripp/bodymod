@@ -77,6 +77,12 @@ Implemented now:
 - local snapshot save, label, note, load, compare, export, import, and delete in browser storage
 - local snapshot trend summary across saved entries
 - compact local trend chart for key saved-snapshot metrics
+- local account workspace for persona walkthroughs, goals, protocols, check-ins, workouts, photos, and reports
+- daily weight trend smoothing with raw-dot vs smoothed-line display
+- guided weekly check-in flow with snapshot save, streak/grace state, heatmap, milestones, insight drops, and weekly digest
+- protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
+- local browser face measurement logger using self-hosted MediaPipe assets for camera/photo landmark scans
+- local progress photo streams for body, face, and hair with ghost overlay and comparison slider
 - current-vs-selected-snapshot silhouette comparison
 - side-by-side and overlap comparison modes
 - current-vs-target measurement difference table in the comparison panel
@@ -112,8 +118,8 @@ Not implemented yet:
 - real percentile calculations from a vetted reference population
 - vetted ANSUR, NHANES, or equivalent data behind the population charts
 - production-quality target dataset
-- accounts or cross-device history
-- photo upload, Hugging Face, ONNX, or other inference work
+- server-side accounts, encrypted sync, or cross-device history
+- hosted photo/body inference work; current face scans are browser-local only
 - first-party food database ownership; Diet currently depends on Open Food Facts and local browser storage
 
 ## Current Measurement Schema
@@ -140,6 +146,7 @@ The app no longer uses the original seven-field MVP schema. The current schema i
 - bicep circumference
 - upper forearm circumference
 - wrist circumference
+- ankle circumference
 
 ## Future Features
 
@@ -168,6 +175,8 @@ Remaining non-code inputs are tracked in `manual-work-queue.md`.
 - `completion-audit.md`: prompt-to-artifact audit of the active build goal
 - `verify.ps1`: full local verification wrapper
 - `launch-decision-record.md`: public-launch privacy, sharing, analytics, and moderation gates
+- `protocol-planning-notes.md`: protocol tracker schema, projection caveats, and NIDDK/Hall references
+- `face-measurement-research.md`: local face landmark implementation and side-profile spike notes
 - `manual-work-queue.md`: remaining manual content, data, and approval inputs
 - `mvp-build-spec.md`: current build spec and near-term backlog
 - `site-implementation-plan.md`: implementation status and next engineering phases

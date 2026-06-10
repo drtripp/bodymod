@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.exercises import EXERCISE_LIBRARY
 from app.data.measurement_guides import MEASUREMENT_GUIDES
-from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TEMPLATES
+from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TAXONOMY, PROTOCOL_TEMPLATES
 from app.models import ClothingSizeTables
 from app.models import ExerciseLibrary
 from app.models import MeasurementGuideLibrary
@@ -63,6 +63,7 @@ def planning_data() -> dict:
             "personas": PERSONAS,
             "goalPresets": GOAL_PRESETS,
             "protocolTemplates": PROTOCOL_TEMPLATES,
+            "protocolTaxonomy": PROTOCOL_TAXONOMY,
         }
     ).model_dump()
 

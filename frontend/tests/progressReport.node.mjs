@@ -33,6 +33,8 @@ test("builds a printable progress report model and HTML", () => {
         status: "active",
         dose: "4-day split",
         frequency: "4/week",
+        calorieDelta: -300,
+        startingMeasurements: measurements,
         checkIns: [{ adherence: "on track" }, { adherence: "missed" }]
       }
     ],
@@ -48,6 +50,25 @@ test("builds a printable progress report model and HTML", () => {
     photos: [
       { id: "body", category: "body" },
       { id: "face", category: "face" }
+    ],
+    faceMeasurements: [
+      {
+        id: "face-scan",
+        source: "photo",
+        note: "Neutral expression.",
+        metrics: [
+          {
+            id: "midfaceRatio",
+            label: "Midface ratio",
+            displayValue: "0.80"
+          },
+          {
+            id: "canthalTiltDeg",
+            label: "Canthal tilt",
+            displayValue: "9.5 deg"
+          }
+        ]
+      }
     ]
   };
   const model = buildProgressReportModel(input);
@@ -56,9 +77,14 @@ test("builds a printable progress report model and HTML", () => {
   assert.equal(model.snapshotCount, 2);
   assert.equal(model.protocols[0].adherence.checkIns, 2);
   assert.equal(model.protocols[0].adherence.onTrack, 1);
+  assert.equal(model.protocolCaseLogs[0].label, "Progressive resistance training");
   assert.equal(model.workoutPrs[0].exerciseLabel, "Dumbbell lateral raise");
+  assert.equal(model.faceMeasurements.length, 1);
   assert.match(html, /bodymod progress report/);
   assert.match(html, /Mason/);
   assert.match(html, /Progressive resistance training/);
+  assert.match(html, /Protocol case logs/);
   assert.match(html, /Photo manifest/);
+  assert.match(html, /Face measurements/);
+  assert.match(html, /Midface ratio: 0.80/);
 });

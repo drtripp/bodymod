@@ -236,7 +236,8 @@ export default function App() {
     void runMatch(coerceMeasurements(formState));
   }
 
-  function handleSaveSnapshot() {
+  function handleSaveSnapshot(options = {}) {
+    const snapshotOptions = options?.nativeEvent ? {} : options;
     const nextErrors = validateMeasurements(
       formState,
       globalUnitSystem,
@@ -245,19 +246,31 @@ export default function App() {
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length) {
-      return;
+      return false;
     }
 
     const nextSnapshots = [
-      createSnapshot(coerceMeasurements(formState), snapshotLabel, snapshotNote),
+      createSnapshot(
+        coerceMeasurements(formState),
+        snapshotOptions.label ?? snapshotLabel,
+        snapshotOptions.note ?? snapshotNote
+      ),
       ...snapshots
     ];
 
     setSnapshots(nextSnapshots);
     persistSnapshots(nextSnapshots);
-    setSnapshotLabel("");
-    setSnapshotNote("");
-    trackEvent("snapshot_saved", { count: nextSnapshots.length });
+    if (!snapshotOptions.label) {
+      setSnapshotLabel("");
+    }
+    if (!snapshotOptions.note) {
+      setSnapshotNote("");
+    }
+    trackEvent("snapshot_saved", {
+      count: nextSnapshots.length,
+      source: snapshotOptions.source || "manual"
+    });
+    return true;
   }
 
   function handleSaveFirstSnapshot() {

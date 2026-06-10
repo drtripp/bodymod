@@ -86,10 +86,10 @@ Protocol Tracker → Diet upgrades → Native app.
       loop shows only the due cadence buckets.
 - [x] Quick daily log: single-field weight (and optional calories) entry that
       creates a lightweight account check-in, not a full snapshot.
-- [ ] Trend weight algorithm **(new)**: exponentially smoothed daily weight
+- [x] Trend weight algorithm **(new)**: exponentially smoothed daily weight
       (Happy Scale/MacroFactor style) so daily fluctuation never reads as
-      gain/loss; account check-ins now calculate trend weight and show raw
-      dots vs smoothed line, but broader weight-surface integration remains.
+      gain/loss; account check-ins now calculate trend weight, show raw dots
+      vs smoothed line, and feed insight drops / weekly digest copy.
 - [x] Ankle circumference field (needed for Casey Butt potential model):
       schema, target/persona dummy data, measuring guide, cadence tier,
       silhouette anchor, and schema drift tests updated.
@@ -113,7 +113,7 @@ Protocol Tracker → Diet upgrades → Native app.
       the browser renders selectable schematic instructions in the dense
       measurement form. **[human]** still needed for final illustration
       direction before public SEO reuse.
-- [ ] Local browser face measurements **(new)**: copy the troontraits
+- [x] Local browser face measurements **(new)**: copy the troontraits
       approach, not its source code - use MediaPipe Face Landmarker /
       `@mediapipe/tasks-vision` in-browser with a self-hosted model to collect
       face landmarks from live camera or uploaded photos. Primary use is
@@ -125,23 +125,28 @@ Protocol Tracker → Diet upgrades → Native app.
       implementation for sagittal/profile measurements, since MediaPipe's
       frontal face mesh is not enough for reliable nose/chin/jaw projection;
       evaluate browser-local 3D face reconstruction or profile-specific
-      landmark models with permissive commercial licensing.
+      landmark models with permissive commercial licensing. **Implemented:**
+      frontend now self-hosts the MediaPipe WASM/model assets, supports upload
+      and live-camera face scans in the account panel, stores dated local metric
+      records without image data, includes those records in progress reports,
+      and documents the side-profile spike in `face-measurement-research.md`.
 
 ## 4. Check-In Loop & Engagement
 
-- [ ] Weekly check-in flow: guided "what's due" entry session (cadence-driven),
+- [x] Weekly check-in flow: guided "what's due" entry session (cadence-driven),
       ends in a snapshot save and an insight drop.
-- [ ] Check-in streak with grace/freeze mechanic; weekly granularity, never
+- [x] Check-in streak with grace/freeze mechanic; weekly granularity, never
       daily for tape measurements.
-- [ ] Insight drops: after each check-in, surface real changes (percentile
-      movement, trend deltas, ratio changes, new comparisons unlocked).
-- [ ] "Your body tea" weekly digest **(new)**: a tea-toned summary of the
+- [x] Insight drops: after each check-in, surface real changes (trend deltas,
+      tape deltas, active protocols, saved goals, and new comparisons
+      unlocked).
+- [x] "Your body tea" weekly digest **(new)**: a tea-toned summary of the
       week's data (trend, adherence, one notable insight); in-app first,
       notification/email later. The brand voice feature.
-- [ ] Milestones **(new)**: honest, goal-relative markers (first month
+- [x] Milestones **(new)**: honest, goal-relative markers (first month
       tracked, 10 check-ins, measurement target reached). No fake urgency, no
       body judgment.
-- [ ] Check-in calendar heatmap **(new)**: GitHub-style consistency view of
+- [x] Check-in calendar heatmap **(new)**: GitHub-style consistency view of
       logging history.
 - [ ] Notifications: web push + native push; framed as data decay ("trend
       going stale"), never body judgment; permission requested only at first
@@ -149,43 +154,51 @@ Protocol Tracker → Diet upgrades → Native app.
 
 ## 5. Protocol Tracker ("Build Plan" button)
 
-- [ ] Protocol log schema spec first: intervention taxonomy (aligned with
+- [x] Protocol log schema spec first: intervention taxonomy (aligned with
       corpus categories), dose/frequency fields, adherence scale, confounder
       fields (calories, sleep), start/end dates. Design for future
-      trainability. **[human]** review of the taxonomy.
-- [ ] Protocol CRUD: create a plan (one or more interventions + cadence),
+      trainability. Backend now serves dummy taxonomy metadata; **[human]**
+      review of the taxonomy is still required before production.
+- [x] Protocol CRUD: create a plan (one or more interventions + cadence),
       attach to goal, edit/archive.
-- [ ] Adherence check-ins: simple scale prompt during weekly check-in per
+- [x] Adherence check-ins: simple scale prompt during weekly check-in per
       active protocol.
-- [ ] Outcome attribution: snapshots taken during a protocol window are linked
+- [x] Outcome attribution: snapshots taken during a protocol window are linked
       to it; per-protocol before/after measurement summary.
 - [ ] Defensible projections only: NIH/Hall energy-balance model for
       bodyweight/waist under a calorie target (public, validated,
       deterministic); novice/intermediate lean-mass gain shown as wide
       published ranges; everything else shows case logs, never curves.
+      **First pass:** local calorie-target protocols show a conservative
+      NIDDK/Hall-inspired planning band with explicit caveats in
+      `protocol-planning-notes.md`; exact equation-port remains open.
 - [ ] Projected-silhouette rendering for the defensible projections, using the
       existing SVG renderer, with explicit uncertainty copy.
-- [ ] Case logs: structured n=1 reports (protocol, adherence, before/after,
+- [x] Case logs: structured n=1 reports (protocol, adherence, before/after,
       timeframe, source) renderable from corpus entries and from the user's
       own completed protocols.
 - [ ] Goal system: target measurement set (pick a target profile or custom
       deltas), progress-toward-goal display, goal-relative framing everywhere
       ("4 cm from your target", never "below average").
-- [ ] Plan retro **(new)**: when a protocol ends, show predicted band vs
+- [x] Plan retro **(new)**: when a protocol ends, show predicted band vs
       actual outcome for the defensible projections. Closes the loop, builds
       trust, and labels the training data.
 - [ ] Post-procedure reliability flag **(confirmed, lightweight)**: a dated
       procedure/event annotation that marks affected measurements as
       unreliable for a healing window (swelling) and pauses trend inference
       for those fields. Ships as part of general life-event handling, not a
-      procedure feature.
+      procedure feature. **First pass:** local reliability events can be logged
+      with affected fields and pause days; actual trend-inference pausing
+      remains open.
 - [ ] Full procedure tracking: later **(new)**. Surgeries, fillers,
       piercings, tattoos as first-class intervention types with healing
       timelines, photo streams, and case-log output. Deferred until
       protocols + corpus are mature.
 - [ ] Life-event modes **(new)**: pregnancy/postpartum, injury, illness —
       pause goals and fat-change inference, annotate the trend timeline.
-      Matters for the female demo and for honest data.
+      Matters for the female demo and for honest data. **First pass:** local
+      event annotations exist for procedure, postpartum, injury, and illness;
+      goal/trend pausing remains open.
 
 ## 6. Targets & Comparison
 

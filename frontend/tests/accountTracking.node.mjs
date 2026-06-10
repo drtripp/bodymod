@@ -5,6 +5,13 @@ import {
   calculateTrendWeight
 } from "../src/lib/account.js";
 import {
+  buildCheckInHeatmap,
+  buildCheckInInsights,
+  buildMilestones,
+  buildWeeklyDigest,
+  buildWeeklyStreak
+} from "../src/lib/checkInLoop.js";
+import {
   buildMeasurementCadenceGroups,
   buildMeasurementDueState,
   getMeasurementCadence
@@ -64,4 +71,67 @@ test("builds sorted raw and smoothed trend weight series", () => {
   assert.deepEqual(series.map((point) => point.raw), [100, 99, 98]);
   assert.deepEqual(series.map((point) => point.trend), [100, 99.75, 99.31]);
   assert.deepEqual(trend, { value: 99.3, delta: -0.4, count: 3 });
+});
+
+test("builds weekly streak, heatmap, milestones, insights, and digest", () => {
+  const now = Date.parse("2026-06-17T12:00:00.000Z");
+  const checkIns = [
+    {
+      id: "daily-1",
+      type: "daily-weight",
+      weight: 82,
+      createdAt: "2026-06-16T12:00:00.000Z"
+    },
+    {
+      id: "weekly-1",
+      type: "weekly-measurements",
+      createdAt: "2026-06-03T12:00:00.000Z",
+      measurements: {
+        waistCircumference: 84,
+        hipCircumference: 100,
+        bideltoidCircumference: 118
+      }
+    },
+    {
+      id: "weekly-2",
+      type: "weekly-measurements",
+      createdAt: "2026-06-10T12:00:00.000Z",
+      measurements: {
+        waistCircumference: 82,
+        hipCircumference: 99,
+        bideltoidCircumference: 119
+      }
+    }
+  ];
+
+  const streak = buildWeeklyStreak(checkIns, now);
+  const heatmap = buildCheckInHeatmap(checkIns, now, 14);
+  const milestones = buildMilestones({
+    checkIns,
+    snapshots: [{ id: "snap" }],
+    protocols: [{ id: "protocol" }],
+    now
+  });
+  const insights = buildCheckInInsights({
+    checkIns,
+    trendWeight: { value: 81.8, delta: -0.2, count: 3 },
+    goals: [{ id: "goal" }],
+    protocols: [{ status: "active" }],
+    snapshots: [{ id: "first" }, { id: "second" }]
+  });
+  const digest = buildWeeklyDigest({
+    checkIns,
+    trendWeight: { value: 81.8, delta: -0.2, count: 3 },
+    weeklyStreak: streak,
+    protocols: [{ status: "active" }],
+    milestones
+  });
+
+  assert.equal(streak.status, "current");
+  assert.equal(streak.current, 2);
+  assert.equal(heatmap.find((day) => day.date === "2026-06-10").count, 1);
+  assert.equal(milestones.find((item) => item.id === "first-weekly-snapshot").achieved, true);
+  assert.ok(insights.some((insight) => insight.includes("Weekly deltas")));
+  assert.ok(insights.some((insight) => insight.includes("Snapshot comparison unlocked")));
+  assert.ok(digest.some((line) => line.startsWith("Tea: trend weight")));
 });

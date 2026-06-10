@@ -318,7 +318,7 @@ PERSONAS = [
         "likelyGoals": ["face-measurements", "skin-appearance"],
         "walkthrough": [
             "Create account",
-            "Read face-measurement backlog note",
+            "Open face measurement logger",
             "Open strategy explorer",
             "Avoid hard attractiveness prescriptions",
         ],
@@ -415,12 +415,11 @@ GOAL_PRESETS = [
     },
     {
         "id": "face-measurements",
-        "label": "Local face-measurement backlog",
+        "label": "Local face measurements",
         "category": "Face",
-        "summary": "Future MediaPipe-style local face metrics from live camera or uploaded photos.",
+        "summary": "Browser-local face metrics from live camera or uploaded photos, stored as dated local records without image data.",
         "targetMetrics": {},
         "suggestedProtocols": ["face-landmark-research"],
-        "requiresHumanReview": True,
     },
     {
         "id": "weekly-check-in",
@@ -500,9 +499,9 @@ PROTOCOL_TEMPLATES = [
     },
     {
         "id": "face-landmark-research",
-        "label": "Browser-local face landmark research",
+        "label": "Side-profile face landmark research",
         "category": "Face",
-        "summary": "MediaPipe-style landmark collection for future local face metric logs.",
+        "summary": "Evaluate profile-specific landmarks or browser-local 3D reconstruction before sagittal face metrics ship.",
         "cadence": "research spike",
         "evidence": "implementation research",
         "riskLevel": "privacy-sensitive",
@@ -516,5 +515,51 @@ PROTOCOL_TEMPLATES = [
         "cadence": "monthly",
         "evidence": "operational",
         "riskLevel": "low",
+    },
+]
+
+
+PROTOCOL_TAXONOMY = [
+    {
+        "id": "workout",
+        "label": "Workout / training",
+        "doseFields": ["exercise", "sets", "reps", "load", "RPE", "frequency"],
+        "adherencePrompt": "How closely did the session or week match the planned training dose?",
+        "outcomeMetrics": [
+            "weight",
+            "waistCircumference",
+            "bideltoidCircumference",
+            "bicepCircumference",
+            "upperThighCircumference",
+        ],
+        "projectionModel": "lean-mass range only; no deterministic physique promises",
+        "notes": "Dummy taxonomy for local protocol logs; final exercise taxonomy needs human review.",
+    },
+    {
+        "id": "diet",
+        "label": "Diet / calorie target",
+        "doseFields": ["daily calories", "protein", "meal pattern", "confounders"],
+        "adherencePrompt": "How close was intake to the planned calorie/protein range?",
+        "outcomeMetrics": ["weight", "waistCircumference", "hipCircumference"],
+        "projectionModel": "NIDDK/Hall-inspired dynamic planning band",
+        "notes": "Projection is informational planning context, not medical advice.",
+    },
+    {
+        "id": "procedure",
+        "label": "Procedure / healing window",
+        "doseFields": ["event date", "affected fields", "healing days", "notes"],
+        "adherencePrompt": "Is the healing/reliability note still active for affected measurements?",
+        "outcomeMetrics": ["affectedMeasurements", "photos", "notes"],
+        "projectionModel": "none; reliability flag only",
+        "notes": "Human review required before public procedure guidance.",
+    },
+    {
+        "id": "life-event",
+        "label": "Life event",
+        "doseFields": ["mode", "affected fields", "start date", "pause days", "notes"],
+        "adherencePrompt": "Should goals or fat-change inference stay paused?",
+        "outcomeMetrics": ["affectedMeasurements", "notes"],
+        "projectionModel": "none; trend interpretation pause only",
+        "notes": "Covers pregnancy/postpartum, injury, illness, and other non-routine windows.",
     },
 ]

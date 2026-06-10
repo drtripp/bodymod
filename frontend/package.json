@@ -17,13 +17,16 @@
     "test:photos": "node --test tests/photos.node.mjs",
     "test:onboarding": "node --test tests/onboarding.node.mjs",
     "test:tracking": "node --test tests/accountTracking.node.mjs",
+    "test:protocols": "node --test tests/protocolPlanning.node.mjs",
     "test:measurement-guides": "node --test tests/measurementGuides.node.mjs",
+    "test:face-measurements": "node --test tests/faceMeasurements.node.mjs",
     "test:result-card": "node --test tests/resultCard.node.mjs",
     "test:progress-report": "node --test tests/progressReport.node.mjs",
     "test:population": "node --test tests/populationCharts.node.mjs",
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^0.10.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

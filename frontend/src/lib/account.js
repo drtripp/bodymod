@@ -5,6 +5,7 @@ const PROTOCOLS_KEY = "bodymod:protocols:v1";
 const CHECKINS_KEY = "bodymod:checkins:v1";
 const WORKOUTS_KEY = "bodymod:workouts:v1";
 const PHOTOS_KEY = "bodymod:photos:v1";
+const FACE_MEASUREMENTS_KEY = "bodymod:face-measurements:v1";
 const STORAGE_VERSION = 1;
 
 function canUseStorage() {
@@ -160,6 +161,18 @@ export function loadUserPhotos(accountId) {
   return photos.filter((photo) => photo.accountId === accountId);
 }
 
+export function loadUserFaceMeasurements(accountId) {
+  if (!accountId) {
+    return [];
+  }
+
+  const parsed = readStorage(FACE_MEASUREMENTS_KEY, { faceMeasurements: [] });
+  const faceMeasurements = Array.isArray(parsed.faceMeasurements)
+    ? parsed.faceMeasurements
+    : [];
+  return faceMeasurements.filter((scan) => scan.accountId === accountId);
+}
+
 function dailyWeightEntries(checkIns) {
   return checkIns
     .filter((checkIn) => checkIn.type === "daily-weight" && Number.isFinite(Number(checkIn.weight)))
@@ -280,6 +293,26 @@ export function persistUserPhoto(accountId, photo) {
   return nextPhoto;
 }
 
+export function persistUserFaceMeasurement(accountId, faceMeasurement) {
+  const parsed = readStorage(FACE_MEASUREMENTS_KEY, { faceMeasurements: [] });
+  const faceMeasurements = Array.isArray(parsed.faceMeasurements)
+    ? parsed.faceMeasurements
+    : [];
+  const nextFaceMeasurement = {
+    id: crypto.randomUUID(),
+    accountId,
+    createdAt: new Date().toISOString(),
+    ...faceMeasurement
+  };
+
+  writeStorage(FACE_MEASUREMENTS_KEY, {
+    version: STORAGE_VERSION,
+    faceMeasurements: [nextFaceMeasurement, ...faceMeasurements]
+  });
+
+  return nextFaceMeasurement;
+}
+
 export function deleteUserPhoto(accountId, photoId) {
   const parsed = readStorage(PHOTOS_KEY, { photos: [] });
   const photos = Array.isArray(parsed.photos) ? parsed.photos : [];
@@ -362,6 +395,29 @@ export function appendProtocolCheckIn(accountId, protocolId, checkIn) {
         },
         ...(Array.isArray(protocol.checkIns) ? protocol.checkIns : [])
       ]
+    };
+  });
+
+  writeStorage(PROTOCOLS_KEY, {
+    version: STORAGE_VERSION,
+    protocols: updatedProtocols
+  });
+
+  return updatedProtocols.filter((protocol) => protocol.accountId === accountId);
+}
+
+export function updateUserProtocol(accountId, protocolId, patch) {
+  const parsed = readStorage(PROTOCOLS_KEY, { protocols: [] });
+  const protocols = Array.isArray(parsed.protocols) ? parsed.protocols : [];
+  const updatedProtocols = protocols.map((protocol) => {
+    if (protocol.accountId !== accountId || protocol.id !== protocolId) {
+      return protocol;
+    }
+
+    return {
+      ...protocol,
+      ...patch,
+      updatedAt: new Date().toISOString()
     };
   });
 

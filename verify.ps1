@@ -33,7 +33,9 @@ try {
     Invoke-Checked { npm run test:photos }
     Invoke-Checked { npm run test:onboarding }
     Invoke-Checked { npm run test:tracking }
+    Invoke-Checked { npm run test:protocols }
     Invoke-Checked { npm run test:measurement-guides }
+    Invoke-Checked { npm run test:face-measurements }
     Invoke-Checked { npm run test:result-card }
     Invoke-Checked { npm run test:progress-report }
     Invoke-Checked { npm run test:population }

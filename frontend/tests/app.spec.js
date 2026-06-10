@@ -207,12 +207,11 @@ const planningData = {
     },
     {
       id: "face-measurements",
-      label: "Local face-measurement backlog",
+      label: "Local face measurements",
       category: "Face",
-      summary: "Future browser-local face metric logs with local-only safety framing.",
+      summary: "Browser-local face metric logs with local-only safety framing.",
       targetMetrics: {},
-      suggestedProtocols: ["face-landmark-research"],
-      requiresHumanReview: true
+      suggestedProtocols: ["face-landmark-research"]
     }
   ],
   protocolTemplates: [
@@ -268,13 +267,30 @@ const planningData = {
     },
     {
       id: "face-landmark-research",
-      label: "Browser-local face landmark research",
+      label: "Side-profile face landmark research",
       category: "Face",
-      summary: "MediaPipe-style landmark collection for future local face metric logs.",
+      summary: "Evaluate profile-specific landmarks or browser-local 3D reconstruction before sagittal face metrics ship.",
       cadence: "research spike",
       evidence: "implementation research",
       riskLevel: "privacy-sensitive",
       requiresHumanReview: true
+    }
+  ],
+  protocolTaxonomy: [
+    {
+      id: "workout",
+      label: "Workout / training",
+      doseFields: ["exercise", "sets", "reps", "load", "RPE", "frequency"],
+      adherencePrompt: "How closely did the session or week match the planned training dose?",
+      outcomeMetrics: ["weight", "waistCircumference", "bideltoidCircumference"]
+    },
+    {
+      id: "diet",
+      label: "Diet / calorie target",
+      doseFields: ["daily calories", "protein", "confounders"],
+      adherencePrompt: "How close was intake to the planned calorie/protein range?",
+      outcomeMetrics: ["weight", "waistCircumference"],
+      projectionModel: "NIDDK/Hall-inspired dynamic planning band"
     }
   ]
 };
@@ -833,6 +849,8 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(accountDialog).toContainText("Mason");
   await expect(accountDialog).toContainText("Snapshots");
   await expect(page.getByLabel("Account email")).not.toBeVisible();
+  await expect(page.getByLabel("Face measurement logger")).toContainText("No saved face measurements yet.");
+  await expect(page.getByLabel("Side profile research notes")).toContainText("Nose projection");
 
   await page.getByLabel("Daily weight").fill("86.4");
   await page.getByLabel("Daily calories").fill("2400");
@@ -845,15 +863,22 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Check-in summary")).toContainText("Trend weight: 86.3 kg");
   await expect(page.getByLabel("Trend weight line vs raw daily weight dots")).toBeVisible();
   await expect(page.getByLabel("Insight drops")).toContainText("Trend weight is down");
-  await page.getByRole("button", { name: "Save weekly check-in" }).click();
-  await expect(page.getByLabel("Check-in history")).toContainText("Weekly measurements: waist 86.0 cm");
+  await page.getByRole("button", { name: "Finish guided weekly check-in" }).click();
+  await expect(page.getByLabel("Check-in history")).toContainText("Guided weekly measurements: waist 86.0 cm");
+  await expect(accountDialog.locator(".snapshot-row").getByText("Weekly check-in")).toBeVisible();
   await expect(page.getByLabel("Insight drops")).toContainText("Latest weekly check-in saved waist 86.0 cm");
+  await expect(page.getByLabel("Check-in streak")).toContainText("week streak");
+  await expect(page.getByLabel("Weekly body tea digest")).toContainText("Tea:");
+  await expect(page.getByLabel("Check-in calendar heatmap")).toBeVisible();
+  await expect(page.getByLabel("Check-in milestones")).toContainText("Weekly snapshot saved");
 
   await page.getByLabel("Snapshot label").fill("Baseline");
   await page.getByLabel("Snapshot note").fill("First persona walkthrough log.");
   await page.getByRole("button", { name: "Save current snapshot" }).click();
   await expect(accountDialog.getByText("Baseline")).toBeVisible();
-  await expect(accountDialog.getByText("181 cm / 86 kg / male / waist 86")).toBeVisible();
+  await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Baseline" })).toContainText(
+    "181 cm / 86 kg / male / waist 86"
+  );
 
   await page.getByLabel("Goal preset").selectOption("shoulder-waist-ratio");
   await page.getByLabel("Goal note").fill("Prioritize waist trend and deltoid circumference.");
@@ -869,18 +894,38 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Saved goals")).toContainText("1 check-in(s)");
 
   await page.getByLabel("Protocol template").selectOption("resistance-training");
+  await expect(page.getByLabel("Protocol schema")).toContainText("Intervention taxonomy");
   await page.getByLabel("Protocol dose").fill("4-day upper/lower split");
   await page.getByLabel("Protocol frequency").fill("4 sessions/week");
+  await page.getByLabel("Protocol calorie delta").fill("-300");
   await page.getByLabel("Protocol confounders").fill("Travel week noted.");
   await page.getByRole("button", { name: "Start protocol" }).click();
   await expect(page.getByLabel("Active protocols")).toContainText("Progressive resistance training");
   await expect(page.getByLabel("Insight drops")).toContainText("1 active protocol(s)");
   await expect(page.getByLabel("Active protocols")).toContainText("0 adherence check-in(s)");
   await expect(page.getByLabel("Active protocols")).toContainText("Dose: 4-day upper/lower split; frequency: 4 sessions/week");
-  await page.getByRole("button", { name: "Protocol on track" }).click();
+  await expect(page.getByLabel("Active protocols")).toContainText("Daily energy delta: -300 kcal");
+  await expect(page.getByLabel("Progressive resistance training outcome attribution")).toContainText("snapshot(s) linked");
+  await expect(page.getByLabel("Progressive resistance training projection band")).toContainText("NIDDK/Hall-inspired");
+  await expect(page.getByLabel("Progressive resistance training case log")).toContainText("Weight");
+  await page.getByLabel("Protocol adherence score").selectOption("5");
+  await page.getByRole("button", { name: "Finish guided weekly check-in" }).click();
   await expect(page.getByLabel("Active protocols")).toContainText("1 adherence check-in(s)");
+  await expect(page.getByLabel("Active protocols")).toContainText("5.0/5 average adherence");
+  await page.getByRole("button", { name: "Edit protocol" }).click();
+  await page.getByLabel("Protocol frequency").fill("5 sessions/week");
+  await page.getByRole("button", { name: "Save protocol edits" }).click();
+  await expect(page.getByLabel("Active protocols")).toContainText("frequency: 5 sessions/week");
+  await page.getByLabel("Life event mode").selectOption("injury");
+  await page.getByLabel("Reliability affected fields").fill("waistCircumference, hipCircumference");
+  await page.getByLabel("Reliability pause days").fill("21");
+  await page.getByLabel("Reliability event note").fill("Hip flexor strain.");
+  await page.getByRole("button", { name: "Log reliability event" }).click();
+  await expect(page.getByLabel("Reliability events")).toContainText("injury");
+  await expect(page.getByLabel("Check-in history")).toContainText("Reliability event: injury / 21 day window");
   await page.getByRole("button", { name: "Archive protocol" }).click();
   await expect(page.getByLabel("Active protocols")).toContainText("archived");
+  await expect(page.getByLabel("Progressive resistance training plan retro")).toContainText("Actual");
 
   await expect(page.getByLabel("Workout library")).toContainText("Loaded 6 exercise seeds and 2 programs.");
   await expect(page.getByLabel("Aesthetic movement mapping")).toContainText("Shoulder width / delts");
@@ -917,7 +962,7 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Photo stream counts")).toContainText("Body 2");
   await expect(page.getByLabel("Photo beside silhouette")).toContainText("body");
 
-  await expect(page.getByLabel("Progress report")).toContainText("1 snapshot(s)");
+  await expect(page.getByLabel("Progress report")).toContainText("3 snapshot(s)");
   const reportDownloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download progress report" }).click();
   const reportDownload = await reportDownloadPromise;
@@ -926,8 +971,10 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   expect(reportHtml).toContain("bodymod progress report");
   expect(reportHtml).toContain("Mason");
   expect(reportHtml).toContain("Progressive resistance training");
+  expect(reportHtml).toContain("Protocol case logs");
   expect(reportHtml).toContain("Dumbbell lateral raise");
   expect(reportHtml).toContain("Photo manifest");
+  expect(reportHtml).toContain("Face measurements");
 
   await page.getByRole("button", { name: "Log out" }).click();
   await expect(accountDialog).toContainText("Logged out of this browser profile.");
@@ -940,7 +987,7 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Recent workout sessions")).toContainText("Dumbbell lateral raise");
   await expect(page.getByLabel("Progress photo gallery")).toContainText("Week 1 front pose.");
   await expect(page.getByLabel("Photo comparison slider")).toBeVisible();
-  await expect(page.getByLabel("Check-in history")).toContainText("Weekly measurements: waist 86.0 cm");
+  await expect(page.getByLabel("Check-in history")).toContainText("Guided weekly measurements: waist 86.0 cm");
   await expect(page.getByLabel("Check-in summary")).toContainText("2 log(s)");
 
   await page.getByRole("button", { name: "Close account panel" }).click();
@@ -1010,6 +1057,10 @@ test("roleplays all persona samples through account logging, goals, and learning
     }
 
     await expect(page.getByLabel("Workout library")).toBeVisible();
+    if (persona.id === "face-metric-curious") {
+      await expect(page.getByLabel("Face measurement logger")).toContainText("Face model idle.");
+      await expect(page.getByLabel("Side profile research notes")).toContainText("true side-profile model");
+    }
     await page.getByLabel("Exercise").selectOption("dumbbell-lateral-raise");
     await page.getByLabel("Workout sets").fill("2");
     await page.getByLabel("Workout reps").fill("10");

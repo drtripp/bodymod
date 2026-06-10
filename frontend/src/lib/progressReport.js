@@ -1,4 +1,6 @@
 import { summarizeSnapshotTrend } from "./comparison.js";
+import { formatFaceMetricSummary } from "./faceMeasurements.js";
+import { buildProtocolCaseLog } from "./protocolPlanning.js";
 import { calculateWorkoutPrs } from "./workouts.js";
 import { photoCategoryCounts } from "./photos.js";
 
@@ -41,11 +43,15 @@ export function buildProgressReportModel({
   protocols = [],
   checkIns = [],
   workoutSessions = [],
-  photos = []
+  photos = [],
+  faceMeasurements = []
 }) {
   const trend = summarizeSnapshotTrend(snapshots);
   const workoutPrs = calculateWorkoutPrs(workoutSessions);
   const photoCounts = photoCategoryCounts(photos);
+  const protocolCaseLogs = protocols.map((protocol) =>
+    buildProtocolCaseLog(protocol, measurements, snapshots)
+  );
 
   return {
     generatedAt: new Date().toISOString(),
@@ -58,10 +64,12 @@ export function buildProgressReportModel({
       ...protocol,
       adherence: protocolAdherence(protocol)
     })),
+    protocolCaseLogs,
     checkIns,
     workoutPrs,
     photoCounts,
-    photoCount: photos.length
+    photoCount: photos.length,
+    faceMeasurements
   };
 }
 
@@ -170,6 +178,15 @@ export function buildProgressReportHtml(input) {
         )}
       </section>
 
+      <section>
+        <h2>Protocol case logs</h2>
+        ${listItems(
+          model.protocolCaseLogs,
+          (caseLog) => `<li><strong>${escapeHtml(caseLog.label)}</strong>: ${escapeHtml(caseLog.outcomeSummary)} / ${escapeHtml(caseLog.projectionSummary)}</li>`,
+          "No protocol case logs yet."
+        )}
+      </section>
+
       <section class="grid">
         <div>
           <h2>Workout PRs</h2>
@@ -188,6 +205,15 @@ export function buildProgressReportHtml(input) {
             "No progress photos logged yet."
           )}
         </div>
+      </section>
+
+      <section>
+        <h2>Face measurements</h2>
+        ${listItems(
+          model.faceMeasurements,
+          (scan) => `<li><strong>${escapeHtml(formatFaceMetricSummary(scan))}</strong>${scan.note ? ` / ${escapeHtml(scan.note)}` : ""}</li>`,
+          "No face measurements logged yet."
+        )}
       </section>
     </main>
   </body>

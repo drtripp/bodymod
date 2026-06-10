@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import FaceMeasurementPanel from "./FaceMeasurementPanel";
 import SilhouetteView from "./SilhouetteView";
 import SnapshotPanel from "./SnapshotPanel";
 import { fetchExerciseLibrary, fetchPlanningData } from "../lib/api";
@@ -13,6 +14,7 @@ import {
   deleteUserPhoto,
   loadAccounts,
   loadUserCheckIns,
+  loadUserFaceMeasurements,
   loadSessionAccount,
   loadUserGoals,
   loadUserPhotos,
@@ -20,14 +22,31 @@ import {
   loadUserWorkoutSessions,
   loginLocalAccount,
   persistUserCheckIn,
+  persistUserFaceMeasurement,
   persistUserGoal,
   persistUserPhoto,
   persistUserProtocol,
-  persistUserWorkoutSession
+  persistUserWorkoutSession,
+  updateUserProtocol
 } from "../lib/account";
 import {
   buildMeasurementDueState
 } from "../lib/measurementCadence";
+import {
+  buildCheckInHeatmap,
+  buildCheckInInsights,
+  buildMilestones,
+  buildWeeklyDigest,
+  buildWeeklyStreak
+} from "../lib/checkInLoop";
+import {
+  buildEnergyProjection,
+  buildPlanRetro,
+  buildProtocolCaseLog,
+  buildProtocolOutcomeSummary,
+  formatProtocolSchemaSummary,
+  splitAffectedFields
+} from "../lib/protocolPlanning";
 import {
   createPhotoRecord,
   defaultPhotoComparison,
@@ -51,7 +70,8 @@ import {
 const emptyPlanningData = {
   personas: [],
   goalPresets: [],
-  protocolTemplates: []
+  protocolTemplates: [],
+  protocolTaxonomy: []
 };
 
 const goalMetricLabels = {
@@ -95,13 +115,27 @@ function protocolDelta(protocol, currentMeasurements) {
 
 function formatCheckIn(checkIn) {
   if (checkIn.type === "daily-weight") {
-    const calories = Number.isFinite(Number(checkIn.calories))
+    const hasCalories =
+      checkIn.calories !== null &&
+      checkIn.calories !== undefined &&
+      checkIn.calories !== "" &&
+      Number.isFinite(Number(checkIn.calories));
+    const calories = hasCalories
       ? ` / ${Number(checkIn.calories)} kcal`
       : "";
     return `Daily weight: ${Number(checkIn.weight).toFixed(1)} kg${calories}`;
   }
 
-  return `Weekly measurements: waist ${Number(checkIn.measurements?.waistCircumference).toFixed(1)} cm`;
+  if (checkIn.type === "streak-freeze") {
+    return "Weekly streak freeze";
+  }
+
+  if (checkIn.type === "life-event") {
+    return `Reliability event: ${checkIn.eventMode} / ${Number(checkIn.durationDays || 0)} day window`;
+  }
+
+  const prefix = checkIn.source === "guided" ? "Guided weekly measurements" : "Weekly measurements";
+  return `${prefix}: waist ${Number(checkIn.measurements?.waistCircumference).toFixed(1)} cm`;
 }
 
 function formatLoad(value) {
@@ -159,40 +193,6 @@ function buildGoalProgress(goal, currentMeasurements) {
     average,
     rows
   };
-}
-
-function buildInsightDrops({ checkIns, trendWeight, goals, protocols }) {
-  const insights = [];
-  const latestWeekly = checkIns.find((checkIn) => checkIn.type === "weekly-measurements");
-
-  if (trendWeight) {
-    const direction =
-      trendWeight.delta < -0.05
-        ? "down"
-        : trendWeight.delta > 0.05
-          ? "up"
-          : "stable";
-    insights.push(
-      `Trend weight is ${direction}: ${trendWeight.value.toFixed(1)} kg across ${trendWeight.count} daily log(s).`
-    );
-  }
-
-  if (latestWeekly?.measurements) {
-    insights.push(
-      `Latest weekly check-in saved waist ${Number(latestWeekly.measurements.waistCircumference).toFixed(1)} cm and hip ${Number(latestWeekly.measurements.hipCircumference).toFixed(1)} cm.`
-    );
-  }
-
-  const activeProtocols = protocols.filter((protocol) => protocol.status !== "archived");
-  if (activeProtocols.length) {
-    insights.push(`${activeProtocols.length} active protocol(s) need adherence review.`);
-  }
-
-  if (goals.length) {
-    insights.push(`${goals.length} saved goal(s) are using the current measurement set as their reference.`);
-  }
-
-  return insights;
 }
 
 function formatCadenceFields(fields) {
@@ -253,6 +253,9 @@ export default function AccountGoalPanel({
     loadUserWorkoutSessions(initialAccount?.id)
   );
   const [photos, setPhotos] = useState(() => loadUserPhotos(initialAccount?.id));
+  const [faceMeasurements, setFaceMeasurements] = useState(() =>
+    loadUserFaceMeasurements(initialAccount?.id)
+  );
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
@@ -266,6 +269,13 @@ export default function AccountGoalPanel({
   const [protocolStartDate, setProtocolStartDate] = useState("");
   const [protocolEndDate, setProtocolEndDate] = useState("");
   const [protocolConfounders, setProtocolConfounders] = useState("");
+  const [protocolCalorieDelta, setProtocolCalorieDelta] = useState("");
+  const [protocolEditId, setProtocolEditId] = useState("");
+  const [protocolAdherenceScore, setProtocolAdherenceScore] = useState("4");
+  const [lifeEventMode, setLifeEventMode] = useState("procedure");
+  const [lifeEventFields, setLifeEventFields] = useState("waistCircumference");
+  const [lifeEventDurationDays, setLifeEventDurationDays] = useState("42");
+  const [lifeEventNote, setLifeEventNote] = useState("");
   const [selectedExerciseId, setSelectedExerciseId] = useState("");
   const [selectedProgramId, setSelectedProgramId] = useState("");
   const [workoutSets, setWorkoutSets] = useState("3");
@@ -389,9 +399,48 @@ export default function AccountGoalPanel({
     [trendWeightSeries]
   );
   const cadenceDueState = useMemo(() => buildMeasurementDueState(checkIns), [checkIns]);
+  const weeklyStreak = useMemo(() => buildWeeklyStreak(checkIns), [checkIns]);
+  const checkInHeatmap = useMemo(() => buildCheckInHeatmap(checkIns), [checkIns]);
+  const milestones = useMemo(
+    () =>
+      buildMilestones({
+        checkIns,
+        snapshots: snapshotProps.snapshots,
+        goals,
+        protocols,
+        currentMeasurements
+      }),
+    [checkIns, currentMeasurements, goals, protocols, snapshotProps.snapshots]
+  );
   const insightDrops = useMemo(
-    () => buildInsightDrops({ checkIns, trendWeight, goals, protocols }),
-    [checkIns, goals, protocols, trendWeight]
+    () =>
+      buildCheckInInsights({
+        checkIns,
+        trendWeight,
+        goals,
+        protocols,
+        snapshots: snapshotProps.snapshots
+      }),
+    [checkIns, goals, protocols, snapshotProps.snapshots, trendWeight]
+  );
+  const weeklyDigest = useMemo(
+    () =>
+      buildWeeklyDigest({
+        checkIns,
+        trendWeight,
+        weeklyStreak,
+        protocols,
+        milestones
+      }),
+    [checkIns, milestones, protocols, trendWeight, weeklyStreak]
+  );
+  const protocolSchemaSummary = useMemo(
+    () => formatProtocolSchemaSummary(planningData.protocolTaxonomy),
+    [planningData.protocolTaxonomy]
+  );
+  const lifeEvents = useMemo(
+    () => checkIns.filter((checkIn) => checkIn.type === "life-event"),
+    [checkIns]
   );
 
   useEffect(() => {
@@ -453,6 +502,7 @@ export default function AccountGoalPanel({
     setCheckIns(loadUserCheckIns(nextAccount?.id));
     setWorkoutSessions(loadUserWorkoutSessions(nextAccount?.id));
     setPhotos(loadUserPhotos(nextAccount?.id));
+    setFaceMeasurements(loadUserFaceMeasurements(nextAccount?.id));
   }
 
   function handleCreateAccount(event) {
@@ -561,30 +611,92 @@ export default function AccountGoalPanel({
     setStatus("Daily check-in logged.");
   }
 
-  function handleWeeklyCheckIn() {
+  function createWeeklyCheckIn({ source = "quick", saveSnapshot = false } = {}) {
     if (!account) {
       return;
     }
 
+    const dueFields = [
+      ...cadenceDueState.weekly.fields,
+      ...(cadenceDueState.monthly.isDue ? cadenceDueState.monthly.fields : [])
+    ].map((field) => field.label);
     const nextCheckIn = persistUserCheckIn(account.id, {
       type: "weekly-measurements",
+      source,
       measurements: currentMeasurements,
-      dueFields: cadenceDueState.weekly.fields.map((field) => field.label),
+      dueFields,
       note: checkInNote.trim()
     });
 
     setCheckIns([nextCheckIn, ...checkIns]);
     setCheckInNote("");
-    setStatus("Weekly measurements logged.");
+    const activeProtocols = protocols.filter((protocol) => protocol.status !== "archived");
+    if (source === "guided" && activeProtocols.length) {
+      let nextProtocols = protocols;
+      for (const protocol of activeProtocols) {
+        nextProtocols = appendProtocolCheckIn(account.id, protocol.id, {
+          adherence: "weekly review",
+          score: Number(protocolAdherenceScore),
+          measurements: currentMeasurements,
+          snapshotCount: snapshotProps.snapshots.length,
+          confounders: checkInNote.trim()
+        });
+      }
+      setProtocols(nextProtocols);
+    }
+    if (saveSnapshot) {
+      const saved = snapshotProps.onSaveSnapshot({
+        label: "Weekly check-in",
+        note: checkInNote.trim() || `Guided weekly check-in: ${dueFields.join(", ")}.`,
+        source: "weekly-check-in"
+      });
+      setStatus(
+        saved === false
+          ? "Weekly measurements logged. Fix measurement errors before saving the snapshot."
+          : activeProtocols.length
+            ? "Guided weekly check-in saved with snapshot and protocol review."
+            : "Guided weekly check-in saved with snapshot."
+      );
+    } else {
+      setStatus("Weekly measurements logged.");
+    }
   }
 
-  function handleStartProtocol(event) {
-    event.preventDefault();
-    if (!account || !selectedProtocolTemplate) {
+  function handleWeeklyCheckIn() {
+    createWeeklyCheckIn({ source: "quick" });
+  }
+
+  function handleGuidedWeeklyCheckIn() {
+    createWeeklyCheckIn({ source: "guided", saveSnapshot: true });
+  }
+
+  function handleUseStreakFreeze() {
+    if (!account || !weeklyStreak.freezeAvailable) {
       return;
     }
 
-    const nextProtocol = persistUserProtocol(account.id, {
+    const nextCheckIn = persistUserCheckIn(account.id, {
+      type: "streak-freeze",
+      note: "Used weekly grace freeze."
+    });
+
+    setCheckIns([nextCheckIn, ...checkIns]);
+    setStatus("Weekly streak freeze used.");
+  }
+
+  function clearProtocolForm() {
+    setProtocolDose("");
+    setProtocolFrequency("");
+    setProtocolStartDate("");
+    setProtocolEndDate("");
+    setProtocolConfounders("");
+    setProtocolCalorieDelta("");
+    setProtocolEditId("");
+  }
+
+  function protocolFormPayload() {
+    const calorieDelta = Number(protocolCalorieDelta);
+    return {
       templateId: selectedProtocolTemplate.id,
       label: selectedProtocolTemplate.label,
       category: selectedProtocolTemplate.category,
@@ -596,20 +708,41 @@ export default function AccountGoalPanel({
       startDate: protocolStartDate,
       endDate: protocolEndDate,
       confounders: protocolConfounders.trim(),
+      calorieDelta: Number.isFinite(calorieDelta) ? calorieDelta : null
+    };
+  }
+
+  function handleStartProtocol(event) {
+    event.preventDefault();
+    if (!account || !selectedProtocolTemplate) {
+      return;
+    }
+
+    const payload = protocolFormPayload();
+
+    if (protocolEditId) {
+      setProtocols(updateUserProtocol(account.id, protocolEditId, payload));
+      clearProtocolForm();
+      setStatus(`Protocol updated: ${payload.label}.`);
+      return;
+    }
+
+    const nextProtocol = persistUserProtocol(account.id, {
+      schemaVersion: 1,
+      ...payload,
       startingMeasurements: currentMeasurements,
       startingSnapshotCount: snapshotProps.snapshots.length
     });
 
     setProtocols([nextProtocol, ...protocols]);
-    setProtocolDose("");
-    setProtocolFrequency("");
-    setProtocolConfounders("");
+    clearProtocolForm();
     setStatus(`Protocol started: ${selectedProtocolTemplate.label}.`);
   }
 
   function handleProtocolCheckIn(protocolId, adherence) {
     const nextProtocols = appendProtocolCheckIn(account.id, protocolId, {
       adherence,
+      score: Number(protocolAdherenceScore),
       measurements: currentMeasurements,
       snapshotCount: snapshotProps.snapshots.length,
       confounders: protocolConfounders.trim()
@@ -618,9 +751,42 @@ export default function AccountGoalPanel({
     setStatus("Protocol adherence check-in logged.");
   }
 
+  function handleEditProtocol(protocol) {
+    setProtocolEditId(protocol.id);
+    setSelectedProtocolTemplateId(protocol.templateId);
+    setProtocolDose(protocol.dose || "");
+    setProtocolFrequency(protocol.frequency || "");
+    setProtocolStartDate(protocol.startDate || "");
+    setProtocolEndDate(protocol.endDate || "");
+    setProtocolConfounders(protocol.confounders || "");
+    setProtocolCalorieDelta(
+      Number.isFinite(Number(protocol.calorieDelta)) ? String(protocol.calorieDelta) : ""
+    );
+    setStatus(`Editing protocol: ${protocol.label}.`);
+  }
+
   function handleArchiveProtocol(protocolId) {
     setProtocols(archiveUserProtocol(account.id, protocolId));
     setStatus("Protocol archived.");
+  }
+
+  function handleLifeEvent(event) {
+    event.preventDefault();
+    if (!account) {
+      return;
+    }
+
+    const nextCheckIn = persistUserCheckIn(account.id, {
+      type: "life-event",
+      eventMode: lifeEventMode,
+      affectedFields: splitAffectedFields(lifeEventFields),
+      durationDays: Number(lifeEventDurationDays) || 0,
+      note: lifeEventNote.trim()
+    });
+
+    setCheckIns([nextCheckIn, ...checkIns]);
+    setLifeEventNote("");
+    setStatus("Reliability event logged.");
   }
 
   function persistWorkoutFromInput(event) {
@@ -721,6 +887,15 @@ export default function AccountGoalPanel({
     setStatus("Photo deleted from this browser profile.");
   }
 
+  function handleSaveFaceMeasurement(faceMeasurement) {
+    if (!account) {
+      return;
+    }
+
+    const nextFaceMeasurement = persistUserFaceMeasurement(account.id, faceMeasurement);
+    setFaceMeasurements([nextFaceMeasurement, ...faceMeasurements]);
+  }
+
   function handleDownloadProgressReport() {
     downloadProgressReport({
       account,
@@ -730,7 +905,8 @@ export default function AccountGoalPanel({
       protocols,
       checkIns,
       workoutSessions,
-      photos
+      photos,
+      faceMeasurements
     });
     setStatus("Progress report downloaded.");
   }
@@ -838,7 +1014,7 @@ export default function AccountGoalPanel({
                   protocol adherence, workout PRs, and the photo manifest.
                 </p>
                 <span>
-                  {snapshotProps.snapshots.length} snapshot(s) / {protocols.length} protocol(s) / {workoutSessions.length} workout(s) / {photos.length} photo(s)
+                  {snapshotProps.snapshots.length} snapshot(s) / {protocols.length} protocol(s) / {workoutSessions.length} workout(s) / {photos.length} photo(s) / {faceMeasurements.length} face scan(s)
                 </span>
               </div>
               <button className="button" type="button" onClick={handleDownloadProgressReport}>
@@ -936,7 +1112,25 @@ export default function AccountGoalPanel({
                 <button className="button" type="button" onClick={handleWeeklyCheckIn}>
                   Save weekly check-in
                 </button>
+                <button className="button" type="button" onClick={handleGuidedWeeklyCheckIn}>
+                  Finish guided weekly check-in
+                </button>
               </form>
+              <div className="guided-checkin-card" aria-label="Guided weekly check-in">
+                <div>
+                  <strong>Due in guided check-in</strong>
+                  <span>
+                    {formatCadenceFields([
+                      ...cadenceDueState.weekly.fields,
+                      ...(cadenceDueState.monthly.isDue ? cadenceDueState.monthly.fields : [])
+                    ])}
+                  </span>
+                </div>
+                <p>
+                  Guided weekly check-in logs the due fields and saves a snapshot so
+                  comparisons, reports, and trends have a dated anchor.
+                </p>
+              </div>
               <div className="checkin-summary" aria-label="Check-in summary">
                 <strong>
                   Trend weight: {trendWeight ? `${trendWeight.value.toFixed(1)} kg` : "--"}
@@ -946,6 +1140,65 @@ export default function AccountGoalPanel({
                     ? `${trendWeight.count} log(s), ${formatSignedDelta(trendWeight.delta)} kg last trend step`
                     : "No daily logs yet."}
                 </span>
+              </div>
+              <div className="streak-panel" aria-label="Check-in streak">
+                <div>
+                  <strong>{weeklyStreak.label}</strong>
+                  <span>
+                    {weeklyStreak.latestAt
+                      ? `Last weekly check-in ${formatDate(weeklyStreak.latestAt)}`
+                      : "Start with a weekly check-in."}
+                  </span>
+                </div>
+                <div>
+                  <small>
+                    {weeklyStreak.graceEndsAt
+                      ? `Grace ends ${formatDate(weeklyStreak.graceEndsAt)}`
+                      : "Grace window begins after each weekly check-in."}
+                  </small>
+                  <small>{weeklyStreak.freezeCount} freeze(s) used</small>
+                </div>
+                <button
+                  className="button"
+                  type="button"
+                  onClick={handleUseStreakFreeze}
+                  disabled={!weeklyStreak.freezeAvailable}
+                >
+                  Use weekly freeze
+                </button>
+              </div>
+              <div className="body-tea-panel" aria-label="Weekly body tea digest">
+                <h4>Your body tea</h4>
+                <ul>
+                  {weeklyDigest.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="checkin-heatmap" aria-label="Check-in calendar heatmap">
+                {checkInHeatmap.map((day) => (
+                  <span
+                    key={day.key}
+                    className={`heatmap-cell heatmap-cell--${day.intensity}`}
+                    title={`${day.date}: ${day.count} check-in(s)`}
+                    aria-label={`${day.date}: ${day.count} check-in(s)`}
+                  />
+                ))}
+              </div>
+              <div className="milestone-grid" aria-label="Check-in milestones">
+                {milestones.map((milestone) => (
+                  <div
+                    key={milestone.id}
+                    className={`milestone-chip ${milestone.achieved ? "is-achieved" : ""}`}
+                  >
+                    <strong>{milestone.label}</strong>
+                    {Number.isFinite(milestone.progress) && milestone.target ? (
+                      <span>{milestone.progress}/{milestone.target}</span>
+                    ) : (
+                      <span>{milestone.achieved ? "done" : "open"}</span>
+                    )}
+                  </div>
+                ))}
               </div>
               {trendWeightChart ? (
                 <div
@@ -1133,6 +1386,10 @@ export default function AccountGoalPanel({
                 <h3>Protocol tracker</h3>
                 <p>Track planned workouts, procedures, routines, or hacks against snapshots.</p>
               </div>
+              <div className="protocol-schema-panel" aria-label="Protocol schema">
+                <strong>Intervention taxonomy</strong>
+                <p>{protocolSchemaSummary}</p>
+              </div>
               <form className="protocol-form" onSubmit={handleStartProtocol}>
                 <label className="field">
                   <span className="field-label">Protocol template</span>
@@ -1164,6 +1421,16 @@ export default function AccountGoalPanel({
                     value={protocolFrequency}
                     onChange={(event) => setProtocolFrequency(event.target.value)}
                     placeholder={selectedProtocolTemplate?.cadence || "weekly"}
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">Daily calorie delta</span>
+                  <input
+                    aria-label="Protocol calorie delta"
+                    inputMode="numeric"
+                    value={protocolCalorieDelta}
+                    onChange={(event) => setProtocolCalorieDelta(event.target.value)}
+                    placeholder="-300"
                   />
                 </label>
                 <label className="field">
@@ -1200,56 +1467,204 @@ export default function AccountGoalPanel({
                   </p>
                 ) : null}
                 <button className="button" type="submit">
-                  Start protocol
+                  {protocolEditId ? "Save protocol edits" : "Start protocol"}
+                </button>
+                {protocolEditId ? (
+                  <button className="button" type="button" onClick={clearProtocolForm}>
+                    Cancel edit
+                  </button>
+                ) : null}
+              </form>
+
+              <form className="life-event-form" aria-label="Reliability event form" onSubmit={handleLifeEvent}>
+                <label className="field">
+                  <span className="field-label">Event mode</span>
+                  <select
+                    aria-label="Life event mode"
+                    value={lifeEventMode}
+                    onChange={(event) => setLifeEventMode(event.target.value)}
+                  >
+                    <option value="procedure">Procedure / healing</option>
+                    <option value="postpartum">Pregnancy / postpartum</option>
+                    <option value="injury">Injury</option>
+                    <option value="illness">Illness</option>
+                  </select>
+                </label>
+                <label className="field">
+                  <span className="field-label">Affected fields</span>
+                  <input
+                    aria-label="Reliability affected fields"
+                    value={lifeEventFields}
+                    onChange={(event) => setLifeEventFields(event.target.value)}
+                    placeholder="waistCircumference, hipCircumference"
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">Pause days</span>
+                  <input
+                    aria-label="Reliability pause days"
+                    inputMode="numeric"
+                    value={lifeEventDurationDays}
+                    onChange={(event) => setLifeEventDurationDays(event.target.value)}
+                  />
+                </label>
+                <label className="field life-event-note">
+                  <span className="field-label">Event note</span>
+                  <textarea
+                    aria-label="Reliability event note"
+                    value={lifeEventNote}
+                    onChange={(event) => setLifeEventNote(event.target.value)}
+                  />
+                </label>
+                <button className="button" type="submit">
+                  Log reliability event
                 </button>
               </form>
+              {lifeEvents.length ? (
+                <div className="life-event-list" aria-label="Reliability events">
+                  {lifeEvents.slice(0, 3).map((event) => (
+                    <div key={event.id}>
+                      <strong>{event.eventMode}</strong>
+                      <span>
+                        {event.affectedFields?.join(", ") || "affected fields not set"} / {event.durationDays} day pause
+                      </span>
+                      {event.note ? <p>{event.note}</p> : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
 
               <div aria-label="Active protocols">
                 {protocols.length ? (
                   <ul className="protocol-list">
-                    {protocols.map((protocol) => (
-                      <li key={protocol.id} className={`protocol-row protocol-row--${protocol.status}`}>
-                        <div>
-                          <strong>{protocol.label}</strong>
-                          <span>
-                            {protocol.category} / {protocol.evidence} / {protocol.status}
-                          </span>
-                          <span>Dose: {protocol.dose}; frequency: {protocol.frequency}</span>
-                          {protocol.startDate || protocol.endDate ? (
+                    {protocols.map((protocol) => {
+                      const outcome = buildProtocolOutcomeSummary(
+                        protocol,
+                        currentMeasurements,
+                        snapshotProps.snapshots
+                      );
+                      const projection = buildEnergyProjection(protocol, currentMeasurements);
+                      const retro =
+                        protocol.status === "archived"
+                          ? buildPlanRetro(protocol, currentMeasurements, snapshotProps.snapshots)
+                          : null;
+                      const caseLog = buildProtocolCaseLog(
+                        protocol,
+                        currentMeasurements,
+                        snapshotProps.snapshots
+                      );
+
+                      return (
+                        <li key={protocol.id} className={`protocol-row protocol-row--${protocol.status}`}>
+                          <div>
+                            <strong>{protocol.label}</strong>
                             <span>
-                              Window: {protocol.startDate || "open"} - {protocol.endDate || "open"}
+                              {protocol.category} / {protocol.evidence} / {protocol.status}
                             </span>
-                          ) : null}
-                          {protocol.confounders ? <p>{protocol.confounders}</p> : null}
-                          <span>{protocol.checkIns?.length || 0} adherence check-in(s)</span>
-                          <span>{protocolDelta(protocol, currentMeasurements)}</span>
-                        </div>
-                        <div className="button-row">
-                          <button
-                            className="button"
-                            type="button"
-                            onClick={() => handleProtocolCheckIn(protocol.id, "on track")}
-                          >
-                            Protocol on track
-                          </button>
-                          <button
-                            className="button"
-                            type="button"
-                            onClick={() => handleProtocolCheckIn(protocol.id, "missed")}
-                          >
-                            Protocol missed
-                          </button>
-                          <button
-                            className="button"
-                            type="button"
-                            onClick={() => handleArchiveProtocol(protocol.id)}
-                            disabled={protocol.status === "archived"}
-                          >
-                            Archive protocol
-                          </button>
-                        </div>
-                      </li>
-                    ))}
+                            <span>Dose: {protocol.dose}; frequency: {protocol.frequency}</span>
+                            {protocol.calorieDelta !== null &&
+                            protocol.calorieDelta !== undefined &&
+                            protocol.calorieDelta !== "" &&
+                            Number.isFinite(Number(protocol.calorieDelta)) ? (
+                              <span>Daily energy delta: {protocol.calorieDelta} kcal</span>
+                            ) : null}
+                            {protocol.startDate || protocol.endDate ? (
+                              <span>
+                                Window: {protocol.startDate || "open"} - {protocol.endDate || "open"}
+                              </span>
+                            ) : null}
+                            {protocol.confounders ? <p>{protocol.confounders}</p> : null}
+                            <span>{protocol.checkIns?.length || 0} adherence check-in(s)</span>
+                            {outcome.averageScore !== null ? (
+                              <span>{outcome.averageScore.toFixed(1)}/5 average adherence</span>
+                            ) : null}
+                            <span>{protocolDelta(protocol, currentMeasurements)}</span>
+                          </div>
+                          <div className="button-row">
+                            <label className="field compact-score-field">
+                              <span className="field-label">Adherence score</span>
+                              <select
+                                aria-label="Protocol adherence score"
+                                value={protocolAdherenceScore}
+                                onChange={(event) => setProtocolAdherenceScore(event.target.value)}
+                              >
+                                {[5, 4, 3, 2, 1, 0].map((score) => (
+                                  <option key={score} value={score}>
+                                    {score}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <button
+                              className="button"
+                              type="button"
+                              onClick={() => handleProtocolCheckIn(protocol.id, "on track")}
+                            >
+                              Protocol on track
+                            </button>
+                            <button
+                              className="button"
+                              type="button"
+                              onClick={() => handleProtocolCheckIn(protocol.id, "missed")}
+                            >
+                              Protocol missed
+                            </button>
+                            <button
+                              className="button"
+                              type="button"
+                              onClick={() => handleEditProtocol(protocol)}
+                              disabled={protocol.status === "archived"}
+                            >
+                              Edit protocol
+                            </button>
+                            <button
+                              className="button"
+                              type="button"
+                              onClick={() => handleArchiveProtocol(protocol.id)}
+                              disabled={protocol.status === "archived"}
+                            >
+                              Archive protocol
+                            </button>
+                          </div>
+                          <div className="protocol-outcome-grid">
+                            <div aria-label={`${protocol.label} outcome attribution`}>
+                              <h4>Outcome attribution</h4>
+                              <p>{outcome.snapshotCount} snapshot(s) linked during the protocol window.</p>
+                              <ul>
+                                {outcome.rows.map((row) => (
+                                  <li key={row.key}>
+                                    {row.label}: {row.displayDelta}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            {projection ? (
+                              <div aria-label={`${protocol.label} projection band`}>
+                                <h4>Projection band</h4>
+                                <p>
+                                  {projection.model}: {projection.lowDeltaKg} to {projection.highDeltaKg} kg over {projection.durationDays} days.
+                                </p>
+                                <small>{projection.note}</small>
+                              </div>
+                            ) : null}
+                            {retro ? (
+                              <div aria-label={`${protocol.label} plan retro`}>
+                                <h4>Plan retro</h4>
+                                <p>{retro.label}</p>
+                                <small>
+                                  Actual {retro.actualDeltaKg} kg / projected {retro.projectedBand}
+                                </small>
+                              </div>
+                            ) : null}
+                            <div aria-label={`${protocol.label} case log`}>
+                              <h4>Case log</h4>
+                              <p>{caseLog.outcomeSummary}</p>
+                              <small>{caseLog.projectionSummary}</small>
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : (
                   <p className="muted-text">No protocols started yet.</p>
@@ -1471,6 +1886,11 @@ export default function AccountGoalPanel({
                 </div>
               </div>
             </section>
+
+            <FaceMeasurementPanel
+              faceMeasurements={faceMeasurements}
+              onSaveFaceMeasurement={handleSaveFaceMeasurement}
+            />
 
             <section className="photo-log-section" aria-label="Photo log">
               <div className="panel-header">

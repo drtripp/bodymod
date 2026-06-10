@@ -62,6 +62,8 @@ def test_planning_endpoint_returns_personas_goals_and_protocols() -> None:
     assert len(payload["personas"]) == 10
     assert payload["goalPresets"]
     assert payload["protocolTemplates"]
+    assert payload["protocolTaxonomy"]
+    assert payload["protocolTaxonomy"][0]["doseFields"]
     assert payload["personas"][0]["startingMeasurements"]["height"] >= 120
     assert {
         "create account",
