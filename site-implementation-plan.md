@@ -162,16 +162,16 @@ Status:
 - supports field-level unit overrides
 - validates ranges
 - displays per-field help text
-- links selected core measurement guides to static public guide pages
-- public guide batch covers height, weight, waist circumference, and bideltoid
-  circumference
+- links selected measurement guides to static public guide pages
+- public guide batch covers every non-select measurement schema field with
+  dummy copy mirrored from the backend guide library
 - Playwright covers decimal and paste-replacement numeric entry
 
 Next:
 
 - continue mobile polish from the phone-viewport Playwright coverage
-- complete static public guide coverage for every backend guide field after
-  public copy and illustration review
+- replace dummy public guide copy and schematic illustrations after human
+  public-copy/art review
 
 ### Silhouette Generator
 

@@ -145,7 +145,7 @@ Implemented now:
 - offline comparison copy that keeps target comparison separate from local snapshot comparison
 - CSS-custom-property theme system with cafe and graphite palettes
 - public `/methodology.html` page for scoring, similarity, percentile, gender-score, and privacy methodology
-- public `/measurement-guides/index.html` route plus core height, weight, waist, and bideltoid circumference how-to pages
+- public `/measurement-guides/index.html` route plus one static how-to page for every measurable schema field
 - public draft legal pages for privacy, terms, and medical disclaimer review
 
 Not implemented yet:

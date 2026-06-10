@@ -5,8 +5,24 @@ const knownFieldNames = new Set(measurementFields.map((field) => field.name));
 export const publicMeasurementGuideSlugs = {
   height: "height",
   weight: "weight",
+  headCircumference: "head-circumference",
+  neckCircumference: "neck-circumference",
+  biacromialWidth: "biacromial-width",
+  bideltoidWidth: "bideltoid-width",
+  bideltoidCircumference: "bideltoid-circumference",
+  armpitCircumference: "armpit-circumference",
+  nippleCircumference: "nipple-circumference",
+  underbustCircumference: "underbust-circumference",
   waistCircumference: "waist-circumference",
-  bideltoidCircumference: "bideltoid-circumference"
+  pantWaistCircumference: "pant-waist-circumference",
+  hipCircumference: "hip-circumference",
+  upperThighCircumference: "upper-thigh-circumference",
+  midThighCircumference: "mid-thigh-circumference",
+  calfCircumference: "calf-circumference",
+  ankleCircumference: "ankle-circumference",
+  bicepCircumference: "bicep-circumference",
+  upperForearmCircumference: "upper-forearm-circumference",
+  wristCircumference: "wrist-circumference"
 };
 
 export const emptyMeasurementGuideLibrary = {

@@ -514,6 +514,15 @@ const measurementGuideLibrary = {
       illustration: "standing-wall",
       summary: "Standing height without shoes, measured against a wall.",
       steps: ["Stand barefoot with heels near a flat wall."]
+    },
+    {
+      field: "hipCircumference",
+      label: "Hip / buttock circumference",
+      cadence: "weekly",
+      illustration: "hip-tape",
+      summary: "Largest circumference around hips and buttocks.",
+      steps: ["Wrap tape around the largest hip and buttock point."],
+      commonMistakes: ["tape tilted upward"]
     }
   ]
 };
@@ -732,6 +741,15 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   const bideltoidGuidePage = await bideltoidGuideResponse.text();
   expect(bideltoidGuidePage).toContain("Keep arms down and relaxed");
   expect(bideltoidGuidePage).toContain("shoulder-to-waist context");
+  await page.getByLabel("Measurement guide field").selectOption("hipCircumference");
+  await expect(guidePanel).toContainText("Largest circumference around hips and buttocks");
+  await expect(guidePanel.getByRole("link", { name: "Public guide" })).toHaveAttribute(
+    "href",
+    "/measurement-guides/hip-circumference.html"
+  );
+  const hipGuideResponse = await page.request.get("/measurement-guides/hip-circumference.html");
+  expect(hipGuideResponse.ok()).toBeTruthy();
+  expect(await hipGuideResponse.text()).toContain("Largest circumference around hips and buttocks");
   const currentFrontSilhouette = page.getByRole("img", { name: "Current profile silhouette" });
   await expect(currentFrontSilhouette).toBeVisible();
   await expect(currentFrontSilhouette.locator(".silhouette-line-art-front")).toHaveCount(1);

@@ -1,11 +1,19 @@
 import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import {
   getDefaultMeasurementGuideField,
   indexMeasurementGuides,
   normalizeMeasurementGuideLibrary,
-  publicMeasurementGuidePath
+  publicMeasurementGuidePath,
+  publicMeasurementGuideSlugs
 } from "../src/lib/measurementGuides.js";
+import { measurementFields } from "../src/lib/measurements.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const guideRoot = join(__dirname, "..", "public", "measurement-guides");
 
 test("normalizes measurement guide libraries to known schema fields", () => {
   const library = normalizeMeasurementGuideLibrary({
@@ -93,5 +101,31 @@ test("resolves public measurement guide routes for SEO pages", () => {
     publicMeasurementGuidePath("bideltoidCircumference"),
     "/measurement-guides/bideltoid-circumference.html"
   );
-  assert.equal(publicMeasurementGuidePath("hipCircumference"), "/measurement-guides/index.html");
+  assert.equal(publicMeasurementGuidePath("hipCircumference"), "/measurement-guides/hip-circumference.html");
+  assert.equal(publicMeasurementGuidePath("sex"), "/measurement-guides/index.html");
+});
+
+test("ships public guide pages for every measurable schema field", () => {
+  const measurableFields = measurementFields
+    .filter((field) => field.type !== "select")
+    .map((field) => field.name);
+  const indexPage = readFileSync(join(guideRoot, "index.html"), "utf8");
+
+  assert.deepEqual(
+    Object.keys(publicMeasurementGuideSlugs).sort(),
+    measurableFields.sort()
+  );
+
+  for (const field of measurableFields) {
+    const slug = publicMeasurementGuideSlugs[field];
+    const fileName = `${slug}.html`;
+    const filePath = join(guideRoot, fileName);
+
+    assert.equal(existsSync(filePath), true, `${fileName} should exist`);
+    assert.ok(indexPage.includes(fileName), `index should link ${fileName}`);
+    assert.ok(
+      readFileSync(filePath, "utf8").includes("Tracking Note"),
+      `${fileName} should include the shared tracking note section`
+    );
+  }
 });

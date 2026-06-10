@@ -67,8 +67,9 @@ The implemented schema has expanded beyond the original seven fields.
 metadata, frontend defaults, and backend Pydantic validation.
 
 The in-app measurement guide selector is backed by dummy backend guide copy.
-Core public guide pages are currently available for height, weight, waist
-circumference, and bideltoid circumference under `/measurement-guides/`.
+Public guide pages are available under `/measurement-guides/` for every
+non-select measurement schema field. Copy and illustrations remain dummy
+validation content until public review.
 
 Canonical fields:
 

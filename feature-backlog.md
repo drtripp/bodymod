@@ -409,12 +409,12 @@ land. No social features, no marketplace.
 - [x] Public methodology page **(new)**: `frontend/public/methodology.html`
       renders scoring, similarity, percentile-source, gender-score, and
       privacy methodology as an indexable public route.
-- [x] Public measurement how-to guide pages **(new)**: core guide batch is
-      rendered as indexable routes for height, weight, waist circumference,
-      and bideltoid circumference, plus a guide index.
-- [ ] Complete public guide-page coverage for every backend guide field and
-      replace schematic/dummy copy with reviewed public illustrations and
-      wording. **[human]**
+- [x] Public measurement how-to guide pages **(new)**: every backend guide
+      field is rendered as an indexable route under
+      `frontend/public/measurement-guides/`, with a guide index and drift tests
+      against the shared measurement schema.
+- [ ] Replace schematic/dummy public guide copy with reviewed public
+      illustrations and wording. **[human]**
 - [x] PDF progress report **(new)**: printable summary of trends,
       measurements, and protocol adherence — for trainers and doctors;
       endocrinologist visits are a recurring real use for the transition
