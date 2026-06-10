@@ -27,9 +27,13 @@ Protocol Tracker → Diet upgrades → Native app.
       `frontend/src/lib/storageAdapter.js`, which exposes async adapter methods
       for web `localStorage` and a memory test adapter while preserving the
       current synchronous UI helpers until native storage lands.
-- [ ] Decompose `App.jsx` (~500 lines): extract state into hooks/contexts per
+- [x] Decompose `App.jsx` (~500 lines): extract state into hooks/contexts per
       domain (measurements, snapshots, comparison, units) before the feature
-      wave makes it worse.
+      wave makes it worse. Measurement/unit state now lives in
+      `frontend/src/hooks/useMeasurementFormState.js`, snapshot persistence in
+      `frontend/src/hooks/useSnapshotState.js`, and comparison target/filter
+      state in `frontend/src/hooks/useComparisonState.js`; `App.jsx` remains
+      the rendering/orchestration shell.
 - [x] Backend database migration: targets now seed from
       `backend/app/data/targets.seed.json` into SQLite via
       `backend/app/repositories.py`, keeping current API shapes and tests

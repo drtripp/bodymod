@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import AccountGoalPanel from "./components/AccountGoalPanel";
 import ComparisonPanel from "./components/ComparisonPanel";
 import DietDashboard from "./components/DietDashboard";
@@ -20,15 +20,8 @@ import {
   fetchShareDashboard,
   fetchTargets
 } from "./lib/api";
-import { summarizeMeasurementDiff } from "./lib/comparison";
 import { trackEvent } from "./lib/analytics";
 import { DEFAULT_CLOTHING_SIZE_TABLES } from "./lib/clothingSizes";
-import {
-  coerceMeasurements,
-  defaultMeasurements,
-  normalizeMeasurements,
-  validateMeasurements
-} from "./lib/measurements";
 import {
   emptyMeasurementGuideLibrary,
   normalizeMeasurementGuideLibrary
@@ -37,13 +30,7 @@ import {
   buildShareUrl,
   decodeMeasurementsFromUrl
 } from "./lib/share";
-import {
-  createSnapshot,
-  loadSnapshots,
-  parseSnapshotExport,
-  persistSnapshots,
-  serializeSnapshots
-} from "./lib/storage";
+import { loadSnapshots } from "./lib/storage";
 import {
   loadOnboardingProfile,
   persistOnboardingProfile
@@ -55,21 +42,12 @@ import {
   persistThemePreference
 } from "./lib/theme";
 import {
-  buildDisplayFormState,
-  displayToMetricValue,
-  formatDisplayValue,
-  resolveFieldUnitSystem
-} from "./lib/units";
-import { buildSnapshotTargets } from "./lib/localTargets";
-import {
-  buildTargetFilterOptions,
-  defaultTargetFilters,
-  filterTargets
-} from "./lib/targetFilters";
-import {
   fallbackEntitlementConfig,
   normalizeEntitlementConfig
 } from "./lib/entitlements";
+import { useComparisonState } from "./hooks/useComparisonState";
+import { useMeasurementFormState } from "./hooks/useMeasurementFormState";
+import { useSnapshotState } from "./hooks/useSnapshotState";
 
 const fallbackMatchPriorities = [
   {
@@ -94,9 +72,6 @@ export default function App() {
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("share") || ""
       : "";
-  const [formState, setFormState] = useState(defaultMeasurements);
-  const [displayFormState, setDisplayFormState] = useState(defaultMeasurements);
-  const [errors, setErrors] = useState({});
   const [apiStatus, setApiStatus] = useState("checking");
   const [targets, setTargets] = useState([]);
   const [result, setResult] = useState({
@@ -105,21 +80,7 @@ export default function App() {
     percentiles: {}
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [snapshots, setSnapshots] = useState([]);
-  const [snapshotLabel, setSnapshotLabel] = useState("");
-  const [snapshotNote, setSnapshotNote] = useState("");
-  const [importStatus, setImportStatus] = useState("");
-  const [comparisonSnapshotId, setComparisonSnapshotId] = useState("");
-  const [comparisonMode, setComparisonMode] = useState("side-by-side");
-  const [silhouetteView, setSilhouetteView] = useState("front");
-  const [matchPriority, setMatchPriority] = useState("balanced");
-  const [matchPriorityPresets, setMatchPriorityPresets] = useState(fallbackMatchPriorities);
-  const [selectedTargetId, setSelectedTargetId] = useState("");
-  const [targetFilters, setTargetFilters] = useState(defaultTargetFilters);
   const [shareStatus, setShareStatus] = useState("");
-  const [globalUnitSystem, setGlobalUnitSystem] = useState("metric");
-  const [fieldUnitOverrides, setFieldUnitOverrides] = useState({});
-  const [hoveredMeasurement, setHoveredMeasurement] = useState(null);
   const [insightTab, setInsightTab] = useState("result");
   const [activeSection, setActiveSection] = useState("body");
   const [theme, setTheme] = useState(() => loadThemePreference());
@@ -135,6 +96,71 @@ export default function App() {
   const [publicShareStatus, setPublicShareStatus] = useState(
     shareDashboardToken ? "Loading shared dashboard..." : ""
   );
+  const measurements = useMeasurementFormState();
+  const snapshotsState = useSnapshotState();
+  const comparison = useComparisonState({
+    result,
+    targets,
+    snapshots: snapshotsState.snapshots,
+    currentMeasurements: measurements.currentMeasurements,
+    fallbackMatchPriorities
+  });
+  const {
+    formState,
+    displayFormState,
+    errors,
+    globalUnitSystem,
+    fieldUnitOverrides,
+    hoveredMeasurement,
+    currentMeasurements,
+    setHoveredMeasurement,
+    setMeasurementSet,
+    setMeasurementValue,
+    handleChange,
+    handleFieldBlur,
+    validateCurrentMeasurements,
+    handleGlobalUnitChange,
+    handleFieldUnitChange,
+    handleFieldUnitReset
+  } = measurements;
+  const {
+    snapshots,
+    snapshotLabel,
+    snapshotNote,
+    importStatus,
+    setSnapshotLabel,
+    setSnapshotNote,
+    setSnapshots,
+    saveSnapshot,
+    deleteSnapshot,
+    exportSnapshots,
+    importSnapshots,
+    restoreSnapshots
+  } = snapshotsState;
+  const {
+    comparisonSnapshotId,
+    comparisonMode,
+    silhouetteView,
+    matchPriority,
+    matchPriorityPresets,
+    targetFilters,
+    rankedMatches,
+    allComparisonTargets,
+    targetFilterOptions,
+    comparisonTargets,
+    selectedTarget,
+    comparisonSnapshot,
+    snapshotComparison,
+    setMatchPriorityPresets,
+    setSelectedTargetId,
+    handleTargetChange,
+    handleTargetFilterChange,
+    handleComparisonModeChange,
+    handleSilhouetteViewChange,
+    handleMatchPriorityChange,
+    handleCompareSnapshot,
+    clearComparisonSnapshot
+  } = comparison;
 
   useEffect(() => {
     applyThemePreference(theme);
@@ -170,18 +196,10 @@ export default function App() {
     );
 
     if (sharedMeasurements) {
-      const measurements = normalizeMeasurements(sharedMeasurements);
-      setFormState(measurements);
-      setDisplayFormState(buildDisplayFormState(measurements, "metric", {}));
+      setMeasurementSet(sharedMeasurements);
       trackEvent("share_url_loaded");
     } else if (storedSnapshots.length) {
-      const measurements = normalizeMeasurements(storedSnapshots[0].measurements);
-      setFormState(measurements);
-      setDisplayFormState(
-        buildDisplayFormState(measurements, "metric", {})
-      );
-    } else {
-      setDisplayFormState(buildDisplayFormState(defaultMeasurements, "metric", {}));
+      setMeasurementSet(storedSnapshots[0].measurements);
     }
 
     fetchHealth()
@@ -238,18 +256,13 @@ export default function App() {
     if (!targets.length) {
       return;
     }
-    const nextErrors = validateMeasurements(
-      formState,
-      globalUnitSystem,
-      fieldUnitOverrides
-    );
-    if (Object.keys(nextErrors).length) {
-      setErrors(nextErrors);
+    const validation = validateCurrentMeasurements();
+    if (!validation.isValid) {
       return;
     }
 
     const timeoutId = window.setTimeout(() => {
-      void runMatch(coerceMeasurements(formState));
+      void runMatch(validation.measurements);
     }, 180);
 
     return () => window.clearTimeout(timeoutId);
@@ -278,129 +291,36 @@ export default function App() {
     }
   }
 
-  function handleChange(event) {
-    const { name, value } = event.target;
-    const unitSystem = resolveFieldUnitSystem(
-      name,
-      globalUnitSystem,
-      fieldUnitOverrides
-    );
-
-    setDisplayFormState((current) => ({
-      ...current,
-      [name]: value
-    }));
-
-    if (name === "sex") {
-      setFormState((current) => ({
-        ...current,
-        [name]: value
-      }));
-    } else {
-      setFormState((current) => ({
-        ...current,
-        [name]: displayToMetricValue(name, value, unitSystem)
-      }));
-    }
-
-    setErrors((current) => {
-      if (!current[name]) {
-        return current;
-      }
-
-      const nextErrors = { ...current };
-      delete nextErrors[name];
-      return nextErrors;
-    });
-  }
-
-  function handleFieldBlur(name) {
-    const unitSystem = resolveFieldUnitSystem(
-      name,
-      globalUnitSystem,
-      fieldUnitOverrides
-    );
-
-    setDisplayFormState((current) => ({
-      ...current,
-      [name]: formatDisplayValue(name, formState[name], unitSystem)
-    }));
-  }
-
   function handleSubmit(event) {
     event.preventDefault();
-
-    const nextErrors = validateMeasurements(
-      formState,
-      globalUnitSystem,
-      fieldUnitOverrides
-    );
-    setErrors(nextErrors);
-
-    if (Object.keys(nextErrors).length) {
+    const validation = validateCurrentMeasurements();
+    if (!validation.isValid) {
       return;
     }
 
-    void runMatch(coerceMeasurements(formState));
+    void runMatch(validation.measurements);
   }
 
   function handleSaveSnapshot(options = {}) {
-    const snapshotOptions = options?.nativeEvent ? {} : options;
-    const nextErrors = validateMeasurements(
-      formState,
-      globalUnitSystem,
-      fieldUnitOverrides
-    );
-    setErrors(nextErrors);
-
-    if (Object.keys(nextErrors).length) {
+    const validation = validateCurrentMeasurements();
+    if (!validation.isValid) {
       return false;
     }
 
-    const nextSnapshots = [
-      createSnapshot(
-        coerceMeasurements(formState),
-        snapshotOptions.label ?? snapshotLabel,
-        snapshotOptions.note ?? snapshotNote
-      ),
-      ...snapshots
-    ];
-
-    setSnapshots(nextSnapshots);
-    persistSnapshots(nextSnapshots);
-    if (!snapshotOptions.label) {
-      setSnapshotLabel("");
-    }
-    if (!snapshotOptions.note) {
-      setSnapshotNote("");
-    }
-    trackEvent("snapshot_saved", {
-      count: nextSnapshots.length,
-      source: snapshotOptions.source || "manual"
-    });
-    return true;
+    return saveSnapshot(validation.measurements, options);
   }
 
   function handleSaveFirstSnapshot() {
-    const nextErrors = validateMeasurements(
-      formState,
-      globalUnitSystem,
-      fieldUnitOverrides
-    );
-    setErrors(nextErrors);
-
-    if (Object.keys(nextErrors).length) {
+    const validation = validateCurrentMeasurements();
+    if (!validation.isValid) {
       return false;
     }
 
-    const nextSnapshots = [
-      createSnapshot(coerceMeasurements(formState), "Snapshot #1", "First onboarding snapshot."),
-      ...snapshots
-    ];
-
-    setSnapshots(nextSnapshots);
-    persistSnapshots(nextSnapshots);
-    trackEvent("snapshot_saved", { count: nextSnapshots.length, source: "onboarding" });
+    saveSnapshot(validation.measurements, {
+      label: "Snapshot #1",
+      note: "First onboarding snapshot.",
+      source: "onboarding"
+    });
 
     void requestTrendNotificationPermission({ context: "first-snapshot" }).then(
       (preference) => {
@@ -420,165 +340,28 @@ export default function App() {
       return;
     }
 
-    const measurements = normalizeMeasurements(snapshot.measurements);
-    setFormState(measurements);
-    setDisplayFormState(
-      buildDisplayFormState(measurements, globalUnitSystem, fieldUnitOverrides)
-    );
-    setErrors({});
+    setMeasurementSet(snapshot.measurements);
   }
 
   function handleDeleteSnapshot(snapshotId) {
-    const nextSnapshots = snapshots.filter((item) => item.id !== snapshotId);
-    setSnapshots(nextSnapshots);
-    persistSnapshots(nextSnapshots);
-    if (comparisonSnapshotId === snapshotId) {
-      setComparisonSnapshotId("");
-    }
-  }
-
-  function handleCompareSnapshot(snapshotId) {
-    setComparisonSnapshotId((current) => (current === snapshotId ? "" : snapshotId));
-    trackEvent("snapshot_compare_selected");
+    deleteSnapshot(snapshotId);
+    clearComparisonSnapshot(snapshotId);
   }
 
   function handleExportSnapshots() {
-    if (!snapshots.length) {
-      return;
-    }
-
-    const blob = new Blob([serializeSnapshots(snapshots)], {
-      type: "application/json"
-    });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "bodymod-snapshots.json";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
-    trackEvent("snapshots_exported", { count: snapshots.length });
+    exportSnapshots();
   }
 
   function handleImportSnapshots(event) {
-    const [file] = event.target.files || [];
-    if (!file) {
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const importedSnapshots = parseSnapshotExport(String(reader.result || ""));
-        const existingIds = new Set(snapshots.map((snapshot) => snapshot.id));
-        const uniqueImportedSnapshots = importedSnapshots.filter(
-          (snapshot) => !existingIds.has(snapshot.id)
-        );
-        const skippedCount = importedSnapshots.length - uniqueImportedSnapshots.length;
-        const nextSnapshots = [
-          ...uniqueImportedSnapshots,
-          ...snapshots
-        ];
-        const importedCount = nextSnapshots.length - snapshots.length;
-        setSnapshots(nextSnapshots);
-        persistSnapshots(nextSnapshots);
-        setImportStatus(
-          skippedCount
-            ? `Imported ${importedCount} snapshot(s). Skipped ${skippedCount} duplicate snapshot(s).`
-            : `Imported ${importedCount} snapshot(s).`
-        );
-        trackEvent("snapshots_imported", {
-          count: importedCount,
-          skipped: skippedCount
-        });
-      } catch (error) {
-        setImportStatus("Import failed. Choose a bodymod snapshot JSON file.");
-      } finally {
-        event.target.value = "";
-      }
-    };
-    reader.readAsText(file);
+    importSnapshots(event);
   }
 
   function handleRestoreSnapshots(importedSnapshots = []) {
-    const validSnapshots = importedSnapshots.filter(
-      (snapshot) => snapshot?.id && snapshot?.createdAt && snapshot?.measurements
-    );
-    const existingIds = new Set(snapshots.map((snapshot) => snapshot.id));
-    const uniqueImportedSnapshots = validSnapshots.filter(
-      (snapshot) => !existingIds.has(snapshot.id)
-    );
-    const skippedCount = validSnapshots.length - uniqueImportedSnapshots.length;
-    const nextSnapshots = [...uniqueImportedSnapshots, ...snapshots].sort(
-      (left, right) => new Date(right.createdAt) - new Date(left.createdAt)
-    );
-
-    if (uniqueImportedSnapshots.length) {
-      setSnapshots(nextSnapshots);
-      persistSnapshots(nextSnapshots);
-      trackEvent("snapshots_imported", {
-        count: uniqueImportedSnapshots.length,
-        skipped: skippedCount,
-        source: "encrypted-backup"
-      });
-    }
-
-    return {
-      snapshots: nextSnapshots,
-      importedCount: uniqueImportedSnapshots.length,
-      skippedCount
-    };
-  }
-
-  function handleGlobalUnitChange(nextUnitSystem) {
-    setGlobalUnitSystem(nextUnitSystem);
-    setDisplayFormState(buildDisplayFormState(formState, nextUnitSystem, fieldUnitOverrides));
-  }
-
-  function handleFieldUnitChange(name, nextUnitSystem) {
-    setFieldUnitOverrides((current) => {
-      const nextOverrides = { ...current };
-
-      if (nextUnitSystem === globalUnitSystem) {
-        delete nextOverrides[name];
-      } else {
-        nextOverrides[name] = nextUnitSystem;
-      }
-
-      return nextOverrides;
-    });
-
-    setDisplayFormState((current) => ({
-      ...current,
-      [name]: formatDisplayValue(name, formState[name], nextUnitSystem)
-    }));
-  }
-
-  function handleFieldUnitReset(name) {
-    setFieldUnitOverrides((current) => {
-      if (!current[name]) {
-        return current;
-      }
-
-      const nextOverrides = { ...current };
-      delete nextOverrides[name];
-      return nextOverrides;
-    });
-
-    setDisplayFormState((current) => ({
-      ...current,
-      [name]: formatDisplayValue(name, formState[name], globalUnitSystem)
-    }));
+    return restoreSnapshots(importedSnapshots);
   }
 
   function applyMeasurementSet(measurements) {
-    const normalized = normalizeMeasurements(measurements);
-    setFormState(normalized);
-    setDisplayFormState(
-      buildDisplayFormState(normalized, globalUnitSystem, fieldUnitOverrides)
-    );
-    setErrors({});
+    setMeasurementSet(measurements);
   }
 
   function updateOnboardingProfile(patch) {
@@ -594,103 +377,11 @@ export default function App() {
   }
 
   function setOnboardingMeasurement(name, value) {
-    const unitSystem = resolveFieldUnitSystem(
-      name,
-      globalUnitSystem,
-      fieldUnitOverrides
-    );
-
-    setDisplayFormState((current) => ({
-      ...current,
-      [name]: value
-    }));
-
-    setFormState((current) => ({
-      ...current,
-      [name]: name === "sex" ? value : displayToMetricValue(name, value, unitSystem)
-    }));
-
-    setErrors((current) => {
-      if (!current[name]) {
-        return current;
-      }
-
-      const nextErrors = { ...current };
-      delete nextErrors[name];
-      return nextErrors;
-    });
+    setMeasurementValue(name, value);
   }
-
-  const currentMeasurements = coerceMeasurements(formState);
-  const rankedMatches = result.matches.length ? result.matches : targets;
-  const snapshotTargets = useMemo(() => buildSnapshotTargets(snapshots), [snapshots]);
-  const allComparisonTargets = useMemo(
-    () => [...rankedMatches, ...snapshotTargets],
-    [rankedMatches, snapshotTargets]
-  );
-  const targetFilterOptions = useMemo(
-    () => buildTargetFilterOptions(allComparisonTargets),
-    [allComparisonTargets]
-  );
-  const comparisonTargets = useMemo(
-    () => filterTargets(allComparisonTargets, targetFilters),
-    [allComparisonTargets, targetFilters]
-  );
-  const selectedTarget =
-    comparisonTargets.find((match) => match.id === selectedTargetId) ||
-    comparisonTargets[0] ||
-    null;
-  const comparisonSnapshot = snapshots.find(
-    (snapshot) => snapshot.id === comparisonSnapshotId
-  );
-  const snapshotComparison = summarizeMeasurementDiff(
-    currentMeasurements,
-    comparisonSnapshot?.measurements
-  );
-
-  useEffect(() => {
-    if (!comparisonTargets.length) {
-      return;
-    }
-
-    setSelectedTargetId((current) =>
-      comparisonTargets.some((target) => target.id === current)
-        ? current
-        : comparisonTargets[0].id
-    );
-  }, [comparisonTargets]);
 
   const shareUrl =
     typeof window !== "undefined" ? buildShareUrl(currentMeasurements) : "";
-
-  function handleTargetChange(event) {
-    setSelectedTargetId(event.target.value);
-    trackEvent("comparison_target_selected", { id: event.target.value });
-  }
-
-  function handleTargetFilterChange(name, value) {
-    setTargetFilters((current) => ({
-      ...current,
-      [name]: value
-    }));
-    trackEvent("comparison_target_filter_changed", { name, value });
-  }
-
-  function handleComparisonModeChange(nextMode) {
-    setComparisonMode(nextMode);
-    trackEvent("comparison_mode_changed", { mode: nextMode });
-  }
-
-  function handleSilhouetteViewChange(nextView) {
-    setSilhouetteView(nextView === "side" ? "side" : "front");
-    trackEvent("silhouette_view_changed", { view: nextView });
-  }
-
-  function handleMatchPriorityChange(nextPriority) {
-    setMatchPriority(nextPriority);
-    setSelectedTargetId("");
-    trackEvent("match_priority_changed", { priority: nextPriority });
-  }
 
   async function handleCopyShareLink() {
     try {

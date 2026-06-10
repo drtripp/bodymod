@@ -155,6 +155,7 @@ Implemented now:
 - graceful no-backend state for local form and snapshots
 - offline comparison copy that keeps target comparison separate from local snapshot comparison
 - CSS-custom-property theme system with cafe and graphite palettes
+- App state split into measurement/unit, snapshot, and comparison hooks, keeping `App.jsx` as the orchestration shell
 - public `/methodology.html` page for scoring, similarity, percentile, gender-score, and privacy methodology
 - public `/measurement-guides/index.html` route plus one static how-to page for every measurable schema field
 - public draft legal pages for privacy, terms, and medical disclaimer review

@@ -24,6 +24,10 @@ frontend/
       SiteHeader.jsx
       SnapshotPanel.jsx
       StrategyCorpus.jsx
+    hooks/
+      useComparisonState.js
+      useMeasurementFormState.js
+      useSnapshotState.js
     lib/
       analytics.js
       api.js
@@ -59,23 +63,26 @@ backend/
 
 ## Current Frontend Flow
 
-`App.jsx` owns:
+`App.jsx` orchestrates backend loading, top-level navigation, dialogs, and
+rendering. Domain state is split into focused hooks:
 
-- current canonical measurement state
-- display measurement state
-- validation errors
+- `useMeasurementFormState.js` owns current canonical measurement state,
+  display measurement state, validation errors, unit systems, and hovered
+  measurement state
+- `useSnapshotState.js` owns local snapshots, snapshot labels/notes,
+  import/export/restore status, and snapshot persistence
+- `useComparisonState.js` owns comparison mode, selected target, target
+  filters, selected comparison snapshot, silhouette view, and match-priority
+  presets
+
+`App.jsx` still owns:
+
 - backend health status
 - fetched target profiles
 - match result response
 - derived ratio display
-- local snapshots
-- snapshot labels and selected comparison snapshot
-- snapshot import/export status
-- comparison mode and selected target
 - share-link status
 - persisted cafe/graphite theme preference
-- global and per-field unit systems
-- hovered measurement state
 
 Rendered sections:
 
