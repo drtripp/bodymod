@@ -21,12 +21,14 @@ Bodymod currently supports:
 - first-draft US population scatter and distribution plots
 - method and privacy content collapsed into a hover footnote
 - header share icon for encoded measurement links
+- opt-in server-side read-only share dashboards with opaque public tokens and
+  browser-held revoke tokens
 - local-only usage event logging
 - outcome-first informational strategy explorer opened as an overlay, with one efficacy/risk plot per desired outcome
 
 The app does not currently support:
 
-- accounts
+- server-side accounts or cross-device sync
 - photo uploads
 - AI analysis
 - guidance or recommendation content
@@ -93,7 +95,8 @@ Method and privacy components are visible through header navigation.
 
 Remaining work:
 
-- revise copy when production analytics or server-side sharing decisions are made
+- revise copy when production analytics and final encoded-link sharing
+  decisions are made
 - expand methodology once percentile and target data are production quality
 
 ### 5. Launch Layer
@@ -101,6 +104,7 @@ Remaining work:
 Only after the private-use loop works well:
 
 - decide whether encoded measurement share URLs are acceptable for launch
+- decide whether encoded links remain alongside the server-side share dashboard
 - decide whether local-only analytics are enough or whether production analytics are justified
 - harden deployment beyond the prototype notes in `deployment.md`
 - larger target library
@@ -220,7 +224,7 @@ shape lives in `strategy-corpus-template.json`.
 Possible approaches:
 
 - encoded measurement payload in URL
-- server-side snapshot ID
+- server-side read-only dashboard with opaque public ID and revoke token
 - image export of silhouette and match summary
 
 Privacy needs to be settled before this ships. Raw body measurements in URLs may be too sensitive for a default flow.

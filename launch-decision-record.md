@@ -57,12 +57,18 @@ Current behavior:
 
 - share links encode measurements into the URL query string
 - users can clear measurement data from the current browser URL
+- signed-in local accounts can publish an opt-in server-side read-only
+  dashboard behind an opaque public token and a browser-held revoke token
+- share-dashboard payloads omit account email, local account IDs, notes, photo
+  files, and face scan images
 
 Before public launch, decide:
 
 - whether encoded measurement URLs are acceptable at all
-- whether sharing should move to server-side opaque IDs
-- whether shared links need expiration, redaction, or explicit warnings
+- whether encoded measurement URLs should remain alongside server-side opaque
+  dashboard links
+- whether shared dashboard links need expiration, redaction presets, or
+  stronger explicit warnings
 
 ### Target Library
 

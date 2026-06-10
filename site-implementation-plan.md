@@ -418,15 +418,32 @@ Next:
 
 ### Share Action
 
+Source files:
+
+- `backend/app/main.py`
+- `backend/app/models.py`
+- `backend/app/repositories.py`
+- `frontend/src/components/PublicShareDashboard.jsx`
+- `frontend/src/lib/shareDashboard.js`
+- `frontend/src/lib/share.js`
+
 Status:
 
 - implemented as a header share icon that copies a measurement payload URL
 - no visible share URL panel is rendered
+- signed-in account panel can publish, update, copy, and revoke an opt-in
+  server-side read-only dashboard
+- backend stores share dashboards in SQLite behind opaque public tokens and
+  private revoke-token hashes
+- public `?share=` URLs render a read-only dashboard with current measurements,
+  recent snapshots, goal summaries, protocol summaries, and count stats
+- share-dashboard payloads omit account email, local account IDs, notes, photo
+  files, and face scan images
 
 Options:
 
-- create a backend snapshot ID
-- revisit privacy stance before public launch
+- decide whether to remove or retain encoded measurement share URLs at launch
+- decide whether shared dashboards need expiration windows or redaction presets
 
 ### Analytics
 

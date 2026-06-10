@@ -1,6 +1,6 @@
 import os
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
@@ -17,8 +17,14 @@ from app.models import FoodSearchResponse
 from app.models import MeasurementGuideLibrary
 from app.models import MeasurementSet
 from app.models import PlanningData
+from app.models import ShareDashboardCreateRequest
+from app.models import ShareDashboardCreateResponse
+from app.models import ShareDashboardPublicRecord
+from app.models import ShareDashboardRevokeRequest
+from app.models import ShareDashboardUpdateRequest
 from app.models import StrategyCorpusSeed
 from app.rate_limit import enforce_match_rate_limit
+from app.repositories import ShareDashboardRepository
 from app.services import build_match_response, get_match_priorities, get_targets
 
 app = FastAPI(title="bodymod api", version="0.1.0")
@@ -120,3 +126,57 @@ def food_search(query: str = "") -> dict:
             "foods": search_usda_foods(query),
         }
     ).model_dump()
+
+
+@app.post(
+    "/api/share-dashboards",
+    response_model=ShareDashboardCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_share_dashboard(request: ShareDashboardCreateRequest) -> dict:
+    return ShareDashboardRepository().create_dashboard(request.dashboard)
+
+
+@app.get(
+    "/api/share-dashboards/{public_token}",
+    response_model=ShareDashboardPublicRecord,
+)
+def get_share_dashboard(public_token: str) -> dict:
+    dashboard = ShareDashboardRepository().get_public_dashboard(public_token)
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Share dashboard not found.")
+    return dashboard
+
+
+@app.put(
+    "/api/share-dashboards/{public_token}",
+    response_model=ShareDashboardPublicRecord,
+)
+def update_share_dashboard(public_token: str, request: ShareDashboardUpdateRequest) -> dict:
+    try:
+        dashboard = ShareDashboardRepository().update_dashboard(
+            public_token,
+            request.revokeToken,
+            request.dashboard,
+        )
+    except PermissionError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Share dashboard not found.")
+    return dashboard
+
+
+@app.post("/api/share-dashboards/{public_token}/revoke")
+def revoke_share_dashboard(public_token: str, request: ShareDashboardRevokeRequest) -> dict[str, str]:
+    try:
+        revoked = ShareDashboardRepository().revoke_dashboard(
+            public_token,
+            request.revokeToken,
+        )
+    except PermissionError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+
+    if not revoked:
+        raise HTTPException(status_code=404, detail="Share dashboard not found.")
+    return {"status": "revoked"}

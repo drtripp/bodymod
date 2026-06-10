@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import FaceMeasurementPanel from "./FaceMeasurementPanel";
 import SilhouetteView from "./SilhouetteView";
 import SnapshotPanel from "./SnapshotPanel";
-import { fetchExerciseLibrary, fetchPlanningData } from "../lib/api";
+import {
+  createShareDashboard,
+  fetchExerciseLibrary,
+  fetchPlanningData,
+  revokeShareDashboard,
+  updateShareDashboard
+} from "../lib/api";
 import {
   buildAdaptiveTdeeEstimate
 } from "../lib/adaptiveTdee";
@@ -128,6 +134,14 @@ import {
   saveProWaitlistSignup
 } from "../lib/entitlements";
 import { sendTrendReminderNotificationIfDue } from "../lib/notifications";
+import {
+  buildShareDashboardPayload,
+  clearShareDashboardState,
+  defaultShareDashboardState,
+  loadShareDashboardState,
+  persistShareDashboardState,
+  publicShareDashboardUrl
+} from "../lib/shareDashboard";
 
 const emptyPlanningData = {
   personas: [],
@@ -332,6 +346,10 @@ export default function AccountGoalPanel({
   const [backupPassphrase, setBackupPassphrase] = useState("");
   const [backupStatus, setBackupStatus] = useState("");
   const [jsonExportStatus, setJsonExportStatus] = useState("");
+  const [shareDashboardState, setShareDashboardState] = useState(() =>
+    loadShareDashboardState()
+  );
+  const [shareDashboardStatus, setShareDashboardStatus] = useState("");
   const [proWaitlistEmail, setProWaitlistEmail] = useState("");
   const [proWaitlistStatus, setProWaitlistStatus] = useState("");
   const [selectedProtocolIds, setSelectedProtocolIds] = useState([]);
@@ -380,6 +398,16 @@ export default function AccountGoalPanel({
       setProWaitlistEmail(account.email);
     }
   }, [account?.email]);
+
+  useEffect(() => {
+    const storedState = loadShareDashboardState();
+    setShareDashboardState(
+      storedState.accountId && storedState.accountId === account?.id
+        ? storedState
+        : defaultShareDashboardState()
+    );
+    setShareDashboardStatus("");
+  }, [account?.id]);
 
   useEffect(() => {
     let isMounted = true;
@@ -536,6 +564,33 @@ export default function AccountGoalPanel({
         milestones
       }),
     [checkIns, milestones, protocols, trendWeight, weeklyStreak]
+  );
+  const shareDashboardPayload = useMemo(
+    () =>
+      buildShareDashboardPayload({
+        account,
+        currentMeasurements,
+        snapshots: snapshotProps.snapshots,
+        goals,
+        protocols,
+        checkIns,
+        workoutSessions,
+        faceMeasurements,
+        weeklyStreak,
+        trendWeight
+      }),
+    [
+      account,
+      checkIns,
+      currentMeasurements,
+      faceMeasurements,
+      goals,
+      protocols,
+      snapshotProps.snapshots,
+      trendWeight,
+      weeklyStreak,
+      workoutSessions
+    ]
   );
   useEffect(() => {
     if (!account) {
@@ -1229,6 +1284,90 @@ export default function AccountGoalPanel({
     });
   }
 
+  async function handlePublishShareDashboard() {
+    if (!account) {
+      return;
+    }
+
+    try {
+      setShareDashboardStatus("Publishing read-only dashboard...");
+      const response = await createShareDashboard(shareDashboardPayload);
+      const nextState = persistShareDashboardState({
+        accountId: account.id,
+        publicToken: response.publicToken,
+        revokeToken: response.revokeToken,
+        publicUrl: publicShareDashboardUrl(response.publicToken),
+        createdAt: response.createdAt,
+        updatedAt: response.updatedAt
+      });
+      setShareDashboardState(nextState);
+      setShareDashboardStatus("Read-only share dashboard published.");
+    } catch (error) {
+      setShareDashboardStatus("Share dashboard publish failed.");
+    }
+  }
+
+  async function handleUpdateShareDashboard() {
+    if (!shareDashboardState.publicToken || !shareDashboardState.revokeToken) {
+      setShareDashboardStatus("Publish a share dashboard before updating it.");
+      return;
+    }
+
+    try {
+      setShareDashboardStatus("Updating read-only dashboard...");
+      const response = await updateShareDashboard(
+        shareDashboardState.publicToken,
+        shareDashboardState.revokeToken,
+        shareDashboardPayload
+      );
+      const nextState = persistShareDashboardState({
+        ...shareDashboardState,
+        accountId: account?.id || shareDashboardState.accountId,
+        publicUrl:
+          shareDashboardState.publicUrl || publicShareDashboardUrl(response.publicToken),
+        updatedAt: response.updatedAt
+      });
+      setShareDashboardState(nextState);
+      setShareDashboardStatus("Read-only share dashboard updated.");
+    } catch (error) {
+      setShareDashboardStatus("Share dashboard update failed.");
+    }
+  }
+
+  async function handleCopyShareDashboardLink() {
+    if (!shareDashboardState.publicUrl) {
+      setShareDashboardStatus("Publish a share dashboard before copying it.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareDashboardState.publicUrl);
+      setShareDashboardStatus("Read-only share link copied.");
+    } catch (error) {
+      setShareDashboardStatus(shareDashboardState.publicUrl);
+    }
+  }
+
+  async function handleRevokeShareDashboard() {
+    if (!shareDashboardState.publicToken || !shareDashboardState.revokeToken) {
+      setShareDashboardState(clearShareDashboardState());
+      setShareDashboardStatus("No active share dashboard to revoke.");
+      return;
+    }
+
+    try {
+      setShareDashboardStatus("Revoking read-only dashboard...");
+      await revokeShareDashboard(
+        shareDashboardState.publicToken,
+        shareDashboardState.revokeToken
+      );
+      setShareDashboardState(clearShareDashboardState());
+      setShareDashboardStatus("Read-only share dashboard revoked.");
+    } catch (error) {
+      setShareDashboardStatus("Share dashboard revoke failed.");
+    }
+  }
+
   function handleDownloadJsonExport() {
     const bundle = currentPlainJsonExport();
     const summary = summarizePlainJsonExport(bundle);
@@ -1543,6 +1682,57 @@ export default function AccountGoalPanel({
               <button className="button" type="button" onClick={handleDownloadProgressReport}>
                 Download progress report
               </button>
+            </section>
+
+            <section className="share-dashboard-section" aria-label="Read-only share dashboard">
+              <div>
+                <h3>Read-only share dashboard</h3>
+                <p>
+                  Publish an opt-in public profile summary with current
+                  measurements, recent snapshots, goals, and active protocols.
+                  Email, private notes, photo files, and local account IDs stay
+                  out of the payload.
+                </p>
+                <span>
+                  {shareDashboardState.publicUrl
+                    ? `Active link: ${shareDashboardState.publicUrl}`
+                    : "No active read-only share link."}
+                </span>
+              </div>
+              <div className="share-dashboard-actions">
+                <button className="button" type="button" onClick={handlePublishShareDashboard}>
+                  Publish share dashboard
+                </button>
+                <button
+                  className="button"
+                  type="button"
+                  onClick={handleUpdateShareDashboard}
+                  disabled={!shareDashboardState.publicToken}
+                >
+                  Update share dashboard
+                </button>
+                <button
+                  className="button"
+                  type="button"
+                  onClick={handleCopyShareDashboardLink}
+                  disabled={!shareDashboardState.publicUrl}
+                >
+                  Copy share link
+                </button>
+                <button
+                  className="button"
+                  type="button"
+                  onClick={handleRevokeShareDashboard}
+                  disabled={!shareDashboardState.publicToken}
+                >
+                  Revoke share dashboard
+                </button>
+              </div>
+              {shareDashboardStatus ? (
+                <small className="share-dashboard-status" role="status" aria-live="polite">
+                  {shareDashboardStatus}
+                </small>
+              ) : null}
             </section>
 
             <section className="local-json-export-section" aria-label="Local JSON export">

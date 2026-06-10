@@ -39,6 +39,7 @@ try {
     Invoke-Checked { npm run test:photos }
     Invoke-Checked { npm run test:onboarding }
     Invoke-Checked { npm run test:notifications }
+    Invoke-Checked { npm run test:share-dashboard }
     Invoke-Checked { npm run test:storage }
     Invoke-Checked { npm run test:theme }
     Invoke-Checked { npm run test:snapshot-trends }

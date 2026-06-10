@@ -6,6 +6,7 @@ import InfoFootnote from "./components/InfoFootnote";
 import MeasurementForm from "./components/MeasurementForm";
 import OnboardingPanel from "./components/OnboardingPanel";
 import PopulationPanel from "./components/PopulationPanel";
+import PublicShareDashboard from "./components/PublicShareDashboard";
 import ResultSummary from "./components/ResultSummary";
 import SiteHeader from "./components/SiteHeader";
 import StrategyCorpus from "./components/StrategyCorpus";
@@ -16,6 +17,7 @@ import {
   fetchMatchPriorities,
   fetchMatches,
   fetchMeasurementGuides,
+  fetchShareDashboard,
   fetchTargets
 } from "./lib/api";
 import { summarizeMeasurementDiff } from "./lib/comparison";
@@ -88,6 +90,10 @@ const fallbackMatchPriorities = [
 ];
 
 export default function App() {
+  const shareDashboardToken =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("share") || ""
+      : "";
   const [formState, setFormState] = useState(defaultMeasurements);
   const [displayFormState, setDisplayFormState] = useState(defaultMeasurements);
   const [errors, setErrors] = useState({});
@@ -125,6 +131,10 @@ export default function App() {
   );
   const [entitlements, setEntitlements] = useState(fallbackEntitlementConfig);
   const [onboardingProfile, setOnboardingProfile] = useState(() => loadOnboardingProfile());
+  const [publicShareRecord, setPublicShareRecord] = useState(null);
+  const [publicShareStatus, setPublicShareStatus] = useState(
+    shareDashboardToken ? "Loading shared dashboard..." : ""
+  );
 
   useEffect(() => {
     applyThemePreference(theme);
@@ -205,6 +215,24 @@ export default function App() {
       .then((response) => setEntitlements(normalizeEntitlementConfig(response)))
       .catch(() => setEntitlements(fallbackEntitlementConfig));
   }, []);
+
+  useEffect(() => {
+    if (!shareDashboardToken) {
+      return;
+    }
+
+    setPublicShareStatus("Loading shared dashboard...");
+    fetchShareDashboard(shareDashboardToken)
+      .then((record) => {
+        setPublicShareRecord(record);
+        setPublicShareStatus("");
+        trackEvent("share_dashboard_loaded");
+      })
+      .catch(() => {
+        setPublicShareRecord(null);
+        setPublicShareStatus("This share link is missing, revoked, or unavailable.");
+      });
+  }, [shareDashboardToken]);
 
   useEffect(() => {
     if (!targets.length) {
@@ -683,6 +711,10 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {shareDashboardToken ? (
+        <PublicShareDashboard record={publicShareRecord} status={publicShareStatus} />
+      ) : (
+        <>
       <a className="skip-link" href="#main-content" onClick={handleSkipToMain}>
         Skip to main content
       </a>
@@ -858,6 +890,8 @@ export default function App() {
           }}
         />
       ) : null}
+        </>
+      )}
     </div>
   );
 }

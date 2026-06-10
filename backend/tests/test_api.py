@@ -284,3 +284,111 @@ def test_food_search_endpoint_filters_without_external_api() -> None:
 
     assert [food["name"] for food in payload["foods"]] == ["Salmon, cooked"]
     assert payload["foods"][0]["micros"]["vitaminD"] > 0
+
+
+def share_dashboard_payload(title: str = "Mason bodymod dashboard") -> dict:
+    return {
+        "dashboard": {
+            "version": 1,
+            "title": title,
+            "displayName": "Mason",
+            "publishedAt": "2026-06-10T12:00:00Z",
+            "privacyNote": "No email or private notes included.",
+            "measurements": TARGETS[0]["measurements"],
+            "stats": {
+                "snapshotCount": 1,
+                "checkInCount": 2,
+                "goalCount": 1,
+                "protocolCount": 1,
+                "workoutCount": 1,
+                "faceScanCount": 0,
+            },
+            "snapshots": [
+                {
+                    "id": "snapshot-1",
+                    "label": "Baseline",
+                    "createdAt": "2026-06-10T12:00:00Z",
+                    "measurements": TARGETS[0]["measurements"],
+                }
+            ],
+            "goals": [
+                {
+                    "id": "goal-1",
+                    "label": "Improve shoulder-to-waist ratio",
+                    "category": "shape",
+                    "targetDate": "2026-09-01",
+                    "targetSource": "Custom target deltas",
+                    "progressPercent": 42,
+                    "targetDistances": ["Waist: 4.0 cm from target"],
+                    "pausedReason": "",
+                }
+            ],
+            "protocols": [
+                {
+                    "id": "protocol-1",
+                    "label": "Progressive resistance training",
+                    "category": "training",
+                    "status": "active",
+                    "adherenceCount": 2,
+                    "averageScore": 4.5,
+                    "projectionSummary": "Weight planning band available.",
+                }
+            ],
+            "weeklyStreak": {
+                "status": "current",
+                "count": 2,
+                "latestAt": "2026-06-10T12:00:00Z",
+            },
+            "trendWeight": {
+                "value": 86.3,
+                "delta": -0.1,
+                "count": 4,
+            },
+        }
+    }
+
+
+def test_share_dashboard_lifecycle_uses_private_revoke_token() -> None:
+    created = client.post("/api/share-dashboards", json=share_dashboard_payload())
+
+    assert created.status_code == 201
+    created_payload = created.json()
+    public_token = created_payload["publicToken"]
+    revoke_token = created_payload["revokeToken"]
+    assert public_token
+    assert revoke_token
+    assert created_payload["dashboard"]["displayName"] == "Mason"
+    assert "revokeToken" not in client.get(f"/api/share-dashboards/{public_token}").json()
+
+    fetched = client.get(f"/api/share-dashboards/{public_token}")
+    assert fetched.status_code == 200
+    assert fetched.json()["dashboard"]["goals"][0]["targetDistances"] == [
+        "Waist: 4.0 cm from target"
+    ]
+
+    rejected = client.put(
+        f"/api/share-dashboards/{public_token}",
+        json={
+            "revokeToken": "wrong-token",
+            **share_dashboard_payload("Tampered dashboard"),
+        },
+    )
+    assert rejected.status_code == 403
+
+    updated = client.put(
+        f"/api/share-dashboards/{public_token}",
+        json={
+            "revokeToken": revoke_token,
+            **share_dashboard_payload("Updated public dashboard"),
+        },
+    )
+    assert updated.status_code == 200
+    assert updated.json()["dashboard"]["title"] == "Updated public dashboard"
+
+    revoked = client.post(
+        f"/api/share-dashboards/{public_token}/revoke",
+        json={"revokeToken": revoke_token},
+    )
+    assert revoked.status_code == 200
+    assert revoked.json() == {"status": "revoked"}
+    assert client.get(f"/api/share-dashboards/{public_token}").status_code == 404

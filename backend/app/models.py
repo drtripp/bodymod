@@ -322,3 +322,79 @@ class FoodSearchResponse(BaseModel):
     source: str
     notes: list[str] = []
     foods: list[FoodSearchItem]
+
+
+class ShareDashboardSnapshot(BaseModel):
+    id: str
+    label: str = ""
+    createdAt: str
+    measurements: MeasurementSet
+
+
+class ShareDashboardGoal(BaseModel):
+    id: str
+    label: str
+    category: str = ""
+    targetDate: str = ""
+    targetSource: str = ""
+    progressPercent: float | None = Field(default=None, ge=0, le=100)
+    targetDistances: list[str] = Field(default_factory=list)
+    pausedReason: str = ""
+
+
+class ShareDashboardProtocol(BaseModel):
+    id: str
+    label: str
+    category: str = ""
+    status: str = ""
+    adherenceCount: int = Field(default=0, ge=0)
+    averageScore: float | None = Field(default=None, ge=0, le=5)
+    projectionSummary: str = ""
+
+
+class ShareDashboardStats(BaseModel):
+    snapshotCount: int = Field(default=0, ge=0)
+    checkInCount: int = Field(default=0, ge=0)
+    goalCount: int = Field(default=0, ge=0)
+    protocolCount: int = Field(default=0, ge=0)
+    workoutCount: int = Field(default=0, ge=0)
+    faceScanCount: int = Field(default=0, ge=0)
+
+
+class ShareDashboardPayload(BaseModel):
+    version: int = 1
+    title: str = "Shared bodymod dashboard"
+    displayName: str = ""
+    publishedAt: str = ""
+    privacyNote: str = ""
+    measurements: MeasurementSet
+    stats: ShareDashboardStats = Field(default_factory=ShareDashboardStats)
+    snapshots: list[ShareDashboardSnapshot] = Field(default_factory=list)
+    goals: list[ShareDashboardGoal] = Field(default_factory=list)
+    protocols: list[ShareDashboardProtocol] = Field(default_factory=list)
+    weeklyStreak: dict = Field(default_factory=dict)
+    trendWeight: dict = Field(default_factory=dict)
+
+
+class ShareDashboardCreateRequest(BaseModel):
+    dashboard: ShareDashboardPayload
+
+
+class ShareDashboardUpdateRequest(BaseModel):
+    revokeToken: str
+    dashboard: ShareDashboardPayload
+
+
+class ShareDashboardRevokeRequest(BaseModel):
+    revokeToken: str
+
+
+class ShareDashboardPublicRecord(BaseModel):
+    publicToken: str
+    createdAt: str
+    updatedAt: str
+    dashboard: ShareDashboardPayload
+
+
+class ShareDashboardCreateResponse(ShareDashboardPublicRecord):
+    revokeToken: str

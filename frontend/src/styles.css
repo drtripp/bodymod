@@ -369,6 +369,21 @@ textarea {
   padding: 12px;
 }
 
+.share-dashboard-section {
+  border: 1px solid var(--color-border);
+  background: var(--color-page);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.45fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+}
+
+.share-dashboard-actions {
+  display: grid;
+  gap: 8px;
+}
+
 .local-json-export-section {
   border: 1px solid var(--color-border);
   background: var(--color-page);
@@ -469,6 +484,7 @@ textarea {
 }
 
 .progress-report-section h3,
+.share-dashboard-section h3,
 .local-json-export-section h3 {
   margin: 0 0 4px;
   font-size: 1rem;
@@ -481,6 +497,9 @@ textarea {
 
 .progress-report-section p,
 .progress-report-section span,
+.share-dashboard-section p,
+.share-dashboard-section span,
+.share-dashboard-status,
 .local-json-export-section p,
 .local-json-export-status,
 .encrypted-backup-section p,
@@ -488,6 +507,7 @@ textarea {
   color: var(--color-muted);
 }
 
+.share-dashboard-status,
 .local-json-export-status {
   grid-column: 1 / -1;
 }
@@ -1534,6 +1554,109 @@ textarea {
   gap: 12px;
   padding-top: 12px;
   min-height: calc(100vh - 82px);
+}
+
+.public-share-shell {
+  display: grid;
+  padding: 16px 0;
+}
+
+.public-share-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.public-share-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 12px;
+}
+
+.public-share-header h1 {
+  margin: 2px 0 4px;
+  font-size: clamp(1.45rem, 2vw, 2rem);
+}
+
+.public-share-header p,
+.public-share-header strong,
+.public-share-privacy {
+  color: var(--color-muted);
+}
+
+.public-share-header strong {
+  border: 1px solid var(--color-border);
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.public-share-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.42fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.public-share-silhouette {
+  min-height: 320px;
+}
+
+.public-share-copy {
+  display: grid;
+  gap: 12px;
+}
+
+.public-share-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.public-share-stats article {
+  border: 1px solid var(--color-border);
+  background: var(--color-page);
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+}
+
+.public-share-stats span,
+.public-share-list span,
+.public-share-list small {
+  color: var(--color-muted);
+}
+
+.public-share-sections {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.public-share-sections h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.public-share-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.public-share-list li {
+  border: 1px solid var(--color-border);
+  background: var(--color-page);
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+}
+
+.public-share-list p {
+  margin: 0;
 }
 
 .diet-workspace {
@@ -4441,14 +4564,22 @@ textarea {
   .photo-gallery-list li,
   .face-scan-grid,
   .progress-report-section,
+  .share-dashboard-section,
   .local-json-export-section,
   .encrypted-backup-section,
   .entitlement-grid,
   .persona-loader,
   .composition-grid,
+  .public-share-grid,
+  .public-share-sections,
+  .public-share-stats,
   .protocol-row,
   .goal-row {
     grid-template-columns: 1fr;
+  }
+
+  .public-share-header {
+    display: grid;
   }
 
   .workout-note {

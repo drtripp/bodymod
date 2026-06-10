@@ -616,6 +616,9 @@ function progressPhotoFile(name, color = "#8da9c4") {
 }
 
 async function mockApi(page) {
+  const shareDashboards = new Map();
+  let shareCounter = 0;
+
   await page.route("**/api/health", async (route) => {
     await route.fulfill({ json: { status: "ok" } });
   });
@@ -669,6 +672,90 @@ async function mockApi(page) {
         foods
       }
     });
+  });
+
+  await page.route(/\/api\/share-dashboards(?:\/[^/?]+(?:\/revoke)?)?$/, async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const marker = "/api/share-dashboards";
+    const suffix = url.pathname.slice(url.pathname.indexOf(marker) + marker.length);
+    const [publicToken, action] = suffix.replace(/^\//, "").split("/");
+
+    if (!publicToken && request.method() === "POST") {
+      shareCounter += 1;
+      const body = request.postDataJSON();
+      const token = `mock-share-${shareCounter}`;
+      const revokeToken = `mock-revoke-${shareCounter}`;
+      const timestamp = "2026-06-10T12:00:00Z";
+      const record = {
+        publicToken: token,
+        revokeToken,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        dashboard: body.dashboard,
+        revoked: false
+      };
+      shareDashboards.set(token, record);
+      await route.fulfill({
+        status: 201,
+        json: {
+          publicToken: token,
+          revokeToken,
+          createdAt: record.createdAt,
+          updatedAt: record.updatedAt,
+          dashboard: record.dashboard
+        }
+      });
+      return;
+    }
+
+    const record = shareDashboards.get(publicToken);
+    if (!record || record.revoked) {
+      await route.fulfill({ status: 404, json: { detail: "Share dashboard not found." } });
+      return;
+    }
+
+    if (request.method() === "GET") {
+      await route.fulfill({
+        json: {
+          publicToken,
+          createdAt: record.createdAt,
+          updatedAt: record.updatedAt,
+          dashboard: record.dashboard
+        }
+      });
+      return;
+    }
+
+    const body = request.postDataJSON();
+    if (body.revokeToken !== record.revokeToken) {
+      await route.fulfill({ status: 403, json: { detail: "Invalid share dashboard revoke token." } });
+      return;
+    }
+
+    if (request.method() === "PUT") {
+      record.dashboard = body.dashboard;
+      record.updatedAt = "2026-06-10T13:00:00Z";
+      shareDashboards.set(publicToken, record);
+      await route.fulfill({
+        json: {
+          publicToken,
+          createdAt: record.createdAt,
+          updatedAt: record.updatedAt,
+          dashboard: record.dashboard
+        }
+      });
+      return;
+    }
+
+    if (request.method() === "POST" && action === "revoke") {
+      record.revoked = true;
+      shareDashboards.set(publicToken, record);
+      await route.fulfill({ json: { status: "revoked" } });
+      return;
+    }
+
+    await route.fulfill({ status: 405, json: { detail: "Method not allowed." } });
   });
 
   await page.route("**/api/targets", async (route) => {
@@ -1542,6 +1629,60 @@ test("exports and restores encrypted local backups through the account UI", asyn
   );
   await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 82.4 kg / 2400 kcal");
   await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Backup baseline" })).toBeVisible();
+});
+
+test("publishes, updates, views, and revokes a read-only share dashboard", async ({ page }) => {
+  await page.getByRole("button", { name: "User profile" }).click();
+  const accountDialog = page.getByRole("dialog", { name: "Account, logs, and goals" });
+  await expect(accountDialog).toContainText("Loaded 10 personas, 6 goals, and 6 protocols.");
+
+  await page.getByLabel("Display name").fill("Mason");
+  await page.getByLabel("Account email").fill("mason@example.com");
+  await page.getByLabel("Persona sample").selectOption("recomp-lifter");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(accountDialog).toContainText("Persona measurements loaded.");
+  await page.getByLabel("Snapshot label").fill("Share baseline");
+  await page.getByRole("button", { name: "Save current snapshot" }).click();
+  await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Share baseline" })).toBeVisible();
+  await page.getByRole("button", { name: "Save goal" }).click();
+  await expect(page.getByLabel("Saved goals")).toContainText("Improve shoulder-to-waist ratio");
+  await page.getByRole("button", { name: "Start protocol" }).click();
+  await expect(page.getByLabel("Active protocols")).toContainText("Progressive resistance training");
+
+  await page.getByRole("button", { name: "Publish share dashboard" }).click();
+  await expect(page.getByLabel("Read-only share dashboard")).toContainText(
+    "Read-only share dashboard published."
+  );
+  const shareState = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("bodymod:share-dashboard:v1"))
+  );
+  expect(shareState.publicToken).toBe("mock-share-1");
+  expect(shareState.revokeToken).toBe("mock-revoke-1");
+  expect(shareState.publicUrl).toContain("?share=mock-share-1");
+
+  const shareUrl = new URL(shareState.publicUrl);
+  await page.goto(`${shareUrl.pathname}${shareUrl.search}`);
+  await expect(page.getByRole("heading", { name: "Mason bodymod dashboard" })).toBeVisible();
+  await expect(page.getByLabel("Shared current measurements")).toContainText("86 kg");
+  await expect(page.getByLabel("Shared account summary")).toContainText("Snapshots");
+  await expect(page.getByLabel("Shared goals")).toContainText("Improve shoulder-to-waist ratio");
+  await expect(page.getByLabel("Shared protocols")).toContainText("Progressive resistance training");
+  await expect(page.getByLabel("Shared snapshots")).toContainText("Share baseline");
+  await expect(page.locator("body")).not.toContainText("mason@example.com");
+  await expect(page.locator("body")).not.toContainText("local-account");
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "User profile" }).click();
+  await page.getByRole("button", { name: "Update share dashboard" }).click();
+  await expect(page.getByLabel("Read-only share dashboard")).toContainText(
+    "Read-only share dashboard updated."
+  );
+  await page.getByRole("button", { name: "Revoke share dashboard" }).click();
+  await expect(page.getByLabel("Read-only share dashboard")).toContainText(
+    "Read-only share dashboard revoked."
+  );
+  await page.goto(`${shareUrl.pathname}${shareUrl.search}`);
+  await expect(page.getByRole("heading", { name: "Shared dashboard unavailable" })).toBeVisible();
 });
 
 test("roleplays all persona samples through account logging, goals, and learning", async ({ page }) => {

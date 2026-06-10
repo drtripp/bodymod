@@ -22,6 +22,7 @@
     "test:photos": "node --test tests/photos.node.mjs",
     "test:onboarding": "node --test tests/onboarding.node.mjs",
     "test:notifications": "node --test tests/notifications.node.mjs",
+    "test:share-dashboard": "node --test tests/shareDashboard.node.mjs",
     "test:storage": "node --test tests/storageAdapter.node.mjs",
     "test:theme": "node --test tests/theme.node.mjs",
     "test:snapshot-trends": "node --test tests/snapshotTrends.node.mjs",

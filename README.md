@@ -105,6 +105,7 @@ Implemented now:
 - projected silhouettes for calorie-target protocol planning bands, with uncertainty copy
 - local goals can target preset deltas, custom deltas, target profiles, or saved past-self snapshots, with distance-to-target progress copy
 - readable local JSON export for snapshots and diet data without an account, plus account-scoped logs when signed in
+- opt-in server-side read-only share dashboards with opaque public links and browser-held revoke tokens
 - local browser face measurement logger using self-hosted MediaPipe assets for camera/photo landmark scans
 - local progress photo streams for body, face, and hair with ghost overlay and comparison slider
 - current-vs-selected-snapshot silhouette comparison

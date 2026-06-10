@@ -60,3 +60,31 @@ export function fetchMeasurementGuides() {
 export function fetchEntitlements() {
   return request("/api/entitlements");
 }
+
+export function createShareDashboard(dashboard) {
+  return request("/api/share-dashboards", {
+    method: "POST",
+    body: JSON.stringify({ dashboard })
+  });
+}
+
+export function fetchShareDashboard(publicToken) {
+  return request(`/api/share-dashboards/${encodeURIComponent(publicToken)}`);
+}
+
+export function updateShareDashboard(publicToken, revokeToken, dashboard) {
+  return request(`/api/share-dashboards/${encodeURIComponent(publicToken)}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      revokeToken,
+      dashboard
+    })
+  });
+}
+
+export function revokeShareDashboard(publicToken, revokeToken) {
+  return request(`/api/share-dashboards/${encodeURIComponent(publicToken)}/revoke`, {
+    method: "POST",
+    body: JSON.stringify({ revokeToken })
+  });
+}

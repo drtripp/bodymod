@@ -428,9 +428,12 @@ land. No social features, no marketplace.
       measurements, and protocol adherence — for trainers and doctors;
       endocrinologist visits are a recurring real use for the transition
       audience.
-- [ ] Read-only share dashboard **(new)**: opt-in, revocable server-side live
-      view of selected trends for a coach or partner. Depends on accounts and
-      the share-URL decision.
+- [x] Read-only share dashboard **(new)**: opt-in, revocable server-side live
+      view of selected trends for a coach or partner. Implemented as a
+      FastAPI/SQLite share-dashboard API with opaque public tokens and private
+      revoke tokens, plus signed-in account-panel publish/update/copy/revoke
+      controls and a `?share=` read-only public dashboard. The header encoded
+      measurement URL remains available pending the final launch share decision.
 - [ ] Honest referral **(new)**: both sides get a Pro month; never gates
       features or results behind inviting.
 - [ ] Privacy-first product analytics: self-hosted PostHog or Plausible;
