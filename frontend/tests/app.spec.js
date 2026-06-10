@@ -1071,6 +1071,15 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   const accountDialog = page.getByRole("dialog", { name: "Account, logs, and goals" });
   await expect(accountDialog).toBeVisible();
   await expect(accountDialog).toContainText("Loaded 10 personas, 6 goals, and 6 protocols.");
+  await expect(page.getByLabel("Local JSON export")).toContainText("Without an account");
+  const signedOutExportPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download JSON export" }).click();
+  const signedOutExportDownload = await signedOutExportPromise;
+  expect(signedOutExportDownload.suggestedFilename()).toBe("bodymod-local-export.json");
+  const signedOutExport = JSON.parse(await readFile(await signedOutExportDownload.path(), "utf8"));
+  expect(signedOutExport.kind).toBe("bodymod.local-json-export");
+  expect(signedOutExport.account).toBeNull();
+  expect(signedOutExport.accountData.checkIns).toHaveLength(0);
 
   await page.getByLabel("Display name").fill("Mason");
   await page.getByLabel("Account email").fill("mason@example.com");
@@ -1149,6 +1158,16 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   });
   expect(cycleLogCount).toBe(0);
   await expect(page.getByLabel("Check-in history")).toContainText("Limb symmetry: Bicep right +2.0 cm");
+  const signedInExportPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download JSON export" }).click();
+  const signedInExportDownload = await signedInExportPromise;
+  expect(signedInExportDownload.suggestedFilename()).toBe("bodymod-mason-example-com-export.json");
+  const signedInExport = JSON.parse(await readFile(await signedInExportDownload.path(), "utf8"));
+  expect(signedInExport.account.email).toBe("mason@example.com");
+  expect(signedInExport.accountData.checkIns.some((checkIn) => checkIn.type === "limb-symmetry")).toBe(true);
+  expect(signedInExport.accountData.checkIns.some((checkIn) => checkIn.type === "cycle-phase")).toBe(false);
+  expect(signedInExport.accountData.photoManifest).toHaveLength(0);
+  await expect(page.getByLabel("Local JSON export")).toContainText("JSON export downloaded");
   await page.getByRole("button", { name: "Finish guided weekly check-in" }).click();
   await expect(page.getByLabel("Check-in history")).toContainText("Guided weekly measurements: waist 86.0 cm");
   await expect(accountDialog.locator(".snapshot-row").getByText("Weekly check-in")).toBeVisible();

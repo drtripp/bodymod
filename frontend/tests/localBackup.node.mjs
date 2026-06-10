@@ -16,6 +16,11 @@ import {
   encryptLocalBackup,
   summarizeLocalBackupBundle
 } from "../src/lib/localBackup.js";
+import {
+  buildPlainJsonExport,
+  serializePlainJsonExport,
+  summarizePlainJsonExport
+} from "../src/lib/localExport.js";
 
 if (!globalThis.crypto?.subtle) {
   Object.defineProperty(globalThis, "crypto", {
@@ -136,6 +141,58 @@ test("builds backup bundles with photo manifests instead of image payloads", () 
     faceMeasurements: 1,
     photoManifest: 1
   });
+});
+
+test("builds readable JSON exports with or without an account", () => {
+  const signedOutExport = buildPlainJsonExport({
+    snapshots: [{ id: "snapshot-1", createdAt: "2026-06-01", measurements: {} }],
+    goals: [{ id: "goal-ignored" }],
+    dietLog: [{ id: "food-1", name: "Oats" }],
+    dietFoodLibrary: {
+      customFoods: [{ id: "custom-1", name: "Protein oats" }],
+      favoriteFoods: ["custom-1"],
+      recentFoods: ["custom-1"],
+      mealTemplates: [{ id: "meal-1", name: "Breakfast" }]
+    },
+    fluidLog: [{ id: "fluid-1", amountMl: 500 }],
+    proWaitlistSignups: [{ email: "wait@example.com" }]
+  });
+  const signedInExport = buildPlainJsonExport({
+    account: { displayName: "Taylor", email: "taylor@example.com" },
+    snapshots: [{ id: "snapshot-1", createdAt: "2026-06-01", measurements: {} }],
+    goals: [{ id: "goal-1" }],
+    checkIns: [{ id: "check-1", type: "cycle-phase" }],
+    photos: [{ id: "photo-1", dataUrl: "data:image/png;base64,secret", fileName: "front.png" }],
+    dietLog: [],
+    dietFoodLibrary: {},
+    fluidLog: []
+  });
+  const serializedSignedIn = serializePlainJsonExport(signedInExport);
+
+  assert.equal(signedOutExport.kind, "bodymod.local-json-export");
+  assert.equal(signedOutExport.account, null);
+  assert.deepEqual(signedOutExport.accountData.goals, []);
+  assert.equal(signedOutExport.diet.entries[0].name, "Oats");
+  assert.equal(signedOutExport.diet.fluidEntries[0].amountMl, 500);
+  assert.equal(signedOutExport.proWaitlistSignups[0].email, "wait@example.com");
+  assert.deepEqual(summarizePlainJsonExport(signedOutExport), {
+    snapshots: 1,
+    goals: 0,
+    protocols: 0,
+    checkIns: 0,
+    workoutSessions: 0,
+    faceMeasurements: 0,
+    photoManifest: 0,
+    dietEntries: 1,
+    fluidEntries: 1,
+    customFoods: 1,
+    mealTemplates: 1,
+    proWaitlistSignups: 1
+  });
+  assert.equal(signedInExport.accountData.goals.length, 1);
+  assert.equal(signedInExport.accountData.checkIns[0].type, "cycle-phase");
+  assert.equal(signedInExport.accountData.photoManifest[0].hasImageData, true);
+  assert.equal(serializedSignedIn.includes("secret"), false);
 });
 
 test("encrypts and decrypts local backup bundles with a passphrase", async () => {

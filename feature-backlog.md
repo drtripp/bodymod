@@ -441,7 +441,10 @@ land. No social features, no marketplace.
 - [ ] Personal data API **(new)**: token-scoped read access to one's own data
       once accounts exist; cheap to build, disproportionately loved by the
       quantified-self crowd.
-- [ ] JSON export stays forever, account or not (standing decision).
+- [x] JSON export stays forever, account or not (standing decision): account
+      panel now offers a readable local JSON export before sign-in and after
+      sign-in, with snapshots and local diet data always included and
+      account-scoped logs included when signed in.
 
 ## 15. Monetization
 

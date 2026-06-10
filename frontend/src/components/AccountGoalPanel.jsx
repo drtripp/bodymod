@@ -64,6 +64,11 @@ import {
   summarizeLocalBackupBundle
 } from "../lib/localBackup";
 import {
+  buildPlainJsonExport,
+  serializePlainJsonExport,
+  summarizePlainJsonExport
+} from "../lib/localExport";
+import {
   buildCheckInHeatmap,
   buildCheckInInsights,
   buildMilestones,
@@ -324,6 +329,7 @@ export default function AccountGoalPanel({
   const [historyImportStatus, setHistoryImportStatus] = useState("");
   const [backupPassphrase, setBackupPassphrase] = useState("");
   const [backupStatus, setBackupStatus] = useState("");
+  const [jsonExportStatus, setJsonExportStatus] = useState("");
   const [proWaitlistEmail, setProWaitlistEmail] = useState("");
   const [proWaitlistStatus, setProWaitlistStatus] = useState("");
   const [selectedProtocolIds, setSelectedProtocolIds] = useState([]);
@@ -1199,6 +1205,41 @@ export default function AccountGoalPanel({
     });
   }
 
+  function currentPlainJsonExport() {
+    return buildPlainJsonExport({
+      account,
+      snapshots: snapshotProps.snapshots,
+      goals,
+      protocols,
+      checkIns,
+      workoutSessions,
+      photos,
+      faceMeasurements,
+      proWaitlistSignups: loadProWaitlistSignups()
+    });
+  }
+
+  function handleDownloadJsonExport() {
+    const bundle = currentPlainJsonExport();
+    const summary = summarizePlainJsonExport(bundle);
+    const blob = new Blob([serializePlainJsonExport(bundle)], {
+      type: "application/json"
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = account
+      ? `bodymod-${account.email.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-export.json`
+      : "bodymod-local-export.json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    setJsonExportStatus(
+      `JSON export downloaded: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.dietEntries} diet log(s), ${summary.fluidEntries} fluid log(s), and ${summary.photoManifest} photo manifest item(s).`
+    );
+  }
+
   async function handleDownloadEncryptedBackup() {
     if (!account) {
       return;
@@ -1381,6 +1422,23 @@ export default function AccountGoalPanel({
                   : "No local accounts on this browser yet."}
               </p>
             </form>
+
+            <section className="local-json-export-section" aria-label="Local JSON export">
+              <div>
+                <h3>Local JSON export</h3>
+                <p>
+                  Download readable local data anytime. Without an account,
+                  this includes snapshots, diet logs, food library rows, fluid
+                  logs, and local waitlist records on this browser.
+                </p>
+              </div>
+              <button className="button" type="button" onClick={handleDownloadJsonExport}>
+                Download JSON export
+              </button>
+              {jsonExportStatus ? (
+                <small className="local-json-export-status">{jsonExportStatus}</small>
+              ) : null}
+            </section>
           </div>
         ) : (
           <div className="account-workspace">
@@ -1464,6 +1522,23 @@ export default function AccountGoalPanel({
               <button className="button" type="button" onClick={handleDownloadProgressReport}>
                 Download progress report
               </button>
+            </section>
+
+            <section className="local-json-export-section" aria-label="Local JSON export">
+              <div>
+                <h3>Local JSON export</h3>
+                <p>
+                  Download a readable JSON copy of snapshots, account logs,
+                  goals, protocols, workouts, face metric logs, diet data, and
+                  photo manifests. This is portable, not encrypted.
+                </p>
+              </div>
+              <button className="button" type="button" onClick={handleDownloadJsonExport}>
+                Download JSON export
+              </button>
+              {jsonExportStatus ? (
+                <small className="local-json-export-status">{jsonExportStatus}</small>
+              ) : null}
             </section>
 
             <section className="encrypted-backup-section" aria-label="Encrypted local backup">

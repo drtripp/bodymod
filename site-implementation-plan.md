@@ -310,6 +310,9 @@ Status:
 - supports JSON export/import
 - skips duplicate snapshot imports with an explicit status message
 - restores most recent snapshot on return visit
+- account panel supports a readable local JSON export even before account
+  creation; snapshots, diet logs, food library rows, and fluid logs are always
+  included, while signed-in account records are added when available
 - account check-ins support historical weight CSV import through
   `frontend/src/lib/historyImport.js`, storing imported rows as normal
   daily-weight logs for trend weight and adaptive TDEE

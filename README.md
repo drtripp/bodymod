@@ -101,6 +101,7 @@ Implemented now:
 - reliability events pause affected weight and tape trend inference during healing or disruption windows
 - projected silhouettes for calorie-target protocol planning bands, with uncertainty copy
 - local goals can target preset deltas, custom deltas, target profiles, or saved past-self snapshots
+- readable local JSON export for snapshots and diet data without an account, plus account-scoped logs when signed in
 - local browser face measurement logger using self-hosted MediaPipe assets for camera/photo landmark scans
 - local progress photo streams for body, face, and hair with ghost overlay and comparison slider
 - current-vs-selected-snapshot silhouette comparison
