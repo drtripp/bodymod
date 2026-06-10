@@ -64,7 +64,11 @@ export default function OnboardingPanel({
   }
 
   function handleSnapshot() {
-    onSaveFirstSnapshot();
+    const saved = onSaveFirstSnapshot();
+    if (!saved) {
+      return;
+    }
+
     onProfileChange({
       firstSnapshotSavedAt: new Date().toISOString(),
       notificationPermissionAsked: true

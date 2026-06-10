@@ -163,7 +163,11 @@ Protocol Tracker → Diet upgrades → Native app.
       logging history.
 - [ ] Notifications: web push + native push; framed as data decay ("trend
       going stale"), never body judgment; permission requested only at first
-      snapshot save with a concrete promise.
+      snapshot save with a concrete promise. **First web pass:** the first
+      successful Snapshot #1 save requests browser notification permission,
+      stores a local notification preference, and an account-panel helper can
+      send a once-per-day stale-trend reminder when permission is already
+      granted. Native push and service-worker delivery remain native-app scope.
 
 ## 5. Protocol Tracker ("Build Plan" button)
 

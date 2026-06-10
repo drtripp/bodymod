@@ -127,6 +127,7 @@ import {
   normalizeEntitlementConfig,
   saveProWaitlistSignup
 } from "../lib/entitlements";
+import { sendTrendReminderNotificationIfDue } from "../lib/notifications";
 
 const emptyPlanningData = {
   personas: [],
@@ -536,6 +537,14 @@ export default function AccountGoalPanel({
       }),
     [checkIns, milestones, protocols, trendWeight, weeklyStreak]
   );
+  useEffect(() => {
+    if (!account) {
+      return;
+    }
+
+    sendTrendReminderNotificationIfDue({ weeklyStreak });
+  }, [account?.id, weeklyStreak.latestAt, weeklyStreak.status]);
+
   const protocolSchemaSummary = useMemo(
     () => formatProtocolSchemaSummary(planningData.protocolTaxonomy),
     [planningData.protocolTaxonomy]

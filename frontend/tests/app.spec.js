@@ -1099,8 +1099,34 @@ test("supports first-run onboarding and snapshot kickoff", async ({ page }) => {
   await expect(page.getByLabel("Optional field unlocks")).toContainText("Hip");
   await expect(page.getByLabel("Instant payoff")).toContainText("Astarion");
   await expect(page.getByLabel("Instant payoff")).toContainText("Height 44th pct");
+  await page.evaluate(() => {
+    window.__bodymodNotificationRequests = 0;
+    const notificationApi = {
+      permission: "default",
+      requestPermission: async () => {
+        window.__bodymodNotificationRequests += 1;
+        notificationApi.permission = "granted";
+        return "granted";
+      }
+    };
+    Object.defineProperty(window, "Notification", {
+      configurable: true,
+      value: notificationApi
+    });
+  });
   await page.getByRole("button", { name: "Save Snapshot #1" }).click();
   await expect(page.getByRole("button", { name: /Snapshot #1 saved/ })).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => window.__bodymodNotificationRequests))
+    .toBe(1);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const parsed = JSON.parse(window.localStorage.getItem("bodymod:notification-preferences:v1"));
+        return parsed?.permission;
+      })
+    )
+    .toBe("granted");
 });
 
 test("loads the demo profile from the first-run screen", async ({ page }) => {

@@ -46,6 +46,7 @@ import {
   loadOnboardingProfile,
   persistOnboardingProfile
 } from "./lib/onboarding";
+import { requestTrendNotificationPermission } from "./lib/notifications";
 import {
   applyThemePreference,
   loadThemePreference,
@@ -373,13 +374,14 @@ export default function App() {
     persistSnapshots(nextSnapshots);
     trackEvent("snapshot_saved", { count: nextSnapshots.length, source: "onboarding" });
 
-    if (
-      typeof window !== "undefined" &&
-      "Notification" in window &&
-      window.Notification.permission === "default"
-    ) {
-      void window.Notification.requestPermission();
-    }
+    void requestTrendNotificationPermission({ context: "first-snapshot" }).then(
+      (preference) => {
+        trackEvent("notification_permission_updated", {
+          context: "first-snapshot",
+          permission: preference.permission
+        });
+      }
+    );
 
     return true;
   }

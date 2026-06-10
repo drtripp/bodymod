@@ -302,6 +302,7 @@ Source files:
 - `frontend/src/components/SnapshotPanel.jsx`
 - `frontend/src/lib/storageAdapter.js`
 - `frontend/src/lib/storage.js`
+- `frontend/src/lib/notifications.js`
 
 Status:
 
@@ -333,6 +334,9 @@ Status:
   `frontend/src/lib/cycleTracking.js`; the feature is off by default, flags
   noisy weight/waist interpretation windows in insight drops, is included in
   encrypted backup check-ins, and has a dedicated delete-cycle-logs action
+- first Snapshot #1 save asks for browser notification permission only after a
+  successful save; notification preferences stay local and stale weekly
+  check-in reminders use data-decay framing rather than body judgment
 - account workspace supports passphrase-encrypted backup/restore through
   `frontend/src/lib/localBackup.js`; photos are exported as metadata manifests
   rather than image payloads
