@@ -147,6 +147,13 @@ cd frontend
 npm run test:corpus
 ```
 
+Then validate the seed/template JSON:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe scripts\validate_curation.py
+```
+
 Then import the JSON in the app and inspect:
 
 - plotted efficacy/risk position

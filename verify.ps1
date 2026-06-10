@@ -17,6 +17,7 @@ try {
   Push-Location "backend"
   try {
     Invoke-Checked { .\.venv\Scripts\python.exe -m pytest }
+    Invoke-Checked { .\.venv\Scripts\python.exe scripts\validate_curation.py }
   }
   finally {
     Pop-Location

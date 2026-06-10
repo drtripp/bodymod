@@ -446,6 +446,8 @@ Candidate events:
 Source files:
 
 - `backend/app/data/strategy_corpus.py`
+- `backend/app/data/strategy_corpus.seed.json`
+- `backend/scripts/validate_curation.py`
 - `backend/app/main.py`
 - `frontend/src/components/StrategyCorpus.jsx`
 - `frontend/src/lib/strategyCorpus.js`
@@ -461,6 +463,9 @@ Status:
 - search/filter controls are scoped to the selected outcome
 - review status, sensitivity, and source-count metadata are visible
 - manual corpus curation rubric exists in `strategy-corpus-curation.md`
+- structured curation workflow exists for target profiles, strategy entries,
+  and case logs through editable JSON seeds/templates plus
+  `backend/scripts/validate_curation.py`
 - corpus JSON export/import is implemented with frontend schema validation
 - imported corpus can persist locally as an override and be reset to the
   backend seed when loaded, or to the bundled seed offline
@@ -484,7 +489,8 @@ Next:
 - manually source entries
 - add evidence and risk taxonomy
 - finalize exclusion/moderation policy for sourced production entries
-- build admin or structured git workflow for reviewed corpus and case-log edits
+- expand the structured workflow into a richer internal UI only if JSON review
+  becomes too slow
 
 ## Engineering Backlog
 

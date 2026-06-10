@@ -1,5 +1,9 @@
 {
   "version": 1,
+  "source": "Manual curation draft. Replace with source/review summary before production use.",
+  "notes": [
+    "Informational scaffold only; not advice, coaching, dosing, diagnosis, or a protocol generator."
+  ],
   "outcomes": [
     {
       "id": "desired-outcome-slug",

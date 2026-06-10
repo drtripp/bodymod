@@ -56,10 +56,11 @@ For production candidates, notes should include:
 
 ## Validation
 
-The template is checked by backend tests. Run:
+The seed and template are checked by the structured curation validator. Run:
 
 ```powershell
 cd backend
+.\.venv\Scripts\python.exe scripts\validate_curation.py
 .\.venv\Scripts\python.exe -m pytest
 ```
 

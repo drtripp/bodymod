@@ -504,9 +504,12 @@ land. No social features, no marketplace.
       local seed to backend-served data with review status, source metadata,
       versioned payload, and validation; frontend import/localStorage override
       remains for drafting and reset returns to the backend seed when loaded.
-- [ ] Admin curation tool **(new)**: minimal internal CRUD UI (or structured
+- [x] Admin curation tool **(new)**: minimal internal CRUD UI (or structured
       git workflow) for corpus entries, targets, and case logs with validation
       against the templates — beats hand-editing JSON/Python for every entry.
+      Implemented as a structured git workflow: editable target/corpus JSON
+      seeds and templates validate through `backend/scripts/validate_curation.py`,
+      and `verify.ps1` runs the validator before frontend checks.
 - [x] Case-log content type linked from corpus entries (schema shared with
       the protocol tracker's completed protocols). Backend corpus seed now
       carries dummy completed-protocol case logs linked by `caseLogIds`; the

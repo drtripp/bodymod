@@ -1,0 +1,101 @@
+import json
+
+import pytest
+
+from scripts.validate_curation import (
+    DEFAULT_CORPUS_FILES,
+    DEFAULT_TARGET_FILES,
+    validate_strategy_corpus_file,
+    validate_target_file,
+)
+
+
+def test_default_curation_files_validate() -> None:
+    target_summaries = [validate_target_file(path) for path in DEFAULT_TARGET_FILES]
+    corpus_summaries = [validate_strategy_corpus_file(path) for path in DEFAULT_CORPUS_FILES]
+
+    assert any("target profile" in summary for summary in target_summaries)
+    assert any("case log" in summary for summary in corpus_summaries)
+
+
+def test_curation_validator_rejects_missing_case_log(tmp_path) -> None:
+    draft_path = tmp_path / "strategy-corpus.json"
+    draft_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "source": "validator test",
+                "outcomes": [
+                    {
+                        "id": "test-outcome",
+                        "label": "Test Outcome",
+                        "description": "Validator test outcome.",
+                        "strategies": [
+                            {
+                                "name": "Test strategy",
+                                "outcome": "test outcome",
+                                "interventionType": "training",
+                                "efficacy": 50,
+                                "risk": 20,
+                                "evidence": "moderate",
+                                "reviewStatus": "seeded",
+                                "sensitivity": "low",
+                                "reversibility": "medium",
+                                "timeHorizon": "weeks",
+                                "cost": "low",
+                                "claimedMechanism": "Test mechanism.",
+                                "expectedMagnitude": "Test magnitude.",
+                                "legalNotes": "No legal note.",
+                                "uncertaintyNotes": "Test uncertainty.",
+                                "excludedFromPersonalization": False,
+                                "caseLogIds": ["missing-case-log"],
+                                "notes": "Test note.",
+                            }
+                        ],
+                    }
+                ],
+                "caseLogs": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="missing linked case logs"):
+        validate_strategy_corpus_file(draft_path)
+
+
+def test_curation_validator_rejects_duplicate_target_ids(tmp_path) -> None:
+    draft_path = tmp_path / "targets.json"
+    target = {
+        "id": "duplicate",
+        "label": "Duplicate Target",
+        "source_type": "archetype",
+        "notes": "Estimated placeholder profile.",
+        "measurements": {
+            "height": 180,
+            "weight": 82,
+            "sex": "male",
+            "headCircumference": 57,
+            "neckCircumference": 39,
+            "biacromialWidth": 40,
+            "bideltoidWidth": 50,
+            "bideltoidCircumference": 118,
+            "armpitCircumference": 98,
+            "nippleCircumference": 96,
+            "underbustCircumference": 92,
+            "waistCircumference": 80,
+            "pantWaistCircumference": 86,
+            "hipCircumference": 96,
+            "upperThighCircumference": 58,
+            "midThighCircumference": 50,
+            "calfCircumference": 38,
+            "ankleCircumference": 23,
+            "bicepCircumference": 34,
+            "upperForearmCircumference": 29,
+            "wristCircumference": 17,
+        },
+    }
+    draft_path.write_text(json.dumps({"targets": [target, target]}), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="duplicate target ids"):
+        validate_target_file(draft_path)
