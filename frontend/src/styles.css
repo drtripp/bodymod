@@ -575,6 +575,16 @@ textarea {
   padding: 12px;
 }
 
+.encrypted-sync-section {
+  border: 1px solid var(--color-border);
+  background: var(--color-page);
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(240px, 0.48fr) minmax(190px, 0.34fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+}
+
 .progress-report-section h3,
 .share-dashboard-section h3,
 .local-json-export-section h3 {
@@ -582,7 +592,8 @@ textarea {
   font-size: 1rem;
 }
 
-.encrypted-backup-section h3 {
+.encrypted-backup-section h3,
+.encrypted-sync-section h3 {
   margin: 0 0 4px;
   font-size: 1rem;
 }
@@ -595,7 +606,10 @@ textarea {
 .local-json-export-section p,
 .local-json-export-status,
 .encrypted-backup-section p,
-.encrypted-backup-status {
+.encrypted-backup-status,
+.encrypted-sync-section p,
+.encrypted-sync-status,
+.encrypted-sync-meta {
   color: var(--color-muted);
 }
 
@@ -609,7 +623,19 @@ textarea {
   gap: 8px;
 }
 
-.encrypted-backup-status {
+.encrypted-sync-fields {
+  display: grid;
+  gap: 8px;
+}
+
+.encrypted-sync-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.encrypted-backup-status,
+.encrypted-sync-status,
+.encrypted-sync-meta {
   grid-column: 1 / -1;
 }
 
@@ -4891,6 +4917,7 @@ textarea {
   .share-dashboard-section,
   .local-json-export-section,
   .encrypted-backup-section,
+  .encrypted-sync-section,
   .entitlement-grid,
   .referral-code-row,
   .persona-loader,

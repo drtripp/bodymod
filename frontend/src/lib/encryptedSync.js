@@ -1,5 +1,47 @@
 import { SYNC_VAULTS_ENDPOINT } from "../config.js";
+import { readJsonSync, removeStoredItemSync, writeJsonSync } from "./storageAdapter.js";
 
+
+export const SYNC_VAULT_STATE_KEY = "bodymod:sync-vault:v1";
+
+
+export function defaultSyncVaultState() {
+  return {
+    version: 1,
+    accountId: "",
+    vaultId: "",
+    syncToken: "",
+    deviceId: "",
+    revision: 0,
+    createdAt: "",
+    updatedAt: ""
+  };
+}
+
+export function loadSyncVaultState(adapter) {
+  try {
+    return {
+      ...defaultSyncVaultState(),
+      ...(readJsonSync(SYNC_VAULT_STATE_KEY, null, adapter) || {})
+    };
+  } catch {
+    return defaultSyncVaultState();
+  }
+}
+
+export function persistSyncVaultState(state, adapter) {
+  const nextState = {
+    ...defaultSyncVaultState(),
+    ...state
+  };
+  writeJsonSync(SYNC_VAULT_STATE_KEY, nextState, adapter);
+  return nextState;
+}
+
+export function clearSyncVaultState(adapter) {
+  removeStoredItemSync(SYNC_VAULT_STATE_KEY, adapter);
+  return defaultSyncVaultState();
+}
 
 function fetchApi() {
   if (typeof fetch === "undefined") {
@@ -54,6 +96,37 @@ export function encryptedBackupToSyncBlob(rawEncryptedBackup) {
     iv: String(parsed.iv || ""),
     ciphertext: String(parsed.ciphertext || "")
   };
+}
+
+function parseSyncKdf(value = "") {
+  const [label, iterationsText] = String(value || "").split(":");
+  const separatorIndex = label.indexOf("-");
+  return {
+    name: separatorIndex > 0 ? label.slice(0, separatorIndex) : "PBKDF2",
+    hash: separatorIndex > 0 ? label.slice(separatorIndex + 1) : "SHA-256",
+    iterations: Number(iterationsText) || 150000
+  };
+}
+
+export function syncBlobToEncryptedBackup(blob, encryptedAt = new Date().toISOString()) {
+  if (!blob || blob.algorithm !== "AES-GCM") {
+    throw new Error("Encrypted sync vault returned an unsupported blob.");
+  }
+
+  return JSON.stringify(
+    {
+      version: Number(blob.version || 1),
+      kind: "bodymod.encrypted-local-backup",
+      encryptedAt,
+      algorithm: blob.algorithm,
+      kdf: parseSyncKdf(blob.kdf),
+      salt: String(blob.salt || ""),
+      iv: String(blob.iv || ""),
+      ciphertext: String(blob.ciphertext || "")
+    },
+    null,
+    2
+  );
 }
 
 export function normalizeSyncVaultRecord(record = {}) {

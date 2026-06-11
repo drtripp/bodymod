@@ -79,6 +79,16 @@ import {
   summarizeLocalBackupBundle
 } from "../lib/localBackup";
 import {
+  clearSyncVaultState,
+  createSyncVault,
+  loadSyncVaultState,
+  persistSyncVaultState,
+  readSyncVault,
+  revokeSyncVault,
+  syncBlobToEncryptedBackup,
+  updateSyncVault
+} from "../lib/encryptedSync";
+import {
   buildPlainJsonExport,
   serializePlainJsonExport,
   summarizePlainJsonExport
@@ -362,6 +372,7 @@ export default function AccountGoalPanel({
   const [accounts, setAccounts] = useState(() => loadAccounts());
   const initialAccount = loadSessionAccount();
   const [account, setAccount] = useState(() => initialAccount);
+  const initialSyncVaultState = loadSyncVaultState();
   const [goals, setGoals] = useState(() => loadUserGoals(initialAccount?.id));
   const [protocols, setProtocols] = useState(() => loadUserProtocols(initialAccount?.id));
   const [checkIns, setCheckIns] = useState(() => loadUserCheckIns(initialAccount?.id));
@@ -378,6 +389,13 @@ export default function AccountGoalPanel({
   const [faceMeasurements, setFaceMeasurements] = useState(() =>
     loadUserFaceMeasurements(initialAccount?.id)
   );
+  const [syncVaultState, setSyncVaultState] = useState(() => initialSyncVaultState);
+  const [syncVaultId, setSyncVaultId] = useState(() => initialSyncVaultState.vaultId);
+  const [syncVaultToken, setSyncVaultToken] = useState(() => initialSyncVaultState.syncToken);
+  const [syncDeviceId, setSyncDeviceId] = useState(
+    () => initialSyncVaultState.deviceId || "browser-local"
+  );
+  const [syncStatus, setSyncStatus] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
@@ -522,6 +540,33 @@ export default function AccountGoalPanel({
       setProWaitlistEmail(account.email);
     }
   }, [account?.email]);
+
+  useEffect(() => {
+    const stored = loadSyncVaultState();
+    if (account?.id && stored.accountId === account.id) {
+      setSyncVaultState(stored);
+      setSyncVaultId(stored.vaultId);
+      setSyncVaultToken(stored.syncToken);
+      setSyncDeviceId(stored.deviceId || `browser-${account.id.slice(0, 8)}`);
+      return;
+    }
+
+    const nextDeviceId = account?.id ? `browser-${account.id.slice(0, 8)}` : "browser-local";
+    setSyncVaultState({
+      ...stored,
+      accountId: "",
+      vaultId: "",
+      syncToken: "",
+      deviceId: nextDeviceId,
+      revision: 0,
+      createdAt: "",
+      updatedAt: ""
+    });
+    setSyncVaultId("");
+    setSyncVaultToken("");
+    setSyncDeviceId(nextDeviceId);
+    setSyncStatus("");
+  }, [account?.id]);
 
   useEffect(() => {
     const storedState = loadShareDashboardState();
@@ -1665,6 +1710,56 @@ export default function AccountGoalPanel({
     });
   }
 
+  function restoreBackupBundle(bundle) {
+    const snapshotRestore = snapshotProps.onRestoreSnapshots
+      ? snapshotProps.onRestoreSnapshots(bundle.snapshots)
+      : { importedCount: 0, skippedCount: bundle.snapshots.length };
+    const restoreResult = restoreUserBackupData(account.id, bundle);
+    const referralRestore = restoreReferralCredits(account.id, bundle.referralCredits);
+    const summary = summarizeLocalBackupBundle(bundle);
+
+    setGoals(restoreResult.goals);
+    setProtocols(restoreResult.protocols);
+    setCheckIns(restoreResult.checkIns);
+    setWorkoutSessions(restoreResult.workoutSessions);
+    setProcedures(restoreResult.procedures);
+    setBloodworkResults(restoreResult.bloodworkResults);
+    setReferralCredits(referralRestore.credits);
+    setFaceMeasurements(restoreResult.faceMeasurements);
+
+    return `Restored backup: ${snapshotRestore.importedCount} snapshot(s), ${restoreResult.imported.checkIns} check-in(s), ${restoreResult.imported.goals} goal(s), ${restoreResult.imported.protocols} protocol(s), ${restoreResult.imported.workoutSessions} workout(s), ${restoreResult.imported.procedures} procedure(s), ${restoreResult.imported.bloodworkResults} lab result(s), ${referralRestore.importedCount} referral credit(s), ${restoreResult.imported.faceMeasurements} face scan(s). Photo manifest: ${summary.photoManifest} item(s); image files are not included.`;
+  }
+
+  function persistSyncRecord(record, token = syncVaultToken) {
+    const nextState = persistSyncVaultState({
+      accountId: account?.id || "",
+      vaultId: record.vaultId || syncVaultId,
+      syncToken: record.syncToken || token,
+      deviceId: record.deviceId || syncDeviceId,
+      revision: record.revision || 0,
+      createdAt: record.createdAt || syncVaultState.createdAt,
+      updatedAt: record.updatedAt || syncVaultState.updatedAt
+    });
+
+    setSyncVaultState(nextState);
+    setSyncVaultId(nextState.vaultId);
+    setSyncVaultToken(nextState.syncToken);
+    setSyncDeviceId(nextState.deviceId || syncDeviceId);
+    return nextState;
+  }
+
+  async function encryptedBackupForSync() {
+    const bundle = currentBackupBundle();
+    return {
+      encryptedBackup: await encryptLocalBackup(bundle, backupPassphrase),
+      summary: summarizeLocalBackupBundle(bundle)
+    };
+  }
+
+  function missingSyncCredentials() {
+    return !syncVaultId.trim() || !syncVaultToken.trim();
+  }
+
   async function handlePublishShareDashboard() {
     if (!account) {
       return;
@@ -1808,24 +1903,7 @@ export default function AccountGoalPanel({
     reader.onload = async () => {
       try {
         const bundle = await decryptLocalBackup(String(reader.result || ""), backupPassphrase);
-        const snapshotRestore = snapshotProps.onRestoreSnapshots
-          ? snapshotProps.onRestoreSnapshots(bundle.snapshots)
-          : { importedCount: 0, skippedCount: bundle.snapshots.length };
-        const restoreResult = restoreUserBackupData(account.id, bundle);
-        const referralRestore = restoreReferralCredits(account.id, bundle.referralCredits);
-        const summary = summarizeLocalBackupBundle(bundle);
-
-        setGoals(restoreResult.goals);
-        setProtocols(restoreResult.protocols);
-        setCheckIns(restoreResult.checkIns);
-        setWorkoutSessions(restoreResult.workoutSessions);
-        setProcedures(restoreResult.procedures);
-        setBloodworkResults(restoreResult.bloodworkResults);
-        setReferralCredits(referralRestore.credits);
-        setFaceMeasurements(restoreResult.faceMeasurements);
-        setBackupStatus(
-          `Restored backup: ${snapshotRestore.importedCount} snapshot(s), ${restoreResult.imported.checkIns} check-in(s), ${restoreResult.imported.goals} goal(s), ${restoreResult.imported.protocols} protocol(s), ${restoreResult.imported.workoutSessions} workout(s), ${restoreResult.imported.procedures} procedure(s), ${restoreResult.imported.bloodworkResults} lab result(s), ${referralRestore.importedCount} referral credit(s), ${restoreResult.imported.faceMeasurements} face scan(s). Photo manifest: ${summary.photoManifest} item(s); image files are not included.`
-        );
+        setBackupStatus(restoreBackupBundle(bundle));
       } catch (error) {
         setBackupStatus(error.message);
       } finally {
@@ -1837,6 +1915,113 @@ export default function AccountGoalPanel({
       event.target.value = "";
     };
     reader.readAsText(file);
+  }
+
+  async function handleCreateSyncVault() {
+    if (!account) {
+      return;
+    }
+
+    try {
+      setSyncStatus("Creating encrypted sync vault...");
+      const deviceId = syncDeviceId.trim() || `browser-${account.id.slice(0, 8)}`;
+      const { encryptedBackup, summary } = await encryptedBackupForSync();
+      const record = await createSyncVault({
+        encryptedBackup,
+        deviceId
+      });
+      persistSyncRecord(record, record.syncToken);
+      setSyncStatus(
+        `Encrypted sync vault created at revision ${record.revision}. Store the sync token before using another browser. Uploaded ${summary.checkIns} check-in(s), ${summary.goals} goal(s), and ${summary.photoManifest} photo manifest item(s).`
+      );
+    } catch (error) {
+      setSyncStatus(error.message || "Encrypted sync vault creation failed.");
+    }
+  }
+
+  async function handlePushSyncVault({ force = false } = {}) {
+    if (!account) {
+      return;
+    }
+    if (missingSyncCredentials()) {
+      setSyncStatus("Enter a sync vault ID and token before pushing.");
+      return;
+    }
+
+    try {
+      setSyncStatus(force ? "Force pushing encrypted sync vault..." : "Pushing encrypted sync vault...");
+      const { encryptedBackup, summary } = await encryptedBackupForSync();
+      const record = await updateSyncVault({
+        vaultId: syncVaultId.trim(),
+        syncToken: syncVaultToken.trim(),
+        expectedRevision: Math.max(1, Number(syncVaultState.revision || 1)),
+        encryptedBackup,
+        deviceId: syncDeviceId.trim() || "browser-local",
+        force
+      });
+      persistSyncRecord(record);
+      setSyncStatus(
+        `Encrypted sync vault pushed at revision ${record.revision}: ${summary.checkIns} check-in(s), ${summary.goals} goal(s), and ${summary.protocols} protocol(s).`
+      );
+    } catch (error) {
+      if (error.status === 409) {
+        setSyncStatus(
+          `Encrypted sync conflict at server revision ${error.detail?.currentRevision || "unknown"}. Pull first, or force push to overwrite.`
+        );
+      } else {
+        setSyncStatus(error.message || "Encrypted sync push failed.");
+      }
+    }
+  }
+
+  async function handlePullSyncVault() {
+    if (!account) {
+      return;
+    }
+    if (missingSyncCredentials()) {
+      setSyncStatus("Enter a sync vault ID and token before pulling.");
+      return;
+    }
+
+    try {
+      setSyncStatus("Pulling encrypted sync vault...");
+      const record = await readSyncVault({
+        vaultId: syncVaultId.trim(),
+        syncToken: syncVaultToken.trim()
+      });
+      const encryptedBackup = syncBlobToEncryptedBackup(record.blob, record.updatedAt);
+      const bundle = await decryptLocalBackup(encryptedBackup, backupPassphrase);
+      const restoreSummary = restoreBackupBundle(bundle);
+      persistSyncRecord(record);
+      setSyncStatus(`Pulled encrypted sync vault revision ${record.revision}. ${restoreSummary}`);
+    } catch (error) {
+      setSyncStatus(error.message || "Encrypted sync pull failed.");
+    }
+  }
+
+  async function handleRevokeSyncVault() {
+    if (missingSyncCredentials()) {
+      setSyncVaultState(clearSyncVaultState());
+      setSyncVaultId("");
+      setSyncVaultToken("");
+      setSyncStatus("No sync vault credentials to revoke.");
+      return;
+    }
+
+    try {
+      setSyncStatus("Revoking encrypted sync vault...");
+      await revokeSyncVault({
+        vaultId: syncVaultId.trim(),
+        syncToken: syncVaultToken.trim()
+      });
+      const cleared = clearSyncVaultState();
+      setSyncVaultState(cleared);
+      setSyncVaultId("");
+      setSyncVaultToken("");
+      setSyncStatus("Encrypted sync vault revoked and local credentials cleared.");
+    } catch (error) {
+      setSyncStatus(error.message || "Encrypted sync revoke failed.");
+    }
   }
 
   function handleDownloadProgressReport() {
@@ -2331,6 +2516,72 @@ export default function AccountGoalPanel({
               {backupStatus ? (
                 <small className="encrypted-backup-status" role="status" aria-live="polite">
                   {backupStatus}
+                </small>
+              ) : null}
+            </section>
+
+            <section className="encrypted-sync-section" aria-label="Encrypted sync vault">
+              <div>
+                <h3>Encrypted sync vault</h3>
+                <p>
+                  Prototype cross-device sync stores only the encrypted backup
+                  blob on the server. Keep the sync token private; it cannot
+                  be recovered if lost.
+                </p>
+              </div>
+              <div className="encrypted-sync-fields">
+                <label className="field">
+                  <span className="field-label">Device ID</span>
+                  <input
+                    aria-label="Sync device ID"
+                    value={syncDeviceId}
+                    onChange={(event) => setSyncDeviceId(event.target.value)}
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">Vault ID</span>
+                  <input
+                    aria-label="Sync vault ID"
+                    value={syncVaultId}
+                    onChange={(event) => setSyncVaultId(event.target.value)}
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">Sync token</span>
+                  <input
+                    aria-label="Sync token"
+                    type="password"
+                    value={syncVaultToken}
+                    onChange={(event) => setSyncVaultToken(event.target.value)}
+                  />
+                </label>
+              </div>
+              <div className="encrypted-sync-actions">
+                <button className="button" type="button" onClick={handleCreateSyncVault}>
+                  Create sync vault
+                </button>
+                <button className="button" type="button" onClick={() => handlePushSyncVault()}>
+                  Push encrypted sync
+                </button>
+                <button className="button" type="button" onClick={handlePullSyncVault}>
+                  Pull encrypted sync
+                </button>
+                <button className="button" type="button" onClick={() => handlePushSyncVault({ force: true })}>
+                  Force push
+                </button>
+                <button className="button" type="button" onClick={handleRevokeSyncVault}>
+                  Revoke sync vault
+                </button>
+              </div>
+              {syncVaultState.vaultId ? (
+                <small className="encrypted-sync-meta">
+                  Revision {syncVaultState.revision || 0}
+                  {syncVaultState.updatedAt ? ` / updated ${formatDate(syncVaultState.updatedAt)}` : ""}
+                </small>
+              ) : null}
+              {syncStatus ? (
+                <small className="encrypted-sync-status" role="status" aria-live="polite">
+                  {syncStatus}
                 </small>
               ) : null}
             </section>

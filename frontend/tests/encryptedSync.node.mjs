@@ -3,15 +3,21 @@ import { webcrypto } from "node:crypto";
 import { test } from "node:test";
 import {
   createSyncVault,
+  clearSyncVaultState,
   encryptedBackupToSyncBlob,
+  loadSyncVaultState,
+  persistSyncVaultState,
   readSyncVault,
   revokeSyncVault,
+  syncBlobToEncryptedBackup,
   updateSyncVault
 } from "../src/lib/encryptedSync.js";
 import {
   buildLocalBackupBundle,
+  decryptLocalBackup,
   encryptLocalBackup
 } from "../src/lib/localBackup.js";
+import { createMemoryStorageAdapter } from "../src/lib/storageAdapter.js";
 
 
 if (!globalThis.crypto?.subtle) {
@@ -51,6 +57,10 @@ function sampleBundle() {
 test("converts encrypted local backups into opaque sync blobs", async () => {
   const encrypted = await encryptLocalBackup(sampleBundle(), "correct horse battery staple");
   const blob = encryptedBackupToSyncBlob(encrypted);
+  const roundTrip = await decryptLocalBackup(
+    syncBlobToEncryptedBackup(blob, "2026-06-10T12:00:00Z"),
+    "correct horse battery staple"
+  );
 
   assert.equal(blob.algorithm, "AES-GCM");
   assert.match(blob.kdf, /^PBKDF2-SHA-256:150000$/);
@@ -58,6 +68,29 @@ test("converts encrypted local backups into opaque sync blobs", async () => {
   assert.ok(blob.iv);
   assert.ok(blob.ciphertext);
   assert.doesNotMatch(JSON.stringify(blob), /taylor@example.com|Shoulder goal|waistCircumference/);
+  assert.equal(roundTrip.account.email, "taylor@example.com");
+  assert.equal(roundTrip.checkIns[0].measurements.waistCircumference, 84);
+});
+
+test("persists sync vault credentials locally until cleared", () => {
+  const adapter = createMemoryStorageAdapter();
+  const stored = persistSyncVaultState(
+    {
+      accountId: "account-1",
+      vaultId: "vault-1",
+      syncToken: "sync-token-1",
+      deviceId: "browser-a",
+      revision: 3,
+      createdAt: "2026-06-10T12:00:00Z",
+      updatedAt: "2026-06-11T12:00:00Z"
+    },
+    adapter
+  );
+
+  assert.equal(stored.revision, 3);
+  assert.equal(loadSyncVaultState(adapter).vaultId, "vault-1");
+  assert.equal(clearSyncVaultState(adapter).vaultId, "");
+  assert.equal(loadSyncVaultState(adapter).syncToken, "");
 });
 
 test("creates sync vaults without sending plaintext account data", async () => {
