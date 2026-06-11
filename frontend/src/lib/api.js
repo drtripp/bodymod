@@ -61,6 +61,10 @@ export function fetchStrategyCorpus() {
   return request("/api/strategy-corpus");
 }
 
+export function fetchAttractivenessEvidence() {
+  return request("/api/attractiveness-evidence");
+}
+
 export function fetchMeasurementGuides() {
   return request("/api/measurement-guides");
 }

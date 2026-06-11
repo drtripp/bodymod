@@ -1,5 +1,9 @@
 from fastapi.testclient import TestClient
 
+from app.data.attractiveness_evidence import (
+    ATTRACTIVENESS_EVIDENCE,
+    ATTRACTIVENESS_EVIDENCE_SEED_PATH,
+)
 from app.data.bloodwork import BLOODWORK_LIBRARY
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.entitlements import ENTITLEMENT_CONFIG
@@ -316,6 +320,33 @@ def test_strategy_corpus_endpoint_returns_backend_seed() -> None:
         strategy["excludedFromPersonalization"]
         for strategy in all_strategies
         if strategy["sensitivity"] in {"clinical", "surgical", "pharmaceutical", "medical-adjacent"}
+    )
+
+
+def test_attractiveness_evidence_endpoint_returns_review_seed() -> None:
+    response = client.get("/api/attractiveness-evidence")
+
+    assert response.status_code == 200
+    assert ATTRACTIVENESS_EVIDENCE_SEED_PATH.exists()
+    payload = response.json()
+    metric_ids = {metric["id"] for metric in payload["metrics"]}
+    source_ids = {source["id"] for source in payload["sources"]}
+
+    assert payload["version"] == ATTRACTIVENESS_EVIDENCE["version"]
+    assert "review scaffold" in payload["reference"]
+    assert {
+        "female-whr-reference",
+        "male-adiposity-emerging",
+        "male-shoulder-waist-context",
+        "facial-averageness-reference",
+        "unsupported-popular-face-ratios",
+    }.issubset(metric_ids)
+    assert {"xia-2025", "kleisner-2023", "geniole-2015"}.issubset(source_ids)
+    assert all(metric["requiresHumanReview"] for metric in payload["metrics"])
+    assert any(metric["verdict"] == "do-not-ship" for metric in payload["metrics"])
+    assert any(
+        "population-average" in metric["userFacingSummary"]
+        for metric in payload["metrics"]
     )
 
 

@@ -318,6 +318,54 @@ const planningData = {
   ]
 };
 
+const attractivenessEvidenceLibrary = {
+  version: 1,
+  reference: "Mock attractiveness evidence seed.",
+  notes: ["Population averages only."],
+  sources: [
+    {
+      id: "mock-whr-source",
+      title: "Mock WHR proportionality source",
+      year: 2004,
+      url: "https://example.test/whr",
+      sourceType: "peer-reviewed",
+      reviewStatus: "mocked"
+    }
+  ],
+  metrics: [
+    {
+      id: "mock-whr-reference",
+      label: "WHR reference",
+      category: "Body proportions",
+      goalPresetIds: ["waist-hip-ratio"],
+      metricKeys: ["waistCircumference", "hipCircumference"],
+      verdict: "ship-reference",
+      evidenceStrength: "replicated but nuanced",
+      populationReference: "Population-level WHR context.",
+      userFacingSummary: "Use WHR as population-average context, not a personal ideal.",
+      framing: "Reference only.",
+      sourceIds: ["mock-whr-source"],
+      requiresHumanReview: true,
+      notes: []
+    },
+    {
+      id: "mock-swr-context",
+      label: "SWR context",
+      category: "Body proportions",
+      goalPresetIds: ["shoulder-waist-ratio"],
+      metricKeys: ["waistCircumference", "bideltoidCircumference"],
+      verdict: "do-not-ship",
+      evidenceStrength: "context-limited",
+      populationReference: "Shoulder-to-waist evidence is not a standalone target.",
+      userFacingSummary: "Track shoulder and waist changes without claiming a researched ideal ratio.",
+      framing: "Training metric only.",
+      sourceIds: [],
+      requiresHumanReview: true,
+      notes: []
+    }
+  ]
+};
+
 const exerciseLibrary = {
   version: 1,
   reference: "Dummy workout seed data for tests.",
@@ -779,6 +827,10 @@ async function mockApi(page) {
         caseLogs: strategyCaseLogs
       }
     });
+  });
+
+  await page.route("**/api/attractiveness-evidence", async (route) => {
+    await route.fulfill({ json: attractivenessEvidenceLibrary });
   });
 
   await page.route("**/api/measurement-guides", async (route) => {
@@ -1457,6 +1509,10 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Free included features")).toContainText("Measurement tracking");
   await expect(page.getByLabel("Free included features")).toContainText("Local data export");
   await expect(page.getByLabel("Locked Pro previews")).toContainText("AI explain my data");
+  await expect(page.getByLabel("Goal evidence notes")).toContainText("Do not use as target");
+  await expect(page.getByLabel("Goal evidence notes")).toContainText(
+    "Track shoulder and waist changes without claiming a researched ideal ratio."
+  );
   await expect(page.getByRole("button", { name: "Download progress report" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Download encrypted backup" })).toBeVisible();
   await page.getByLabel("Pro waitlist email").fill("mason@example.com");

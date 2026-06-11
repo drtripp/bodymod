@@ -106,6 +106,11 @@ Protocol Tracker → Diet upgrades → Native app.
       everything else is contested or uncovered. A follow-up pass is still
       needed for leg-to-body, height, FFMI/"too muscular", body symmetry,
       canthal tilt, and golden-ratio claims (open questions in that doc).
+      **Seed scaffold:** backend now serves
+      `backend/app/data/attractiveness_evidence.seed.json` at
+      `/api/attractiveness-evidence`, validates goal/source/field references,
+      and the goal builder shows matched evidence notes as reference-only or
+      do-not-ship context. Human source/copy review is still required.
 
 ## 3. Measurement & Tracking Core
 

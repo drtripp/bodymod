@@ -1,4 +1,4 @@
-"""Validate editable curation JSON for target, guide, food, planning, and strategy data.
+"""Validate editable curation JSON for target, guide, food, planning, evidence, and strategy data.
 
 Run from the backend directory:
 
@@ -11,6 +11,7 @@ Pass explicit files to validate a draft before replacing a seed:
         --guide-file app\\data\\measurement_guides.seed.json \\
         --food-file app\\data\\food_usda.seed.json \\
         --planning-file app\\data\\planning.seed.json \\
+        --evidence-file app\\data\\attractiveness_evidence.seed.json \\
         --corpus-file ..\\strategy-corpus-template.json
 """
 
@@ -26,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.measurement_schema import load_measurement_schema  # noqa: E402
 from app.models import (  # noqa: E402
+    AttractivenessEvidenceLibrary,
     FoodSearchResponse,
     MeasurementGuideLibrary,
     PlanningData,
@@ -48,6 +50,9 @@ DEFAULT_GUIDE_FILES = [
 ]
 DEFAULT_FOOD_FILES = [
     BACKEND_ROOT / "app" / "data" / "food_usda.seed.json",
+]
+DEFAULT_EVIDENCE_FILES = [
+    BACKEND_ROOT / "app" / "data" / "attractiveness_evidence.seed.json",
 ]
 DEFAULT_CORPUS_FILES = [
     BACKEND_ROOT / "app" / "data" / "strategy_corpus.seed.json",
@@ -228,6 +233,61 @@ def validate_food_file(path: Path) -> str:
     return f"{path}: {len(library.foods)} USDA-style food row(s)"
 
 
+def validate_attractiveness_evidence_file(path: Path, planning_paths: list[Path] | None = None) -> str:
+    payload = read_json(path)
+    library = AttractivenessEvidenceLibrary.model_validate(payload)
+    metric_ids = [metric.id for metric in library.metrics]
+    source_ids = [source.id for source in library.sources]
+    metric_duplicates = duplicate_values(metric_ids)
+    source_duplicates = duplicate_values(source_ids)
+    available_source_ids = set(source_ids)
+    available_goal_ids: set[str] = set()
+    measurement_fields = {field["name"] for field in load_measurement_schema()["fields"]}
+
+    for planning_path in planning_paths or DEFAULT_PLANNING_FILES:
+        planning_payload = read_json(planning_path)
+        available_goal_ids.update(
+            str(goal.get("id", "")) for goal in planning_payload.get("goalPresets", [])
+        )
+
+    if not library.sources:
+        raise ValueError(f"{path}: expected at least one evidence source.")
+    if not library.metrics:
+        raise ValueError(f"{path}: expected at least one evidence metric.")
+    if source_duplicates:
+        raise ValueError(f"{path}: duplicate evidence source ids: {', '.join(source_duplicates)}.")
+    if metric_duplicates:
+        raise ValueError(f"{path}: duplicate evidence metric ids: {', '.join(metric_duplicates)}.")
+
+    for source in library.sources:
+        if not source.url.startswith("https://"):
+            raise ValueError(f"{path}: evidence source {source.id!r} needs an HTTPS URL.")
+
+    for metric in library.metrics:
+        if not metric.requiresHumanReview:
+            raise ValueError(f"{path}: metric {metric.id!r} must remain human-review gated.")
+        missing_sources = sorted(set(metric.sourceIds) - available_source_ids)
+        if missing_sources:
+            raise ValueError(
+                f"{path}: metric {metric.id!r} references unknown sources: "
+                f"{', '.join(missing_sources)}."
+            )
+        unknown_goals = sorted(set(metric.goalPresetIds) - available_goal_ids)
+        if unknown_goals:
+            raise ValueError(
+                f"{path}: metric {metric.id!r} references unknown goals: "
+                f"{', '.join(unknown_goals)}."
+            )
+        unknown_fields = sorted(set(metric.metricKeys) - measurement_fields)
+        if unknown_fields:
+            raise ValueError(
+                f"{path}: metric {metric.id!r} references unknown measurement fields: "
+                f"{', '.join(unknown_fields)}."
+            )
+
+    return f"{path}: {len(library.metrics)} attractiveness evidence metric(s)"
+
+
 def validate_strategy_corpus_file(path: Path) -> str:
     payload = read_json(path)
     corpus = StrategyCorpusSeed.model_validate(payload)
@@ -333,6 +393,13 @@ def parse_args() -> argparse.Namespace:
         dest="food_files",
         help="USDA-style food seed JSON file to validate. Repeatable.",
     )
+    parser.add_argument(
+        "--evidence-file",
+        action="append",
+        type=Path,
+        dest="evidence_files",
+        help="Attractiveness evidence seed JSON file to validate. Repeatable.",
+    )
     return parser.parse_args()
 
 
@@ -342,12 +409,14 @@ def main() -> int:
     guide_files = args.guide_files or DEFAULT_GUIDE_FILES
     food_files = args.food_files or DEFAULT_FOOD_FILES
     planning_files = args.planning_files or DEFAULT_PLANNING_FILES
+    evidence_files = args.evidence_files or DEFAULT_EVIDENCE_FILES
     corpus_files = args.corpus_files or DEFAULT_CORPUS_FILES
     summaries = [
         *(validate_target_file(path) for path in target_files),
         *(validate_measurement_guide_file(path) for path in guide_files),
         *(validate_food_file(path) for path in food_files),
         *(validate_planning_file(path) for path in planning_files),
+        *(validate_attractiveness_evidence_file(path, planning_files) for path in evidence_files),
         *(validate_strategy_corpus_file(path) for path in corpus_files),
     ]
 

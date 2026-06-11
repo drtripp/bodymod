@@ -4,6 +4,7 @@ import SilhouetteView from "./SilhouetteView";
 import SnapshotPanel from "./SnapshotPanel";
 import {
   createShareDashboard,
+  fetchAttractivenessEvidence,
   fetchBloodworkLibrary,
   fetchExerciseLibrary,
   fetchPlanningData,
@@ -111,6 +112,13 @@ import {
   normalizeBloodworkLibrary,
   referenceRangeForMarker
 } from "../lib/bloodwork";
+import {
+  evidenceForGoal,
+  evidenceSourceSummary,
+  fallbackAttractivenessEvidence,
+  normalizeAttractivenessEvidence,
+  verdictLabel
+} from "../lib/attractivenessEvidence";
 import {
   buildProcedureCaseLog,
   buildProcedureReliabilityCheckIn,
@@ -344,6 +352,12 @@ export default function AccountGoalPanel({
     normalizeBloodworkLibrary(fallbackBloodworkLibrary)
   );
   const [bloodworkStatus, setBloodworkStatus] = useState("Loading bloodwork library...");
+  const [attractivenessEvidence, setAttractivenessEvidence] = useState(() =>
+    normalizeAttractivenessEvidence(fallbackAttractivenessEvidence)
+  );
+  const [attractivenessEvidenceStatus, setAttractivenessEvidenceStatus] = useState(
+    "Loading attractiveness evidence notes..."
+  );
   const [accounts, setAccounts] = useState(() => loadAccounts());
   const initialAccount = loadSessionAccount();
   const [account, setAccount] = useState(() => initialAccount);
@@ -616,10 +630,42 @@ export default function AccountGoalPanel({
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchAttractivenessEvidence()
+      .then((data) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const normalized = normalizeAttractivenessEvidence(data);
+        setAttractivenessEvidence(normalized);
+        setAttractivenessEvidenceStatus(
+          `Loaded ${normalized.metrics.length} evidence note seed(s).`
+        );
+      })
+      .catch(() => {
+        if (isMounted) {
+          const fallback = normalizeAttractivenessEvidence(fallbackAttractivenessEvidence);
+          setAttractivenessEvidence(fallback);
+          setAttractivenessEvidenceStatus("Evidence notes unavailable. Local fallback framing loaded.");
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const selectedPersona = planningData.personas.find(
     (persona) => persona.id === selectedPersonaId
   );
   const selectedGoal = planningData.goalPresets.find((goal) => goal.id === selectedGoalId);
+  const selectedGoalEvidence = useMemo(
+    () => evidenceForGoal(attractivenessEvidence, selectedGoal?.id),
+    [attractivenessEvidence, selectedGoal?.id]
+  );
   const profileGoalTargets = useMemo(
     () =>
       targetProfiles
@@ -2901,6 +2947,23 @@ export default function AccountGoalPanel({
                 </label>
                 {selectedGoal ? (
                   <p className="muted-text">{selectedGoal.summary}</p>
+                ) : null}
+                {selectedGoalEvidence.length ? (
+                  <div className="goal-evidence-note" aria-label="Goal evidence notes">
+                    <strong>Evidence notes</strong>
+                    <small>{attractivenessEvidenceStatus}</small>
+                    <ul>
+                      {selectedGoalEvidence.map((metric) => (
+                        <li key={metric.id}>
+                          <span>{verdictLabel(metric.verdict)} / {metric.evidenceStrength}</span>
+                          <p>{metric.userFacingSummary}</p>
+                          {evidenceSourceSummary(attractivenessEvidence, metric) ? (
+                            <small>{evidenceSourceSummary(attractivenessEvidence, metric)}</small>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ) : null}
                 {selectedGoalTarget ? (
                   <p className="muted-text goal-target-copy">

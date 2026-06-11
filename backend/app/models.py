@@ -137,6 +137,39 @@ class PlanningData(BaseModel):
     protocolTaxonomy: list[ProtocolTaxonomyItem] = []
 
 
+class AttractivenessEvidenceSource(BaseModel):
+    id: str
+    title: str
+    year: int = Field(ge=1900, le=2100)
+    url: str
+    sourceType: str = "peer-reviewed"
+    reviewStatus: str = "needs Dawson review"
+
+
+class AttractivenessEvidenceMetric(BaseModel):
+    id: str
+    label: str
+    category: str
+    goalPresetIds: list[str] = []
+    metricKeys: list[str] = []
+    verdict: Literal["ship-reference", "do-not-ship", "needs-research"]
+    evidenceStrength: str
+    populationReference: str
+    userFacingSummary: str
+    framing: str
+    sourceIds: list[str] = []
+    requiresHumanReview: bool = True
+    notes: list[str] = []
+
+
+class AttractivenessEvidenceLibrary(BaseModel):
+    version: int
+    reference: str
+    notes: list[str] = []
+    sources: list[AttractivenessEvidenceSource]
+    metrics: list[AttractivenessEvidenceMetric]
+
+
 class ClothingSizeBand(BaseModel):
     id: str
     label: str

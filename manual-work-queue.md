@@ -81,7 +81,38 @@ cd backend
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-## 4. Launch Privacy And Moderation Approvals
+## 4. Attractiveness Evidence Review
+
+Required input:
+
+- approve or revise `attractiveness-evidence-base.md`
+- decide which evidence rows can ship as reference-only goal context
+- review user-facing summaries for non-prescriptive wording
+- approve do-not-ship/needs-research labels for contested face/body claims
+- decide whether any extra cited sources are required before public launch
+
+Current implemented baseline:
+
+- editable seed scaffold at `backend/app/data/attractiveness_evidence.seed.json`
+- backend API at `/api/attractiveness-evidence`
+- goal builder shows matched evidence notes with human-review gating
+
+Use:
+
+- `attractiveness-evidence-base.md`
+- `backend/app/data/attractiveness_evidence.seed.json`
+- `backend/scripts/validate_curation.py`
+
+Verification:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe scripts\validate_curation.py
+cd ..\frontend
+npm run test:attractiveness-evidence
+```
+
+## 5. Launch Privacy And Moderation Approvals
 
 Required input:
 
@@ -109,7 +140,7 @@ Verification:
 .\verify.ps1
 ```
 
-## 5. Procedure Taxonomy Review
+## 6. Procedure Taxonomy Review
 
 Required input:
 
@@ -135,7 +166,7 @@ cd ..\frontend
 npm run test:procedures
 ```
 
-## 6. Bloodwork Marker And Range Review
+## 7. Bloodwork Marker And Range Review
 
 Required input:
 

@@ -1,0 +1,227 @@
+{
+  "version": 1,
+  "reference": "Dummy review scaffold distilled from attractiveness-evidence-base.md; validate sources and wording before production.",
+  "notes": [
+    "Population-average rater preferences are not personal targets or health advice.",
+    "Entries marked ship-reference may be shown as cited reference context only, never as a prescription.",
+    "Entries marked do-not-ship or needs-research should be used to explain why the app avoids hard targets.",
+    "All rows require Dawson/content review before public launch."
+  ],
+  "sources": [
+    {
+      "id": "curras-bartolome-2004",
+      "title": "Female waist-to-hip ratio and attractiveness replication",
+      "year": 2004,
+      "url": "https://www.sciencedirect.com/science/article/abs/pii/S0191886904003617",
+      "sourceType": "peer-reviewed",
+      "reviewStatus": "first-pass verified"
+    },
+    {
+      "id": "donohoe-2009",
+      "title": "Body shape, proportionality, and attractiveness ratings",
+      "year": 2009,
+      "url": "https://www.researchgate.net/publication/46512237",
+      "sourceType": "peer-reviewed",
+      "reviewStatus": "first-pass verified"
+    },
+    {
+      "id": "xia-2025",
+      "title": "Male adiposity and attractiveness across three countries",
+      "year": 2025,
+      "url": "https://www.sciencedirect.com/science/article/abs/pii/S0191886925002028",
+      "sourceType": "peer-reviewed",
+      "reviewStatus": "emerging; needs replication review"
+    },
+    {
+      "id": "braun-bryan-2006",
+      "title": "Shoulder-to-waist context in short-term desirability ratings",
+      "year": 2006,
+      "url": "https://www.unm.edu/~abryan/articles/femalehipratio.pdf",
+      "sourceType": "peer-reviewed",
+      "reviewStatus": "first-pass verified"
+    },
+    {
+      "id": "kleisner-2023",
+      "title": "Facial averageness, dimorphism, and attractiveness across 10 populations",
+      "year": 2023,
+      "url": "https://www.sciencedirect.com/science/article/abs/pii/S1090513823000879",
+      "sourceType": "peer-reviewed",
+      "reviewStatus": "first-pass verified"
+    },
+    {
+      "id": "lee-2025",
+      "title": "Facial averageness and dimorphism in attractiveness ratings",
+      "year": 2025,
+      "url": "https://www.nature.com/articles/s41598-025-86974-0",
+      "sourceType": "peer-reviewed",
+      "reviewStatus": "first-pass verified"
+    },
+    {
+      "id": "jones-jaeger-2019",
+      "title": "Averageness, symmetry, and dimorphism effects in facial attractiveness",
+      "year": 2019,
+      "url": "https://www.mdpi.com/2073-8994/11/2/279",
+      "sourceType": "peer-reviewed",
+      "reviewStatus": "first-pass verified"
+    },
+    {
+      "id": "geniole-2015",
+      "title": "Facial width-to-height ratio meta-analysis",
+      "year": 2015,
+      "url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0132726",
+      "sourceType": "peer-reviewed",
+      "reviewStatus": "first-pass verified"
+    }
+  ],
+  "metrics": [
+    {
+      "id": "female-whr-reference",
+      "label": "Female waist-to-hip ratio reference",
+      "category": "Body proportions",
+      "goalPresetIds": [
+        "waist-hip-ratio"
+      ],
+      "metricKeys": [
+        "waistCircumference",
+        "hipCircumference"
+      ],
+      "verdict": "ship-reference",
+      "evidenceStrength": "replicated but nuanced",
+      "populationReference": "Female WHR near 0.7 appears in rater studies, but integrated proportionality matters more than a single ratio.",
+      "userFacingSummary": "Use WHR as population-average context, not as a personal ideal. The app should frame changes relative to the goal the user chose.",
+      "framing": "Reference only: never say a user should hit 0.7 or is deficient if they do not.",
+      "sourceIds": [
+        "curras-bartolome-2004",
+        "donohoe-2009"
+      ],
+      "requiresHumanReview": true,
+      "notes": [
+        "Avoid magic-number copy.",
+        "Show alongside waist and hip trends rather than as a standalone score."
+      ]
+    },
+    {
+      "id": "male-adiposity-emerging",
+      "label": "Male adiposity and BMI context",
+      "category": "Body composition",
+      "goalPresetIds": [
+        "stage-leaning",
+        "shoulder-waist-ratio"
+      ],
+      "metricKeys": [
+        "weight",
+        "waistCircumference"
+      ],
+      "verdict": "ship-reference",
+      "evidenceStrength": "emerging; one cross-cultural study",
+      "populationReference": "One 2025 study rated male bodies around BMI 23-27 and 13-14 percent body fat highest across three countries.",
+      "userFacingSummary": "For male physique goals, label leanness/adiposity context as emerging and avoid promising a universal ideal.",
+      "framing": "Planning context only; do not diagnose body fat or rank attractiveness.",
+      "sourceIds": [
+        "xia-2025"
+      ],
+      "requiresHumanReview": true,
+      "notes": [
+        "Needs replication with larger and more diverse stimulus sets.",
+        "Do not convert this into a mandatory weight target."
+      ]
+    },
+    {
+      "id": "male-shoulder-waist-context",
+      "label": "Male shoulder-to-waist context",
+      "category": "Body proportions",
+      "goalPresetIds": [
+        "shoulder-waist-ratio",
+        "lean-mass"
+      ],
+      "metricKeys": [
+        "waistCircumference",
+        "bideltoidCircumference"
+      ],
+      "verdict": "do-not-ship",
+      "evidenceStrength": "context-limited and controlled by adiposity in newer work",
+      "populationReference": "Existing shoulder-to-waist findings are context-limited and should not become a hard standalone target.",
+      "userFacingSummary": "Track shoulder and waist changes as the user-selected goal, but do not claim a researched ideal shoulder-to-waist ratio.",
+      "framing": "Useful training metric, not an attractiveness standard.",
+      "sourceIds": [
+        "braun-bryan-2006",
+        "xia-2025"
+      ],
+      "requiresHumanReview": true,
+      "notes": [
+        "Keep workout suggestions conservative and goal-relative.",
+        "Avoid short-term desirability framing in product copy."
+      ]
+    },
+    {
+      "id": "facial-averageness-reference",
+      "label": "Facial averageness",
+      "category": "Face",
+      "goalPresetIds": [
+        "face-measurements"
+      ],
+      "metricKeys": [],
+      "verdict": "ship-reference",
+      "evidenceStrength": "strongest replicated facial finding",
+      "populationReference": "Facial averageness is consistently associated with higher rater attractiveness across multiple studies and populations.",
+      "userFacingSummary": "Averageness is whole-face context, not a single face-measurement target. Keep face logs descriptive and local-only.",
+      "framing": "Reference concept only; do not generate a face score or optimization target.",
+      "sourceIds": [
+        "kleisner-2023",
+        "lee-2025",
+        "jones-jaeger-2019"
+      ],
+      "requiresHumanReview": true,
+      "notes": [
+        "Does not justify uploading face images.",
+        "Does not support per-feature prescriptions."
+      ]
+    },
+    {
+      "id": "female-facial-femininity-reference",
+      "label": "Female facial femininity",
+      "category": "Face",
+      "goalPresetIds": [
+        "face-measurements"
+      ],
+      "metricKeys": [],
+      "verdict": "ship-reference",
+      "evidenceStrength": "cross-cultural but modest",
+      "populationReference": "Female facial femininity is associated with attractiveness in the first-pass sources; male facial masculinity is weak or null.",
+      "userFacingSummary": "If mentioned, present this as modest population-level context and avoid applying it to every user or identity.",
+      "framing": "Informational only; no gender policing or identity inference.",
+      "sourceIds": [
+        "kleisner-2023",
+        "lee-2025",
+        "jones-jaeger-2019"
+      ],
+      "requiresHumanReview": true,
+      "notes": [
+        "Do not ship male facial masculinity as a target.",
+        "Keep this behind local-only face measurement framing."
+      ]
+    },
+    {
+      "id": "unsupported-popular-face-ratios",
+      "label": "Popular face-ratio claims",
+      "category": "Face",
+      "goalPresetIds": [
+        "face-measurements"
+      ],
+      "metricKeys": [],
+      "verdict": "needs-research",
+      "evidenceStrength": "not verified in first-pass research",
+      "populationReference": "Canthal tilt, facial thirds/fifths, golden-ratio claims, and fWHR targets did not have ship-quality support in the first pass.",
+      "userFacingSummary": "The app should explain that these are unsupported or contested instead of turning them into goals.",
+      "framing": "Use as a safety rail for looksmaxxing traffic.",
+      "sourceIds": [
+        "geniole-2015"
+      ],
+      "requiresHumanReview": true,
+      "notes": [
+        "Do not build presets from this row.",
+        "A dedicated follow-up research pass is needed before any popular ratio is promoted."
+      ]
+    }
+  ]
+}

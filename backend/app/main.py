@@ -3,6 +3,7 @@ import os
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.data.attractiveness_evidence import ATTRACTIVENESS_EVIDENCE
 from app.data.bloodwork import BLOODWORK_LIBRARY
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.entitlements import ENTITLEMENT_CONFIG
@@ -13,6 +14,7 @@ from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TAXONOMY, PROTOCO
 from app.data.procedures import PROCEDURE_LIBRARY
 from app.data.reference import REFERENCE_DATA
 from app.data.strategy_corpus import STRATEGY_CORPUS
+from app.models import AttractivenessEvidenceLibrary
 from app.models import BloodworkLibrary
 from app.models import ClothingSizeTables
 from app.models import ClientErrorReportRequest
@@ -149,6 +151,11 @@ def bloodwork_library() -> dict:
 @app.get("/api/strategy-corpus")
 def strategy_corpus() -> dict:
     return StrategyCorpusSeed.model_validate(STRATEGY_CORPUS).model_dump()
+
+
+@app.get("/api/attractiveness-evidence")
+def attractiveness_evidence() -> dict:
+    return AttractivenessEvidenceLibrary.model_validate(ATTRACTIVENESS_EVIDENCE).model_dump()
 
 
 @app.get("/api/measurement-guides")
