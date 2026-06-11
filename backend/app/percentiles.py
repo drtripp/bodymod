@@ -1,6 +1,12 @@
 from math import erf, sqrt
 
-from app.data.reference import REFERENCE_DATA, REFERENCE_DISTRIBUTIONS, REFERENCE_LABEL
+from app.data.reference import (
+    REFERENCE_DATA,
+    REFERENCE_DISTRIBUTIONS,
+    REFERENCE_FIELD_DATASET_IDS,
+    REFERENCE_FIELD_REFERENCES,
+    REFERENCE_LABEL,
+)
 from app.models import MeasurementSet, PercentileSummary
 
 
@@ -28,6 +34,8 @@ def estimate_percentiles(current: MeasurementSet) -> PercentileSummary:
         waistCircumference=percentiles["waistCircumference"],
         bideltoidCircumference=percentiles["bideltoidCircumference"],
         fields=percentiles,
+        fieldReferences=REFERENCE_FIELD_REFERENCES,
+        fieldDatasetIds=REFERENCE_FIELD_DATASET_IDS,
         reference=REFERENCE_LABEL,
         datasetId=REFERENCE_DATA["datasetId"],
     )

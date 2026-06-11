@@ -49,16 +49,24 @@ cd backend
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-## 3. Vetted Percentile Reference Data
+## 3. Broader Vetted Percentile Reference Data
 
 Required input:
 
-- selected reference population
+- selected reference population for fields not covered by the NHANES overlay
 - source URL and license
 - field mapping
 - unit conversion rules
 - production reference label
 - fixture outputs for tests
+
+Current implemented baseline:
+
+- NHANES August 2021-August 2023 adult height, weight, waist circumference, and
+  hip circumference are implemented in
+  `backend/app/data/reference.nhanes.seed.json`.
+- Unsupported schema fields still use the labeled scaffold in
+  `backend/app/data/reference.seed.json`.
 
 Use:
 

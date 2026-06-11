@@ -63,6 +63,8 @@ def test_match_endpoint_returns_ranked_explanations_and_reference() -> None:
     assert "reference" in payload["percentiles"]
     assert "ankleCircumference" in payload["percentiles"]["fields"]
     assert payload["percentiles"]["fields"]["height"] == payload["percentiles"]["height"]
+    assert "NHANES August 2021-August 2023" in payload["percentiles"]["fieldReferences"]["height"]
+    assert "Approximate adult reference model" in payload["percentiles"]["fieldReferences"]["ankleCircumference"]
 
 
 def test_match_endpoint_rate_limits_repeated_requests(monkeypatch) -> None:
@@ -305,19 +307,29 @@ def test_measurement_guides_endpoint_returns_field_guides() -> None:
     assert all(guide["illustration"] for guide in payload["guides"])
 
 
-def test_reference_data_endpoint_returns_schema_wide_dummy_seed() -> None:
+def test_reference_data_endpoint_returns_mixed_nhanes_and_scaffold_seed() -> None:
     response = client.get("/api/reference-data")
 
     assert response.status_code == 200
     payload = response.json()
 
     assert payload["version"] == REFERENCE_DATA["version"]
-    assert payload["datasetId"] == "bodymod-dummy-reference-v1"
-    assert "not NHANES-calibrated" in payload["reference"]
-    assert "Synthetic backend scaffold" in payload["source"]
+    assert payload["datasetId"] == "bodymod-dummy-reference-v1+nhanes-2021-2023-adult-anthropometry-v1"
+    assert "NHANES August 2021-August 2023 adults" in payload["reference"]
+    assert "Unsupported fields retain the existing synthetic scaffold" in payload["source"]
     assert {"height", "weight", "ankleCircumference", "wristCircumference"}.issubset(
         payload["fields"]
     )
+    assert payload["fields"]["height"]["isVetted"] is True
+    assert payload["fields"]["height"]["datasetId"] == "nhanes-2021-2023-adult-anthropometry-v1"
+    assert payload["fields"]["height"]["sourceTable"].startswith("Table 7")
+    assert payload["fields"]["height"]["male"]["mean"] == 175.1
+    assert payload["fields"]["height"]["female"]["mean"] == 161.2
+    assert payload["fields"]["weight"]["male"]["mean"] == 90.3
+    assert payload["fields"]["waistCircumference"]["female"]["mean"] == 97.9
+    assert payload["fields"]["hipCircumference"]["male"]["percentiles"]["95"] == 129.1
+    assert payload["fields"]["ankleCircumference"]["isVetted"] is False
+    assert payload["fields"]["ankleCircumference"]["datasetId"] == "bodymod-dummy-reference-v1"
     assert (
         payload["fields"]["height"]["male"]["mean"]
         > payload["fields"]["height"]["female"]["mean"]

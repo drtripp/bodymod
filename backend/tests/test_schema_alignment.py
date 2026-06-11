@@ -70,3 +70,9 @@ def test_reference_seed_covers_numeric_measurement_schema() -> None:
         assert distribution["unit"] == schema_field["unit"]
         assert float(distribution["min"]) == float(schema_field["min"])
         assert float(distribution["max"]) == float(schema_field["max"])
+        assert distribution["datasetId"]
+        assert distribution["reference"]
+
+    assert REFERENCE_DATA["fields"]["height"]["isVetted"] is True
+    assert REFERENCE_DATA["fields"]["waistCircumference"]["isVetted"] is True
+    assert REFERENCE_DATA["fields"]["ankleCircumference"]["isVetted"] is False

@@ -122,4 +122,8 @@ def test_estimated_percentiles_are_bounded() -> None:
     assert set(summary.fields) == numeric_fields
     assert all(1 <= percentile <= 99 for percentile in summary.fields.values())
     assert summary.fields["height"] == summary.height
-    assert "Approximate adult reference model" in summary.reference
+    assert "NHANES August 2021-August 2023 adults" in summary.reference
+    assert "NHANES August 2021-August 2023" in summary.fieldReferences["height"]
+    assert "Approximate adult reference model" in summary.fieldReferences["ankleCircumference"]
+    assert summary.fieldDatasetIds["height"] == "nhanes-2021-2023-adult-anthropometry-v1"
+    assert summary.fieldDatasetIds["ankleCircumference"] == "bodymod-dummy-reference-v1"

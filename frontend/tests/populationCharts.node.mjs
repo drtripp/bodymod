@@ -43,14 +43,23 @@ test("builds population metrics from backend reference data", () => {
         unit: "cm",
         min: 100,
         max: 250,
-        male: { mean: 180, sd: 8 },
-        female: { mean: 166, sd: 7 }
+        male: { mean: 180, sd: 8, n: 100 },
+        female: { mean: 166, sd: 7, n: 120 },
+        datasetId: "test-backed-source",
+        reference: "Test source adults",
+        sourceTable: "Table 1",
+        isVetted: true
       }
     }
   });
 
-  assert.equal(getPopulationMetric("height", metrics).label, "Stature");
-  assert.equal(getPopulationMetric("height", metrics).male.mean, 180);
+  const height = getPopulationMetric("height", metrics);
+  assert.equal(height.label, "Stature");
+  assert.equal(height.male.mean, 180);
+  assert.equal(height.male.n, 100);
+  assert.equal(height.datasetId, "test-backed-source");
+  assert.equal(height.isVetted, true);
+  assert.match(height.note, /Test source adults/);
   assert.ok(metrics.some((metric) => metric.key === "waistHipRatio"));
 });
 

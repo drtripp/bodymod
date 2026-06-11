@@ -2207,7 +2207,7 @@ test("exposes method, privacy, and strategy corpus content", async ({ page }) =>
   expect(methodologyPage).toContain("Similarity Score");
   expect(methodologyPage).toContain("Percentile Sources");
   expect(methodologyPage).toContain("Gender Score Charts");
-  expect(methodologyPage).toContain("Approximate adult reference model, not NHANES-calibrated");
+  expect(methodologyPage).toContain("NHANES August 2021-August 2023 adults for height, weight, waist, and hip");
   await expect(page.getByText("Share links encode measurement values")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Legal drafts" })).toContainText("Privacy");
   await expect(page.getByRole("link", { name: "Privacy" })).toHaveAttribute(

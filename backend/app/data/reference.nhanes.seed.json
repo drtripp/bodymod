@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "datasetId": "nhanes-2021-2023-adult-anthropometry-v1",
+  "label": "NHANES August 2021-August 2023 adult anthropometry supplement",
+  "reference": "NHANES August 2021-August 2023 adults age 20+",
+  "source": "Fryar CD, Gu Q, Afful J, Carroll MD, Ogden CL. Anthropometric Reference Data for Children and Adults: United States, August 2021-August 2023. Vital Health Stat 3. 2025 Jun;(50):1-28. DOI: 10.15620/cdc/174595.",
+  "sourceUrl": "https://www.ncbi.nlm.nih.gov/books/NBK620761/",
+  "retrievedAt": "2026-06-11",
+  "includedPopulation": "Civilian noninstitutionalized U.S. adults age 20 and older examined in NHANES August 2021-August 2023.",
+  "excludedPopulation": "Pregnant females are excluded from the published weight, waist, and hip adult tables. Children and adolescents are not used in this overlay.",
+  "sdMethod": "Standard deviation is estimated from the published 5th and 95th percentiles as (p95 - p5) / 3.2897 so the existing normal percentile helper can consume the source. Published NHANES percentiles remain stored with each field.",
+  "notes": [
+    "This overlay replaces only fields that directly match the app measurement schema and the published adult NHANES tables.",
+    "Unsupported schema fields continue to use the labeled dummy scaffold until ANSUR or another vetted source is implemented.",
+    "The source tables report weighted means and selected percentiles; sample counts are unweighted."
+  ],
+  "fields": {
+    "height": {
+      "sourceTable": "Table 7: Height in centimeters for adults age 20 and older",
+      "unit": "cm",
+      "male": {
+        "n": 2690,
+        "mean": 175.1,
+        "sd": 7.6,
+        "percentiles": { "5": 162.2, "10": 165.2, "15": 167.5, "25": 170.0, "50": 175.2, "75": 180.1, "85": 183.0, "90": 184.8, "95": 187.2 }
+      },
+      "female": {
+        "n": 3307,
+        "mean": 161.2,
+        "sd": 7.0,
+        "percentiles": { "5": 149.6, "10": 152.0, "15": 153.9, "25": 156.4, "50": 161.2, "75": 166.1, "85": 168.6, "90": 170.4, "95": 172.5 }
+      }
+    },
+    "weight": {
+      "sourceTable": "Table 3: Weight in kilograms for adults age 20 and older",
+      "unit": "kg",
+      "male": {
+        "n": 2688,
+        "mean": 90.3,
+        "sd": 21.6,
+        "percentiles": { "5": 60.9, "10": 66.6, "15": 70.0, "25": 75.4, "50": 86.6, "75": 100.6, "85": 111.0, "90": 118.8, "95": 131.8 }
+      },
+      "female": {
+        "n": 3254,
+        "mean": 77.9,
+        "sd": 20.8,
+        "percentiles": { "5": 50.7, "10": 54.7, "15": 57.8, "25": 62.6, "50": 73.5, "75": 89.2, "85": 99.9, "90": 107.2, "95": 119.2 }
+      }
+    },
+    "waistCircumference": {
+      "sourceTable": "Table 12: Waist circumference in centimeters for adults age 20 and older",
+      "unit": "cm",
+      "male": {
+        "n": 2605,
+        "mean": 103.0,
+        "sd": 16.4,
+        "percentiles": { "5": 79.3, "10": 83.5, "15": 86.8, "25": 91.4, "50": 100.9, "75": 112.3, "85": 119.8, "90": 124.3, "95": 133.2 }
+      },
+      "female": {
+        "n": 3121,
+        "mean": 97.9,
+        "sd": 16.8,
+        "percentiles": { "5": 73.8, "10": 77.0, "15": 80.0, "25": 84.9, "50": 95.7, "75": 109.2, "85": 116.9, "90": 121.5, "95": 129.2 }
+      }
+    },
+    "hipCircumference": {
+      "sourceTable": "Table 14: Hip circumference in centimeters for adults age 20 and older",
+      "unit": "cm",
+      "male": {
+        "n": 2569,
+        "mean": 105.6,
+        "sd": 12.0,
+        "percentiles": { "5": 89.5, "10": 92.6, "15": 94.5, "25": 97.7, "50": 103.6, "75": 110.8, "85": 115.8, "90": 120.7, "95": 129.1 }
+      },
+      "female": {
+        "n": 3098,
+        "mean": 109.8,
+        "sd": 14.8,
+        "percentiles": { "5": 89.7, "10": 92.9, "15": 95.5, "25": 98.6, "50": 106.8, "75": 118.1, "85": 126.0, "90": 131.5, "95": 138.4 }
+      }
+    }
+  }
+}

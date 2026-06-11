@@ -251,6 +251,7 @@ export default function PopulationPanel({ measurements, referenceData = null }) 
     () => buildGenderScoreRows(measurements, populationMetrics),
     [measurements, populationMetrics]
   );
+  const sourceBackedMetricCount = populationMetrics.filter((metric) => metric.isVetted).length;
   const genderScore = useMemo(
     () => aggregateGenderScore(measurements, populationMetrics),
     [measurements, populationMetrics]
@@ -332,7 +333,10 @@ export default function PopulationPanel({ measurements, referenceData = null }) 
                 ))}
               </tbody>
             </table>
-            <p className="muted-text">{genderRows.length} of {populationMetrics.length} metrics, including derived FFMI and frame index.</p>
+            <p className="muted-text">
+              {genderRows.length} of {populationMetrics.length} metrics, including derived FFMI and frame index.
+              {sourceBackedMetricCount ? ` ${sourceBackedMetricCount} metrics use source-backed NHANES adult tables.` : ""}
+            </p>
           </div>
         </div>
       ) : mode === "scatter" ? (

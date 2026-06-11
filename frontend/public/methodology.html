@@ -145,8 +145,8 @@
         <p class="lede">
           This page documents the current prototype math and data sources used
           by bodymod. It is written for inspection, not marketing. The current
-          target profiles, percentiles, and population charts are scaffolds
-          until the source-review work listed in the project backlog is done.
+          target profiles and many population-chart fields are scaffolds until
+          the source-review work listed in the project backlog is done.
         </p>
       </header>
 
@@ -154,8 +154,8 @@
         <h2>Current Status</h2>
         <ul>
           <li>Target profiles are placeholder estimates, not production reference data.</li>
-          <li>Percentiles use an approximate adult reference model and are not NHANES-calibrated.</li>
-          <li>Population charts use deterministic scaffold data for interface testing.</li>
+          <li>Height, weight, waist, and hip percentiles use NHANES August 2021-August 2023 adult tables.</li>
+          <li>Unsupported population-chart fields remain deterministic scaffold data for interface testing.</li>
           <li>Strategy corpus entries are informational and not advice, coaching, dosing, or protocol generation.</li>
         </ul>
       </section>
@@ -212,12 +212,20 @@
       <section>
         <h2>Percentile Sources</h2>
         <p>
-          Current percentiles are limited to height, waist circumference, and
-          bideltoid circumference. They use sex-specific normal-distribution
-          parameters from the scaffold in <code>backend/app/data/reference.py</code>.
-          The API response label remains:
+          Current percentile output is schema-wide, but not every field has the
+          same evidence level. Height, weight, waist circumference, and hip
+          circumference use official NHANES August 2021-August 2023 adult
+          tables. Other measurement fields still use sex-specific scaffold
+          normal-distribution parameters from <code>backend/app/data/reference.seed.json</code>.
+          The API response label is:
         </p>
-        <p><code>Approximate adult reference model, not NHANES-calibrated</code></p>
+        <p><code>NHANES August 2021-August 2023 adults for height, weight, waist, and hip; approximate scaffold for unsupported fields</code></p>
+        <p>
+          NHANES reports weighted means and selected percentiles. The app stores
+          the published percentiles and estimates a standard deviation from the
+          5th and 95th percentiles only so the current normal-percentile helper
+          can produce bounded approximate percentiles.
+        </p>
         <p>
           Production replacement requires a documented source, license review,
           field mapping, unit conversion rules, and validation fixtures. The

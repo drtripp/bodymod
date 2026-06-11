@@ -163,16 +163,16 @@ Still needed:
 
 Implemented:
 
-- approximate adult-reference percentile estimates for height, waist, and bideltoid circumference
-- explicit reference label noting the model is not NHANES-calibrated
+- mixed-reference percentile estimates with NHANES August 2021-August 2023 adult height, weight, waist, and hip overlays plus scaffold fallbacks for unsupported fields
+- field-level reference metadata and copy that distinguishes source-backed NHANES rows from scaffold estimates
 - percentile monotonicity and bounds tests
 - replacement data curation guide in `reference-data-curation.md`
 - public `/methodology.html` page documents the current percentile scaffold and production replacement caveat
 
 Still needed:
 
-- vetted reference-population data
-- documented production percentile methodology
+- ANSUR or equivalent vetted data for unsupported measurement fields
+- documented production percentile methodology for any fields promoted beyond scaffold status
 
 ### Local Tracking
 
@@ -271,7 +271,7 @@ Still needed:
 - admin or structured git workflow for reviewed corpus edits
 - source-reviewed bloodwork marker taxonomy, units, and reference ranges
 - production FoodData Central import/API pipeline and nutrient validation
-- vetted ANSUR, NHANES, or equivalent source tables for the population charts
+- vetted ANSUR or equivalent source tables for population-chart fields not covered by the partial NHANES overlay
 - production analytics decision
 - share-link privacy decision before public launch
 - launch gate decision record in `launch-decision-record.md`
@@ -305,7 +305,7 @@ Exit condition:
 
 ### Phase 2: Make Results More Trustworthy
 
-- replace approximate percentile logic with vetted population data
+- extend the partial NHANES percentile overlay with vetted population data for unsupported fields
 - expand the target library beyond placeholder profiles
 - document scoring and percentile methodology
 

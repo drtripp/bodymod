@@ -297,7 +297,8 @@ function numberOrFallback(value, fallback) {
 function normalizeDistribution(distribution = {}, fallback = {}) {
   return {
     mean: numberOrFallback(distribution.mean, fallback.mean ?? 0),
-    sd: Math.max(0.001, numberOrFallback(distribution.sd, fallback.sd ?? 1))
+    sd: Math.max(0.001, numberOrFallback(distribution.sd, fallback.sd ?? 1)),
+    n: Number.isFinite(Number(distribution.n)) ? Number(distribution.n) : fallback.n
   };
 }
 
@@ -319,6 +320,11 @@ export function buildPopulationMetrics(referenceData = fallbackPopulationReferen
   const fallbackFields = fallbackPopulationReference.fields;
   const baseMetrics = Object.entries(reference.fields).map(([key, field]) => {
     const fallbackField = fallbackFields[key] || field;
+    const sourceReference = String(field.reference || reference.reference || fallbackPopulationReference.reference);
+    const sourceTable = String(field.sourceTable || "");
+    const sourceNote = field.isVetted
+      ? `${sourceReference}${sourceTable ? ` / ${sourceTable}` : ""}`
+      : metricNotes[key] || "Backend dummy reference scaffold";
 
     return {
       key,
@@ -329,7 +335,11 @@ export function buildPopulationMetrics(referenceData = fallbackPopulationReferen
       male: normalizeDistribution(field.male, fallbackField.male),
       female: normalizeDistribution(field.female, fallbackField.female),
       scoreWeight: scoreWeights[key] ?? 0.3,
-      note: metricNotes[key] || "Backend dummy reference scaffold"
+      note: sourceNote,
+      reference: sourceReference,
+      datasetId: String(field.datasetId || reference.datasetId || fallbackPopulationReference.datasetId),
+      sourceTable,
+      isVetted: Boolean(field.isVetted)
     };
   });
 

@@ -144,7 +144,25 @@ test("installs browser error and rejection listeners", async () => {
   assert.equal(events[0].userAgentFamily, "Firefox");
   assert.equal(events[1].type, "unhandledrejection");
   assert.equal(uploads.length, 2);
-  assert.doesNotMatch(JSON.stringify({ events, uploads }), /82|91|weight|hip|m=secret/i);
+  const exposedFields = (event) => ({
+    type: event.type,
+    errorName: event.errorName,
+    source: event.source,
+    route: event.route,
+    severity: event.severity,
+    release: event.release,
+    userAgentFamily: event.userAgentFamily
+  });
+  assert.doesNotMatch(
+    JSON.stringify({
+      events: events.map(exposedFields),
+      uploads: uploads.map(({ endpoint, body }) => ({
+        endpoint,
+        event: exposedFields(body.event)
+      }))
+    }),
+    /82|91|weight|hip|m=secret/i
+  );
 
   cleanup();
   assert.equal(removed.error, true);

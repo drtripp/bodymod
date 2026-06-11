@@ -101,8 +101,8 @@ The main visual column uses tabs for the result, vs Target, and vs US Population
 tab owns the current silhouette, large top-match name, placeholder similarity
 score, runner-up match, and six compact metric blocks. The vs Target tab owns target comparison
 and snapshot diff output. The vs US Population tab owns first-draft scatter and
-normal-distribution reference plots backed by the backend dummy reference seed
-when available; it intentionally does not use silhouettes.
+normal-distribution reference plots backed by the backend mixed NHANES/scaffold
+reference seed when available; it intentionally does not use silhouettes.
 
 ## Current Backend API
 
@@ -119,9 +119,11 @@ Implemented endpoints:
 
 The backend seeds target data from `backend/app/data/targets.seed.json` into
 SQLite through `backend/app/repositories.py`.
-The backend serves dummy sex-specific reference distributions from
-`backend/app/data/reference.seed.json`; these cover every numeric measurement
-schema field for validation but remain explicitly not NHANES-calibrated.
+The backend serves mixed sex-specific reference distributions from
+`backend/app/data/reference.seed.json` plus
+`backend/app/data/reference.nhanes.seed.json`; NHANES August 2021-August 2023
+adult height, weight, waist, and hip fields are source-backed, while unsupported
+numeric schema fields retain explicitly marked scaffold distributions.
 Client error reports are stored through `ClientErrorRepository` as sanitized
 envelopes only; the model forbids raw message, stack, measurement, and form
 payload fields.
@@ -264,9 +266,11 @@ Source files:
 
 Status:
 
-- implemented as an approximate adult-reference model
-- explicitly labeled as not NHANES-calibrated
-- backend tests cover percentile monotonicity and bounds
+- implemented as a mixed adult-reference model
+- NHANES August 2021-August 2023 adult height, weight, waist, and hip overlays
+  are labeled per field; unsupported fields remain scaffold estimates
+- backend tests cover percentile monotonicity, bounds, and field-level source
+  metadata
 - production replacement standard exists in `reference-data-curation.md`
 
 Next:
@@ -312,7 +316,8 @@ Status:
 
 Next:
 
-- replace scaffold reference values with ANSUR, NHANES, or another approved source
+- extend scaffold reference values with ANSUR or another approved source for
+  fields not covered by the partial NHANES overlay
 - document source methods and percentile limitations
 
 ### Local Snapshot Store
@@ -559,7 +564,7 @@ Next:
 
 ### Next
 
-- replace approximate percentile formulas with vetted reference data
+- extend the partial NHANES reference overlay with vetted ANSUR or equivalent data
 - improve target data quality
 - continue no-backend/offline QA as new target-dependent features are added
 
