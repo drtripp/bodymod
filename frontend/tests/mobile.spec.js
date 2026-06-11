@@ -181,6 +181,8 @@ test.beforeEach(async ({ page }) => {
 test("keeps the dense workflow usable on a phone viewport", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "bodymod" })).toBeVisible();
   await expect(page.getByLabel("Theme")).toBeVisible();
+  await expect(page.getByLabel("Language")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Share current measurements" })).toHaveText(/\u2197/);
   await expect(page.getByRole("heading", { name: "Measurements", exact: true })).toBeVisible();
   await expect(page.locator(".workspace")).toHaveCSS("grid-template-columns", /390px|366px|358px|1fr/);
 

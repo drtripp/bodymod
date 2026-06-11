@@ -40,8 +40,15 @@ import { requestTrendNotificationPermission } from "./lib/notifications";
 import {
   applyThemePreference,
   loadThemePreference,
-  persistThemePreference
+  persistThemePreference,
+  themeOptions
 } from "./lib/theme";
+import {
+  createTranslator,
+  loadLocalePreference,
+  persistLocalePreference,
+  translatedLocaleOptions
+} from "./lib/i18n";
 import {
   fallbackEntitlementConfig,
   normalizeEntitlementConfig
@@ -85,6 +92,7 @@ export default function App() {
   const [insightTab, setInsightTab] = useState("result");
   const [activeSection, setActiveSection] = useState("body");
   const [theme, setTheme] = useState(() => loadThemePreference());
+  const [locale, setLocale] = useState(() => loadLocalePreference());
   const [isAccountPanelOpen, setIsAccountPanelOpen] = useState(false);
   const [isStrategyExplorerOpen, setIsStrategyExplorerOpen] = useState(false);
   const [clothingSizeTables, setClothingSizeTables] = useState(DEFAULT_CLOTHING_SIZE_TABLES);
@@ -163,11 +171,32 @@ export default function App() {
     handleCompareSnapshot,
     clearComparisonSnapshot
   } = comparison;
+  const t = createTranslator(locale);
+  const headerCopy = {
+    sectionAria: t("nav.section.aria"),
+    body: t("nav.section.body"),
+    diet: t("nav.section.diet"),
+    actionsAria: t("nav.actions.aria"),
+    themeAria: t("nav.theme.aria"),
+    localeAria: t("nav.locale.aria"),
+    accountAria: t("nav.account.aria"),
+    shareAria: t("nav.share.aria"),
+    buildPlan: t("nav.buildPlan")
+  };
+  const localizedThemeOptions = themeOptions.map((option) => ({
+    ...option,
+    label: t(`nav.theme.${option.id}`)
+  }));
+  const localizedLocaleOptions = translatedLocaleOptions(locale);
 
   useEffect(() => {
     applyThemePreference(theme);
     persistThemePreference(theme);
   }, [theme]);
+
+  useEffect(() => {
+    persistLocalePreference(locale);
+  }, [locale]);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -392,10 +421,10 @@ export default function App() {
   async function handleCopyShareLink() {
     try {
       await navigator.clipboard.writeText(shareUrl);
-      setShareStatus("Share link copied.");
+      setShareStatus(t("share.copied"));
       trackEvent("share_link_copied");
     } catch (error) {
-      setShareStatus("Copy failed. Select the URL manually.");
+      setShareStatus(t("share.copyFailed"));
     }
   }
 
@@ -413,11 +442,16 @@ export default function App() {
       ) : (
         <>
       <a className="skip-link" href="#main-content" onClick={handleSkipToMain}>
-        Skip to main content
+        {t("skip.main")}
       </a>
       <SiteHeader
         activeSection={activeSection}
+        copy={headerCopy}
+        locale={locale}
+        localeOptions={localizedLocaleOptions}
         theme={theme}
+        themeOptions={localizedThemeOptions}
+        onLocaleChange={setLocale}
         onSectionChange={setActiveSection}
         onThemeChange={setTheme}
         onOpenAccount={() => setIsAccountPanelOpen(true)}
@@ -431,7 +465,7 @@ export default function App() {
           <main id="main-content" className="workspace" tabIndex="-1">
             <section className="visual-column">
               <div className="insight-tabs panel">
-                <div className="tab-bar" role="tablist" aria-label="Result and comparison views">
+                <div className="tab-bar" role="tablist" aria-label={t("tabs.aria")}>
                   <button
                     className={`button ${insightTab === "result" ? "is-active" : ""}`}
                     type="button"
@@ -439,7 +473,7 @@ export default function App() {
                     aria-selected={insightTab === "result"}
                     onClick={() => setInsightTab("result")}
                   >
-                    Result
+                    {t("tabs.result")}
                   </button>
                   <button
                     className={`button ${insightTab === "target" ? "is-active" : ""}`}
@@ -448,7 +482,7 @@ export default function App() {
                     aria-selected={insightTab === "target"}
                     onClick={() => setInsightTab("target")}
                   >
-                    vs Target
+                    {t("tabs.target")}
                   </button>
                   <button
                     className={`button ${insightTab === "population" ? "is-active" : ""}`}
@@ -457,7 +491,7 @@ export default function App() {
                     aria-selected={insightTab === "population"}
                     onClick={() => setInsightTab("population")}
                   >
-                    Gender
+                    {t("tabs.population")}
                   </button>
                 </div>
 
@@ -545,12 +579,12 @@ export default function App() {
             className="strategy-explorer-shell"
             role="dialog"
             aria-modal="true"
-            aria-label="Strategy corpus explorer"
+            aria-label={t("strategy.dialog.aria")}
           >
             <button
               className="modal-close strategy-explorer-close"
               type="button"
-              aria-label="Close strategy explorer"
+              aria-label={t("strategy.close.aria")}
               onClick={() => setIsStrategyExplorerOpen(false)}
             >
               x

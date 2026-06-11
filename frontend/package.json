@@ -25,6 +25,7 @@
     "test:share-dashboard": "node --test tests/shareDashboard.node.mjs",
     "test:storage": "node --test tests/storageAdapter.node.mjs",
     "test:theme": "node --test tests/theme.node.mjs",
+    "test:i18n": "node --test tests/i18n.node.mjs",
     "test:snapshot-trends": "node --test tests/snapshotTrends.node.mjs",
     "test:history-import": "node --test tests/historyImport.node.mjs",
     "test:local-backup": "node --test tests/localBackup.node.mjs",

@@ -938,14 +938,24 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "bodymod" })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "cafe");
   await expect(page.getByLabel("Theme")).toHaveValue("cafe");
+  await expect(page.getByLabel("Language")).toHaveValue("en");
   await page.getByLabel("Theme").selectOption("graphite");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "graphite");
   expect(await page.evaluate(() => window.localStorage.getItem("bodymod:theme:v1"))).toBe(
     JSON.stringify("graphite")
   );
+  await page.getByLabel("Language").selectOption("es");
+  await expect(page.getByRole("button", { name: "Crear plan" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Cuerpo" })).toBeVisible();
+  expect(await page.evaluate(() => window.localStorage.getItem("bodymod:locale:v1"))).toBe(
+    JSON.stringify("es")
+  );
   await page.reload();
   await expect(page.getByRole("heading", { name: "bodymod" })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "graphite");
+  await expect(page.getByLabel("Idioma")).toHaveValue("es");
+  await page.getByLabel("Idioma").selectOption("en");
+  await expect(page.getByLabel("Language")).toHaveValue("en");
   await page.getByLabel("Theme").selectOption("cafe");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "cafe");
   await expect(page.getByRole("heading", { name: "Measurements", exact: true })).toBeVisible();

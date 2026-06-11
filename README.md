@@ -157,6 +157,7 @@ Implemented now:
 - shared measurement schema file for frontend field metadata and backend Pydantic validation
 - backend and Node schema tests for frontend/backend measurement alignment
 - backend and Node entitlement tests proving current data tools stay non-paywalled
+- persisted locale preference with a lightweight i18n message catalog for the top-level shell/header/navigation strings
 - Node accessibility contrast tests for cafe/graphite theme tokens and Playwright keyboard/accessibility semantics coverage
 - backend target-data and SQLite repository tests for IDs, schemas, and placeholder uncertainty notes
 - target profile template and curation guide for future production target data
@@ -178,6 +179,7 @@ Not implemented yet:
 - production FoodData Central import/API ownership; Diet currently has dummy backend USDA-style seed rows plus Open Food Facts lookup
 - source-reviewed procedure taxonomy and clinical/body-mod validation; current procedure data is a dummy review scaffold
 - source-reviewed bloodwork marker taxonomy, units, and reference ranges; current bloodwork data is a dummy local-only review scaffold
+- full app-wide translation coverage; current i18n work is top-level shell groundwork
 - full public measurement-guide coverage with reviewed illustrations and final copy
 - production error monitoring provider/enablement decision; sanitized first-party
   wiring exists but upload is disabled unless configured at build time

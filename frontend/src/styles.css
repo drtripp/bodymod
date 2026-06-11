@@ -207,9 +207,9 @@ textarea {
   position: relative;
 }
 
-.theme-select {
+.header-select {
   min-height: 40px;
-  width: 104px;
+  width: 112px;
 }
 
 .icon-button {

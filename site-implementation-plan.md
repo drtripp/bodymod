@@ -582,6 +582,7 @@ Next:
 - bloodwork marker/range data remains local-only and marked as a dummy review scaffold
 - local analytics and the share icon are implemented, with public-launch privacy decisions documented
 - cafe and graphite themes are available, persisted locally, and covered by tests
+- top-level shell locale preference and i18n catalog are available, persisted locally, and covered by tests
 - accessibility baseline is covered by skip-to-main navigation, visible focus
   rings, live status regions, form error associations, SVG chart descriptions,
   Escape-to-close dialogs, and contrast tests for both themes

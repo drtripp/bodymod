@@ -53,9 +53,12 @@ Protocol Tracker → Diet upgrades → Native app.
       the frontend measurement helpers import it directly and the backend
       builds the Pydantic `MeasurementSet` from it. Backend and Node tests keep
       the shared artifact covered.
-- [ ] i18n groundwork **(new)**: extract user-facing strings behind a
+- [x] i18n groundwork **(new)**: extract user-facing strings behind a
       lightweight i18n layer now, while the copy surface is small;
-      translations come later.
+      translations come later. Implemented as a persisted locale preference,
+      message catalog, fallback/interpolation helpers, and initial top-level
+      shell/header/tab wiring with English default and Spanish header preview.
+      Full app-wide copy extraction and translation remain future passes.
 
 ## 2. Reference Data & Scoring
 
