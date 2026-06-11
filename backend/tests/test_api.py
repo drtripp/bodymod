@@ -19,9 +19,14 @@ from app.data.planning import (
 from app.data.procedures import PROCEDURE_LIBRARY
 from app.data.reference import REFERENCE_DATA
 from app.data.strategy_corpus import STRATEGY_CORPUS
-from app.main import allowed_cors_origins, app
+from app.main import allowed_cors_origins, app, web_push_config_payload
 from app.measurement_schema import measurement_field_names
-from app.repositories import ClientErrorRepository, ProductAnalyticsRepository, load_target_seed
+from app.repositories import (
+    ClientErrorRepository,
+    ProductAnalyticsRepository,
+    WebPushSubscriptionRepository,
+    load_target_seed,
+)
 
 
 client = TestClient(app)
@@ -527,6 +532,85 @@ def test_product_analytics_endpoint_rejects_unsanitized_routes() -> None:
     response = client.post("/api/product-analytics", json=payload)
 
     assert response.status_code == 422
+
+
+def web_push_subscription_payload(endpoint: str = "https://push.example.test/subscriptions/abc") -> dict:
+    return {
+        "subscription": {
+            "endpoint": endpoint,
+            "expirationTime": None,
+            "keys": {
+                "p256dh": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef0123456789_-",
+                "auth": "abcdef0123456789_-",
+            },
+        },
+        "context": "trend-stale",
+        "userAgentFamily": "Chrome",
+        "createdAt": "2026-06-10T12:00:00.000Z",
+    }
+
+
+def test_web_push_config_requires_vapid_server_settings(monkeypatch) -> None:
+    monkeypatch.delenv("BODYMOD_WEB_PUSH_VAPID_PUBLIC_KEY", raising=False)
+    monkeypatch.delenv("BODYMOD_WEB_PUSH_VAPID_PRIVATE_KEY", raising=False)
+    monkeypatch.delenv("BODYMOD_WEB_PUSH_VAPID_SUBJECT", raising=False)
+
+    disabled = client.get("/api/web-push/config")
+
+    assert disabled.status_code == 200
+    assert disabled.json()["enabled"] is False
+    assert disabled.json()["vapidPublicKey"] == ""
+
+    monkeypatch.setenv("BODYMOD_WEB_PUSH_VAPID_PUBLIC_KEY", "public-test-key")
+    monkeypatch.setenv("BODYMOD_WEB_PUSH_VAPID_PRIVATE_KEY", "private-test-key")
+    monkeypatch.setenv("BODYMOD_WEB_PUSH_VAPID_SUBJECT", "mailto:ops@example.test")
+
+    enabled = web_push_config_payload()
+
+    assert enabled["enabled"] is True
+    assert enabled["vapidPublicKey"] == "public-test-key"
+
+
+def test_web_push_subscription_endpoint_stores_minimal_push_envelope() -> None:
+    endpoint = "https://push.example.test/subscriptions/test-api-1"
+    response = client.post("/api/web-push/subscriptions", json=web_push_subscription_payload(endpoint))
+
+    assert response.status_code == 202
+    payload = response.json()
+    assert payload["status"] == "accepted"
+    assert payload["stored"] is True
+    assert payload["endpointHash"]
+    assert payload["deliveryConfigured"] is False
+
+    subscriptions = [
+        subscription
+        for subscription in WebPushSubscriptionRepository().list_subscription_dicts()
+        if subscription["endpointHash"] == payload["endpointHash"]
+    ]
+    assert len(subscriptions) == 1
+    assert subscriptions[0]["context"] == "trend-stale"
+    assert subscriptions[0]["subscription"]["endpoint"] == endpoint
+    assert "measurements" not in subscriptions[0]["subscription"]
+
+    revoked = client.post(
+        "/api/web-push/subscriptions/unsubscribe",
+        json={"endpoint": endpoint, "createdAt": "2026-06-10T13:00:00.000Z"},
+    )
+
+    assert revoked.status_code == 200
+    assert revoked.json() == {"status": "revoked", "revoked": True}
+
+
+def test_web_push_subscription_rejects_measurement_or_unsafe_payloads() -> None:
+    payload = web_push_subscription_payload("https://push.example.test/subscriptions/test-api-2")
+    payload["subscription"]["measurements"] = TARGETS[0]["measurements"]
+
+    extra_field = client.post("/api/web-push/subscriptions", json=payload)
+    assert extra_field.status_code == 422
+
+    unsafe_endpoint = web_push_subscription_payload("http://push.example.test/subscriptions/test-api-2")
+    unsafe_response = client.post("/api/web-push/subscriptions", json=unsafe_endpoint)
+    assert unsafe_response.status_code == 422
 
 
 def share_dashboard_payload(title: str = "Mason bodymod dashboard") -> dict:

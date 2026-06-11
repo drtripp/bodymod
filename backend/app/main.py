@@ -33,8 +33,18 @@ from app.models import ShareDashboardPublicRecord
 from app.models import ShareDashboardRevokeRequest
 from app.models import ShareDashboardUpdateRequest
 from app.models import StrategyCorpusSeed
+from app.models import WebPushConfigResponse
+from app.models import WebPushSubscriptionRequest
+from app.models import WebPushSubscriptionResponse
+from app.models import WebPushUnsubscribeRequest
+from app.models import WebPushUnsubscribeResponse
 from app.rate_limit import enforce_match_rate_limit
-from app.repositories import ClientErrorRepository, ProductAnalyticsRepository, ShareDashboardRepository
+from app.repositories import (
+    ClientErrorRepository,
+    ProductAnalyticsRepository,
+    ShareDashboardRepository,
+    WebPushSubscriptionRepository,
+)
 from app.services import build_match_response, get_match_priorities, get_targets
 
 app = FastAPI(title="bodymod api", version="0.1.0")
@@ -53,6 +63,21 @@ def allowed_cors_origins() -> list[str]:
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
+
+
+def web_push_config_payload() -> dict[str, str | bool]:
+    public_key = os.getenv("BODYMOD_WEB_PUSH_VAPID_PUBLIC_KEY", "").strip()
+    private_key = os.getenv("BODYMOD_WEB_PUSH_VAPID_PRIVATE_KEY", "").strip()
+    subject = os.getenv("BODYMOD_WEB_PUSH_VAPID_SUBJECT", "").strip()
+    enabled = bool(public_key and private_key and subject)
+
+    return {
+        "enabled": enabled,
+        "vapidPublicKey": public_key if enabled else "",
+        "reason": ""
+        if enabled
+        else "Remote web push is disabled until VAPID public key, private key, and subject are configured.",
+    }
 
 
 app.add_middleware(
@@ -169,6 +194,35 @@ def report_client_error(request: ClientErrorReportRequest) -> dict:
 )
 def report_product_analytics(request: ProductAnalyticsReportRequest) -> dict:
     return ProductAnalyticsRepository().record_event(request.event)
+
+
+@app.get("/api/web-push/config", response_model=WebPushConfigResponse)
+def web_push_config() -> dict[str, str | bool]:
+    return web_push_config_payload()
+
+
+@app.post(
+    "/api/web-push/subscriptions",
+    response_model=WebPushSubscriptionResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def create_web_push_subscription(request: WebPushSubscriptionRequest) -> dict:
+    response = WebPushSubscriptionRepository().upsert_subscription(
+        request.subscription,
+        request.context,
+        request.userAgentFamily,
+        request.createdAt,
+    )
+    response["deliveryConfigured"] = bool(web_push_config_payload()["enabled"])
+    return response
+
+
+@app.post(
+    "/api/web-push/subscriptions/unsubscribe",
+    response_model=WebPushUnsubscribeResponse,
+)
+def revoke_web_push_subscription(request: WebPushUnsubscribeRequest) -> dict:
+    return WebPushSubscriptionRepository().revoke_subscription(request.endpoint)
 
 
 @app.post(

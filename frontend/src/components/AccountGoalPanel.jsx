@@ -164,7 +164,12 @@ import {
   summarizeReferralCredits,
   saveProWaitlistSignup
 } from "../lib/entitlements";
-import { sendTrendReminderNotificationIfDue } from "../lib/notifications";
+import {
+  loadNotificationPreference,
+  sendTrendReminderNotificationIfDue,
+  subscribeTrendPushNotifications,
+  unsubscribeTrendPushNotifications
+} from "../lib/notifications";
 import {
   buildShareDashboardPayload,
   clearShareDashboardState,
@@ -196,6 +201,27 @@ function protocolLabels(protocolIds, protocolTemplates) {
 function formatSignedDelta(value) {
   const sign = value > 0 ? "+" : "";
   return `${sign}${value.toFixed(1)}`;
+}
+
+function remotePushStatusLabel(status) {
+  switch (status) {
+    case "subscribed":
+      return "Remote stale-trend reminders are subscribed for this browser.";
+    case "permission-required":
+      return "Save Snapshot #1 and allow notifications before remote reminders can subscribe.";
+    case "not-configured":
+      return "Remote web push is not configured on this backend yet.";
+    case "unsupported":
+      return "Remote web push is not supported in this browser.";
+    case "unsubscribed":
+      return "Remote stale-trend reminders are unsubscribed for this browser.";
+    case "failed":
+      return "Remote reminder setup failed. Local reminders still work when this browser is open.";
+    case "checking":
+      return "Checking remote reminder support...";
+    default:
+      return "Local reminders work in this browser; remote push is optional.";
+  }
 }
 
 function protocolDelta(protocol, currentMeasurements) {
@@ -409,6 +435,9 @@ export default function AccountGoalPanel({
     loadShareDashboardState()
   );
   const [shareDashboardStatus, setShareDashboardStatus] = useState("");
+  const [remotePushStatus, setRemotePushStatus] = useState(
+    () => loadNotificationPreference().remotePushStatus
+  );
   const [proWaitlistEmail, setProWaitlistEmail] = useState("");
   const [proWaitlistStatus, setProWaitlistStatus] = useState("");
   const [referralCredits, setReferralCredits] = useState(() =>
@@ -1227,6 +1256,30 @@ export default function AccountGoalPanel({
 
     setCheckIns([nextCheckIn, ...checkIns]);
     setStatus("Weekly streak freeze used.");
+  }
+
+  async function handleEnableRemoteTrendPush() {
+    setRemotePushStatus("checking");
+    const result = await subscribeTrendPushNotifications();
+    setRemotePushStatus(result.preference.remotePushStatus);
+    setStatus(
+      result.subscribed
+        ? result.deliveryConfigured
+          ? "Remote stale-trend reminders subscribed for this browser."
+          : "Remote reminder subscription saved; server delivery still needs VAPID send configuration."
+        : remotePushStatusLabel(result.preference.remotePushStatus)
+    );
+  }
+
+  async function handleDisableRemoteTrendPush() {
+    setRemotePushStatus("checking");
+    const result = await unsubscribeTrendPushNotifications();
+    setRemotePushStatus(result.preference.remotePushStatus);
+    setStatus(
+      result.unsubscribed
+        ? "Remote stale-trend reminders unsubscribed for this browser."
+        : remotePushStatusLabel(result.preference.remotePushStatus)
+    );
   }
 
   function clearProtocolForm() {
@@ -2641,14 +2694,31 @@ export default function AccountGoalPanel({
                   </small>
                   <small>{weeklyStreak.freezeCount} freeze(s) used</small>
                 </div>
-                <button
-                  className="button"
-                  type="button"
-                  onClick={handleUseStreakFreeze}
-                  disabled={!weeklyStreak.freezeAvailable}
-                >
-                  Use weekly freeze
-                </button>
+                <div className="streak-actions">
+                  <button
+                    className="button"
+                    type="button"
+                    onClick={handleUseStreakFreeze}
+                    disabled={!weeklyStreak.freezeAvailable}
+                  >
+                    Use freeze
+                  </button>
+                  <button
+                    className="button"
+                    type="button"
+                    onClick={
+                      remotePushStatus === "subscribed"
+                        ? handleDisableRemoteTrendPush
+                        : handleEnableRemoteTrendPush
+                    }
+                    disabled={remotePushStatus === "checking"}
+                  >
+                    {remotePushStatus === "subscribed" ? "Disable reminders" : "Enable reminders"}
+                  </button>
+                </div>
+                <small className="remote-push-status" role="status" aria-live="polite">
+                  {remotePushStatusLabel(remotePushStatus)}
+                </small>
               </div>
               <div className="body-tea-panel" aria-label="Weekly body tea digest">
                 <h4>Your body tea</h4>

@@ -14,3 +14,11 @@ export const PRODUCT_ANALYTICS_ENDPOINT =
 
 export const PRODUCT_ANALYTICS_UPLOAD_ENABLED =
   import.meta.env?.VITE_PRODUCT_ANALYTICS_UPLOAD_ENABLED === "true";
+
+export const WEB_PUSH_CONFIG_ENDPOINT =
+  import.meta.env?.VITE_WEB_PUSH_CONFIG_ENDPOINT ||
+  `${API_BASE_URL}/api/web-push/config`;
+
+export const WEB_PUSH_SUBSCRIPTIONS_ENDPOINT =
+  import.meta.env?.VITE_WEB_PUSH_SUBSCRIPTIONS_ENDPOINT ||
+  `${API_BASE_URL}/api/web-push/subscriptions`;

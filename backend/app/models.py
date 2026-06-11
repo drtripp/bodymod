@@ -548,6 +548,71 @@ class ProductAnalyticsReportResponse(BaseModel):
     stored: bool = True
 
 
+class WebPushSubscriptionKeys(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    p256dh: str = Field(min_length=16, max_length=512, pattern=r"^[A-Za-z0-9_-]+={0,2}$")
+    auth: str = Field(min_length=8, max_length=128, pattern=r"^[A-Za-z0-9_-]+={0,2}$")
+
+
+class WebPushSubscriptionPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    endpoint: str = Field(min_length=16, max_length=600)
+    expirationTime: int | None = Field(default=None, ge=0)
+    keys: WebPushSubscriptionKeys
+
+    @field_validator("endpoint")
+    @classmethod
+    def require_https_endpoint(cls, value: str) -> str:
+        if "?" in value or "#" in value:
+            raise ValueError("Web push endpoint must not include query strings or fragments.")
+        if not value.startswith("https://"):
+            raise ValueError("Web push endpoint must use HTTPS.")
+        if not re.fullmatch(r"https://[A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]+", value):
+            raise ValueError("Web push endpoint contains unsupported characters.")
+        return value
+
+
+class WebPushSubscriptionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    subscription: WebPushSubscriptionPayload
+    context: Literal["trend-stale"] = "trend-stale"
+    userAgentFamily: str = Field(default="Unknown", max_length=40)
+    createdAt: str = Field(min_length=1, max_length=40)
+
+
+class WebPushUnsubscribeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    endpoint: str = Field(min_length=16, max_length=600)
+    createdAt: str = Field(min_length=1, max_length=40)
+
+    @field_validator("endpoint")
+    @classmethod
+    def require_https_endpoint(cls, value: str) -> str:
+        return WebPushSubscriptionPayload.require_https_endpoint(value)
+
+
+class WebPushSubscriptionResponse(BaseModel):
+    status: str = "accepted"
+    stored: bool = True
+    endpointHash: str
+    deliveryConfigured: bool = False
+
+
+class WebPushUnsubscribeResponse(BaseModel):
+    status: str = "revoked"
+    revoked: bool = True
+
+
+class WebPushConfigResponse(BaseModel):
+    enabled: bool
+    vapidPublicKey: str = ""
+    reason: str = ""
+
+
 class ShareDashboardSnapshot(BaseModel):
     id: str
     label: str = ""

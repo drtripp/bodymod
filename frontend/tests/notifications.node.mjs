@@ -2,12 +2,16 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   buildTrendReminderCopy,
+  fetchWebPushConfig,
   loadNotificationPreference,
   recordTrendReminderSent,
   registerTrendNotificationWorker,
   requestTrendNotificationPermission,
   sendTrendReminderNotificationIfDue,
-  shouldSendTrendReminder
+  shouldSendTrendReminder,
+  subscribeTrendPushNotifications,
+  unsubscribeTrendPushNotifications,
+  urlBase64ToUint8Array
 } from "../src/lib/notifications.js";
 import { createMemoryStorageAdapter } from "../src/lib/storageAdapter.js";
 
@@ -209,4 +213,179 @@ test("prefers service-worker delivery for stale trend notifications", async () =
   assert.equal(delivered.length, 1);
   assert.equal(delivered[0].title, "Trend data is stale");
   assert.equal(delivered[0].options.data.url, "/");
+});
+
+test("fetches web push config and decodes VAPID keys", async () => {
+  const config = await fetchWebPushConfig({
+    endpoint: "/api/web-push/config",
+    async fetcher(endpoint, options) {
+      assert.equal(endpoint, "/api/web-push/config");
+      assert.equal(options.headers.Accept, "application/json");
+      return {
+        ok: true,
+        async json() {
+          return {
+            enabled: true,
+            vapidPublicKey: "AQID",
+            reason: ""
+          };
+        }
+      };
+    }
+  });
+
+  assert.equal(config.enabled, true);
+  assert.deepEqual(Array.from(urlBase64ToUint8Array("AQID")), [1, 2, 3]);
+
+  const unavailable = await fetchWebPushConfig({
+    async fetcher() {
+      return { ok: false, status: 503 };
+    }
+  });
+
+  assert.equal(unavailable.enabled, false);
+  assert.equal(unavailable.reason, "config unavailable");
+});
+
+test("subscribes remote web push only after notification permission is granted", async () => {
+  const adapter = createMemoryStorageAdapter();
+  const blocked = await subscribeTrendPushNotifications({
+    adapter,
+    api: { permission: "denied" },
+    now: new Date("2026-06-10T12:00:00Z")
+  });
+
+  assert.equal(blocked.subscribed, false);
+  assert.equal(blocked.reason, "permission-required");
+  assert.equal(loadNotificationPreference(adapter).remotePushStatus, "permission-required");
+
+  let subscribeOptions = null;
+  const subscriptionPayload = {
+    endpoint: "https://push.example.test/subscriptions/browser-1",
+    expirationTime: null,
+    keys: {
+      p256dh: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef0123456789_-",
+      auth: "abcdef0123456789_-"
+    }
+  };
+  const registration = {
+    pushManager: {
+      async getSubscription() {
+        return null;
+      },
+      async subscribe(options) {
+        subscribeOptions = options;
+        return {
+          endpoint: subscriptionPayload.endpoint,
+          toJSON() {
+            return subscriptionPayload;
+          }
+        };
+      }
+    }
+  };
+  const serviceWorker = {
+    async register(workerUrl) {
+      assert.equal(workerUrl, "/trend-notification-worker.js");
+      return registration;
+    },
+    ready: Promise.resolve(registration)
+  };
+  const calls = [];
+  async function fetcher(endpoint, options = {}) {
+    calls.push({ endpoint, options });
+    if (endpoint === "/push-config") {
+      return {
+        ok: true,
+        async json() {
+          return {
+            enabled: true,
+            vapidPublicKey: "AQID",
+            reason: ""
+          };
+        }
+      };
+    }
+    return {
+      ok: true,
+      async json() {
+        return {
+          status: "accepted",
+          stored: true,
+          endpointHash: "abc123",
+          deliveryConfigured: true
+        };
+      }
+    };
+  }
+
+  const result = await subscribeTrendPushNotifications({
+    adapter,
+    api: { permission: "granted" },
+    serviceWorker,
+    fetcher,
+    navigatorRef: { userAgent: "Mozilla/5.0 Chrome/125.0" },
+    configEndpoint: "/push-config",
+    subscriptionsEndpoint: "/push-subscriptions",
+    now: new Date("2026-06-10T12:30:00Z")
+  });
+
+  const posted = JSON.parse(calls[1].options.body);
+  assert.equal(result.subscribed, true);
+  assert.equal(result.endpointHash, "abc123");
+  assert.equal(loadNotificationPreference(adapter).remotePushStatus, "subscribed");
+  assert.equal(loadNotificationPreference(adapter).remotePushEndpointHash, "abc123");
+  assert.equal(subscribeOptions.userVisibleOnly, true);
+  assert.deepEqual(Array.from(subscribeOptions.applicationServerKey), [1, 2, 3]);
+  assert.equal(calls[1].endpoint, "/push-subscriptions");
+  assert.equal(posted.context, "trend-stale");
+  assert.equal(posted.userAgentFamily, "Chrome");
+  assert.equal(posted.subscription.endpoint, subscriptionPayload.endpoint);
+  assert.equal(String(calls[1].options.body).includes("measurements"), false);
+});
+
+test("unsubscribes remote web push and revokes the backend endpoint", async () => {
+  const adapter = createMemoryStorageAdapter();
+  const calls = [];
+  let unsubscribed = false;
+  const registration = {
+    pushManager: {
+      async getSubscription() {
+        return {
+          endpoint: "https://push.example.test/subscriptions/browser-2",
+          async unsubscribe() {
+            unsubscribed = true;
+            return true;
+          }
+        };
+      }
+    }
+  };
+
+  const result = await unsubscribeTrendPushNotifications({
+    adapter,
+    serviceWorker: {
+      ready: Promise.resolve(registration)
+    },
+    subscriptionsEndpoint: "/push-subscriptions",
+    async fetcher(endpoint, options = {}) {
+      calls.push({ endpoint, options });
+      return {
+        ok: true,
+        async json() {
+          return { status: "revoked", revoked: true };
+        }
+      };
+    },
+    now: new Date("2026-06-10T13:00:00Z")
+  });
+
+  assert.equal(result.unsubscribed, true);
+  assert.equal(unsubscribed, true);
+  assert.equal(calls[0].endpoint, "/push-subscriptions/unsubscribe");
+  assert.equal(
+    JSON.parse(calls[0].options.body).endpoint,
+    "https://push.example.test/subscriptions/browser-2"
+  );
+  assert.equal(loadNotificationPreference(adapter).remotePushStatus, "unsubscribed");
 });

@@ -13,6 +13,7 @@ from app.models import (
     ProductAnalyticsEvent,
     ShareDashboardPayload,
     TargetProfile,
+    WebPushSubscriptionPayload,
 )
 
 
@@ -160,6 +161,10 @@ def utc_timestamp() -> str:
 
 def hash_revoke_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def hash_web_push_endpoint(endpoint: str) -> str:
+    return hashlib.sha256(endpoint.encode("utf-8")).hexdigest()
 
 
 class ShareDashboardRepository:
@@ -478,6 +483,135 @@ class ProductAnalyticsRepository:
                 anonymous_session_id TEXT NOT NULL,
                 payload_json TEXT NOT NULL,
                 received_at TEXT NOT NULL
+            )
+            """
+        )
+
+
+class WebPushSubscriptionRepository:
+    def __init__(self, db_path: Path | str | None = None) -> None:
+        self.db_path = Path(db_path) if db_path is not None else configured_database_path()
+
+    def upsert_subscription(
+        self,
+        subscription: WebPushSubscriptionPayload,
+        context: str,
+        user_agent_family: str,
+        created_at: str,
+    ) -> dict[str, Any]:
+        endpoint_hash = hash_web_push_endpoint(subscription.endpoint)
+        timestamp = utc_timestamp()
+        payload_json = json.dumps(
+            subscription.model_dump(mode="json"),
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            with connection:
+                connection.execute(
+                    """
+                    INSERT INTO web_push_subscriptions (
+                        endpoint_hash,
+                        context,
+                        user_agent_family,
+                        subscription_json,
+                        browser_created_at,
+                        created_at,
+                        updated_at,
+                        revoked_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
+                    ON CONFLICT(endpoint_hash) DO UPDATE SET
+                        context = excluded.context,
+                        user_agent_family = excluded.user_agent_family,
+                        subscription_json = excluded.subscription_json,
+                        browser_created_at = excluded.browser_created_at,
+                        updated_at = excluded.updated_at,
+                        revoked_at = NULL
+                    """,
+                    (
+                        endpoint_hash,
+                        context,
+                        user_agent_family,
+                        payload_json,
+                        created_at,
+                        timestamp,
+                        timestamp,
+                    ),
+                )
+
+        return {
+            "status": "accepted",
+            "stored": True,
+            "endpointHash": endpoint_hash,
+        }
+
+    def revoke_subscription(self, endpoint: str) -> dict[str, Any]:
+        endpoint_hash = hash_web_push_endpoint(endpoint)
+        timestamp = utc_timestamp()
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            with connection:
+                cursor = connection.execute(
+                    """
+                    UPDATE web_push_subscriptions
+                    SET revoked_at = ?, updated_at = ?
+                    WHERE endpoint_hash = ? AND revoked_at IS NULL
+                    """,
+                    (timestamp, timestamp, endpoint_hash),
+                )
+
+        return {"status": "revoked", "revoked": cursor.rowcount > 0}
+
+    def list_subscription_dicts(self, include_revoked: bool = False) -> list[dict[str, Any]]:
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            where_clause = "" if include_revoked else "WHERE revoked_at IS NULL"
+            rows = connection.execute(
+                f"""
+                SELECT endpoint_hash, context, user_agent_family, subscription_json,
+                       browser_created_at, created_at, updated_at, revoked_at
+                FROM web_push_subscriptions
+                {where_clause}
+                ORDER BY updated_at ASC, endpoint_hash ASC
+                """
+            ).fetchall()
+
+        return [
+            {
+                "endpointHash": row["endpoint_hash"],
+                "context": row["context"],
+                "userAgentFamily": row["user_agent_family"],
+                "subscription": json.loads(row["subscription_json"]),
+                "browserCreatedAt": row["browser_created_at"],
+                "createdAt": row["created_at"],
+                "updatedAt": row["updated_at"],
+                "revokedAt": row["revoked_at"],
+            }
+            for row in rows
+        ]
+
+    def _connect(self) -> sqlite3.Connection:
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        connection = sqlite3.connect(self.db_path)
+        connection.row_factory = sqlite3.Row
+        return connection
+
+    def _ensure_schema(self, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS web_push_subscriptions (
+                endpoint_hash TEXT PRIMARY KEY,
+                context TEXT NOT NULL,
+                user_agent_family TEXT NOT NULL,
+                subscription_json TEXT NOT NULL,
+                browser_created_at TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                revoked_at TEXT
             )
             """
         )

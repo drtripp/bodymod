@@ -53,6 +53,17 @@ names, sanitized routes, anonymous session IDs, release, and browser family.
 It does not accept arbitrary properties or measurement payloads. Do not enable
 external analytics until the provider and hosting decision is approved.
 
+Remote web-push subscription uses the backend defaults unless overridden:
+
+```bash
+set VITE_WEB_PUSH_CONFIG_ENDPOINT=https://api.example.com/api/web-push/config
+set VITE_WEB_PUSH_SUBSCRIPTIONS_ENDPOINT=https://api.example.com/api/web-push/subscriptions
+npm run build
+```
+
+The browser control stays inert unless notification permission is already
+granted and the backend reports enabled VAPID configuration.
+
 ## Backend
 
 Install and run the API:
@@ -97,6 +108,21 @@ set BODYMOD_TRUST_PROXY_HEADERS=1
 For multi-worker or multi-instance deployments, keep the app limit but add an
 edge or shared-store limiter at the proxy/platform layer because the in-process
 bucket is not shared across workers.
+
+## Remote Web Push
+
+The backend can store browser push subscriptions, but remote delivery is
+disabled until VAPID settings are present:
+
+```bash
+set BODYMOD_WEB_PUSH_VAPID_PUBLIC_KEY=<public-key>
+set BODYMOD_WEB_PUSH_VAPID_PRIVATE_KEY=<private-key>
+set BODYMOD_WEB_PUSH_VAPID_SUBJECT=mailto:ops@example.com
+```
+
+`GET /api/web-push/config` returns the public key only when all three values
+are configured. Subscription payloads are stored in SQLite for future
+stale-trend delivery jobs; they must not include measurements or account data.
 
 ## Dependency Updates
 

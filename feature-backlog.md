@@ -192,8 +192,12 @@ Protocol Tracker → Diet upgrades → Native app.
       granted. **Second web pass:** `frontend/public/trend-notification-worker.js`
       now registers after permission is granted and stale-trend reminders prefer
       service-worker `showNotification` delivery before falling back to the
-      direct browser `Notification` API. True remote web push subscriptions,
-      push server/VAPID setup, and native push remain open.
+      direct browser `Notification` API. **Third web pass:** backend now exposes
+      `/api/web-push/config` plus strict subscribe/unsubscribe endpoints backed
+      by SQLite, and the account panel can explicitly subscribe this browser
+      only when notifications are already granted and VAPID settings are
+      configured. Actual scheduled remote delivery workers and native push
+      remain open.
 
 ## 5. Protocol Tracker ("Build Plan" button)
 

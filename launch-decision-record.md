@@ -42,6 +42,19 @@ Rationale:
 - the implemented first-party analytics envelope has allowlisted event names,
   sanitized routes, anonymous session IDs, and no arbitrary properties
 
+### Remote Notifications
+
+Status: scaffolded, not enabled for public launch.
+
+Rationale:
+
+- local browser reminders exist without creating server-side user data custody
+- remote web push requires storing browser push endpoints and VAPID keys
+- the implemented subscription API accepts only the push subscription envelope,
+  user-agent family, timestamp, and trend-stale context
+- production launch still needs a delivery schedule, unsubscribe review, and
+  privacy copy before remote reminders are enabled
+
 ### Strategy Recommendations
 
 Status: not approved for current build.

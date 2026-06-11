@@ -869,9 +869,20 @@ textarea {
 
 .streak-panel {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(180px, 0.6fr) auto;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 10px;
   align-items: center;
+}
+
+.streak-panel .streak-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: end;
+}
+
+.remote-push-status {
+  grid-column: 1 / -1;
 }
 
 .body-tea-panel h4,
