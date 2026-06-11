@@ -361,7 +361,10 @@ Status:
   encrypted backup check-ins, and has a dedicated delete-cycle-logs action
 - first Snapshot #1 save asks for browser notification permission only after a
   successful save; notification preferences stay local and stale weekly
-  check-in reminders use data-decay framing rather than body judgment
+  check-in reminders use data-decay framing rather than body judgment;
+  `frontend/public/trend-notification-worker.js` handles service-worker
+  delivery/click focus when available, falling back to the direct browser
+  Notification API
 - account workspace supports passphrase-encrypted backup/restore through
   `frontend/src/lib/localBackup.js`; photos are exported as metadata manifests
   rather than image payloads

@@ -187,7 +187,11 @@ Protocol Tracker → Diet upgrades → Native app.
       successful Snapshot #1 save requests browser notification permission,
       stores a local notification preference, and an account-panel helper can
       send a once-per-day stale-trend reminder when permission is already
-      granted. Native push and service-worker delivery remain native-app scope.
+      granted. **Second web pass:** `frontend/public/trend-notification-worker.js`
+      now registers after permission is granted and stale-trend reminders prefer
+      service-worker `showNotification` delivery before falling back to the
+      direct browser `Notification` API. True remote web push subscriptions,
+      push server/VAPID setup, and native push remain open.
 
 ## 5. Protocol Tracker ("Build Plan" button)
 

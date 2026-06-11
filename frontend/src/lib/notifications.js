@@ -1,6 +1,7 @@
 import { readJsonSync, writeJsonSync } from "./storageAdapter.js";
 
 export const NOTIFICATION_PREFERENCE_KEY = "bodymod:notification-preferences:v1";
+export const TREND_NOTIFICATION_WORKER_URL = "/trend-notification-worker.js";
 
 export function defaultNotificationPreference() {
   return {
@@ -41,11 +42,46 @@ function notificationApi() {
   return window.Notification;
 }
 
+function serviceWorkerApi() {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+    return null;
+  }
+
+  return navigator.serviceWorker;
+}
+
+export async function registerTrendNotificationWorker({
+  serviceWorker = serviceWorkerApi(),
+  workerUrl = TREND_NOTIFICATION_WORKER_URL
+} = {}) {
+  if (!serviceWorker || typeof serviceWorker.register !== "function") {
+    return {
+      registered: false,
+      reason: "unsupported"
+    };
+  }
+
+  try {
+    const registration = await serviceWorker.register(workerUrl);
+    return {
+      registered: true,
+      registration
+    };
+  } catch (error) {
+    return {
+      registered: false,
+      reason: "failed"
+    };
+  }
+}
+
 export async function requestTrendNotificationPermission({
   context = "first-snapshot",
   now = new Date(),
   adapter,
-  api = notificationApi()
+  api = notificationApi(),
+  serviceWorker = serviceWorkerApi(),
+  workerUrl = TREND_NOTIFICATION_WORKER_URL
 } = {}) {
   const currentPreference = loadNotificationPreference(adapter);
   const currentPermission = api?.permission || "unsupported";
@@ -66,6 +102,10 @@ export async function requestTrendNotificationPermission({
   }
 
   if (currentPermission !== "default") {
+    if (currentPermission === "granted") {
+      void registerTrendNotificationWorker({ serviceWorker, workerUrl });
+    }
+
     return persistNotificationPreference(
       {
         ...basePreference,
@@ -77,6 +117,10 @@ export async function requestTrendNotificationPermission({
   }
 
   const requestedPermission = await api.requestPermission();
+  if (requestedPermission === "granted") {
+    void registerTrendNotificationWorker({ serviceWorker, workerUrl });
+  }
+
   return persistNotificationPreference(
     {
       ...basePreference,
@@ -136,17 +180,61 @@ export function recordTrendReminderSent(preference, now = new Date(), adapter) {
   );
 }
 
-export function sendTrendReminderNotificationIfDue({
+async function notificationRegistration({
+  registration,
+  serviceWorker = serviceWorkerApi(),
+  workerUrl = TREND_NOTIFICATION_WORKER_URL
+} = {}) {
+  if (registration && typeof registration.showNotification === "function") {
+    return registration;
+  }
+
+  const registrationResult = await registerTrendNotificationWorker({ serviceWorker, workerUrl });
+  if (
+    registrationResult.registration &&
+    typeof registrationResult.registration.showNotification === "function"
+  ) {
+    return registrationResult.registration;
+  }
+
+  if (serviceWorker?.ready && typeof serviceWorker.ready.then === "function") {
+    try {
+      const readyRegistration = await serviceWorker.ready;
+      if (readyRegistration && typeof readyRegistration.showNotification === "function") {
+        return readyRegistration;
+      }
+    } catch (error) {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+function trendNotificationOptions(copy) {
+  return {
+    body: copy.body,
+    tag: "bodymod-trend-stale",
+    renotify: false,
+    data: {
+      url: "/"
+    }
+  };
+}
+
+export async function sendTrendReminderNotificationIfDue({
   weeklyStreak,
   now = new Date(),
   adapter,
-  api = notificationApi()
+  api = notificationApi(),
+  registration,
+  serviceWorker = serviceWorkerApi(),
+  workerUrl = TREND_NOTIFICATION_WORKER_URL
 } = {}) {
   const preference = loadNotificationPreference(adapter);
 
   if (
-    !shouldSendTrendReminder(preference, weeklyStreak, now.getTime()) ||
-    typeof api !== "function"
+    !shouldSendTrendReminder(preference, weeklyStreak, now.getTime())
   ) {
     return {
       sent: false,
@@ -155,14 +243,48 @@ export function sendTrendReminderNotificationIfDue({
   }
 
   const copy = buildTrendReminderCopy(weeklyStreak);
-  new api(copy.title, {
-    body: copy.body,
-    tag: "bodymod-trend-stale",
-    renotify: false
+  const options = trendNotificationOptions(copy);
+  const serviceWorkerRegistration = await notificationRegistration({
+    registration,
+    serviceWorker,
+    workerUrl
   });
+
+  if (serviceWorkerRegistration) {
+    try {
+      await serviceWorkerRegistration.showNotification(copy.title, options);
+      return {
+        sent: true,
+        delivery: "service-worker",
+        copy,
+        preference: recordTrendReminderSent(preference, now, adapter)
+      };
+    } catch (error) {
+      // Fall through to the direct Notification API when service-worker delivery fails.
+    }
+  }
+
+  if (typeof api !== "function") {
+    return {
+      sent: false,
+      copy,
+      preference
+    };
+  }
+
+  try {
+    new api(copy.title, options);
+  } catch (error) {
+    return {
+      sent: false,
+      copy,
+      preference
+    };
+  }
 
   return {
     sent: true,
+    delivery: "notification-api",
     copy,
     preference: recordTrendReminderSent(preference, now, adapter)
   };

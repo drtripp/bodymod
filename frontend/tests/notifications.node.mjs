@@ -4,6 +4,7 @@ import {
   buildTrendReminderCopy,
   loadNotificationPreference,
   recordTrendReminderSent,
+  registerTrendNotificationWorker,
   requestTrendNotificationPermission,
   sendTrendReminderNotificationIfDue,
   shouldSendTrendReminder
@@ -21,12 +22,23 @@ test("requests browser notification permission once after first snapshot", async
       return "granted";
     }
   };
+  let registeredWorkerUrl = "";
+  const serviceWorker = {
+    async register(workerUrl) {
+      registeredWorkerUrl = workerUrl;
+      return { scope: "/" };
+    }
+  };
 
   const preference = await requestTrendNotificationPermission({
     adapter,
     api,
+    serviceWorker,
     context: "first-snapshot",
     now: new Date("2026-06-10T12:00:00Z")
+  });
+  await new Promise((resolve) => {
+    setTimeout(resolve, 0);
   });
 
   assert.equal(requestCount, 1);
@@ -34,10 +46,12 @@ test("requests browser notification permission once after first snapshot", async
   assert.equal(preference.permissionAsked, true);
   assert.equal(preference.firstAskedAt, "2026-06-10T12:00:00.000Z");
   assert.equal(loadNotificationPreference(adapter).lastAskedContext, "first-snapshot");
+  assert.equal(registeredWorkerUrl, "/trend-notification-worker.js");
 
   const secondPreference = await requestTrendNotificationPermission({
     adapter,
     api,
+    serviceWorker,
     context: "first-snapshot"
   });
 
@@ -104,7 +118,25 @@ test("throttles stale trend reminders to once per day", () => {
   assert.equal(shouldSendTrendReminder(updatedPreference, { status: "current" }, Date.now()), false);
 });
 
-test("sends a stale trend notification only when due and granted", () => {
+test("registers the trend notification service worker when supported", async () => {
+  let registeredWorkerUrl = "";
+  const result = await registerTrendNotificationWorker({
+    serviceWorker: {
+      async register(workerUrl) {
+        registeredWorkerUrl = workerUrl;
+        return { scope: "/" };
+      }
+    }
+  });
+  const unsupported = await registerTrendNotificationWorker({ serviceWorker: null });
+
+  assert.equal(result.registered, true);
+  assert.equal(registeredWorkerUrl, "/trend-notification-worker.js");
+  assert.equal(unsupported.registered, false);
+  assert.equal(unsupported.reason, "unsupported");
+});
+
+test("sends a stale trend notification through the direct API fallback", async () => {
   const adapter = createMemoryStorageAdapter();
   recordTrendReminderSent(
     {
@@ -119,23 +151,62 @@ test("sends a stale trend notification only when due and granted", () => {
     delivered.push({ title, options });
   }
 
-  const firstResult = sendTrendReminderNotificationIfDue({
+  const firstResult = await sendTrendReminderNotificationIfDue({
     adapter,
     api: Notification,
+    serviceWorker: null,
     weeklyStreak: { status: "needs-check-in" },
     now: new Date("2026-06-10T10:00:00Z")
   });
-  const secondResult = sendTrendReminderNotificationIfDue({
+  const secondResult = await sendTrendReminderNotificationIfDue({
     adapter,
     api: Notification,
+    serviceWorker: null,
     weeklyStreak: { status: "needs-check-in" },
     now: new Date("2026-06-10T12:00:00Z")
   });
 
   assert.equal(firstResult.sent, true);
+  assert.equal(firstResult.delivery, "notification-api");
   assert.equal(firstResult.copy.title, "Trend data is stale");
   assert.equal(secondResult.sent, false);
   assert.equal(delivered.length, 1);
   assert.equal(delivered[0].title, "Trend data is stale");
   assert.equal(delivered[0].options.tag, "bodymod-trend-stale");
+  assert.equal(delivered[0].options.data.url, "/");
+});
+
+test("prefers service-worker delivery for stale trend notifications", async () => {
+  const adapter = createMemoryStorageAdapter();
+  recordTrendReminderSent(
+    {
+      permission: "granted",
+      lastReminderAt: ""
+    },
+    new Date("2026-06-09T09:00:00Z"),
+    adapter
+  );
+  const delivered = [];
+  const directNotifications = [];
+
+  const result = await sendTrendReminderNotificationIfDue({
+    adapter,
+    api(title, options) {
+      directNotifications.push({ title, options });
+    },
+    registration: {
+      async showNotification(title, options) {
+        delivered.push({ title, options });
+      }
+    },
+    weeklyStreak: { status: "needs-check-in" },
+    now: new Date("2026-06-10T10:00:00Z")
+  });
+
+  assert.equal(result.sent, true);
+  assert.equal(result.delivery, "service-worker");
+  assert.equal(directNotifications.length, 0);
+  assert.equal(delivered.length, 1);
+  assert.equal(delivered[0].title, "Trend data is stale");
+  assert.equal(delivered[0].options.data.url, "/");
 });

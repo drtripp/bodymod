@@ -747,7 +747,7 @@ export default function AccountGoalPanel({
       return;
     }
 
-    sendTrendReminderNotificationIfDue({ weeklyStreak });
+    void sendTrendReminderNotificationIfDue({ weeklyStreak });
   }, [account?.id, weeklyStreak.latestAt, weeklyStreak.status]);
 
   const protocolSchemaSummary = useMemo(
