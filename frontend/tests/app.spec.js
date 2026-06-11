@@ -334,7 +334,10 @@ const exerciseLibrary = {
       difficulty: "beginner",
       instructions: ["Raise to shoulder height.", "Lower with control."],
       riskNotes: "Avoid painful shoulder ranges.",
-      source: "dummy-validation-seed"
+      source: "dummy-validation-seed",
+      sourceLicense: "placeholder; replace with open-licensed exercise source",
+      reviewStatus: "needs coach review",
+      movementPattern: "shoulder abduction"
     },
     {
       id: "lat-pulldown",
@@ -1705,6 +1708,9 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Workout library")).toContainText("Loaded 6 exercise seeds and 2 programs.");
   await expect(page.getByLabel("Aesthetic movement mapping")).toContainText("Shoulder width / delts");
   await expect(page.getByLabel("Program templates")).toContainText("Upper/lower foundation");
+  await expect(page.getByLabel("Selected workout movement details")).toContainText("Dumbbell lateral raise");
+  await expect(page.getByLabel("Selected workout movement details")).toContainText("Raise to shoulder height.");
+  await expect(page.getByLabel("Selected workout movement details")).toContainText("needs coach review");
   await page.getByLabel("Exercise").selectOption("dumbbell-lateral-raise");
   await page.getByLabel("Workout sets").fill("3");
   await page.getByLabel("Workout reps").fill("12");

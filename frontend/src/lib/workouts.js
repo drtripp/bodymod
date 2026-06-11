@@ -18,6 +18,11 @@ export function normalizeExerciseLibrary(library = {}) {
     notes: asArray(library.notes).map(String),
     exercises: asArray(library.exercises).map((exercise) => ({
       ...exercise,
+      movementPattern: String(exercise.movementPattern || ""),
+      riskNotes: String(exercise.riskNotes || ""),
+      source: String(exercise.source || ""),
+      sourceLicense: String(exercise.sourceLicense || ""),
+      reviewStatus: String(exercise.reviewStatus || ""),
       primaryMuscles: asArray(exercise.primaryMuscles).map(String),
       secondaryMuscles: asArray(exercise.secondaryMuscles).map(String),
       measurementTargets: asArray(exercise.measurementTargets).map(String),

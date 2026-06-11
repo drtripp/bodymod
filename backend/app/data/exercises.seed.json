@@ -1,0 +1,485 @@
+{
+  "version": 2,
+  "reference": "Dummy workout seed data file for user validation; replace with open-licensed imports such as wger or free-exercise-db before production.",
+  "notes": [
+    "Exercise choices are placeholders for product testing and persona walkthroughs.",
+    "Mappings connect aesthetic measurement deltas to likely muscle groups, not guaranteed outcomes.",
+    "Medical, injury, procedure-related, and pain-related routines require human review before use.",
+    "The seed is intentionally broad enough for account walkthroughs while keeping every item marked as non-production dummy data."
+  ],
+  "exercises": [
+    {
+      "id": "dumbbell-lateral-raise",
+      "label": "Dumbbell lateral raise",
+      "category": "Hypertrophy",
+      "movementPattern": "shoulder abduction",
+      "equipment": "Dumbbells",
+      "primaryMuscles": ["side delts"],
+      "secondaryMuscles": ["upper traps"],
+      "measurementTargets": ["bideltoidCircumference", "bideltoidWidth"],
+      "difficulty": "beginner",
+      "instructions": [
+        "Raise dumbbells to shoulder height with a slight elbow bend.",
+        "Pause briefly, then lower with control.",
+        "Keep load modest enough to avoid swinging."
+      ],
+      "riskNotes": "Avoid painful shoulder ranges; reduce load if traps dominate.",
+      "source": "dummy-validation-seed",
+      "sourceLicense": "placeholder; replace with open-licensed exercise source",
+      "reviewStatus": "needs coach review"
+    },
+    {
+      "id": "lat-pulldown",
+      "label": "Lat pulldown",
+      "category": "Hypertrophy",
+      "movementPattern": "vertical pull",
+      "equipment": "Cable machine",
+      "primaryMuscles": ["lats"],
+      "secondaryMuscles": ["biceps", "mid back"],
+      "measurementTargets": ["bideltoidCircumference", "armpitCircumference"],
+      "difficulty": "beginner",
+      "instructions": [
+        "Start tall with ribs down and grip just outside shoulder width.",
+        "Pull elbows toward the ribs without leaning far back.",
+        "Control the stretch at the top of each rep."
+      ],
+      "riskNotes": "Use a pain-free grip and avoid jerking from the shoulders.",
+      "source": "dummy-validation-seed",
+      "sourceLicense": "placeholder; replace with open-licensed exercise source",
+      "reviewStatus": "needs coach review"
+    },
+    {
+      "id": "romanian-deadlift",
+      "label": "Romanian deadlift",
+      "category": "Strength",
+      "movementPattern": "hip hinge",
+      "equipment": "Barbell or dumbbells",
+      "primaryMuscles": ["hamstrings", "glutes"],
+      "secondaryMuscles": ["spinal erectors", "upper back"],
+      "measurementTargets": ["hipCircumference", "upperThighCircumference"],
+      "difficulty": "intermediate",
+      "instructions": [
+        "Hinge at the hips with a soft knee bend.",
+        "Lower until hamstrings limit the range, then stand tall.",
+        "Keep the load close to the body."
+      ],
+      "riskNotes": "Not a rehab prescription; stop if low-back pain changes form.",
+      "source": "dummy-validation-seed",
+      "sourceLicense": "placeholder; replace with open-licensed exercise source",
+      "reviewStatus": "needs coach review"
+    },
+    {
+      "id": "split-squat",
+      "label": "Rear-foot elevated split squat",
+      "category": "Hypertrophy",
+      "movementPattern": "single-leg squat",
+      "equipment": "Bench and dumbbells",
+      "primaryMuscles": ["quads", "glutes"],
+      "secondaryMuscles": ["adductors", "calves"],
+      "measurementTargets": ["upperThighCircumference", "hipCircumference"],
+      "difficulty": "intermediate",
+      "instructions": [
+        "Set the rear foot on a bench and keep the front foot stable.",
+        "Lower under control until the front thigh is near parallel.",
+        "Drive through the front foot without bouncing."
+      ],
+      "riskNotes": "Scale range of motion for knee or hip irritation.",
+      "source": "dummy-validation-seed",
+      "sourceLicense": "placeholder; replace with open-licensed exercise source",
+      "reviewStatus": "needs coach review"
+    },
+    {
+      "id": "incline-press",
+      "label": "Incline dumbbell press",
+      "category": "Hypertrophy",
+      "movementPattern": "horizontal press",
+      "equipment": "Incline bench and dumbbells",
+      "primaryMuscles": ["upper chest"],
+      "secondaryMuscles": ["front delts", "triceps"],
+      "measurementTargets": ["nippleCircumference", "armpitCircumference"],
+      "difficulty": "beginner",
+      "instructions": [
+        "Set a low incline and press dumbbells over the upper chest.",
+        "Let elbows track below the wrists.",
+        "Lower until the shoulders remain comfortable."
+      ],
+      "riskNotes": "Use a neutral grip if shoulders feel pinchy.",
+      "source": "dummy-validation-seed",
+      "sourceLicense": "placeholder; replace with open-licensed exercise source",
+      "reviewStatus": "needs coach review"
+    },
+    {
+      "id": "calf-raise",
+      "label": "Standing calf raise",
+      "category": "Hypertrophy",
+      "movementPattern": "ankle plantar flexion",
+      "equipment": "Machine or dumbbells",
+      "primaryMuscles": ["calves"],
+      "secondaryMuscles": ["foot intrinsics"],
+      "measurementTargets": ["calfCircumference", "ankleCircumference"],
+      "difficulty": "beginner",
+      "instructions": [
+        "Pause briefly in the stretched bottom position.",
+        "Rise onto the ball of the foot without bouncing.",
+        "Use a full pain-free range."
+      ],
+      "riskNotes": "Progress slowly if Achilles tendon history exists.",
+      "source": "dummy-validation-seed",
+      "sourceLicense": "placeholder; replace with open-licensed exercise source",
+      "reviewStatus": "needs coach review"
+    },
+    {
+      "id": "seated-cable-row",
+      "label": "Seated cable row",
+      "category": "Hypertrophy",
+      "movementPattern": "horizontal pull",
+      "equipment": "Cable machine",
+      "primaryMuscles": ["mid back", "lats"],
+      "secondaryMuscles": ["rear delts", "biceps"],
+      "measurementTargets": ["armpitCircumference", "bideltoidCircumference"],
+      "difficulty": "beginner",
+      "instructions": [
+        "Sit tall and start each rep with the shoulder blades reaching forward.",
+        "Pull elbows back without shrugging.",
+        "Pause briefly before returning with control."
+      ],
+      "riskNotes": "Avoid yanking with the low back; reduce load if torso swing takes over.",
+      "source": "dummy-validation-seed",
+      "sourceLicense": "placeholder; replace with open-licensed exercise source",
+      "reviewStatus": "needs coach review"
+    },
+    {
+      "id": "hip-thrust",
+      "label": "Barbell hip thrust",
+      "category": "Hypertrophy",
+      "movementPattern": "hip extension",
+      "equipment": "Bench and barbell",
+      "primaryMuscles": ["glutes"],
+      "secondaryMuscles": ["hamstrings", "adductors"],
+      "measurementTargets": ["hipCircumference", "upperThighCircumference"],
+      "difficulty": "intermediate",
+      "instructions": [
+        "Set the upper back on a bench with feet planted.",
+        "Drive hips up until torso and thighs form a straight line.",
+        "Control the lowering phase and keep ribs down."
+      ],
+      "riskNotes": "Use padding and a stable bench; stop if low-back extension dominates.",
+      "source": "dummy-validation-seed",
+      "sourceLicense": "placeholder; replace with open-licensed exercise source",
+      "reviewStatus": "needs coach review"
+    },
+    {
+      "id": "lying-leg-curl",
+      "label": "Lying leg curl",
+      "category": "Hypertrophy",
+      "movementPattern": "knee flexion",
+      "equipment": "Leg curl machine",
+      "primaryMuscles": ["hamstrings"],
+      "secondaryMuscles": ["calves"],
+      "measurementTargets": ["upperThighCircumference", "midThighCircumference"],
+      "difficulty": "beginner",
+      "instructions": [
+        "Line the pad just above the heels.",
+        "Curl through a controlled range without lifting hips.",
+        "Lower slowly until the hamstrings are stretched."
+      ],
+      "riskNotes": "Keep range pain-free around the knee; do not force end range.",
+      "source": "dummy-validation-seed",
+      "sourceLicense": "placeholder; replace with open-licensed exercise source",
+      "reviewStatus": "needs coach review"
+    },
+    {
+      "id": "cable-face-pull",
+      "label": "Cable face pull",
+      "category": "Hypertrophy",
+      "movementPattern": "upper-back pull",
+      "equipment": "Cable rope",
+      "primaryMuscles": ["rear delts", "upper back"],
+      "secondaryMuscles": ["external rotators"],
+      "measurementTargets": ["bideltoidCircumference", "armpitCircumference"],
+      "difficulty": "beginner",
+      "instructions": [
+        "Set the cable around face height.",
+        "Pull the rope toward the face with elbows high.",
+        "Finish with shoulder blades squeezed without arching the back."
+      ],
+      "riskNotes": "Keep load light enough to avoid neck strain.",
+      "source": "dummy-validation-seed",
+      "sourceLicense": "placeholder; replace with open-licensed exercise source",
+      "reviewStatus": "needs coach review"
+    },
+    {
+      "id": "goblet-squat",
+      "label": "Goblet squat",
+      "category": "Strength",
+      "movementPattern": "squat",
+      "equipment": "Dumbbell or kettlebell",
+      "primaryMuscles": ["quads", "glutes"],
+      "secondaryMuscles": ["adductors", "core"],
+      "measurementTargets": ["upperThighCircumference", "hipCircumference"],
+      "difficulty": "beginner",
+      "instructions": [
+        "Hold the weight close to the chest.",
+        "Sit down between the hips while keeping feet planted.",
+        "Stand up without bouncing out of the bottom."
+      ],
+      "riskNotes": "Use a comfortable stance and reduce depth for hip or knee irritation.",
+      "source": "dummy-validation-seed",
+      "sourceLicense": "placeholder; replace with open-licensed exercise source",
+      "reviewStatus": "needs coach review"
+    },
+    {
+      "id": "assisted-pull-up",
+      "label": "Assisted pull-up",
+      "category": "Strength",
+      "movementPattern": "vertical pull",
+      "equipment": "Assisted pull-up machine or band",
+      "primaryMuscles": ["lats", "upper back"],
+      "secondaryMuscles": ["biceps", "rear delts"],
+      "measurementTargets": ["bideltoidCircumference", "armpitCircumference", "bicepCircumference"],
+      "difficulty": "intermediate",
+      "instructions": [
+        "Start from a controlled hang with assistance set high enough for clean reps.",
+        "Pull chest toward the bar without kicking.",
+        "Lower until arms are long while shoulders remain comfortable."
+      ],
+      "riskNotes": "Avoid painful overhead ranges and reduce range if shoulders pinch.",
+      "source": "dummy-validation-seed",
+      "sourceLicense": "placeholder; replace with open-licensed exercise source",
+      "reviewStatus": "needs coach review"
+    },
+    {
+      "id": "pallof-press",
+      "label": "Pallof press",
+      "category": "Core stability",
+      "movementPattern": "anti-rotation",
+      "equipment": "Cable or band",
+      "primaryMuscles": ["obliques", "deep core"],
+      "secondaryMuscles": ["glutes"],
+      "measurementTargets": ["waistCircumference"],
+      "difficulty": "beginner",
+      "instructions": [
+        "Stand sideways to the cable or band.",
+        "Press hands away from the chest without rotating.",
+        "Pause, then return with control."
+      ],
+      "riskNotes": "Core work does not spot-reduce waist size; waist change is mainly diet, body weight, and measurement trend.",
+      "source": "dummy-validation-seed",
+      "sourceLicense": "placeholder; replace with open-licensed exercise source",
+      "reviewStatus": "needs coach review"
+    },
+    {
+      "id": "incline-dumbbell-curl",
+      "label": "Incline dumbbell curl",
+      "category": "Hypertrophy",
+      "movementPattern": "elbow flexion",
+      "equipment": "Incline bench and dumbbells",
+      "primaryMuscles": ["biceps"],
+      "secondaryMuscles": ["forearms"],
+      "measurementTargets": ["bicepCircumference", "upperForearmCircumference"],
+      "difficulty": "beginner",
+      "instructions": [
+        "Set a low incline and let arms hang comfortably.",
+        "Curl without moving the upper arm forward.",
+        "Lower slowly to a comfortable stretch."
+      ],
+      "riskNotes": "Avoid aggressive stretching if elbows or biceps tendons are irritated.",
+      "source": "dummy-validation-seed",
+      "sourceLicense": "placeholder; replace with open-licensed exercise source",
+      "reviewStatus": "needs coach review"
+    },
+    {
+      "id": "rope-triceps-pressdown",
+      "label": "Rope triceps pressdown",
+      "category": "Hypertrophy",
+      "movementPattern": "elbow extension",
+      "equipment": "Cable rope",
+      "primaryMuscles": ["triceps"],
+      "secondaryMuscles": ["forearms"],
+      "measurementTargets": ["bicepCircumference", "upperForearmCircumference"],
+      "difficulty": "beginner",
+      "instructions": [
+        "Pin elbows near the sides.",
+        "Press the rope down until elbows straighten comfortably.",
+        "Return under control without letting shoulders roll forward."
+      ],
+      "riskNotes": "Use a pain-free elbow range and avoid locking out aggressively.",
+      "source": "dummy-validation-seed",
+      "sourceLicense": "placeholder; replace with open-licensed exercise source",
+      "reviewStatus": "needs coach review"
+    }
+  ],
+  "muscleTargets": [
+    {
+      "id": "shoulder-width",
+      "label": "Shoulder width / delts",
+      "measurementTargets": ["bideltoidCircumference", "bideltoidWidth"],
+      "muscleGroups": ["side delts", "lats", "upper back"],
+      "exerciseIds": ["dumbbell-lateral-raise", "lat-pulldown", "assisted-pull-up", "cable-face-pull"],
+      "rationale": "Deltoid and upper-back work are the most direct trainable inputs for shoulder visual width."
+    },
+    {
+      "id": "waist-contrast",
+      "label": "Waist contrast support",
+      "measurementTargets": ["waistCircumference", "bideltoidCircumference"],
+      "muscleGroups": ["side delts", "lats", "deep core"],
+      "exerciseIds": ["dumbbell-lateral-raise", "lat-pulldown", "pallof-press"],
+      "rationale": "Shoulder/back development can improve shoulder-to-waist contrast while waist change is mostly diet and measurement trend."
+    },
+    {
+      "id": "hip-thigh-shape",
+      "label": "Hip and thigh shape",
+      "measurementTargets": ["hipCircumference", "upperThighCircumference", "midThighCircumference"],
+      "muscleGroups": ["glutes", "hamstrings", "quads"],
+      "exerciseIds": ["romanian-deadlift", "split-squat", "hip-thrust", "lying-leg-curl", "goblet-squat"],
+      "rationale": "Glute, hamstring, and quad training are trainable contributors to hip and thigh circumference changes."
+    },
+    {
+      "id": "calf-size",
+      "label": "Calf size",
+      "measurementTargets": ["calfCircumference", "ankleCircumference"],
+      "muscleGroups": ["calves"],
+      "exerciseIds": ["calf-raise"],
+      "rationale": "Calf circumference is mostly tracked through direct calf training and body-weight context."
+    },
+    {
+      "id": "arm-size",
+      "label": "Arm size",
+      "measurementTargets": ["bicepCircumference", "upperForearmCircumference"],
+      "muscleGroups": ["biceps", "triceps", "forearms"],
+      "exerciseIds": ["incline-dumbbell-curl", "rope-triceps-pressdown", "assisted-pull-up"],
+      "rationale": "Upper-arm and forearm circumference are trainable through elbow flexion, elbow extension, and pulling volume."
+    },
+    {
+      "id": "upper-back-posture",
+      "label": "Upper back posture support",
+      "measurementTargets": ["armpitCircumference", "bideltoidCircumference"],
+      "muscleGroups": ["mid back", "rear delts", "external rotators"],
+      "exerciseIds": ["seated-cable-row", "cable-face-pull", "lat-pulldown"],
+      "rationale": "Rows and rear-delt work can support upper-back development and more repeatable posing without claiming structural change."
+    }
+  ],
+  "programTemplates": [
+    {
+      "id": "upper-lower-foundation",
+      "label": "Upper/lower foundation",
+      "goalIds": ["shoulder-waist-ratio", "lean-mass"],
+      "summary": "Four-day seed template for delts, back, legs, and repeatable progression logs.",
+      "days": [
+        {
+          "label": "Upper A",
+          "exercises": [
+            {"exerciseId": "incline-press", "sets": 3, "reps": "8-12"},
+            {"exerciseId": "lat-pulldown", "sets": 3, "reps": "8-12"},
+            {"exerciseId": "dumbbell-lateral-raise", "sets": 4, "reps": "12-20"}
+          ]
+        },
+        {
+          "label": "Lower A",
+          "exercises": [
+            {"exerciseId": "romanian-deadlift", "sets": 3, "reps": "6-10"},
+            {"exerciseId": "split-squat", "sets": 3, "reps": "8-12"},
+            {"exerciseId": "calf-raise", "sets": 4, "reps": "10-20"}
+          ]
+        },
+        {
+          "label": "Upper B",
+          "exercises": [
+            {"exerciseId": "seated-cable-row", "sets": 3, "reps": "8-12"},
+            {"exerciseId": "cable-face-pull", "sets": 3, "reps": "12-20"},
+            {"exerciseId": "incline-dumbbell-curl", "sets": 3, "reps": "10-15"}
+          ]
+        },
+        {
+          "label": "Lower B",
+          "exercises": [
+            {"exerciseId": "goblet-squat", "sets": 3, "reps": "8-12"},
+            {"exerciseId": "hip-thrust", "sets": 3, "reps": "8-12"},
+            {"exerciseId": "lying-leg-curl", "sets": 3, "reps": "10-15"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shape-recomp-starter",
+      "label": "Shape recomp starter",
+      "goalIds": ["waist-hip-ratio", "stage-leaning", "weekly-check-in"],
+      "summary": "Three-session seed template that pairs waist trend tracking with glute, thigh, and upper-back work.",
+      "days": [
+        {
+          "label": "Full body A",
+          "exercises": [
+            {"exerciseId": "split-squat", "sets": 3, "reps": "8-12"},
+            {"exerciseId": "lat-pulldown", "sets": 3, "reps": "8-12"},
+            {"exerciseId": "pallof-press", "sets": 3, "reps": "10-15"}
+          ]
+        },
+        {
+          "label": "Full body B",
+          "exercises": [
+            {"exerciseId": "romanian-deadlift", "sets": 3, "reps": "6-10"},
+            {"exerciseId": "incline-press", "sets": 3, "reps": "8-12"},
+            {"exerciseId": "dumbbell-lateral-raise", "sets": 3, "reps": "12-20"}
+          ]
+        },
+        {
+          "label": "Full body C",
+          "exercises": [
+            {"exerciseId": "hip-thrust", "sets": 3, "reps": "8-12"},
+            {"exerciseId": "seated-cable-row", "sets": 3, "reps": "8-12"},
+            {"exerciseId": "calf-raise", "sets": 3, "reps": "12-20"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "glute-leg-foundation",
+      "label": "Glute/leg foundation",
+      "goalIds": ["waist-hip-ratio", "lean-mass"],
+      "summary": "Lower-body emphasis seed template for hip and thigh tracking without claiming spot shaping.",
+      "days": [
+        {
+          "label": "Glute focus",
+          "exercises": [
+            {"exerciseId": "hip-thrust", "sets": 4, "reps": "8-12"},
+            {"exerciseId": "romanian-deadlift", "sets": 3, "reps": "6-10"},
+            {"exerciseId": "pallof-press", "sets": 3, "reps": "10-15"}
+          ]
+        },
+        {
+          "label": "Thigh focus",
+          "exercises": [
+            {"exerciseId": "goblet-squat", "sets": 3, "reps": "8-12"},
+            {"exerciseId": "split-squat", "sets": 3, "reps": "8-12"},
+            {"exerciseId": "lying-leg-curl", "sets": 3, "reps": "10-15"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shoulder-arm-focus",
+      "label": "Shoulder/arm focus",
+      "goalIds": ["shoulder-waist-ratio", "lean-mass"],
+      "summary": "Upper-body emphasis seed template for shoulder, back, and arm circumference logging.",
+      "days": [
+        {
+          "label": "Shoulders and back",
+          "exercises": [
+            {"exerciseId": "assisted-pull-up", "sets": 3, "reps": "5-8"},
+            {"exerciseId": "seated-cable-row", "sets": 3, "reps": "8-12"},
+            {"exerciseId": "dumbbell-lateral-raise", "sets": 4, "reps": "12-20"},
+            {"exerciseId": "cable-face-pull", "sets": 3, "reps": "12-20"}
+          ]
+        },
+        {
+          "label": "Chest and arms",
+          "exercises": [
+            {"exerciseId": "incline-press", "sets": 3, "reps": "8-12"},
+            {"exerciseId": "incline-dumbbell-curl", "sets": 3, "reps": "10-15"},
+            {"exerciseId": "rope-triceps-pressdown", "sets": 3, "reps": "10-15"}
+          ]
+        }
+      ]
+    }
+  ]
+}

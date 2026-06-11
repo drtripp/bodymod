@@ -381,8 +381,12 @@ land. No social features, no marketplace.
 
 - [x] Exercise database seed scaffold: backend serves dummy validation
       exercises tagged by muscle group, equipment, difficulty, risk notes, and
-      measurement target. Production still needs replacement with an
-      open-licensed dataset such as wger or free-exercise-db.
+      measurement target. The seed now lives in
+      `backend/app/data/exercises.seed.json`, validates measurement-field and
+      exercise references at load time, and exposes per-exercise
+      instructions/source-review notes in the account workspace. Production
+      still needs replacement with an open-licensed dataset such as wger or
+      free-exercise-db.
 - [x] Aesthetics→exercise mapping: target measurement deltas → muscle groups
       → suggested exercises/programs, with conservative training-level copy.
 - [x] Session logger: local-first sets/reps/load/RPE/notes with quick-repeat of

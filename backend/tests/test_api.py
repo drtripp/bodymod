@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from app.data.bloodwork import BLOODWORK_LIBRARY
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.entitlements import ENTITLEMENT_CONFIG
-from app.data.exercises import EXERCISE_LIBRARY
+from app.data.exercises import EXERCISE_LIBRARY, EXERCISE_SEED_PATH
 from app.data.food_usda import USDA_FOOD_LIBRARY
 from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TEMPLATES
@@ -151,16 +151,30 @@ def test_exercise_library_endpoint_returns_seeded_programs() -> None:
     response = client.get("/api/exercise-library")
 
     assert response.status_code == 200
+    assert EXERCISE_SEED_PATH.exists()
     payload = response.json()
     exercise_ids = {exercise["id"] for exercise in payload["exercises"]}
     program_ids = {program["id"] for program in payload["programTemplates"]}
 
     assert payload["version"] == EXERCISE_LIBRARY["version"]
     assert "Dummy workout seed data" in payload["reference"]
+    assert len(payload["exercises"]) >= 12
+    assert len(payload["programTemplates"]) >= 4
     assert {"dumbbell-lateral-raise", "lat-pulldown", "romanian-deadlift"}.issubset(
         exercise_ids
     )
-    assert {"upper-lower-foundation", "shape-recomp-starter"}.issubset(program_ids)
+    assert {
+        "upper-lower-foundation",
+        "shape-recomp-starter",
+        "glute-leg-foundation",
+        "shoulder-arm-focus",
+    }.issubset(program_ids)
+
+    for exercise in payload["exercises"]:
+        assert exercise["measurementTargets"]
+        assert exercise["riskNotes"]
+        assert exercise["sourceLicense"]
+        assert exercise["reviewStatus"]
 
     for target in payload["muscleTargets"]:
         assert set(target["exerciseIds"]).issubset(exercise_ids)

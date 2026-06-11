@@ -3630,6 +3630,35 @@ export default function AccountGoalPanel({
                     ))}
                   </select>
                 </label>
+                {selectedExercise ? (
+                  <div className="exercise-detail-card" aria-label="Selected workout movement details">
+                    <div>
+                      <strong>{selectedExercise.label}</strong>
+                      <span>
+                        {[
+                          selectedExercise.category,
+                          selectedExercise.movementPattern,
+                          selectedExercise.equipment,
+                          selectedExercise.difficulty
+                        ]
+                          .filter(Boolean)
+                          .join(" / ")}
+                      </span>
+                    </div>
+                    {selectedExercise.instructions.length ? (
+                      <ol>
+                        {selectedExercise.instructions.map((instruction) => (
+                          <li key={instruction}>{instruction}</li>
+                        ))}
+                      </ol>
+                    ) : null}
+                    <p>{selectedExercise.riskNotes}</p>
+                    <small>
+                      {selectedExercise.reviewStatus || "Needs source review"} /{" "}
+                      {selectedExercise.sourceLicense || selectedExercise.source || "dummy seed"}
+                    </small>
+                  </div>
+                ) : null}
                 <label className="field">
                   <span className="field-label">Sets</span>
                   <input

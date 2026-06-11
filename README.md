@@ -142,6 +142,7 @@ Implemented now:
 - backend-served free/pro entitlement config, with all current tracking/data/export tools free
 - local-only Pro waitlist capture and blurred Pro preview cards in the account panel
 - local-only honest referral scaffold with stable invite codes, future Pro-credit records, backup/export support, and no feature gating
+- backend workout seed file with validation-only exercises, programs, risk/source notes, and selected-exercise instructions in the account workspace
 - outcome-first strategy explorer with one efficacy/risk graph per desired outcome
 - strategy explorer opens as an overlay from the main header action
 - clickable strategy dots with synopsis modal and dedicated strategy detail view

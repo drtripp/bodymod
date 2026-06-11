@@ -18,8 +18,12 @@ const library = normalizeExerciseLibrary({
     {
       id: "dumbbell-lateral-raise",
       label: "Dumbbell lateral raise",
+      movementPattern: "shoulder abduction",
       primaryMuscles: ["side delts"],
-      measurementTargets: ["bideltoidCircumference"]
+      measurementTargets: ["bideltoidCircumference"],
+      riskNotes: "Avoid painful ranges.",
+      sourceLicense: "placeholder exercise source",
+      reviewStatus: "needs coach review"
     },
     {
       id: "split-squat",
@@ -76,6 +80,14 @@ test("maps goal target metrics to exercise targets and programs", () => {
   assert.equal(targets[0].id, "shoulders");
   assert.equal(programs.length, 1);
   assert.equal(programs[0].id, "upper-lower");
+});
+
+test("normalizes exercise metadata used by the workout detail panel", () => {
+  assert.equal(library.exercises[0].movementPattern, "shoulder abduction");
+  assert.equal(library.exercises[0].riskNotes, "Avoid painful ranges.");
+  assert.equal(library.exercises[0].sourceLicense, "placeholder exercise source");
+  assert.equal(library.exercises[0].reviewStatus, "needs coach review");
+  assert.deepEqual(library.exercises[0].instructions, []);
 });
 
 test("creates workout sessions and lift PR rows", () => {

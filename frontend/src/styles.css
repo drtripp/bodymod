@@ -1540,6 +1540,7 @@ textarea {
 }
 
 .exercise-map-card,
+.exercise-detail-card,
 .program-template-preview,
 .workout-session-list li,
 .workout-pr-list li {
@@ -1549,6 +1550,7 @@ textarea {
 }
 
 .exercise-map-card,
+.exercise-detail-card,
 .program-template-preview,
 .workout-session-list li,
 .workout-pr-list li,
@@ -1559,11 +1561,26 @@ textarea {
 
 .exercise-map-card span,
 .exercise-map-card small,
+.exercise-detail-card span,
+.exercise-detail-card small,
 .workout-session-list span,
 .workout-pr-list span,
 .workout-pr-list small {
   color: var(--color-muted);
   font-size: 0.86rem;
+}
+
+.exercise-detail-card {
+  grid-column: 1 / -1;
+}
+
+.exercise-detail-card ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.exercise-detail-card p {
+  margin: 0;
 }
 
 .program-template-grid {

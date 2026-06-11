@@ -164,6 +164,7 @@ class ExerciseSeed(BaseModel):
     id: str
     label: str
     category: str
+    movementPattern: str = ""
     equipment: str
     primaryMuscles: list[str]
     secondaryMuscles: list[str] = []
@@ -172,6 +173,8 @@ class ExerciseSeed(BaseModel):
     instructions: list[str] = []
     riskNotes: str
     source: str
+    sourceLicense: str = ""
+    reviewStatus: str = ""
 
 
 class ExerciseMuscleTarget(BaseModel):

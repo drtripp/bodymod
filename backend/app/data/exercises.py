@@ -1,197 +1,44 @@
-EXERCISE_LIBRARY = {
-    "version": 1,
-    "reference": "Dummy workout seed data for user validation; replace with open-licensed imports such as wger before production.",
-    "notes": [
-        "Exercise choices are placeholders for product testing and persona walkthroughs.",
-        "Mappings connect aesthetic measurement deltas to likely muscle groups, not guaranteed outcomes.",
-        "Medical, injury, and procedure-related routines require human review before use.",
-    ],
-    "exercises": [
-        {
-            "id": "dumbbell-lateral-raise",
-            "label": "Dumbbell lateral raise",
-            "category": "Hypertrophy",
-            "equipment": "Dumbbells",
-            "primaryMuscles": ["side delts"],
-            "secondaryMuscles": ["upper traps"],
-            "measurementTargets": ["bideltoidCircumference", "bideltoidWidth"],
-            "difficulty": "beginner",
-            "instructions": [
-                "Raise dumbbells to shoulder height with a slight elbow bend.",
-                "Pause briefly, then lower with control.",
-                "Keep load modest enough to avoid swinging.",
-            ],
-            "riskNotes": "Avoid painful shoulder ranges; reduce load if traps dominate.",
-            "source": "dummy-validation-seed",
-        },
-        {
-            "id": "lat-pulldown",
-            "label": "Lat pulldown",
-            "category": "Hypertrophy",
-            "equipment": "Cable machine",
-            "primaryMuscles": ["lats"],
-            "secondaryMuscles": ["biceps", "mid back"],
-            "measurementTargets": ["bideltoidCircumference", "armpitCircumference"],
-            "difficulty": "beginner",
-            "instructions": [
-                "Start tall with ribs down and grip just outside shoulder width.",
-                "Pull elbows toward the ribs without leaning far back.",
-                "Control the stretch at the top of each rep.",
-            ],
-            "riskNotes": "Use a pain-free grip and avoid jerking from the shoulders.",
-            "source": "dummy-validation-seed",
-        },
-        {
-            "id": "romanian-deadlift",
-            "label": "Romanian deadlift",
-            "category": "Strength",
-            "equipment": "Barbell or dumbbells",
-            "primaryMuscles": ["hamstrings", "glutes"],
-            "secondaryMuscles": ["spinal erectors", "upper back"],
-            "measurementTargets": ["hipCircumference", "upperThighCircumference"],
-            "difficulty": "intermediate",
-            "instructions": [
-                "Hinge at the hips with a soft knee bend.",
-                "Lower until hamstrings limit the range, then stand tall.",
-                "Keep the load close to the body.",
-            ],
-            "riskNotes": "Not a rehab prescription; stop if low-back pain changes form.",
-            "source": "dummy-validation-seed",
-        },
-        {
-            "id": "split-squat",
-            "label": "Rear-foot elevated split squat",
-            "category": "Hypertrophy",
-            "equipment": "Bench and dumbbells",
-            "primaryMuscles": ["quads", "glutes"],
-            "secondaryMuscles": ["adductors", "calves"],
-            "measurementTargets": ["upperThighCircumference", "hipCircumference"],
-            "difficulty": "intermediate",
-            "instructions": [
-                "Set the rear foot on a bench and keep the front foot stable.",
-                "Lower under control until the front thigh is near parallel.",
-                "Drive through the front foot without bouncing.",
-            ],
-            "riskNotes": "Scale range of motion for knee or hip irritation.",
-            "source": "dummy-validation-seed",
-        },
-        {
-            "id": "incline-press",
-            "label": "Incline dumbbell press",
-            "category": "Hypertrophy",
-            "equipment": "Incline bench and dumbbells",
-            "primaryMuscles": ["upper chest"],
-            "secondaryMuscles": ["front delts", "triceps"],
-            "measurementTargets": ["nippleCircumference", "armpitCircumference"],
-            "difficulty": "beginner",
-            "instructions": [
-                "Set a low incline and press dumbbells over the upper chest.",
-                "Let elbows track below the wrists.",
-                "Lower until the shoulders remain comfortable.",
-            ],
-            "riskNotes": "Use a neutral grip if shoulders feel pinchy.",
-            "source": "dummy-validation-seed",
-        },
-        {
-            "id": "calf-raise",
-            "label": "Standing calf raise",
-            "category": "Hypertrophy",
-            "equipment": "Machine or dumbbells",
-            "primaryMuscles": ["calves"],
-            "secondaryMuscles": ["foot intrinsics"],
-            "measurementTargets": ["calfCircumference"],
-            "difficulty": "beginner",
-            "instructions": [
-                "Pause briefly in the stretched bottom position.",
-                "Rise onto the ball of the foot without bouncing.",
-                "Use a full pain-free range.",
-            ],
-            "riskNotes": "Progress slowly if Achilles tendon history exists.",
-            "source": "dummy-validation-seed",
-        },
-    ],
-    "muscleTargets": [
-        {
-            "id": "shoulder-width",
-            "label": "Shoulder width / delts",
-            "measurementTargets": ["bideltoidCircumference", "bideltoidWidth"],
-            "muscleGroups": ["side delts", "lats", "upper back"],
-            "exerciseIds": ["dumbbell-lateral-raise", "lat-pulldown"],
-            "rationale": "Deltoid and upper-back work are the most direct trainable inputs for shoulder visual width.",
-        },
-        {
-            "id": "waist-contrast",
-            "label": "Waist contrast support",
-            "measurementTargets": ["waistCircumference", "bideltoidCircumference"],
-            "muscleGroups": ["side delts", "lats"],
-            "exerciseIds": ["dumbbell-lateral-raise", "lat-pulldown"],
-            "rationale": "Shoulder/back development can improve shoulder-to-waist contrast while waist change is mostly diet and measurement trend.",
-        },
-        {
-            "id": "hip-thigh-shape",
-            "label": "Hip and thigh shape",
-            "measurementTargets": ["hipCircumference", "upperThighCircumference"],
-            "muscleGroups": ["glutes", "hamstrings", "quads"],
-            "exerciseIds": ["romanian-deadlift", "split-squat"],
-            "rationale": "Glute, hamstring, and quad training are trainable contributors to hip and thigh circumference changes.",
-        },
-        {
-            "id": "calf-size",
-            "label": "Calf size",
-            "measurementTargets": ["calfCircumference"],
-            "muscleGroups": ["calves"],
-            "exerciseIds": ["calf-raise"],
-            "rationale": "Calf circumference is mostly tracked through direct calf training and body-weight context.",
-        },
-    ],
-    "programTemplates": [
-        {
-            "id": "upper-lower-foundation",
-            "label": "Upper/lower foundation",
-            "goalIds": ["shoulder-waist-ratio", "lean-mass"],
-            "summary": "Four-day seed template for delts, back, legs, and repeatable progression logs.",
-            "days": [
-                {
-                    "label": "Upper A",
-                    "exercises": [
-                        {"exerciseId": "incline-press", "sets": 3, "reps": "8-12"},
-                        {"exerciseId": "lat-pulldown", "sets": 3, "reps": "8-12"},
-                        {"exerciseId": "dumbbell-lateral-raise", "sets": 4, "reps": "12-20"},
-                    ],
-                },
-                {
-                    "label": "Lower A",
-                    "exercises": [
-                        {"exerciseId": "romanian-deadlift", "sets": 3, "reps": "6-10"},
-                        {"exerciseId": "split-squat", "sets": 3, "reps": "8-12"},
-                        {"exerciseId": "calf-raise", "sets": 4, "reps": "10-20"},
-                    ],
-                },
-            ],
-        },
-        {
-            "id": "shape-recomp-starter",
-            "label": "Shape recomp starter",
-            "goalIds": ["waist-hip-ratio", "stage-leaning", "weekly-check-in"],
-            "summary": "Three-session seed template that pairs waist trend tracking with glute, thigh, and upper-back work.",
-            "days": [
-                {
-                    "label": "Full body A",
-                    "exercises": [
-                        {"exerciseId": "split-squat", "sets": 3, "reps": "8-12"},
-                        {"exerciseId": "lat-pulldown", "sets": 3, "reps": "8-12"},
-                        {"exerciseId": "calf-raise", "sets": 3, "reps": "12-20"},
-                    ],
-                },
-                {
-                    "label": "Full body B",
-                    "exercises": [
-                        {"exerciseId": "romanian-deadlift", "sets": 3, "reps": "6-10"},
-                        {"exerciseId": "incline-press", "sets": 3, "reps": "8-12"},
-                        {"exerciseId": "dumbbell-lateral-raise", "sets": 3, "reps": "12-20"},
-                    ],
-                },
-            ],
-        },
-    ],
-}
+import json
+from pathlib import Path
+
+from app.measurement_schema import measurement_field_names
+
+
+EXERCISE_SEED_PATH = Path(__file__).with_name("exercises.seed.json")
+
+
+def load_exercise_library() -> dict:
+    payload = json.loads(EXERCISE_SEED_PATH.read_text(encoding="utf-8"))
+    schema_fields = set(measurement_field_names())
+    exercise_ids = set()
+
+    for exercise in payload.get("exercises", []):
+        exercise_id = exercise.get("id")
+        if exercise_id in exercise_ids:
+            raise ValueError(f"Duplicate exercise id: {exercise_id}")
+        exercise_ids.add(exercise_id)
+
+        unknown_fields = set(exercise.get("measurementTargets", [])) - schema_fields
+        if unknown_fields:
+            unknown = ", ".join(sorted(unknown_fields))
+            raise ValueError(f"{exercise_id} references unknown fields: {unknown}")
+
+    for target in payload.get("muscleTargets", []):
+        unknown_exercises = set(target.get("exerciseIds", [])) - exercise_ids
+        if unknown_exercises:
+            unknown = ", ".join(sorted(unknown_exercises))
+            raise ValueError(f"{target.get('id')} references unknown exercises: {unknown}")
+
+    for program in payload.get("programTemplates", []):
+        for day in program.get("days", []):
+            unknown_exercises = {
+                item.get("exerciseId") for item in day.get("exercises", [])
+            } - exercise_ids
+            if unknown_exercises:
+                unknown = ", ".join(sorted(unknown_exercises))
+                raise ValueError(f"{program.get('id')} references unknown exercises: {unknown}")
+
+    return payload
+
+
+EXERCISE_LIBRARY = load_exercise_library()
