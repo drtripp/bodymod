@@ -53,6 +53,10 @@ export function fetchProcedureLibrary() {
   return request("/api/procedure-library");
 }
 
+export function fetchBloodworkLibrary() {
+  return request("/api/bloodwork-library");
+}
+
 export function fetchStrategyCorpus() {
   return request("/api/strategy-corpus");
 }

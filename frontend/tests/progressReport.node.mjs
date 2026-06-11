@@ -60,6 +60,27 @@ test("builds a printable progress report model and HTML", () => {
         note: "Upper arm placement."
       }
     ],
+    bloodworkResults: [
+      {
+        id: "blood-1",
+        markerId: "ldl-c",
+        markerLabel: "LDL-C",
+        value: 92,
+        unit: "mg/dL",
+        collectedAt: "2026-06-09",
+        rangeStatus: "in-range",
+        note: "Fasting draw."
+      },
+      {
+        id: "blood-0",
+        markerId: "ldl-c",
+        markerLabel: "LDL-C",
+        value: 100,
+        unit: "mg/dL",
+        collectedAt: "2026-05-09",
+        rangeStatus: "in-range"
+      }
+    ],
     photos: [
       { id: "body", category: "body", createdAt: "2026-06-09T10:00:00.000Z" },
       { id: "face", category: "face" }
@@ -93,6 +114,8 @@ test("builds a printable progress report model and HTML", () => {
   assert.equal(model.protocolCaseLogs[0].label, "Progressive resistance training");
   assert.equal(model.procedureCaseLogs[0].label, "Large tattoo session");
   assert.equal(model.procedureCaseLogs[0].photoCount, 1);
+  assert.equal(model.bloodworkTrends[0].markerLabel, "LDL-C");
+  assert.equal(model.bloodworkTrends[0].delta, -8);
   assert.equal(model.workoutPrs[0].exerciseLabel, "Dumbbell lateral raise");
   assert.equal(model.faceMeasurements.length, 1);
   assert.match(html, /bodymod progress report/);
@@ -101,6 +124,8 @@ test("builds a printable progress report model and HTML", () => {
   assert.match(html, /Protocol case logs/);
   assert.match(html, /Procedure case logs/);
   assert.match(html, /Large tattoo session/);
+  assert.match(html, /Bloodwork/);
+  assert.match(html, /LDL-C/);
   assert.match(html, /Photo manifest/);
   assert.match(html, /Face measurements/);
   assert.match(html, /Midface ratio: 0.80/);

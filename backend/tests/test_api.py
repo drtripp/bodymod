@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from app.data.bloodwork import BLOODWORK_LIBRARY
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY
@@ -200,6 +201,35 @@ def test_procedure_library_endpoint_returns_review_seed() -> None:
         item["photoCategory"] == "face" and "side-profile photo stream" in item["caseLogPrompts"]
         for item in payload["procedureTypes"]
     )
+
+
+def test_bloodwork_library_endpoint_returns_local_only_review_seed() -> None:
+    response = client.get("/api/bloodwork-library")
+
+    assert response.status_code == 200
+    payload = response.json()
+    group_ids = {group["id"] for group in payload["markerGroups"]}
+    marker_ids = {marker["id"] for marker in payload["markers"]}
+
+    assert payload["version"] == BLOODWORK_LIBRARY["version"]
+    assert "Dummy bloodwork marker library" in payload["reference"]
+    assert any("local-only" in note for note in payload["notes"])
+    assert {"hormones", "lipids", "metabolic", "thyroid", "inflammation"}.issubset(
+        group_ids
+    )
+    assert {
+        "total-testosterone",
+        "estradiol",
+        "ldl-c",
+        "fasting-glucose",
+        "tsh",
+        "hs-crp",
+    }.issubset(marker_ids)
+    assert all(marker["groupId"] in group_ids for marker in payload["markers"])
+    assert all(marker["requiresHumanReview"] for marker in payload["markers"])
+    assert all(marker["unit"] for marker in payload["markers"])
+    assert payload["markers"][0]["referenceRanges"]
+    assert payload["markers"][0]["referenceRanges"]["male"]["unit"] == "ng/dL"
 
 
 def test_strategy_corpus_endpoint_returns_backend_seed() -> None:

@@ -227,6 +227,37 @@ class ProcedureLibrary(BaseModel):
     procedureTypes: list[ProcedureTypeSeed]
 
 
+class BloodworkMarkerGroup(BaseModel):
+    id: str
+    label: str
+    summary: str
+
+
+class BloodworkReferenceRange(BaseModel):
+    low: float | None = None
+    high: float | None = None
+    unit: str
+
+
+class BloodworkMarker(BaseModel):
+    id: str
+    label: str
+    groupId: str
+    unit: str
+    summary: str
+    referenceRanges: dict[str, BloodworkReferenceRange] = {}
+    commonPanels: list[str] = []
+    requiresHumanReview: bool = True
+
+
+class BloodworkLibrary(BaseModel):
+    version: int
+    reference: str
+    notes: list[str] = []
+    markerGroups: list[BloodworkMarkerGroup]
+    markers: list[BloodworkMarker]
+
+
 class StrategySourceLink(BaseModel):
     title: str
     url: str

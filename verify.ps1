@@ -48,6 +48,7 @@ try {
     Invoke-Checked { npm run test:tracking }
     Invoke-Checked { npm run test:protocols }
     Invoke-Checked { npm run test:procedures }
+    Invoke-Checked { npm run test:bloodwork }
     Invoke-Checked { npm run test:local-targets }
     Invoke-Checked { npm run test:goal-targets }
     Invoke-Checked { npm run test:measurement-guides }

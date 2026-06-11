@@ -95,7 +95,7 @@ Implemented now:
 - daily weight trend smoothing with raw-dot vs smoothed-line display
 - historical weight CSV import for local daily logs, with lb/kg handling, optional calories, and duplicate-date skipping
 - optional left/right bicep, forearm, thigh, and calf split logs with local symmetry summaries
-- passphrase-encrypted local backup and restore for snapshots and account logs, including procedure records, with photo metadata manifest only
+- passphrase-encrypted local backup and restore for snapshots and account logs, including procedure and local-only bloodwork records, with photo metadata manifest only
 - adaptive TDEE estimate from reliable daily weight and calorie logs, with reliability-window exclusions
 - guided weekly check-in flow with snapshot save, streak/grace state, heatmap, milestones, insight drops, and weekly digest
 - first Snapshot #1 save requests browser notification permission, stores the local preference, and stale-trend reminders use data-decay copy
@@ -103,6 +103,7 @@ Implemented now:
 - optional local cycle phase logs that add weight/waist fluctuation context, remain off by default, and can be deleted separately
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
 - procedure tracker with backend dummy procedure taxonomy, local surgery/filler/piercing/tattoo/body-mod logs, healing windows, photo stream hints, generated reliability events, and case-log output
+- local-only bloodwork log with backend dummy marker/range seed, manual lab-result entry, trend sparklines, protocol links, readable export/backup/report inclusion, and share-dashboard exclusion
 - reliability events pause affected weight and tape trend inference during healing or disruption windows, and pause saved goals whose target metrics are affected
 - projected silhouettes for calorie-target protocol planning bands, with uncertainty copy
 - local goals can target preset deltas, custom deltas, target profiles, or saved past-self snapshots, with distance-to-target progress copy
@@ -175,6 +176,7 @@ Not implemented yet:
 - hosted photo/body inference work; current face scans are browser-local only
 - production FoodData Central import/API ownership; Diet currently has dummy backend USDA-style seed rows plus Open Food Facts lookup
 - source-reviewed procedure taxonomy and clinical/body-mod validation; current procedure data is a dummy review scaffold
+- source-reviewed bloodwork marker taxonomy, units, and reference ranges; current bloodwork data is a dummy local-only review scaffold
 - full public measurement-guide coverage with reviewed illustrations and final copy
 - production error monitoring provider/enablement decision; sanitized first-party
   wiring exists but upload is disabled unless configured at build time

@@ -522,6 +522,69 @@ const procedureLibrary = {
   ]
 };
 
+const bloodworkLibrary = {
+  version: 1,
+  reference: "Dummy bloodwork marker library for Playwright tests.",
+  notes: ["Mocked bloodwork source. Local-only and informational."],
+  markerGroups: [
+    { id: "hormones", label: "Hormones", summary: "Mock hormone markers." },
+    { id: "lipids", label: "Lipids", summary: "Mock lipid markers." },
+    { id: "metabolic", label: "Metabolic", summary: "Mock metabolic markers." }
+  ],
+  markers: [
+    {
+      id: "total-testosterone",
+      label: "Total testosterone",
+      groupId: "hormones",
+      unit: "ng/dL",
+      summary: "Total testosterone marker; interpretation depends on clinical context.",
+      referenceRanges: {
+        male: { low: 300, high: 1000, unit: "ng/dL" },
+        female: { low: 15, high: 70, unit: "ng/dL" }
+      },
+      commonPanels: ["hormone"],
+      requiresHumanReview: true
+    },
+    {
+      id: "estradiol",
+      label: "Estradiol",
+      groupId: "hormones",
+      unit: "pg/mL",
+      summary: "Estradiol marker; ranges vary by cycle, therapy, and assay.",
+      referenceRanges: {
+        male: { low: 10, high: 40, unit: "pg/mL" },
+        female: { low: 15, high: 350, unit: "pg/mL" }
+      },
+      commonPanels: ["hormone"],
+      requiresHumanReview: true
+    },
+    {
+      id: "ldl-c",
+      label: "LDL-C",
+      groupId: "lipids",
+      unit: "mg/dL",
+      summary: "LDL cholesterol marker; displayed without risk diagnosis.",
+      referenceRanges: {
+        general: { low: 0, high: 100, unit: "mg/dL" }
+      },
+      commonPanels: ["lipid"],
+      requiresHumanReview: true
+    },
+    {
+      id: "fasting-glucose",
+      label: "Fasting glucose",
+      groupId: "metabolic",
+      unit: "mg/dL",
+      summary: "Fasting glucose marker; preserve fasting context in notes.",
+      referenceRanges: {
+        general: { low: 70, high: 99, unit: "mg/dL" }
+      },
+      commonPanels: ["metabolic"],
+      requiresHumanReview: true
+    }
+  ]
+};
+
 const matchPriorityPresets = [
   {
     id: "balanced",
@@ -697,6 +760,10 @@ async function mockApi(page) {
 
   await page.route("**/api/procedure-library", async (route) => {
     await route.fulfill({ json: procedureLibrary });
+  });
+
+  await page.route("**/api/bloodwork-library", async (route) => {
+    await route.fulfill({ json: bloodworkLibrary });
   });
 
   await page.route("**/api/strategy-corpus", async (route) => {
@@ -1592,6 +1659,22 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Large tattoo session procedure case log")).toContainText("bicepCircumference");
   await expect(page.getByLabel("Reliability events")).toContainText("Procedure log: Large tattoo session");
   await expect(page.getByLabel("Check-in history")).toContainText("Reliability event: procedure / 28 day window");
+  await expect(page.getByLabel("Bloodwork log")).toContainText("Loaded 4 bloodwork marker seed(s).");
+  await page.getByLabel("Bloodwork marker").selectOption("ldl-c");
+  await page.getByLabel("Bloodwork collection date").fill("2026-05-10");
+  await page.getByLabel("Bloodwork value").fill("100");
+  await page.getByLabel("Bloodwork linked protocol").selectOption({ label: "Progressive resistance training" });
+  await page.getByLabel("Bloodwork note").fill("Baseline fasting lipid panel.");
+  await page.getByRole("button", { name: "Log bloodwork" }).click();
+  await expect(accountDialog).toContainText("Bloodwork logged locally: LDL-C: 100 mg/dL.");
+  await page.getByLabel("Bloodwork collection date").fill("2026-06-10");
+  await page.getByLabel("Bloodwork value").fill("92");
+  await page.getByLabel("Bloodwork note").fill("Follow-up fasting lipid panel.");
+  await page.getByRole("button", { name: "Log bloodwork" }).click();
+  await expect(page.getByLabel("Recent bloodwork results")).toContainText("LDL-C: 92 mg/dL");
+  await expect(page.getByLabel("Recent bloodwork results")).toContainText("Progressive resistance training");
+  await expect(page.getByLabel("Bloodwork trends")).toContainText("delta -8 mg/dL");
+  await expect(page.getByRole("img", { name: "LDL-C bloodwork trend" })).toBeVisible();
   await page.getByRole("button", { name: "Archive protocol" }).click();
   await expect(page.getByLabel("Active protocols")).toContainText("archived");
   await expect(page.getByLabel("Progressive resistance training plan retro")).toContainText("Actual");
@@ -1643,6 +1726,8 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   expect(reportHtml).toContain("Protocol case logs");
   expect(reportHtml).toContain("Procedure case logs");
   expect(reportHtml).toContain("Large tattoo session");
+  expect(reportHtml).toContain("Bloodwork");
+  expect(reportHtml).toContain("LDL-C");
   expect(reportHtml).toContain("Dumbbell lateral raise");
   expect(reportHtml).toContain("Photo manifest");
   expect(reportHtml).toContain("Face measurements");
@@ -1656,6 +1741,7 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Active protocols")).toContainText("Progressive resistance training");
   await expect(page.getByLabel("Active protocols")).toContainText("1 adherence check-in(s)");
   await expect(page.getByLabel("Procedure logs")).toContainText("Large tattoo session");
+  await expect(page.getByLabel("Recent bloodwork results")).toContainText("LDL-C: 92 mg/dL");
   await expect(page.getByLabel("Recent workout sessions")).toContainText("Dumbbell lateral raise");
   await expect(page.getByLabel("Progress photo gallery")).toContainText("Week 1 front pose.");
   await expect(page.getByLabel("Photo comparison slider")).toBeVisible();
@@ -1684,6 +1770,12 @@ test("exports and restores encrypted local backups through the account UI", asyn
   await page.getByLabel("Procedure note").fill("Backup procedure log.");
   await page.getByRole("button", { name: "Log procedure" }).click();
   await expect(page.getByLabel("Procedure logs")).toContainText("Large tattoo session");
+  await page.getByLabel("Bloodwork marker").selectOption("ldl-c");
+  await page.getByLabel("Bloodwork collection date").fill("2026-06-10");
+  await page.getByLabel("Bloodwork value").fill("92");
+  await page.getByLabel("Bloodwork note").fill("Backup lab result.");
+  await page.getByRole("button", { name: "Log bloodwork" }).click();
+  await expect(page.getByLabel("Recent bloodwork results")).toContainText("LDL-C: 92 mg/dL");
 
   await page.getByLabel("Backup passphrase").fill("correct horse battery staple");
   const downloadPromise = page.waitForEvent("download");
@@ -1702,6 +1794,7 @@ test("exports and restores encrypted local backups through the account UI", asyn
       "bodymod:checkins:v1",
       "bodymod:workouts:v1",
       "bodymod:procedures:v1",
+      "bodymod:bloodwork:v1",
       "bodymod:photos:v1",
       "bodymod:face-measurements:v1",
       "bodymod:snapshots:v1"
@@ -1721,6 +1814,7 @@ test("exports and restores encrypted local backups through the account UI", asyn
   );
   await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 82.4 kg / 2400 kcal");
   await expect(page.getByLabel("Procedure logs")).toContainText("Large tattoo session");
+  await expect(page.getByLabel("Recent bloodwork results")).toContainText("LDL-C: 92 mg/dL");
   await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Backup baseline" })).toBeVisible();
 });
 
@@ -1857,6 +1951,15 @@ test("roleplays all persona samples through account logging, goals, and learning
       await page.getByRole("button", { name: "Log procedure" }).click();
       await expect(page.getByLabel("Procedure logs")).toContainText("Large tattoo session");
       await expect(page.getByLabel("Check-in history")).toContainText("Reliability event: procedure");
+    }
+
+    if (persona.id === "hrt-tracker") {
+      await page.getByLabel("Bloodwork marker").selectOption("estradiol");
+      await page.getByLabel("Bloodwork collection date").fill("2026-06-10");
+      await page.getByLabel("Bloodwork value").fill("110");
+      await page.getByLabel("Bloodwork note").fill("Riley local-only HRT lab note.");
+      await page.getByRole("button", { name: "Log bloodwork" }).click();
+      await expect(page.getByLabel("Recent bloodwork results")).toContainText("Estradiol: 110 pg/mL");
     }
 
     await expect(page.getByLabel("Workout library")).toBeVisible();

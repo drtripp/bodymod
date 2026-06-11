@@ -3,6 +3,7 @@ import os
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.data.bloodwork import BLOODWORK_LIBRARY
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY
@@ -12,6 +13,7 @@ from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TAXONOMY, PROTOCO
 from app.data.procedures import PROCEDURE_LIBRARY
 from app.data.reference import REFERENCE_DATA
 from app.data.strategy_corpus import STRATEGY_CORPUS
+from app.models import BloodworkLibrary
 from app.models import ClothingSizeTables
 from app.models import ClientErrorReportRequest
 from app.models import ClientErrorReportResponse
@@ -110,6 +112,11 @@ def exercise_library() -> dict:
 @app.get("/api/procedure-library")
 def procedure_library() -> dict:
     return ProcedureLibrary.model_validate(PROCEDURE_LIBRARY).model_dump()
+
+
+@app.get("/api/bloodwork-library")
+def bloodwork_library() -> dict:
+    return BloodworkLibrary.model_validate(BLOODWORK_LIBRARY).model_dump()
 
 
 @app.get("/api/strategy-corpus")

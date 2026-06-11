@@ -1,0 +1,185 @@
+{
+  "version": 1,
+  "reference": "Dummy bloodwork marker library for local-only logging; replace with reviewed lab references before production.",
+  "notes": [
+    "Informational display scaffold only; not medical advice.",
+    "Reference ranges vary by lab, method, age, sex, medication status, and clinical context.",
+    "Bloodwork logs are intended to remain local-only and excluded from server sync/share dashboards."
+  ],
+  "markerGroups": [
+    {
+      "id": "hormones",
+      "label": "Hormones",
+      "summary": "Markers commonly reviewed in HRT, TRT, fertility, and endocrine contexts."
+    },
+    {
+      "id": "lipids",
+      "label": "Lipids",
+      "summary": "Cholesterol and triglyceride markers often trended during diet, training, or medication changes."
+    },
+    {
+      "id": "metabolic",
+      "label": "Metabolic",
+      "summary": "Glucose and liver/kidney-adjacent markers used as general health context."
+    },
+    {
+      "id": "thyroid",
+      "label": "Thyroid",
+      "summary": "Thyroid markers whose interpretation depends heavily on symptoms and clinical context."
+    },
+    {
+      "id": "inflammation",
+      "label": "Inflammation",
+      "summary": "Broad inflammation markers that can be transiently affected by illness, injury, and training."
+    }
+  ],
+  "markers": [
+    {
+      "id": "total-testosterone",
+      "label": "Total testosterone",
+      "groupId": "hormones",
+      "unit": "ng/dL",
+      "summary": "Total circulating testosterone marker; context differs substantially by sex, age, HRT/TRT use, and lab method.",
+      "referenceRanges": {
+        "male": { "low": 300, "high": 1000, "unit": "ng/dL" },
+        "female": { "low": 15, "high": 70, "unit": "ng/dL" }
+      },
+      "commonPanels": ["hormone", "trt", "hrt"],
+      "requiresHumanReview": true
+    },
+    {
+      "id": "estradiol",
+      "label": "Estradiol",
+      "groupId": "hormones",
+      "unit": "pg/mL",
+      "summary": "Estradiol marker used in many hormone contexts; ranges are cycle-, therapy-, and assay-dependent.",
+      "referenceRanges": {
+        "male": { "low": 10, "high": 40, "unit": "pg/mL" },
+        "female": { "low": 15, "high": 350, "unit": "pg/mL" }
+      },
+      "commonPanels": ["hormone", "hrt"],
+      "requiresHumanReview": true
+    },
+    {
+      "id": "shbg",
+      "label": "SHBG",
+      "groupId": "hormones",
+      "unit": "nmol/L",
+      "summary": "Sex hormone-binding globulin; often reviewed alongside testosterone and estradiol.",
+      "referenceRanges": {
+        "general": { "low": 16, "high": 75, "unit": "nmol/L" }
+      },
+      "commonPanels": ["hormone", "trt", "hrt"],
+      "requiresHumanReview": true
+    },
+    {
+      "id": "ldl-c",
+      "label": "LDL-C",
+      "groupId": "lipids",
+      "unit": "mg/dL",
+      "summary": "Low-density lipoprotein cholesterol marker; risk interpretation depends on broader clinical context.",
+      "referenceRanges": {
+        "general": { "low": 0, "high": 100, "unit": "mg/dL" }
+      },
+      "commonPanels": ["lipid", "metabolic"],
+      "requiresHumanReview": true
+    },
+    {
+      "id": "hdl-c",
+      "label": "HDL-C",
+      "groupId": "lipids",
+      "unit": "mg/dL",
+      "summary": "High-density lipoprotein cholesterol marker; displayed as a lab value, not a risk diagnosis.",
+      "referenceRanges": {
+        "male": { "low": 40, "high": 120, "unit": "mg/dL" },
+        "female": { "low": 50, "high": 120, "unit": "mg/dL" }
+      },
+      "commonPanels": ["lipid", "metabolic"],
+      "requiresHumanReview": true
+    },
+    {
+      "id": "triglycerides",
+      "label": "Triglycerides",
+      "groupId": "lipids",
+      "unit": "mg/dL",
+      "summary": "Blood lipid marker that can vary with fasting status, alcohol, diet, illness, and lab timing.",
+      "referenceRanges": {
+        "general": { "low": 0, "high": 150, "unit": "mg/dL" }
+      },
+      "commonPanels": ["lipid", "metabolic"],
+      "requiresHumanReview": true
+    },
+    {
+      "id": "fasting-glucose",
+      "label": "Fasting glucose",
+      "groupId": "metabolic",
+      "unit": "mg/dL",
+      "summary": "Fasting glucose value; display should preserve fasting/non-fasting context in notes.",
+      "referenceRanges": {
+        "general": { "low": 70, "high": 99, "unit": "mg/dL" }
+      },
+      "commonPanels": ["metabolic"],
+      "requiresHumanReview": true
+    },
+    {
+      "id": "hba1c",
+      "label": "HbA1c",
+      "groupId": "metabolic",
+      "unit": "%",
+      "summary": "Approximate longer-term glucose marker; interpretation depends on clinical context and lab method.",
+      "referenceRanges": {
+        "general": { "low": 4, "high": 5.6, "unit": "%" }
+      },
+      "commonPanels": ["metabolic"],
+      "requiresHumanReview": true
+    },
+    {
+      "id": "alt",
+      "label": "ALT",
+      "groupId": "metabolic",
+      "unit": "U/L",
+      "summary": "Alanine aminotransferase marker; can be affected by training, alcohol, medications, and liver context.",
+      "referenceRanges": {
+        "general": { "low": 7, "high": 56, "unit": "U/L" }
+      },
+      "commonPanels": ["metabolic", "safety"],
+      "requiresHumanReview": true
+    },
+    {
+      "id": "tsh",
+      "label": "TSH",
+      "groupId": "thyroid",
+      "unit": "mIU/L",
+      "summary": "Thyroid-stimulating hormone; trend display should avoid diagnosis without clinician context.",
+      "referenceRanges": {
+        "general": { "low": 0.4, "high": 4.5, "unit": "mIU/L" }
+      },
+      "commonPanels": ["thyroid"],
+      "requiresHumanReview": true
+    },
+    {
+      "id": "free-t4",
+      "label": "Free T4",
+      "groupId": "thyroid",
+      "unit": "ng/dL",
+      "summary": "Free thyroxine marker commonly reviewed with TSH.",
+      "referenceRanges": {
+        "general": { "low": 0.8, "high": 1.8, "unit": "ng/dL" }
+      },
+      "commonPanels": ["thyroid"],
+      "requiresHumanReview": true
+    },
+    {
+      "id": "hs-crp",
+      "label": "hs-CRP",
+      "groupId": "inflammation",
+      "unit": "mg/L",
+      "summary": "High-sensitivity C-reactive protein; can be transiently changed by illness, injury, and hard training.",
+      "referenceRanges": {
+        "general": { "low": 0, "high": 3, "unit": "mg/L" }
+      },
+      "commonPanels": ["inflammation", "metabolic"],
+      "requiresHumanReview": true
+    }
+  ]
+}

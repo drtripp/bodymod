@@ -201,6 +201,9 @@ Implemented:
 - optional local account cycle phase logs that label noisy weight/waist
   interpretation windows, export in encrypted check-in backups, and can be
   deleted separately
+- local-only account bloodwork logs with dummy backend marker/range seed,
+  manual lab values, reference-range status, trend sparklines, protocol links,
+  readable export/backup/report inclusion, and server share-dashboard exclusion
 
 ### Comparison, Trust, Share, And Corpus
 
@@ -260,6 +263,7 @@ Still needed:
 
 - source-reviewed strategy corpus entries
 - admin or structured git workflow for reviewed corpus edits
+- source-reviewed bloodwork marker taxonomy, units, and reference ranges
 - production FoodData Central import/API pipeline and nutrient validation
 - vetted ANSUR, NHANES, or equivalent source tables for the population charts
 - production analytics decision
@@ -272,6 +276,7 @@ Still needed:
 - cross-device history
 - raw photo uploads
 - AI-generated advice
+- medical lab interpretation
 - procedure, compound, or dosing guidance
 - social feed or community protocols
 - 3D rendering

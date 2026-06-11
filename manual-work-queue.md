@@ -124,6 +124,32 @@ cd ..\frontend
 npm run test:procedures
 ```
 
+## 6. Bloodwork Marker And Range Review
+
+Required input:
+
+- reviewed marker groups, labels, units, and aliases
+- sex/context-specific reference ranges and out-of-range copy
+- approved panel presets for hormones, lipids, metabolic, thyroid, and inflammation markers
+- explicit local-only health-data privacy copy
+- decision on whether any future sync must remain client-side encrypted
+
+Use:
+
+- `backend/app/data/bloodwork.seed.json`
+- `backend/app/data/bloodwork.py`
+- `frontend/src/lib/bloodwork.js`
+- `frontend/src/components/AccountGoalPanel.jsx`
+
+Verification:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m pytest tests\test_api.py
+cd ..\frontend
+npm run test:bloodwork
+```
+
 ## Current Stop Condition
 
 Do not mark the active build goal complete until these manual inputs are either:

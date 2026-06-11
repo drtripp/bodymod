@@ -305,7 +305,7 @@ Protocol Tracker → Diet upgrades → Native app.
       recommendations → API try-on.
 - [x] Waist-to-height ratio **(new)** in the ratio block: renders as WHTR
       with reference framing, not advice.
-- [ ] Bloodwork log **(new)** — **[human]** gate on data scope: manual
+- [x] Bloodwork log **(new)** — **[human]** gate still required on production marker/range scope: manual
       lab-result entry (hormone panels, lipids, metabolic markers) with
       reference ranges, trend charts, and protocol linkage; informational
       display only. Liability posture: ship strictly local-only. Consumer
@@ -316,6 +316,12 @@ Protocol Tracker → Diet upgrades → Native app.
       later, only inside client-side-encrypted blobs the server cannot read.
       Serves TRT-curious lifters, transition users tracking HRT labs, and
       biohackers simultaneously.
+      **Implemented:** strictly local-only scaffold with backend dummy marker
+      library at `/api/bloodwork-library`, account-scoped manual lab-result
+      entry, hormone/lipid/metabolic/thyroid/inflammation marker seeds,
+      reference-range status, trend sparklines, protocol linkage, readable
+      export, encrypted backup/restore, and local progress report inclusion.
+      Bloodwork is excluded from server share dashboards and sync.
 - [ ] Genome import: parked **(new)**. On-vision but the heaviest regulatory
       surface in the app (GINA, state genetic-privacy laws,
       post-23andMe-bankruptcy scrutiny). If ever: parsed and stored on-device

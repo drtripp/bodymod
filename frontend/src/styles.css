@@ -319,6 +319,7 @@ textarea {
 .goal-builder,
 .goal-list-section,
 .protocol-tracker,
+.bloodwork-log-section,
 .workout-library-section,
 .photo-log-section,
 .persona-walkthrough {
@@ -338,6 +339,7 @@ textarea {
 .goal-builder h3,
 .goal-list-section h3,
 .protocol-tracker h3,
+.bloodwork-log-section h3,
 .workout-library-section h3,
 .photo-log-section h3,
 .persona-walkthrough h3 {
@@ -1184,6 +1186,110 @@ textarea {
 .procedure-list li > div {
   display: grid;
   gap: 4px;
+}
+
+.bloodwork-log-section {
+  display: grid;
+  gap: 10px;
+}
+
+.bloodwork-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(130px, 0.4fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.bloodwork-note,
+.bloodwork-marker-summary {
+  grid-column: 1 / -1;
+}
+
+.bloodwork-note textarea {
+  min-height: 56px;
+  resize: vertical;
+}
+
+.bloodwork-marker-summary {
+  border: 1px dashed var(--color-border);
+  padding: 10px;
+}
+
+.bloodwork-marker-summary p,
+.bloodwork-marker-summary small,
+.bloodwork-trend-list span,
+.bloodwork-trend-list small,
+.bloodwork-result-list span,
+.bloodwork-result-list small,
+.bloodwork-result-list p {
+  color: var(--color-muted);
+}
+
+.bloodwork-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.bloodwork-grid h4 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+
+.bloodwork-trend-list,
+.bloodwork-result-list {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  padding-left: 0;
+}
+
+.bloodwork-trend-list li,
+.bloodwork-result-list li {
+  border: 1px solid var(--color-border);
+  background: var(--color-page);
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+}
+
+.bloodwork-trend-list li {
+  grid-template-columns: minmax(0, 1fr) 110px;
+  align-items: center;
+}
+
+.bloodwork-trend-list li > div,
+.bloodwork-result-list li {
+  min-width: 0;
+}
+
+.bloodwork-trend-list li > div {
+  display: grid;
+  gap: 2px;
+}
+
+.bloodwork-trend-list strong,
+.bloodwork-trend-list span,
+.bloodwork-trend-list small {
+  display: block;
+}
+
+.bloodwork-sparkline {
+  width: 100%;
+  height: 42px;
+}
+
+.bloodwork-sparkline line {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.bloodwork-sparkline polyline {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
 }
 
 .compact-score-field {
@@ -4617,6 +4723,9 @@ textarea {
   .life-event-form,
   .procedure-form,
   .procedure-list li,
+  .bloodwork-form,
+  .bloodwork-grid,
+  .bloodwork-trend-list li,
   .protocol-outcome-grid,
   .band-diff-row,
   .workout-log-form,

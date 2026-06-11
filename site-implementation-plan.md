@@ -114,6 +114,8 @@ Implemented endpoints:
 - `GET /api/entitlements`
 - `POST /api/client-errors`
 - `GET /api/reference-data`
+- `GET /api/procedure-library`
+- `GET /api/bloodwork-library`
 
 The backend seeds target data from `backend/app/data/targets.seed.json` into
 SQLite through `backend/app/repositories.py`.
@@ -364,6 +366,12 @@ Status:
   filler, piercing, tattoo, body contouring, jaw/profile, and hair-restoration
   seed types create healing timelines, photo stream hints, generated
   reliability events for affected fields, and progress-report case logs
+- account workspace supports local-only bloodwork logs through
+  `backend/app/data/bloodwork.seed.json`, `/api/bloodwork-library`,
+  `frontend/src/lib/bloodwork.js`, and account-scoped local storage; hormone,
+  lipid, metabolic, thyroid, and inflammation seed markers support manual
+  results, reference-range status, trend sparklines, protocol linkage, local
+  export/backup/report inclusion, and share-dashboard exclusion
 - saved goals use `frontend/src/lib/goalTargets.js` for progress rows and
   maintenance drift alerts once a target-band snapshot exists
 - saved goal rows include from-target, past-target, and at-target copy so
@@ -463,7 +471,7 @@ Status:
   recent snapshots, goal summaries, protocol summaries, neutral procedure
   summaries, and count stats
 - share-dashboard payloads omit account email, local account IDs, notes, photo
-  files, and face scan images
+  files, face scan images, and local-only bloodwork results
 
 Options:
 
@@ -571,6 +579,7 @@ Next:
 - method/privacy information is visible
 - draft privacy, terms, and medical disclaimer pages are reviewed
 - placeholder math is clearly labeled
+- bloodwork marker/range data remains local-only and marked as a dummy review scaffold
 - local analytics and the share icon are implemented, with public-launch privacy decisions documented
 - cafe and graphite themes are available, persisted locally, and covered by tests
 - accessibility baseline is covered by skip-to-main navigation, visible focus

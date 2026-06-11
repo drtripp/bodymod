@@ -4,6 +4,7 @@ import SilhouetteView from "./SilhouetteView";
 import SnapshotPanel from "./SnapshotPanel";
 import {
   createShareDashboard,
+  fetchBloodworkLibrary,
   fetchExerciseLibrary,
   fetchPlanningData,
   fetchProcedureLibrary,
@@ -25,6 +26,7 @@ import {
   deleteUserPhoto,
   loadAccounts,
   loadUserCheckIns,
+  loadUserBloodworkResults,
   loadUserFaceMeasurements,
   loadSessionAccount,
   loadUserGoals,
@@ -35,6 +37,7 @@ import {
   loginLocalAccount,
   persistUserCheckIn,
   persistUserCheckIns,
+  persistUserBloodworkResult,
   persistUserFaceMeasurement,
   persistUserGoal,
   persistUserPhoto,
@@ -96,6 +99,16 @@ import {
   formatProtocolSchemaSummary,
   splitAffectedFields
 } from "../lib/protocolPlanning";
+import {
+  bloodworkMarkerById,
+  buildBloodworkTrendRows,
+  createBloodworkResult,
+  fallbackBloodworkLibrary,
+  formatBloodworkResult,
+  formatReferenceRange,
+  normalizeBloodworkLibrary,
+  referenceRangeForMarker
+} from "../lib/bloodwork";
 import {
   buildProcedureCaseLog,
   buildProcedureReliabilityCheckIn,
@@ -294,6 +307,10 @@ export default function AccountGoalPanel({
     normalizeProcedureLibrary(fallbackProcedureLibrary)
   );
   const [procedureStatus, setProcedureStatus] = useState("Loading procedure library...");
+  const [bloodworkLibrary, setBloodworkLibrary] = useState(() =>
+    normalizeBloodworkLibrary(fallbackBloodworkLibrary)
+  );
+  const [bloodworkStatus, setBloodworkStatus] = useState("Loading bloodwork library...");
   const [accounts, setAccounts] = useState(() => loadAccounts());
   const initialAccount = loadSessionAccount();
   const [account, setAccount] = useState(() => initialAccount);
@@ -305,6 +322,9 @@ export default function AccountGoalPanel({
   );
   const [procedures, setProcedures] = useState(() =>
     loadUserProcedures(initialAccount?.id)
+  );
+  const [bloodworkResults, setBloodworkResults] = useState(() =>
+    loadUserBloodworkResults(initialAccount?.id)
   );
   const [photos, setPhotos] = useState(() => loadUserPhotos(initialAccount?.id));
   const [faceMeasurements, setFaceMeasurements] = useState(() =>
@@ -339,6 +359,13 @@ export default function AccountGoalPanel({
   const [procedureHealingDays, setProcedureHealingDays] = useState("");
   const [procedureAffectedFields, setProcedureAffectedFields] = useState("");
   const [procedureNote, setProcedureNote] = useState("");
+  const [selectedBloodworkMarkerId, setSelectedBloodworkMarkerId] = useState("");
+  const [bloodworkValue, setBloodworkValue] = useState("");
+  const [bloodworkCollectedAt, setBloodworkCollectedAt] = useState(() =>
+    new Date().toISOString().slice(0, 10)
+  );
+  const [bloodworkProtocolId, setBloodworkProtocolId] = useState("");
+  const [bloodworkNote, setBloodworkNote] = useState("");
   const [selectedExerciseId, setSelectedExerciseId] = useState("");
   const [selectedProgramId, setSelectedProgramId] = useState("");
   const [workoutSets, setWorkoutSets] = useState("3");
@@ -504,6 +531,34 @@ export default function AccountGoalPanel({
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchBloodworkLibrary()
+      .then((data) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const normalized = normalizeBloodworkLibrary(data);
+        setBloodworkLibrary(normalized);
+        setBloodworkStatus(`Loaded ${normalized.markers.length} bloodwork marker seed(s).`);
+        setSelectedBloodworkMarkerId((current) => current || normalized.markers[0]?.id || "");
+      })
+      .catch(() => {
+        if (isMounted) {
+          const fallback = normalizeBloodworkLibrary(fallbackBloodworkLibrary);
+          setBloodworkLibrary(fallback);
+          setBloodworkStatus("Bloodwork library unavailable. Local fallback seed loaded.");
+          setSelectedBloodworkMarkerId((current) => current || fallback.markers[0]?.id || "");
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const selectedPersona = planningData.personas.find(
     (persona) => persona.id === selectedPersonaId
   );
@@ -539,6 +594,13 @@ export default function AccountGoalPanel({
   const selectedProcedureType = procedureLibrary.procedureTypes.find(
     (procedure) => procedure.id === selectedProcedureTypeId
   );
+  const selectedBloodworkMarker = bloodworkMarkerById(
+    bloodworkLibrary,
+    selectedBloodworkMarkerId
+  );
+  const selectedBloodworkRange = selectedBloodworkMarker
+    ? referenceRangeForMarker(selectedBloodworkMarker, currentMeasurements.sex)
+    : null;
   const selectedExercise = exerciseById(exerciseLibrary, selectedExerciseId);
   const goalPrograms = useMemo(
     () => programsForGoal(selectedGoal, exerciseLibrary),
@@ -556,6 +618,10 @@ export default function AccountGoalPanel({
   const workoutHistories = useMemo(
     () => buildWorkoutHistories(workoutSessions),
     [workoutSessions]
+  );
+  const bloodworkTrends = useMemo(
+    () => buildBloodworkTrendRows(bloodworkResults),
+    [bloodworkResults]
   );
   const photoCounts = useMemo(() => photoCategoryCounts(photos), [photos]);
   const visiblePhotos = useMemo(
@@ -750,6 +816,7 @@ export default function AccountGoalPanel({
     setCheckIns(loadUserCheckIns(nextAccount?.id));
     setWorkoutSessions(loadUserWorkoutSessions(nextAccount?.id));
     setProcedures(loadUserProcedures(nextAccount?.id));
+    setBloodworkResults(loadUserBloodworkResults(nextAccount?.id));
     setPhotos(loadUserPhotos(nextAccount?.id));
     setFaceMeasurements(loadUserFaceMeasurements(nextAccount?.id));
   }
@@ -1271,6 +1338,35 @@ export default function AccountGoalPanel({
     }
   }
 
+  function handleBloodworkMarkerChange(markerId) {
+    setSelectedBloodworkMarkerId(markerId);
+  }
+
+  function handleLogBloodwork(event) {
+    event.preventDefault();
+    if (!account || !selectedBloodworkMarker) {
+      return;
+    }
+
+    try {
+      const result = createBloodworkResult({
+        marker: selectedBloodworkMarker,
+        value: bloodworkValue,
+        collectedAt: bloodworkCollectedAt,
+        note: bloodworkNote,
+        protocolId: bloodworkProtocolId,
+        sex: currentMeasurements.sex
+      });
+      const nextResult = persistUserBloodworkResult(account.id, result);
+      setBloodworkResults([nextResult, ...bloodworkResults]);
+      setBloodworkValue("");
+      setBloodworkNote("");
+      setStatus(`Bloodwork logged locally: ${formatBloodworkResult(nextResult)}.`);
+    } catch (error) {
+      setStatus(error.message);
+    }
+  }
+
   function persistWorkoutFromInput(event) {
     event.preventDefault();
     if (!account) {
@@ -1387,6 +1483,7 @@ export default function AccountGoalPanel({
       checkIns,
       workoutSessions,
       procedures,
+      bloodworkResults,
       photos,
       faceMeasurements
     });
@@ -1401,6 +1498,7 @@ export default function AccountGoalPanel({
       checkIns,
       workoutSessions,
       procedures,
+      bloodworkResults,
       photos,
       faceMeasurements,
       proWaitlistSignups: loadProWaitlistSignups()
@@ -1508,7 +1606,7 @@ export default function AccountGoalPanel({
     link.remove();
     window.URL.revokeObjectURL(url);
     setJsonExportStatus(
-      `JSON export downloaded: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.procedures} procedure(s), ${summary.dietEntries} diet log(s), ${summary.fluidEntries} fluid log(s), and ${summary.photoManifest} photo manifest item(s).`
+      `JSON export downloaded: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.procedures} procedure(s), ${summary.bloodworkResults} lab result(s), ${summary.dietEntries} diet log(s), ${summary.fluidEntries} fluid log(s), and ${summary.photoManifest} photo manifest item(s).`
     );
   }
 
@@ -1533,7 +1631,7 @@ export default function AccountGoalPanel({
       link.remove();
       window.URL.revokeObjectURL(url);
       setBackupStatus(
-        `Encrypted backup downloaded: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.goals} goal(s), ${summary.protocols} protocol(s), ${summary.procedures} procedure(s), and ${summary.photoManifest} photo manifest item(s).`
+        `Encrypted backup downloaded: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.goals} goal(s), ${summary.protocols} protocol(s), ${summary.procedures} procedure(s), ${summary.bloodworkResults} lab result(s), and ${summary.photoManifest} photo manifest item(s).`
       );
     } catch (error) {
       setBackupStatus(error.message);
@@ -1561,9 +1659,10 @@ export default function AccountGoalPanel({
         setCheckIns(restoreResult.checkIns);
         setWorkoutSessions(restoreResult.workoutSessions);
         setProcedures(restoreResult.procedures);
+        setBloodworkResults(restoreResult.bloodworkResults);
         setFaceMeasurements(restoreResult.faceMeasurements);
         setBackupStatus(
-          `Restored backup: ${snapshotRestore.importedCount} snapshot(s), ${restoreResult.imported.checkIns} check-in(s), ${restoreResult.imported.goals} goal(s), ${restoreResult.imported.protocols} protocol(s), ${restoreResult.imported.workoutSessions} workout(s), ${restoreResult.imported.procedures} procedure(s), ${restoreResult.imported.faceMeasurements} face scan(s). Photo manifest: ${summary.photoManifest} item(s); image files are not included.`
+          `Restored backup: ${snapshotRestore.importedCount} snapshot(s), ${restoreResult.imported.checkIns} check-in(s), ${restoreResult.imported.goals} goal(s), ${restoreResult.imported.protocols} protocol(s), ${restoreResult.imported.workoutSessions} workout(s), ${restoreResult.imported.procedures} procedure(s), ${restoreResult.imported.bloodworkResults} lab result(s), ${restoreResult.imported.faceMeasurements} face scan(s). Photo manifest: ${summary.photoManifest} item(s); image files are not included.`
         );
       } catch (error) {
         setBackupStatus(error.message);
@@ -1588,6 +1687,7 @@ export default function AccountGoalPanel({
       checkIns,
       workoutSessions,
       procedures,
+      bloodworkResults,
       photos,
       faceMeasurements
     });
@@ -1798,10 +1898,11 @@ export default function AccountGoalPanel({
                 <h3>Progress report</h3>
                 <p>
                   Printable local summary of measurements, snapshots, goals,
-                  protocol adherence, procedures, workout PRs, and the photo manifest.
+                  protocol adherence, procedures, bloodwork, workout PRs, and
+                  the photo manifest.
                 </p>
                 <span>
-                  {snapshotProps.snapshots.length} snapshot(s) / {protocols.length} protocol(s) / {procedures.length} procedure(s) / {workoutSessions.length} workout(s) / {photos.length} photo(s) / {faceMeasurements.length} face scan(s)
+                  {snapshotProps.snapshots.length} snapshot(s) / {protocols.length} protocol(s) / {procedures.length} procedure(s) / {bloodworkResults.length} lab result(s) / {workoutSessions.length} workout(s) / {photos.length} photo(s) / {faceMeasurements.length} face scan(s)
                 </span>
               </div>
               <button className="button" type="button" onClick={handleDownloadProgressReport}>
@@ -1865,8 +1966,9 @@ export default function AccountGoalPanel({
                 <h3>Local JSON export</h3>
                 <p>
                   Download a readable JSON copy of snapshots, account logs,
-                  goals, protocols, procedures, workouts, face metric logs,
-                  diet data, and photo manifests. This is portable, not encrypted.
+                  goals, protocols, procedures, local-only bloodwork, workouts,
+                  face metric logs, diet data, and photo manifests. This is
+                  portable, not encrypted.
                 </p>
               </div>
               <button className="button" type="button" onClick={handleDownloadJsonExport}>
@@ -1884,8 +1986,8 @@ export default function AccountGoalPanel({
                 <h3>Encrypted backup</h3>
                 <p>
                   Download a passphrase-encrypted local backup for snapshots,
-                  check-ins, goals, protocols, procedures, workouts, and face
-                  metric logs.
+                  check-ins, goals, protocols, procedures, local-only
+                  bloodwork, workouts, and face metric logs.
                   Photos are included as a manifest only.
                 </p>
               </div>
@@ -3091,6 +3193,157 @@ export default function AccountGoalPanel({
                 ) : (
                   <p className="muted-text">No protocols started yet.</p>
                 )}
+              </div>
+            </section>
+
+            <section className="bloodwork-log-section" aria-label="Bloodwork log">
+              <div className="panel-header">
+                <h3>Bloodwork log</h3>
+                <p>{bloodworkStatus}</p>
+              </div>
+              <p className="muted-text">
+                Local-only lab notes for review conversations. These records are included in
+                local export/backup, not server share dashboards.
+              </p>
+
+              <form className="bloodwork-form" onSubmit={handleLogBloodwork}>
+                <label className="field">
+                  <span className="field-label">Marker</span>
+                  <select
+                    aria-label="Bloodwork marker"
+                    value={selectedBloodworkMarkerId}
+                    onChange={(event) => handleBloodworkMarkerChange(event.target.value)}
+                  >
+                    {bloodworkLibrary.markers.map((marker) => (
+                      <option key={marker.id} value={marker.id}>
+                        {marker.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  <span className="field-label">Collection date</span>
+                  <input
+                    aria-label="Bloodwork collection date"
+                    type="date"
+                    value={bloodworkCollectedAt}
+                    onChange={(event) => setBloodworkCollectedAt(event.target.value)}
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">
+                    Value {selectedBloodworkMarker?.unit ? `(${selectedBloodworkMarker.unit})` : ""}
+                  </span>
+                  <input
+                    aria-label="Bloodwork value"
+                    inputMode="decimal"
+                    value={bloodworkValue}
+                    onChange={(event) => setBloodworkValue(event.target.value)}
+                    placeholder="86"
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">Linked protocol</span>
+                  <select
+                    aria-label="Bloodwork linked protocol"
+                    value={bloodworkProtocolId}
+                    onChange={(event) => setBloodworkProtocolId(event.target.value)}
+                  >
+                    <option value="">No protocol link</option>
+                    {protocols.map((protocol) => (
+                      <option key={protocol.id} value={protocol.id}>
+                        {protocol.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field bloodwork-note">
+                  <span className="field-label">Lab note</span>
+                  <textarea
+                    aria-label="Bloodwork note"
+                    value={bloodworkNote}
+                    onChange={(event) => setBloodworkNote(event.target.value)}
+                    placeholder="Fasting status, lab name, protocol context, or clinician notes."
+                  />
+                </label>
+                {selectedBloodworkMarker ? (
+                  <div className="bloodwork-marker-summary" aria-label="Lab reference details">
+                    <p>
+                      {selectedBloodworkMarker.summary} Reference range:{" "}
+                      {formatReferenceRange(selectedBloodworkRange)}.
+                    </p>
+                    <small>{bloodworkLibrary.reference}</small>
+                  </div>
+                ) : null}
+                <button className="button" type="submit">
+                  Log bloodwork
+                </button>
+              </form>
+
+              <div className="bloodwork-grid">
+                <div aria-label="Bloodwork trends">
+                  <h4>Marker trends</h4>
+                  {bloodworkTrends.length ? (
+                    <ul className="bloodwork-trend-list">
+                      {bloodworkTrends.slice(0, 6).map((trend) => (
+                        <li key={trend.markerId}>
+                          <div>
+                            <strong>{trend.markerLabel}</strong>
+                            <span>
+                              Latest {trend.latestValue} {trend.unit} / {trend.latestStatus}
+                            </span>
+                            <small>
+                              {trend.count} result(s)
+                              {trend.delta === null ? "" : ` / delta ${trend.delta} ${trend.unit}`}
+                            </small>
+                          </div>
+                          <svg
+                            className="bloodwork-sparkline"
+                            role="img"
+                            aria-label={`${trend.markerLabel} bloodwork trend`}
+                            viewBox="0 0 100 36"
+                          >
+                            <title>{trend.markerLabel} bloodwork trend</title>
+                            <desc>Local lab result trend for this marker.</desc>
+                            <line x1="4" y1="32" x2="96" y2="32" />
+                            {trend.points ? <polyline points={trend.points} /> : null}
+                          </svg>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="muted-text">No repeated markers yet.</p>
+                  )}
+                </div>
+
+                <div aria-label="Recent bloodwork results">
+                  <h4>Recent lab results</h4>
+                  {bloodworkResults.length ? (
+                    <ul className="bloodwork-result-list">
+                      {bloodworkResults.slice(0, 6).map((result) => {
+                        const linkedProtocol = protocols.find(
+                          (protocol) => protocol.id === result.protocolId
+                        );
+
+                        return (
+                          <li key={result.id}>
+                            <strong>{formatBloodworkResult(result)}</strong>
+                            <span>
+                              {result.collectedAt} / {result.rangeStatus}
+                              {linkedProtocol ? ` / ${linkedProtocol.label}` : ""}
+                            </span>
+                            {result.referenceRange ? (
+                              <small>Range: {formatReferenceRange(result.referenceRange)}</small>
+                            ) : null}
+                            {result.note ? <p>{result.note}</p> : null}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <p className="muted-text">No bloodwork logged yet.</p>
+                  )}
+                </div>
               </div>
             </section>
 

@@ -83,6 +83,14 @@ test("builds a public dashboard payload without private account fields or notes"
         note: "private procedure note"
       }
     ],
+    bloodworkResults: [
+      {
+        id: "blood-1",
+        markerLabel: "LDL-C",
+        value: 92,
+        note: "private bloodwork note"
+      }
+    ],
     checkIns: [
       {
         id: "checkin-1",
@@ -125,6 +133,8 @@ test("builds a public dashboard payload without private account fields or notes"
   assert.equal(serialized.includes("private note should not publish"), false);
   assert.equal(serialized.includes("private goal note"), false);
   assert.equal(serialized.includes("private procedure note"), false);
+  assert.equal(serialized.includes("LDL-C"), false);
+  assert.equal(serialized.includes("private bloodwork note"), false);
   assert.equal(serialized.includes("private check-in note"), false);
 });
 

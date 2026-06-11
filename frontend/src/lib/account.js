@@ -10,6 +10,7 @@ const WORKOUTS_KEY = "bodymod:workouts:v1";
 const PHOTOS_KEY = "bodymod:photos:v1";
 const FACE_MEASUREMENTS_KEY = "bodymod:face-measurements:v1";
 const PROCEDURES_KEY = "bodymod:procedures:v1";
+const BLOODWORK_KEY = "bodymod:bloodwork:v1";
 const STORAGE_VERSION = 1;
 
 function readStorage(key, fallback) {
@@ -147,6 +148,18 @@ export function loadUserProcedures(accountId) {
   const parsed = readStorage(PROCEDURES_KEY, { procedures: [] });
   const procedures = Array.isArray(parsed.procedures) ? parsed.procedures : [];
   return procedures.filter((procedure) => procedure.accountId === accountId);
+}
+
+export function loadUserBloodworkResults(accountId) {
+  if (!accountId) {
+    return [];
+  }
+
+  const parsed = readStorage(BLOODWORK_KEY, { bloodworkResults: [] });
+  const bloodworkResults = Array.isArray(parsed.bloodworkResults)
+    ? parsed.bloodworkResults
+    : [];
+  return bloodworkResults.filter((result) => result.accountId === accountId);
 }
 
 export function loadUserPhotos(accountId) {
@@ -369,6 +382,12 @@ export function restoreUserBackupData(accountId, backup = {}) {
     accountId,
     records: backup.procedures
   });
+  const bloodworkResults = mergeAccountCollection({
+    storageKey: BLOODWORK_KEY,
+    collectionKey: "bloodworkResults",
+    accountId,
+    records: backup.bloodworkResults
+  });
   const faceMeasurements = mergeAccountCollection({
     storageKey: FACE_MEASUREMENTS_KEY,
     collectionKey: "faceMeasurements",
@@ -382,6 +401,7 @@ export function restoreUserBackupData(accountId, backup = {}) {
     checkIns: checkIns.records,
     workoutSessions: workouts.records,
     procedures: procedures.records,
+    bloodworkResults: bloodworkResults.records,
     faceMeasurements: faceMeasurements.records,
     imported: {
       goals: goals.importedCount,
@@ -389,6 +409,7 @@ export function restoreUserBackupData(accountId, backup = {}) {
       checkIns: checkIns.importedCount,
       workoutSessions: workouts.importedCount,
       procedures: procedures.importedCount,
+      bloodworkResults: bloodworkResults.importedCount,
       faceMeasurements: faceMeasurements.importedCount,
       photoManifest: Array.isArray(backup.photoManifest) ? backup.photoManifest.length : 0
     }
@@ -429,6 +450,26 @@ export function persistUserProcedure(accountId, procedure) {
   });
 
   return nextProcedure;
+}
+
+export function persistUserBloodworkResult(accountId, result) {
+  const parsed = readStorage(BLOODWORK_KEY, { bloodworkResults: [] });
+  const bloodworkResults = Array.isArray(parsed.bloodworkResults)
+    ? parsed.bloodworkResults
+    : [];
+  const nextResult = {
+    id: crypto.randomUUID(),
+    accountId,
+    createdAt: new Date().toISOString(),
+    ...result
+  };
+
+  writeStorage(BLOODWORK_KEY, {
+    version: STORAGE_VERSION,
+    bloodworkResults: [nextResult, ...bloodworkResults]
+  });
+
+  return nextResult;
 }
 
 export function persistUserPhoto(accountId, photo) {

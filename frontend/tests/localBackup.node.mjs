@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   loadUserCheckIns,
+  loadUserBloodworkResults,
   loadUserFaceMeasurements,
   loadUserGoals,
   loadUserProcedures,
@@ -113,6 +114,17 @@ function sampleBundle() {
         healingDays: 28
       }
     ],
+    bloodworkResults: [
+      {
+        id: "blood-1",
+        accountId: "old-account",
+        createdAt: "2026-06-05T14:00:00.000Z",
+        markerLabel: "LDL-C",
+        value: 92,
+        unit: "mg/dL",
+        localOnlySensitive: true
+      }
+    ],
     photos: [
       {
         id: "photo-1",
@@ -150,6 +162,7 @@ test("builds backup bundles with photo manifests instead of image payloads", () 
     checkIns: 2,
     workoutSessions: 1,
     procedures: 1,
+    bloodworkResults: 1,
     faceMeasurements: 1,
     photoManifest: 1
   });
@@ -175,6 +188,7 @@ test("builds readable JSON exports with or without an account", () => {
     goals: [{ id: "goal-1" }],
     checkIns: [{ id: "check-1", type: "cycle-phase" }],
     procedures: [{ id: "procedure-1", label: "Large tattoo session" }],
+    bloodworkResults: [{ id: "blood-1", markerLabel: "LDL-C", value: 92 }],
     photos: [{ id: "photo-1", dataUrl: "data:image/png;base64,secret", fileName: "front.png" }],
     dietLog: [],
     dietFoodLibrary: {},
@@ -195,6 +209,7 @@ test("builds readable JSON exports with or without an account", () => {
     checkIns: 0,
     workoutSessions: 0,
     procedures: 0,
+    bloodworkResults: 0,
     faceMeasurements: 0,
     photoManifest: 0,
     dietEntries: 1,
@@ -206,6 +221,7 @@ test("builds readable JSON exports with or without an account", () => {
   assert.equal(signedInExport.accountData.goals.length, 1);
   assert.equal(signedInExport.accountData.checkIns[0].type, "cycle-phase");
   assert.equal(signedInExport.accountData.procedures[0].label, "Large tattoo session");
+  assert.equal(signedInExport.accountData.bloodworkResults[0].markerLabel, "LDL-C");
   assert.equal(signedInExport.accountData.photoManifest[0].hasImageData, true);
   assert.equal(serializedSignedIn.includes("secret"), false);
 });
@@ -244,6 +260,7 @@ test("restores account-scoped backup data into the active account without duplic
 
   assert.equal(restored.imported.checkIns, 2);
   assert.equal(restored.imported.procedures, 1);
+  assert.equal(restored.imported.bloodworkResults, 1);
   assert.equal(restored.imported.photoManifest, 1);
   assert.equal(restoredAgain.imported.checkIns, 0);
   assert.deepEqual(loadUserCheckIns("new-account").map((item) => item.accountId), [
@@ -254,5 +271,6 @@ test("restores account-scoped backup data into the active account without duplic
   assert.equal(loadUserProtocols("new-account")[0].label, "Training block");
   assert.equal(loadUserWorkoutSessions("new-account")[0].exerciseLabel, "Lateral raise");
   assert.equal(loadUserProcedures("new-account")[0].label, "Large tattoo session");
+  assert.equal(loadUserBloodworkResults("new-account")[0].markerLabel, "LDL-C");
   assert.equal(loadUserFaceMeasurements("new-account")[0].source, "photo");
 });

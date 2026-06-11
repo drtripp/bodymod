@@ -1,4 +1,5 @@
 import { summarizeSnapshotTrend } from "./comparison.js";
+import { buildBloodworkTrendRows, formatBloodworkResult } from "./bloodwork.js";
 import { formatFaceMetricSummary } from "./faceMeasurements.js";
 import { buildProtocolCaseLog } from "./protocolPlanning.js";
 import { buildProcedureCaseLog } from "./procedures.js";
@@ -45,6 +46,7 @@ export function buildProgressReportModel({
   checkIns = [],
   workoutSessions = [],
   procedures = [],
+  bloodworkResults = [],
   photos = [],
   faceMeasurements = []
 }) {
@@ -57,6 +59,7 @@ export function buildProgressReportModel({
   const procedureCaseLogs = procedures.map((procedure) =>
     buildProcedureCaseLog(procedure, snapshots, photos)
   );
+  const bloodworkTrends = buildBloodworkTrendRows(bloodworkResults);
 
   return {
     generatedAt: new Date().toISOString(),
@@ -72,6 +75,8 @@ export function buildProgressReportModel({
     protocolCaseLogs,
     procedures,
     procedureCaseLogs,
+    bloodworkResults,
+    bloodworkTrends,
     checkIns,
     workoutPrs,
     photoCounts,
@@ -200,6 +205,21 @@ export function buildProgressReportHtml(input) {
           model.procedureCaseLogs,
           (caseLog) => `<li><strong>${escapeHtml(caseLog.label)}</strong>: ${escapeHtml(caseLog.summary)} / ${escapeHtml(caseLog.reviewStatus)}</li>`,
           "No procedure case logs yet."
+        )}
+      </section>
+
+      <section>
+        <h2>Bloodwork</h2>
+        <p>${model.bloodworkResults.length} local-only lab result(s) logged. Excluded from server sync and share dashboards.</p>
+        ${listItems(
+          model.bloodworkTrends,
+          (trend) => `<li><strong>${escapeHtml(trend.markerLabel)}</strong>: latest ${escapeHtml(trend.latestValue)} ${escapeHtml(trend.unit)}${trend.delta === null ? "" : ` / delta ${escapeHtml(trend.delta)} ${escapeHtml(trend.unit)}`} / ${escapeHtml(trend.count)} result(s)</li>`,
+          "No bloodwork logged yet."
+        )}
+        ${listItems(
+          model.bloodworkResults.slice(0, 6),
+          (result) => `<li>${escapeHtml(formatBloodworkResult(result))} / ${escapeHtml(result.rangeStatus || "no-range")}${result.note ? ` / ${escapeHtml(result.note)}` : ""}</li>`,
+          "No recent lab results."
         )}
       </section>
 
