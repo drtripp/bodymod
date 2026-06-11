@@ -184,6 +184,69 @@ export function loadUserFaceMeasurements(accountId) {
   return faceMeasurements.filter((scan) => scan.accountId === accountId);
 }
 
+function collectionFromStorage(storageKey, collectionKey, fallbackRecords) {
+  if (Array.isArray(fallbackRecords)) {
+    return fallbackRecords;
+  }
+
+  const parsed = readStorage(storageKey, { [collectionKey]: [] });
+  return Array.isArray(parsed[collectionKey]) ? parsed[collectionKey] : [];
+}
+
+function countForAccount(records, accountId) {
+  return records.filter((record) => record.accountId === accountId).length;
+}
+
+export function buildLocalProfileSummaries({
+  accounts = loadAccounts(),
+  goals,
+  protocols,
+  checkIns,
+  workoutSessions,
+  procedures,
+  bloodworkResults,
+  photos,
+  faceMeasurements
+} = {}) {
+  const accountList = Array.isArray(accounts) ? accounts : [];
+  const goalRecords = collectionFromStorage(GOALS_KEY, "goals", goals);
+  const protocolRecords = collectionFromStorage(PROTOCOLS_KEY, "protocols", protocols);
+  const checkInRecords = collectionFromStorage(CHECKINS_KEY, "checkIns", checkIns);
+  const workoutRecords = collectionFromStorage(WORKOUTS_KEY, "workouts", workoutSessions);
+  const procedureRecords = collectionFromStorage(PROCEDURES_KEY, "procedures", procedures);
+  const bloodworkRecords = collectionFromStorage(BLOODWORK_KEY, "bloodworkResults", bloodworkResults);
+  const photoRecords = collectionFromStorage(PHOTOS_KEY, "photos", photos);
+  const faceMeasurementRecords = collectionFromStorage(
+    FACE_MEASUREMENTS_KEY,
+    "faceMeasurements",
+    faceMeasurements
+  );
+
+  return accountList.map((account) => {
+    const counts = {
+      goals: countForAccount(goalRecords, account.id),
+      protocols: countForAccount(protocolRecords, account.id),
+      checkIns: countForAccount(checkInRecords, account.id),
+      workoutSessions: countForAccount(workoutRecords, account.id),
+      procedures: countForAccount(procedureRecords, account.id),
+      bloodworkResults: countForAccount(bloodworkRecords, account.id),
+      photos: countForAccount(photoRecords, account.id),
+      faceMeasurements: countForAccount(faceMeasurementRecords, account.id)
+    };
+    const totalRecords = Object.values(counts).reduce((total, value) => total + value, 0);
+
+    return {
+      id: account.id,
+      displayName: account.displayName || account.email || "Local profile",
+      email: account.email || "",
+      personaId: account.personaId || "",
+      createdAt: account.createdAt || "",
+      counts,
+      totalRecords
+    };
+  });
+}
+
 function dailyWeightEntries(checkIns) {
   const dailyWeights = checkIns
     .filter((checkIn) => checkIn.type === "daily-weight" && Number.isFinite(Number(checkIn.weight)))

@@ -18,6 +18,7 @@ import {
   appendGoalCheckIn,
   appendProtocolCheckIn,
   archiveUserProtocol,
+  buildLocalProfileSummaries,
   buildTrendWeightSeries,
   calculateTrendWeight,
   clearSession,
@@ -35,6 +36,7 @@ import {
   loadUserProtocols,
   loadUserWorkoutSessions,
   loginLocalAccount,
+  persistSession,
   persistUserCheckIn,
   persistUserCheckIns,
   persistUserBloodworkResult,
@@ -427,6 +429,20 @@ export default function AccountGoalPanel({
   );
   const accountReferralCode = account ? referralCodeForAccount(account) : "";
   const referralSummary = summarizeReferralCredits(referralCredits, entitlementConfig);
+  const localProfileSummaries = useMemo(
+    () => buildLocalProfileSummaries({ accounts }),
+    [
+      accounts,
+      goals.length,
+      protocols.length,
+      checkIns.length,
+      workoutSessions.length,
+      procedures.length,
+      bloodworkResults.length,
+      photos.length,
+      faceMeasurements.length
+    ]
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -879,6 +895,19 @@ export default function AccountGoalPanel({
     clearSession();
     refreshAccountState(null);
     setStatus("Logged out of this browser profile.");
+  }
+
+  function handleSwitchProfile(accountId) {
+    const nextAccount = accounts.find((item) => item.id === accountId);
+    if (!nextAccount) {
+      setStatus("Local profile not found on this browser.");
+      return;
+    }
+
+    persistSession(nextAccount.id);
+    refreshAccountState(nextAccount);
+    setLoginEmail("");
+    setStatus(`Switched to ${nextAccount.displayName}.`);
   }
 
   function handleCustomGoalDeltaChange(metric, value) {
@@ -1862,6 +1891,36 @@ export default function AccountGoalPanel({
               </p>
             </form>
 
+            {localProfileSummaries.length ? (
+              <section className="profile-switcher" aria-label="Local profiles on this browser">
+                <div>
+                  <h3>Local profiles</h3>
+                  <p>
+                    Switch between separate browser-local profile stores for
+                    household, coach, or personal experiments.
+                  </p>
+                </div>
+                <ul className="profile-switcher-list">
+                  {localProfileSummaries.map((profile) => (
+                    <li key={profile.id}>
+                      <div>
+                        <strong>{profile.displayName}</strong>
+                        <span>{profile.email}</span>
+                        <small>{profile.totalRecords} local record(s)</small>
+                      </div>
+                      <button
+                        className="button"
+                        type="button"
+                        onClick={() => handleSwitchProfile(profile.id)}
+                      >
+                        Switch
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
             <section className="local-json-export-section" aria-label="Local JSON export">
               <div>
                 <h3>Local JSON export</h3>
@@ -1892,6 +1951,40 @@ export default function AccountGoalPanel({
                 Log out
               </button>
             </section>
+
+            {localProfileSummaries.length > 1 ? (
+              <section className="profile-switcher" aria-label="Profile switcher">
+                <div>
+                  <h3>Profile switcher</h3>
+                  <p>
+                    Each local profile has separate goals, protocols, check-ins,
+                    procedures, workouts, photos, labs, and face metric logs.
+                  </p>
+                </div>
+                <ul className="profile-switcher-list">
+                  {localProfileSummaries.map((profile) => (
+                    <li key={profile.id} className={profile.id === account.id ? "is-active" : ""}>
+                      <div>
+                        <strong>{profile.displayName}</strong>
+                        <span>{profile.email}</span>
+                        <small>
+                          {profile.counts.checkIns} check-in(s), {profile.counts.goals} goal(s),{" "}
+                          {profile.counts.protocols} protocol(s)
+                        </small>
+                      </div>
+                      <button
+                        className="button"
+                        type="button"
+                        onClick={() => handleSwitchProfile(profile.id)}
+                        disabled={profile.id === account.id}
+                      >
+                        {profile.id === account.id ? "Current" : "Switch"}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
             <section className="entitlement-section" aria-label="Plan and access">
               <div className="entitlement-current">

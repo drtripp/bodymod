@@ -92,6 +92,7 @@ Implemented now:
 - per-field noise bands on snapshot trend charts using the documented re-measurement error model
 - per-metric snapshot history charts with range filters and note annotations
 - local account workspace for persona walkthroughs, goals, protocols, check-ins, workouts, photos, and reports
+- local multi-profile switcher for browser-local accounts, with separate account-scoped logs and per-profile counts
 - daily weight trend smoothing with raw-dot vs smoothed-line display
 - historical weight CSV import for local daily logs, with lb/kg handling, optional calories, and duplicate-date skipping
 - optional left/right bicep, forearm, thigh, and calf split logs with local symmetry summaries

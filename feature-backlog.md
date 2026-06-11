@@ -495,6 +495,11 @@ land. No social features, no marketplace.
       is fine v1).
 - [ ] Multi-profile **(new)**: household/coach use; profiles are separate
       encrypted stores.
+      - First browser-local pass is in: the account panel now lists local
+        profiles with per-store counts and one-click switching across
+        account-scoped goals, protocols, check-ins, workouts, procedures,
+        labs, photos, and face metric logs. True client-side encrypted
+        cross-device profile stores remain part of encrypted sync above.
 - [ ] Personal data API **(new)**: token-scoped read access to one's own data
       once accounts exist; cheap to build, disproportionately loved by the
       quantified-self crowd.

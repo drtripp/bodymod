@@ -1771,6 +1771,29 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Check-in history")).toContainText("Guided weekly measurements: waist 86.0 cm");
   await expect(page.getByLabel("Check-in summary")).toContainText("4 log(s)");
 
+  await page.getByRole("button", { name: "Log out" }).click();
+  await expect(accountDialog).toContainText("Logged out of this browser profile.");
+  await expect(page.getByLabel("Local profiles on this browser")).toContainText("Mason");
+  await page.getByLabel("Display name").fill("Riley");
+  await page.getByLabel("Account email").fill("riley@example.com");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(accountDialog).toContainText("Signed in as Riley.");
+  const profileSwitcher = page.getByLabel("Profile switcher");
+  await expect(profileSwitcher).toContainText("Mason");
+  await expect(profileSwitcher).toContainText("Riley");
+  await expect(profileSwitcher.locator("li").filter({ hasText: "riley@example.com" })).toContainText("Current");
+  const masonProfile = profileSwitcher.locator("li").filter({ hasText: "mason@example.com" });
+  await expect(masonProfile).toContainText("check-in(s)");
+  await expect(masonProfile).toContainText("goal(s)");
+  await expect(masonProfile).toContainText("protocol(s)");
+  await masonProfile.getByRole("button", { name: "Switch" }).click();
+  await expect(accountDialog).toContainText("Switched to Mason.");
+  await expect(profileSwitcher.locator("li").filter({ hasText: "mason@example.com" })).toContainText("Current");
+  await expect(page.getByLabel("Saved goals")).toContainText("Improve shoulder-to-waist ratio");
+  await expect(page.getByLabel("Active protocols")).toContainText("Progressive resistance training");
+  await expect(page.getByLabel("Procedure logs")).toContainText("Large tattoo session");
+  await expect(page.getByLabel("Progress photo gallery")).toContainText("Week 1 front pose.");
+
   await page.getByRole("button", { name: "Close account panel" }).click();
   await expect(page.locator('input[name="height"]')).toHaveValue("181");
 });

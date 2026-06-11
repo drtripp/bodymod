@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildLocalProfileSummaries,
   buildTrendWeightSeries,
   calculateTrendWeight
 } from "../src/lib/account.js";
@@ -87,6 +88,40 @@ test("builds sorted raw and smoothed trend weight series", () => {
   assert.deepEqual(series.map((point) => point.raw), [100, 99, 98]);
   assert.deepEqual(series.map((point) => point.trend), [100, 99.75, 99.31]);
   assert.deepEqual(trend, { value: 99.3, delta: -0.4, count: 3 });
+});
+
+test("summarizes separate local profile stores", () => {
+  const summaries = buildLocalProfileSummaries({
+    accounts: [
+      { id: "coach", displayName: "Morgan", email: "coach@example.com", createdAt: "2026-06-01T00:00:00Z" },
+      { id: "client", displayName: "Riley", email: "riley@example.com", createdAt: "2026-06-02T00:00:00Z" }
+    ],
+    goals: [
+      { id: "goal-1", accountId: "coach" },
+      { id: "goal-2", accountId: "client" }
+    ],
+    protocols: [{ id: "protocol-1", accountId: "client" }],
+    checkIns: [
+      { id: "check-1", accountId: "coach" },
+      { id: "check-2", accountId: "client" },
+      { id: "check-3", accountId: "client" }
+    ],
+    workoutSessions: [{ id: "workout-1", accountId: "coach" }],
+    procedures: [{ id: "procedure-1", accountId: "client" }],
+    bloodworkResults: [{ id: "lab-1", accountId: "client" }],
+    photos: [{ id: "photo-1", accountId: "coach" }],
+    faceMeasurements: [{ id: "face-1", accountId: "client" }]
+  });
+
+  assert.equal(summaries.length, 2);
+  assert.equal(summaries[0].displayName, "Morgan");
+  assert.equal(summaries[0].counts.goals, 1);
+  assert.equal(summaries[0].counts.workoutSessions, 1);
+  assert.equal(summaries[0].totalRecords, 4);
+  assert.equal(summaries[1].counts.checkIns, 2);
+  assert.equal(summaries[1].counts.protocols, 1);
+  assert.equal(summaries[1].counts.faceMeasurements, 1);
+  assert.equal(summaries[1].totalRecords, 7);
 });
 
 test("parses optional left/right limb split logs and summarizes asymmetry", () => {

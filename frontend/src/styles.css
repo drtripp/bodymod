@@ -315,6 +315,7 @@ textarea {
 }
 
 .auth-card,
+.profile-switcher,
 .checkin-loop,
 .goal-builder,
 .goal-list-section,
@@ -335,6 +336,7 @@ textarea {
 
 .auth-card h3,
 .account-summary h3,
+.profile-switcher h3,
 .checkin-loop h3,
 .goal-builder h3,
 .goal-list-section h3,
@@ -398,6 +400,52 @@ textarea {
 
 .account-auth-grid .local-json-export-section {
   grid-column: 1 / -1;
+}
+
+.profile-switcher {
+  display: grid;
+  gap: 10px;
+}
+
+.account-auth-grid .profile-switcher {
+  grid-column: 1 / -1;
+}
+
+.profile-switcher p {
+  color: var(--color-muted);
+}
+
+.profile-switcher-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.profile-switcher-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  background: var(--color-page);
+  padding: 10px;
+}
+
+.profile-switcher-list li.is-active {
+  border-color: var(--color-accent);
+}
+
+.profile-switcher-list div {
+  display: grid;
+  gap: 2px;
+}
+
+.profile-switcher-list span,
+.profile-switcher-list small {
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
 }
 
 .entitlement-section {
