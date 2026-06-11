@@ -153,8 +153,13 @@ import {
   canAccessEntitlementFeature,
   entitlementTier,
   fallbackEntitlementConfig,
+  loadReferralCredits,
   loadProWaitlistSignups,
   normalizeEntitlementConfig,
+  referralCodeForAccount,
+  restoreReferralCredits,
+  saveReferralCredit,
+  summarizeReferralCredits,
   saveProWaitlistSignup
 } from "../lib/entitlements";
 import { sendTrendReminderNotificationIfDue } from "../lib/notifications";
@@ -404,6 +409,11 @@ export default function AccountGoalPanel({
   const [shareDashboardStatus, setShareDashboardStatus] = useState("");
   const [proWaitlistEmail, setProWaitlistEmail] = useState("");
   const [proWaitlistStatus, setProWaitlistStatus] = useState("");
+  const [referralCredits, setReferralCredits] = useState(() =>
+    loadReferralCredits(initialAccount?.id)
+  );
+  const [referralCodeInput, setReferralCodeInput] = useState("");
+  const [referralStatus, setReferralStatus] = useState("");
   const [selectedProtocolIds, setSelectedProtocolIds] = useState([]);
   const [status, setStatus] = useState("");
 
@@ -415,6 +425,8 @@ export default function AccountGoalPanel({
   const proPreviewFeatures = entitlementConfig.features.filter((feature) =>
     !canAccessEntitlementFeature(entitlementConfig, feature.id)
   );
+  const accountReferralCode = account ? referralCodeForAccount(account) : "";
+  const referralSummary = summarizeReferralCredits(referralCredits, entitlementConfig);
 
   useEffect(() => {
     let isMounted = true;
@@ -817,8 +829,11 @@ export default function AccountGoalPanel({
     setWorkoutSessions(loadUserWorkoutSessions(nextAccount?.id));
     setProcedures(loadUserProcedures(nextAccount?.id));
     setBloodworkResults(loadUserBloodworkResults(nextAccount?.id));
+    setReferralCredits(loadReferralCredits(nextAccount?.id));
     setPhotos(loadUserPhotos(nextAccount?.id));
     setFaceMeasurements(loadUserFaceMeasurements(nextAccount?.id));
+    setReferralCodeInput("");
+    setReferralStatus("");
   }
 
   function handleCreateAccount(event) {
@@ -1484,6 +1499,7 @@ export default function AccountGoalPanel({
       workoutSessions,
       procedures,
       bloodworkResults,
+      referralCredits,
       photos,
       faceMeasurements
     });
@@ -1499,6 +1515,7 @@ export default function AccountGoalPanel({
       workoutSessions,
       procedures,
       bloodworkResults,
+      referralCredits,
       photos,
       faceMeasurements,
       proWaitlistSignups: loadProWaitlistSignups()
@@ -1606,7 +1623,7 @@ export default function AccountGoalPanel({
     link.remove();
     window.URL.revokeObjectURL(url);
     setJsonExportStatus(
-      `JSON export downloaded: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.procedures} procedure(s), ${summary.bloodworkResults} lab result(s), ${summary.dietEntries} diet log(s), ${summary.fluidEntries} fluid log(s), and ${summary.photoManifest} photo manifest item(s).`
+      `JSON export downloaded: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.procedures} procedure(s), ${summary.bloodworkResults} lab result(s), ${summary.referralCredits} referral credit(s), ${summary.dietEntries} diet log(s), ${summary.fluidEntries} fluid log(s), and ${summary.photoManifest} photo manifest item(s).`
     );
   }
 
@@ -1631,7 +1648,7 @@ export default function AccountGoalPanel({
       link.remove();
       window.URL.revokeObjectURL(url);
       setBackupStatus(
-        `Encrypted backup downloaded: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.goals} goal(s), ${summary.protocols} protocol(s), ${summary.procedures} procedure(s), ${summary.bloodworkResults} lab result(s), and ${summary.photoManifest} photo manifest item(s).`
+        `Encrypted backup downloaded: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.goals} goal(s), ${summary.protocols} protocol(s), ${summary.procedures} procedure(s), ${summary.bloodworkResults} lab result(s), ${summary.referralCredits} referral credit(s), and ${summary.photoManifest} photo manifest item(s).`
       );
     } catch (error) {
       setBackupStatus(error.message);
@@ -1652,6 +1669,7 @@ export default function AccountGoalPanel({
           ? snapshotProps.onRestoreSnapshots(bundle.snapshots)
           : { importedCount: 0, skippedCount: bundle.snapshots.length };
         const restoreResult = restoreUserBackupData(account.id, bundle);
+        const referralRestore = restoreReferralCredits(account.id, bundle.referralCredits);
         const summary = summarizeLocalBackupBundle(bundle);
 
         setGoals(restoreResult.goals);
@@ -1660,9 +1678,10 @@ export default function AccountGoalPanel({
         setWorkoutSessions(restoreResult.workoutSessions);
         setProcedures(restoreResult.procedures);
         setBloodworkResults(restoreResult.bloodworkResults);
+        setReferralCredits(referralRestore.credits);
         setFaceMeasurements(restoreResult.faceMeasurements);
         setBackupStatus(
-          `Restored backup: ${snapshotRestore.importedCount} snapshot(s), ${restoreResult.imported.checkIns} check-in(s), ${restoreResult.imported.goals} goal(s), ${restoreResult.imported.protocols} protocol(s), ${restoreResult.imported.workoutSessions} workout(s), ${restoreResult.imported.procedures} procedure(s), ${restoreResult.imported.bloodworkResults} lab result(s), ${restoreResult.imported.faceMeasurements} face scan(s). Photo manifest: ${summary.photoManifest} item(s); image files are not included.`
+          `Restored backup: ${snapshotRestore.importedCount} snapshot(s), ${restoreResult.imported.checkIns} check-in(s), ${restoreResult.imported.goals} goal(s), ${restoreResult.imported.protocols} protocol(s), ${restoreResult.imported.workoutSessions} workout(s), ${restoreResult.imported.procedures} procedure(s), ${restoreResult.imported.bloodworkResults} lab result(s), ${referralRestore.importedCount} referral credit(s), ${restoreResult.imported.faceMeasurements} face scan(s). Photo manifest: ${summary.photoManifest} item(s); image files are not included.`
         );
       } catch (error) {
         setBackupStatus(error.message);
@@ -1711,6 +1730,45 @@ export default function AccountGoalPanel({
       );
     } catch (error) {
       setProWaitlistStatus(error.message);
+    }
+  }
+
+  async function handleCopyReferralInvite() {
+    if (!accountReferralCode) {
+      return;
+    }
+
+    const text = `Try Body Cafe with my referral code ${accountReferralCode}. Future Pro credits are optional; tracking and exports stay free.`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setReferralStatus("Referral invite copied.");
+    } catch (error) {
+      setReferralStatus(text);
+    }
+  }
+
+  function handleReferralSubmit(event) {
+    event.preventDefault();
+
+    try {
+      const credit = saveReferralCredit(
+        {
+          accountId: account?.id || "",
+          accountEmail: account?.email || "",
+          referralCode: referralCodeInput,
+          ownReferralCode: accountReferralCode
+        },
+        entitlementConfig
+      );
+      setReferralCredits(loadReferralCredits(account?.id));
+      setReferralCodeInput("");
+      setReferralStatus(
+        credit.duplicate
+          ? "Referral credit already logged locally."
+          : `Referral credit logged locally: ${credit.rewardLabel}.`
+      );
+    } catch (error) {
+      setReferralStatus(error.message);
     }
   }
 
@@ -1891,6 +1949,54 @@ export default function AccountGoalPanel({
                   ) : null}
                 </form>
               </div>
+              <form
+                className="referral-card"
+                aria-label="Referral credits"
+                onSubmit={handleReferralSubmit}
+              >
+                <div>
+                  <h4>Honest referral</h4>
+                  <p>{entitlementConfig.referral.message}</p>
+                  <small>{entitlementConfig.referral.disclaimer}</small>
+                </div>
+                <div className="referral-code-row">
+                  <span>Your code</span>
+                  <strong>{accountReferralCode}</strong>
+                  <button className="button" type="button" onClick={handleCopyReferralInvite}>
+                    Copy invite
+                  </button>
+                </div>
+                <label className="field">
+                  <span className="field-label">Friend referral code</span>
+                  <input
+                    aria-label="Friend referral code"
+                    value={referralCodeInput}
+                    onChange={(event) => setReferralCodeInput(event.target.value)}
+                    placeholder="BM-FRIEND1"
+                  />
+                </label>
+                <button className="button" type="submit">
+                  Log referral credit
+                </button>
+                <span>
+                  {referralSummary.count} local credit(s), {referralSummary.earnedMonths} future Pro month(s).
+                </span>
+                {referralCredits.length ? (
+                  <ul className="referral-credit-list" aria-label="Logged referral entries">
+                    {referralCredits.slice(0, 3).map((credit) => (
+                      <li key={credit.id}>
+                        <strong>{credit.referralCode}</strong>
+                        <span>{credit.rewardLabel} / {credit.status}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {referralStatus ? (
+                  <small className="referral-status" role="status" aria-live="polite">
+                    {referralStatus}
+                  </small>
+                ) : null}
+              </form>
             </section>
 
             <section className="progress-report-section" aria-label="Progress report">

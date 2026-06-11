@@ -362,6 +362,16 @@ class EntitlementWaitlist(BaseModel):
     message: str
 
 
+class EntitlementReferral(BaseModel):
+    enabled: bool
+    storage: str
+    rewardLabel: str
+    referrerCreditMonths: int = Field(ge=0)
+    refereeCreditMonths: int = Field(ge=0)
+    message: str
+    disclaimer: str
+
+
 class EntitlementConfig(BaseModel):
     version: int
     currentTier: str = "free"
@@ -370,6 +380,7 @@ class EntitlementConfig(BaseModel):
     features: list[EntitlementFeature]
     nonPaywalledFeatureIds: list[str] = []
     waitlist: EntitlementWaitlist
+    referral: EntitlementReferral
 
 
 class FoodMacros(BaseModel):

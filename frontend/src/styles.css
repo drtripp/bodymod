@@ -417,7 +417,8 @@ textarea {
 
 .entitlement-current h3,
 .entitlement-free h4,
-.pro-waitlist-card h4 {
+.pro-waitlist-card h4,
+.referral-card h4 {
   margin: 0 0 4px;
   font-size: 1rem;
 }
@@ -427,7 +428,11 @@ textarea {
 .pro-waitlist-card p,
 .pro-preview-card span,
 .pro-preview-card p,
-.pro-waitlist-status {
+.pro-waitlist-status,
+.referral-card p,
+.referral-card small,
+.referral-card span,
+.referral-status {
   color: var(--color-muted);
 }
 
@@ -464,6 +469,43 @@ textarea {
 .pro-waitlist-card {
   display: grid;
   gap: 8px;
+}
+
+.referral-card {
+  border: 1px solid var(--color-border);
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+}
+
+.referral-code-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.referral-code-row strong {
+  border: 1px solid var(--color-border);
+  background: var(--color-page);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding: 6px 8px;
+}
+
+.referral-credit-list {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+
+.referral-credit-list li {
+  border: 1px solid var(--color-border);
+  display: grid;
+  gap: 2px;
+  padding: 8px;
 }
 
 .pro-preview-list {
@@ -4743,6 +4785,7 @@ textarea {
   .local-json-export-section,
   .encrypted-backup-section,
   .entitlement-grid,
+  .referral-code-row,
   .persona-loader,
   .composition-grid,
   .public-share-grid,

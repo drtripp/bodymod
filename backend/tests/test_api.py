@@ -334,6 +334,11 @@ def test_entitlements_endpoint_keeps_current_tools_free() -> None:
 
     assert payload["currentTier"] == "free"
     assert payload["waitlist"]["enabled"] is True
+    assert payload["referral"]["enabled"] is True
+    assert payload["referral"]["rewardLabel"] == "1 Pro month"
+    assert payload["referral"]["referrerCreditMonths"] == 1
+    assert payload["referral"]["refereeCreditMonths"] == 1
+    assert "never gate" in payload["referral"]["disclaimer"]
     assert set(payload["nonPaywalledFeatureIds"]).issubset(feature_ids)
     assert {
         "measurement-tracking",

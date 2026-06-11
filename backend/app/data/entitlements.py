@@ -81,5 +81,14 @@ ENTITLEMENT_CONFIG = {
         "enabled": True,
         "storage": "local-only",
         "message": "Join the local Pro waitlist before pricing or checkout exists."
+    },
+    "referral": {
+        "enabled": True,
+        "storage": "local-only",
+        "rewardLabel": "1 Pro month",
+        "referrerCreditMonths": 1,
+        "refereeCreditMonths": 1,
+        "message": "Invite without pressure: both sides get one future Pro month when production accounts and billing exist.",
+        "disclaimer": "Referral credits never gate tracking, logs, exports, or results."
     }
 }

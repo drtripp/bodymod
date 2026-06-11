@@ -125,6 +125,17 @@ function sampleBundle() {
         localOnlySensitive: true
       }
     ],
+    referralCredits: [
+      {
+        id: "referral-1",
+        accountId: "old-account",
+        createdAt: "2026-06-05T16:00:00.000Z",
+        referralCode: "BM-FRIEND1",
+        rewardLabel: "1 Pro month",
+        status: "local-pending",
+        localOnly: true
+      }
+    ],
     photos: [
       {
         id: "photo-1",
@@ -163,6 +174,7 @@ test("builds backup bundles with photo manifests instead of image payloads", () 
     workoutSessions: 1,
     procedures: 1,
     bloodworkResults: 1,
+    referralCredits: 1,
     faceMeasurements: 1,
     photoManifest: 1
   });
@@ -189,6 +201,7 @@ test("builds readable JSON exports with or without an account", () => {
     checkIns: [{ id: "check-1", type: "cycle-phase" }],
     procedures: [{ id: "procedure-1", label: "Large tattoo session" }],
     bloodworkResults: [{ id: "blood-1", markerLabel: "LDL-C", value: 92 }],
+    referralCredits: [{ id: "referral-1", referralCode: "BM-FRIEND1" }],
     photos: [{ id: "photo-1", dataUrl: "data:image/png;base64,secret", fileName: "front.png" }],
     dietLog: [],
     dietFoodLibrary: {},
@@ -210,6 +223,7 @@ test("builds readable JSON exports with or without an account", () => {
     workoutSessions: 0,
     procedures: 0,
     bloodworkResults: 0,
+    referralCredits: 0,
     faceMeasurements: 0,
     photoManifest: 0,
     dietEntries: 1,
@@ -222,6 +236,7 @@ test("builds readable JSON exports with or without an account", () => {
   assert.equal(signedInExport.accountData.checkIns[0].type, "cycle-phase");
   assert.equal(signedInExport.accountData.procedures[0].label, "Large tattoo session");
   assert.equal(signedInExport.accountData.bloodworkResults[0].markerLabel, "LDL-C");
+  assert.equal(signedInExport.accountData.referralCredits[0].referralCode, "BM-FRIEND1");
   assert.equal(signedInExport.accountData.photoManifest[0].hasImageData, true);
   assert.equal(serializedSignedIn.includes("secret"), false);
 });

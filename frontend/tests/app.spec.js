@@ -1453,6 +1453,17 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
     JSON.parse(window.localStorage.getItem("bodymod:pro-waitlist:v1")).signups.length
   );
   expect(waitlistSignupCount).toBe(1);
+  await expect(page.getByLabel("Referral credits")).toContainText("Honest referral");
+  await expect(page.getByLabel("Referral credits")).toContainText("never gate tracking");
+  await page.getByLabel("Friend referral code").fill("BM-FRIEND1");
+  await page.getByRole("button", { name: "Log referral credit" }).click();
+  await expect(page.getByLabel("Referral credits")).toContainText("Referral credit logged locally: 1 Pro month.");
+  await expect(page.getByLabel("Referral credits")).toContainText("1 local credit(s), 1 future Pro month(s).");
+  await expect(page.getByLabel("Logged referral entries")).toContainText("BM-FRIEND1");
+  const referralCreditCount = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("bodymod:referral-credits:v1")).credits.length
+  );
+  expect(referralCreditCount).toBe(1);
 
   await page.getByLabel("Daily weight").fill("86.4");
   await page.getByLabel("Daily calories").fill("2400");
@@ -1776,6 +1787,9 @@ test("exports and restores encrypted local backups through the account UI", asyn
   await page.getByLabel("Bloodwork note").fill("Backup lab result.");
   await page.getByRole("button", { name: "Log bloodwork" }).click();
   await expect(page.getByLabel("Recent bloodwork results")).toContainText("LDL-C: 92 mg/dL");
+  await page.getByLabel("Friend referral code").fill("BM-BACKUP1");
+  await page.getByRole("button", { name: "Log referral credit" }).click();
+  await expect(page.getByLabel("Referral credits")).toContainText("BM-BACKUP1");
 
   await page.getByLabel("Backup passphrase").fill("correct horse battery staple");
   const downloadPromise = page.waitForEvent("download");
@@ -1795,6 +1809,7 @@ test("exports and restores encrypted local backups through the account UI", asyn
       "bodymod:workouts:v1",
       "bodymod:procedures:v1",
       "bodymod:bloodwork:v1",
+      "bodymod:referral-credits:v1",
       "bodymod:photos:v1",
       "bodymod:face-measurements:v1",
       "bodymod:snapshots:v1"
@@ -1815,6 +1830,7 @@ test("exports and restores encrypted local backups through the account UI", asyn
   await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 82.4 kg / 2400 kcal");
   await expect(page.getByLabel("Procedure logs")).toContainText("Large tattoo session");
   await expect(page.getByLabel("Recent bloodwork results")).toContainText("LDL-C: 92 mg/dL");
+  await expect(page.getByLabel("Referral credits")).toContainText("BM-BACKUP1");
   await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Backup baseline" })).toBeVisible();
 });
 

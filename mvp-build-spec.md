@@ -237,6 +237,8 @@ Implemented:
   tests cover corpus template parsing, normalization, bounds clamping, local
   age-gate storage, local overrides, high-risk classification, invalid evidence
   rejection, and export round trips
+- local-only honest referral scaffold records future Pro credits without
+  gating any existing tracking, result, export, or restore path
 - Playwright desktop and phone-viewport user-flow tests
 - graceful no-backend state for form and local snapshots
 - offline comparison copy separates backend target comparison from local snapshot comparison

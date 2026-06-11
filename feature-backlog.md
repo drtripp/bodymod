@@ -456,8 +456,11 @@ land. No social features, no marketplace.
       revoke tokens, plus signed-in account-panel publish/update/copy/revoke
       controls and a `?share=` read-only public dashboard. The header encoded
       measurement URL remains available pending the final launch share decision.
-- [ ] Honest referral **(new)**: both sides get a Pro month; never gates
-      features or results behind inviting.
+- [x] Honest referral **(new)**: both sides get a Pro month; never gates
+      features or results behind inviting. Implemented as a local-only
+      scaffold in the account panel: stable invite codes, friend-code logging,
+      future Pro-credit records, backup/export portability, entitlement config
+      metadata, and tests proving current tools remain non-gated.
 - [ ] Privacy-first product analytics: self-hosted PostHog or Plausible;
       event minimization; measurement values never in payloads (resolves the
       open analytics gate). **[human]** provider/hosting decision.
