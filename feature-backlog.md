@@ -145,7 +145,9 @@ Protocol Tracker → Diet upgrades → Native app.
       included as a metadata manifest only, not embedded image data.
 - [x] Measurement how-to guides: backend serves dummy per-field guide copy and
       the browser renders selectable schematic instructions in the dense
-      measurement form.
+      measurement form. The reviewable copy now lives in
+      `backend/app/data/measurement_guides.seed.json`, with validation that
+      every non-select schema field has exactly one guide.
 - [x] Local browser face measurements **(new)**: copy the troontraits
       approach, not its source code - use MediaPipe Face Landmarker /
       `@mediapipe/tasks-vision` in-browser with a self-hosted model to collect

@@ -1,4 +1,4 @@
-"""Validate editable curation JSON for target, planning, and strategy data.
+"""Validate editable curation JSON for target, guide, planning, and strategy data.
 
 Run from the backend directory:
 
@@ -8,6 +8,7 @@ Pass explicit files to validate a draft before replacing a seed:
 
     .\\.venv\\Scripts\\python.exe scripts\\validate_curation.py \\
         --target-file ..\\target-profiles-template.json \\
+        --guide-file app\\data\\measurement_guides.seed.json \\
         --planning-file app\\data\\planning.seed.json \\
         --corpus-file ..\\strategy-corpus-template.json
 """
@@ -22,7 +23,13 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.models import PlanningData, StrategyCorpusSeed, TargetProfile  # noqa: E402
+from app.measurement_schema import load_measurement_schema  # noqa: E402
+from app.models import (  # noqa: E402
+    MeasurementGuideLibrary,
+    PlanningData,
+    StrategyCorpusSeed,
+    TargetProfile,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -33,6 +40,9 @@ DEFAULT_TARGET_FILES = [
 ]
 DEFAULT_PLANNING_FILES = [
     BACKEND_ROOT / "app" / "data" / "planning.seed.json",
+]
+DEFAULT_GUIDE_FILES = [
+    BACKEND_ROOT / "app" / "data" / "measurement_guides.seed.json",
 ]
 DEFAULT_CORPUS_FILES = [
     BACKEND_ROOT / "app" / "data" / "strategy_corpus.seed.json",
@@ -134,6 +144,31 @@ def validate_planning_file(path: Path) -> str:
     )
 
 
+def validate_measurement_guide_file(path: Path) -> str:
+    payload = read_json(path)
+    library = MeasurementGuideLibrary.model_validate(payload)
+    expected_fields = {
+        field["name"]
+        for field in load_measurement_schema()["fields"]
+        if field.get("type") != "select"
+    }
+    guide_fields = [guide.field for guide in library.guides]
+    duplicates = duplicate_values(guide_fields)
+
+    if duplicates:
+        raise ValueError(f"{path}: duplicate measurement guide fields: {', '.join(duplicates)}.")
+
+    unknown_fields = sorted(set(guide_fields) - expected_fields)
+    if unknown_fields:
+        raise ValueError(f"{path}: unknown measurement guide fields: {', '.join(unknown_fields)}.")
+
+    missing_fields = sorted(expected_fields - set(guide_fields))
+    if missing_fields:
+        raise ValueError(f"{path}: missing measurement guide fields: {', '.join(missing_fields)}.")
+
+    return f"{path}: {len(library.guides)} measurement guide(s)"
+
+
 def validate_strategy_corpus_file(path: Path) -> str:
     payload = read_json(path)
     corpus = StrategyCorpusSeed.model_validate(payload)
@@ -225,16 +260,25 @@ def parse_args() -> argparse.Namespace:
         dest="planning_files",
         help="Planning/persona JSON file to validate. Repeatable.",
     )
+    parser.add_argument(
+        "--guide-file",
+        action="append",
+        type=Path,
+        dest="guide_files",
+        help="Measurement guide JSON file to validate. Repeatable.",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     target_files = args.target_files or DEFAULT_TARGET_FILES
+    guide_files = args.guide_files or DEFAULT_GUIDE_FILES
     planning_files = args.planning_files or DEFAULT_PLANNING_FILES
     corpus_files = args.corpus_files or DEFAULT_CORPUS_FILES
     summaries = [
         *(validate_target_file(path) for path in target_files),
+        *(validate_measurement_guide_file(path) for path in guide_files),
         *(validate_planning_file(path) for path in planning_files),
         *(validate_strategy_corpus_file(path) for path in corpus_files),
     ]

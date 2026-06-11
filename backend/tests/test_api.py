@@ -5,7 +5,10 @@ from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY, EXERCISE_SEED_PATH
 from app.data.food_usda import USDA_FOOD_LIBRARY
-from app.data.measurement_guides import MEASUREMENT_GUIDES
+from app.data.measurement_guides import (
+    MEASUREMENT_GUIDES,
+    MEASUREMENT_GUIDE_SEED_PATH,
+)
 from app.data.planning import (
     GOAL_PRESETS,
     PERSONAS,
@@ -315,11 +318,14 @@ def test_measurement_guides_endpoint_returns_field_guides() -> None:
     response = client.get("/api/measurement-guides")
 
     assert response.status_code == 200
+    assert MEASUREMENT_GUIDE_SEED_PATH.exists()
     payload = response.json()
     guide_fields = {guide["field"] for guide in payload["guides"]}
+    measurable_fields = {field for field in measurement_field_names() if field != "sex"}
 
     assert payload["version"] == MEASUREMENT_GUIDES["version"]
     assert "Dummy measurement how-to guide copy" in payload["reference"]
+    assert guide_fields == measurable_fields
     assert {
         "height",
         "weight",

@@ -131,6 +131,7 @@ Implemented now:
 - method/privacy content collapsed into a hover footnote
 - header share icon that copies an encoded measurement URL without showing a share panel
 - local-only lightweight usage event logging
+- backend measurement-guide seed file with reviewable copy for every measurable schema field
 - privacy control to inspect and clear local usage events
 - privacy-preserving browser error event ring plus optional opt-in backend
   upload to `/api/client-errors`; reports contain fingerprints and source
