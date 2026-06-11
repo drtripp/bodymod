@@ -102,7 +102,7 @@ Implemented now:
 - adaptive TDEE estimate from reliable daily weight and calorie logs, with reliability-window exclusions
 - guided weekly check-in flow with snapshot save, streak/grace state, heatmap, milestones, insight drops, and weekly digest
 - first Snapshot #1 save requests browser notification permission, stores the local preference, and stale-trend reminders use data-decay copy with service-worker delivery when available
-- optional remote web-push subscription scaffold with backend VAPID config, strict subscription storage, and an account-panel enable/disable control
+- optional remote web-push subscription scaffold with backend VAPID config, strict subscription storage, account-panel enable/disable control, and a dry-runable scheduled stale-trend delivery worker
 - maintenance drift alerts for saved goals once an at-target snapshot exists
 - optional local cycle phase logs that add weight/waist fluctuation context, remain off by default, and can be deleted separately
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations

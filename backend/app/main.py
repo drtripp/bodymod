@@ -219,6 +219,7 @@ def create_web_push_subscription(request: WebPushSubscriptionRequest) -> dict:
         request.context,
         request.userAgentFamily,
         request.createdAt,
+        request.nextReminderAfter,
     )
     response["deliveryConfigured"] = bool(web_push_config_payload()["enabled"])
     return response

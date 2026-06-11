@@ -111,7 +111,8 @@ bucket is not shared across workers.
 
 ## Remote Web Push
 
-The backend can store browser push subscriptions, but remote delivery is
+The backend stores browser push subscriptions and a timestamp-only
+`nextReminderAfter` schedule for stale-trend reminders. Remote delivery is
 disabled until VAPID settings are present:
 
 ```bash
@@ -121,8 +122,21 @@ set BODYMOD_WEB_PUSH_VAPID_SUBJECT=mailto:ops@example.com
 ```
 
 `GET /api/web-push/config` returns the public key only when all three values
-are configured. Subscription payloads are stored in SQLite for future
-stale-trend delivery jobs; they must not include measurements or account data.
+are configured. Subscription payloads are stored in SQLite for stale-trend
+delivery jobs; they must not include measurements or account data.
+
+Run the delivery worker from cron or the hosting scheduler. Use `--dry-run`
+first; it prints endpoint hashes and schedule times, not raw endpoints:
+
+```bash
+cd backend
+.venv\Scripts\python.exe scripts\send_trend_push_reminders.py --dry-run
+.venv\Scripts\python.exe scripts\send_trend_push_reminders.py
+```
+
+The worker sends the fixed data-decay reminder copy only, records last delivery
+status in SQLite, and moves the next attempted reminder at least 24 hours
+forward. Native app push remains separate native-app scope.
 
 ## Dependency Updates
 

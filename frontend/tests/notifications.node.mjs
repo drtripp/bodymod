@@ -4,11 +4,13 @@ import {
   buildTrendReminderCopy,
   fetchWebPushConfig,
   loadNotificationPreference,
+  nextTrendReminderAfter,
   recordTrendReminderSent,
   registerTrendNotificationWorker,
   requestTrendNotificationPermission,
   sendTrendReminderNotificationIfDue,
   shouldSendTrendReminder,
+  syncTrendPushReminderSchedule,
   subscribeTrendPushNotifications,
   unsubscribeTrendPushNotifications,
   urlBase64ToUint8Array
@@ -95,6 +97,17 @@ test("builds trend-staleness notification copy without body judgment", () => {
   assert.match(buildTrendReminderCopy({ status: "grace" }).body, /weekly check-in/i);
   assert.equal(buildTrendReminderCopy({ status: "needs-check-in" }).title, "Trend data is stale");
   assert.doesNotMatch(buildTrendReminderCopy({ status: "needs-check-in" }).body, /bad|failure|behind/i);
+  assert.equal(
+    nextTrendReminderAfter(
+      { status: "current", graceEndsAt: "2026-06-20T12:00:00.000Z" },
+      new Date("2026-06-10T12:00:00Z")
+    ),
+    "2026-06-20T12:00:00.000Z"
+  );
+  assert.equal(
+    nextTrendReminderAfter({ status: "needs-check-in" }, new Date("2026-06-10T12:00:00Z")),
+    "2026-06-10T12:00:00.000Z"
+  );
 });
 
 test("throttles stale trend reminders to once per day", () => {
@@ -325,6 +338,10 @@ test("subscribes remote web push only after notification permission is granted",
     serviceWorker,
     fetcher,
     navigatorRef: { userAgent: "Mozilla/5.0 Chrome/125.0" },
+    weeklyStreak: {
+      status: "current",
+      graceEndsAt: "2026-06-20T12:00:00.000Z"
+    },
     configEndpoint: "/push-config",
     subscriptionsEndpoint: "/push-subscriptions",
     now: new Date("2026-06-10T12:30:00Z")
@@ -340,8 +357,83 @@ test("subscribes remote web push only after notification permission is granted",
   assert.equal(calls[1].endpoint, "/push-subscriptions");
   assert.equal(posted.context, "trend-stale");
   assert.equal(posted.userAgentFamily, "Chrome");
+  assert.equal(posted.nextReminderAfter, "2026-06-20T12:00:00.000Z");
   assert.equal(posted.subscription.endpoint, subscriptionPayload.endpoint);
   assert.equal(String(calls[1].options.body).includes("measurements"), false);
+  assert.equal(
+    loadNotificationPreference(adapter).remotePushNextReminderAfter,
+    "2026-06-20T12:00:00.000Z"
+  );
+});
+
+test("syncs remote web push reminder schedule without measurement data", async () => {
+  const adapter = createMemoryStorageAdapter();
+  const subscriptionPayload = {
+    endpoint: "https://push.example.test/subscriptions/browser-3",
+    expirationTime: null,
+    keys: {
+      p256dh: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef0123456789_-",
+      auth: "abcdef0123456789_-"
+    }
+  };
+  recordTrendReminderSent(
+    {
+      permission: "granted",
+      remotePushStatus: "subscribed",
+      remotePushEndpointHash: "existing-hash",
+      lastReminderAt: ""
+    },
+    new Date("2026-06-09T09:00:00Z"),
+    adapter
+  );
+  const registration = {
+    pushManager: {
+      async getSubscription() {
+        return {
+          endpoint: subscriptionPayload.endpoint,
+          toJSON() {
+            return subscriptionPayload;
+          }
+        };
+      }
+    }
+  };
+  const calls = [];
+  const result = await syncTrendPushReminderSchedule({
+    adapter,
+    serviceWorker: {
+      async register() {
+        return registration;
+      },
+      ready: Promise.resolve(registration)
+    },
+    subscriptionsEndpoint: "/push-subscriptions",
+    navigatorRef: { userAgent: "Mozilla/5.0 Firefox/126.0" },
+    weeklyStreak: { status: "needs-check-in" },
+    now: new Date("2026-06-11T12:00:00Z"),
+    async fetcher(endpoint, options = {}) {
+      calls.push({ endpoint, options });
+      return {
+        ok: true,
+        async json() {
+          return {
+            status: "accepted",
+            stored: true,
+            endpointHash: "synced-hash",
+            nextReminderAfter: "2026-06-11T12:00:00.000Z"
+          };
+        }
+      };
+    }
+  });
+
+  const posted = JSON.parse(calls[0].options.body);
+  assert.equal(result.synced, true);
+  assert.equal(result.nextReminderAfter, "2026-06-11T12:00:00.000Z");
+  assert.equal(posted.userAgentFamily, "Firefox");
+  assert.equal(posted.nextReminderAfter, "2026-06-11T12:00:00.000Z");
+  assert.equal(String(calls[0].options.body).includes("measurements"), false);
+  assert.equal(loadNotificationPreference(adapter).remotePushEndpointHash, "synced-hash");
 });
 
 test("unsubscribes remote web push and revokes the backend endpoint", async () => {

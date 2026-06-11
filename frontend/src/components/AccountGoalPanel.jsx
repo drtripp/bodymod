@@ -175,6 +175,7 @@ import {
 import {
   loadNotificationPreference,
   sendTrendReminderNotificationIfDue,
+  syncTrendPushReminderSchedule,
   subscribeTrendPushNotifications,
   unsubscribeTrendPushNotifications
 } from "../lib/notifications";
@@ -841,6 +842,20 @@ export default function AccountGoalPanel({
     void sendTrendReminderNotificationIfDue({ weeklyStreak });
   }, [account?.id, weeklyStreak.latestAt, weeklyStreak.status]);
 
+  useEffect(() => {
+    if (!account || remotePushStatus !== "subscribed") {
+      return;
+    }
+
+    void syncTrendPushReminderSchedule({ weeklyStreak });
+  }, [
+    account?.id,
+    remotePushStatus,
+    weeklyStreak.graceEndsAt,
+    weeklyStreak.latestAt,
+    weeklyStreak.status
+  ]);
+
   const protocolSchemaSummary = useMemo(
     () => formatProtocolSchemaSummary(planningData.protocolTaxonomy),
     [planningData.protocolTaxonomy]
@@ -1306,7 +1321,7 @@ export default function AccountGoalPanel({
 
   async function handleEnableRemoteTrendPush() {
     setRemotePushStatus("checking");
-    const result = await subscribeTrendPushNotifications();
+    const result = await subscribeTrendPushNotifications({ weeklyStreak });
     setRemotePushStatus(result.preference.remotePushStatus);
     setStatus(
       result.subscribed

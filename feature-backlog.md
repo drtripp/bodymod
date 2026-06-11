@@ -201,8 +201,12 @@ Protocol Tracker → Diet upgrades → Native app.
       `/api/web-push/config` plus strict subscribe/unsubscribe endpoints backed
       by SQLite, and the account panel can explicitly subscribe this browser
       only when notifications are already granted and VAPID settings are
-      configured. Actual scheduled remote delivery workers and native push
-      remain open.
+      configured. **Fourth web pass:** subscribed browsers now send only a
+      timestamp-only `nextReminderAfter` schedule, the backend tracks due
+      stale-trend deliveries and last delivery status, and
+      `backend/scripts/send_trend_push_reminders.py` can run from cron in
+      dry-run or VAPID-send mode without reading measurements. Native push
+      remains open.
 
 ## 5. Protocol Tracker ("Build Plan" button)
 

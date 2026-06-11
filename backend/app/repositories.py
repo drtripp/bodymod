@@ -4,7 +4,7 @@ import os
 import secrets
 import sqlite3
 from contextlib import closing
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -157,6 +157,26 @@ class TargetRepository:
 
 def utc_timestamp() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def parse_iso_timestamp(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def normalize_iso_timestamp(value: str | datetime | None) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        parsed = value
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc).replace(microsecond=0).isoformat()
+    return normalize_iso_timestamp(parse_iso_timestamp(value))
 
 
 def hash_revoke_token(token: str) -> str:
@@ -498,9 +518,11 @@ class WebPushSubscriptionRepository:
         context: str,
         user_agent_family: str,
         created_at: str,
+        next_reminder_after: str | None = None,
     ) -> dict[str, Any]:
         endpoint_hash = hash_web_push_endpoint(subscription.endpoint)
         timestamp = utc_timestamp()
+        normalized_next_reminder_after = normalize_iso_timestamp(next_reminder_after)
         payload_json = json.dumps(
             subscription.model_dump(mode="json"),
             separators=(",", ":"),
@@ -518,16 +540,18 @@ class WebPushSubscriptionRepository:
                         user_agent_family,
                         subscription_json,
                         browser_created_at,
+                        next_reminder_after,
                         created_at,
                         updated_at,
                         revoked_at
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)
                     ON CONFLICT(endpoint_hash) DO UPDATE SET
                         context = excluded.context,
                         user_agent_family = excluded.user_agent_family,
                         subscription_json = excluded.subscription_json,
                         browser_created_at = excluded.browser_created_at,
+                        next_reminder_after = excluded.next_reminder_after,
                         updated_at = excluded.updated_at,
                         revoked_at = NULL
                     """,
@@ -537,6 +561,7 @@ class WebPushSubscriptionRepository:
                         user_agent_family,
                         payload_json,
                         created_at,
+                        normalized_next_reminder_after,
                         timestamp,
                         timestamp,
                     ),
@@ -546,6 +571,7 @@ class WebPushSubscriptionRepository:
             "status": "accepted",
             "stored": True,
             "endpointHash": endpoint_hash,
+            "nextReminderAfter": normalized_next_reminder_after,
         }
 
     def revoke_subscription(self, endpoint: str) -> dict[str, Any]:
@@ -573,7 +599,9 @@ class WebPushSubscriptionRepository:
             rows = connection.execute(
                 f"""
                 SELECT endpoint_hash, context, user_agent_family, subscription_json,
-                       browser_created_at, created_at, updated_at, revoked_at
+                       browser_created_at, next_reminder_after, last_delivery_attempt_at,
+                       last_delivered_at, last_delivery_status, last_delivery_error,
+                       created_at, updated_at, revoked_at
                 FROM web_push_subscriptions
                 {where_clause}
                 ORDER BY updated_at ASC, endpoint_hash ASC
@@ -587,12 +615,96 @@ class WebPushSubscriptionRepository:
                 "userAgentFamily": row["user_agent_family"],
                 "subscription": json.loads(row["subscription_json"]),
                 "browserCreatedAt": row["browser_created_at"],
+                "nextReminderAfter": row["next_reminder_after"],
+                "lastDeliveryAttemptAt": row["last_delivery_attempt_at"],
+                "lastDeliveredAt": row["last_delivered_at"],
+                "lastDeliveryStatus": row["last_delivery_status"],
+                "lastDeliveryError": row["last_delivery_error"],
                 "createdAt": row["created_at"],
                 "updatedAt": row["updated_at"],
                 "revokedAt": row["revoked_at"],
             }
             for row in rows
         ]
+
+    def list_due_trend_reminder_dicts(
+        self,
+        now: str | datetime | None = None,
+        limit: int = 100,
+        delivery_cooldown_hours: int = 24,
+    ) -> list[dict[str, Any]]:
+        reference = parse_iso_timestamp(normalize_iso_timestamp(now) or utc_timestamp())
+        cooldown_after = reference - timedelta(hours=delivery_cooldown_hours)
+        due_subscriptions: list[dict[str, Any]] = []
+
+        for subscription in self.list_subscription_dicts():
+            if subscription["context"] != "trend-stale" or not subscription["nextReminderAfter"]:
+                continue
+
+            reminder_after = parse_iso_timestamp(subscription["nextReminderAfter"])
+            if not reminder_after or reminder_after > reference:
+                continue
+
+            last_attempt = parse_iso_timestamp(subscription["lastDeliveryAttemptAt"])
+            if last_attempt and last_attempt > cooldown_after:
+                continue
+
+            due_subscriptions.append(subscription)
+
+        return sorted(
+            due_subscriptions,
+            key=lambda item: (item["nextReminderAfter"], item["endpointHash"]),
+        )[:limit]
+
+    def record_delivery_attempt(
+        self,
+        endpoint_hash: str,
+        status: str,
+        attempted_at: str | datetime | None = None,
+        error: str = "",
+        next_reminder_after: str | datetime | None = None,
+    ) -> dict[str, Any]:
+        if status not in {"sent", "failed"}:
+            raise ValueError("Web push delivery status must be sent or failed.")
+
+        normalized_attempted_at = normalize_iso_timestamp(attempted_at or utc_timestamp())
+        attempted_datetime = parse_iso_timestamp(normalized_attempted_at)
+        normalized_next_reminder_after = normalize_iso_timestamp(
+            next_reminder_after or (attempted_datetime + timedelta(hours=24))
+        )
+        truncated_error = error[:240]
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            with connection:
+                cursor = connection.execute(
+                    """
+                    UPDATE web_push_subscriptions
+                    SET last_delivery_attempt_at = ?,
+                        last_delivered_at = CASE WHEN ? = 'sent' THEN ? ELSE last_delivered_at END,
+                        last_delivery_status = ?,
+                        last_delivery_error = ?,
+                        next_reminder_after = ?,
+                        updated_at = ?
+                    WHERE endpoint_hash = ? AND revoked_at IS NULL
+                    """,
+                    (
+                        normalized_attempted_at,
+                        status,
+                        normalized_attempted_at,
+                        status,
+                        truncated_error,
+                        normalized_next_reminder_after,
+                        normalized_attempted_at,
+                        endpoint_hash,
+                    ),
+                )
+
+        return {
+            "status": status,
+            "recorded": cursor.rowcount > 0,
+            "nextReminderAfter": normalized_next_reminder_after,
+        }
 
     def _connect(self) -> sqlite3.Connection:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -609,9 +721,30 @@ class WebPushSubscriptionRepository:
                 user_agent_family TEXT NOT NULL,
                 subscription_json TEXT NOT NULL,
                 browser_created_at TEXT NOT NULL,
+                next_reminder_after TEXT,
+                last_delivery_attempt_at TEXT,
+                last_delivered_at TEXT,
+                last_delivery_status TEXT,
+                last_delivery_error TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
                 revoked_at TEXT
             )
             """
         )
+        columns = {
+            row["name"]
+            for row in connection.execute("PRAGMA table_info(web_push_subscriptions)").fetchall()
+        }
+        migrations = {
+            "next_reminder_after": "TEXT",
+            "last_delivery_attempt_at": "TEXT",
+            "last_delivered_at": "TEXT",
+            "last_delivery_status": "TEXT",
+            "last_delivery_error": "TEXT",
+        }
+        for column, definition in migrations.items():
+            if column not in columns:
+                connection.execute(
+                    f"ALTER TABLE web_push_subscriptions ADD COLUMN {column} {definition}"
+                )

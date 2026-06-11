@@ -17,7 +17,8 @@ export function defaultNotificationPreference() {
     lastReminderAt: "",
     remotePushStatus: "not-configured",
     remotePushEndpointHash: "",
-    remotePushUpdatedAt: ""
+    remotePushUpdatedAt: "",
+    remotePushNextReminderAfter: ""
   };
 }
 
@@ -197,10 +198,42 @@ function persistRemotePushStatus(status, adapter, details = {}) {
       ...loadNotificationPreference(adapter),
       remotePushStatus: status,
       remotePushEndpointHash: details.endpointHash || "",
-      remotePushUpdatedAt: details.now ? details.now.toISOString() : new Date().toISOString()
+      remotePushUpdatedAt: details.now ? details.now.toISOString() : new Date().toISOString(),
+      remotePushNextReminderAfter: details.nextReminderAfter || ""
     },
     adapter
   );
+}
+
+export function nextTrendReminderAfter(weeklyStreak = {}, now = new Date()) {
+  if (weeklyStreak?.status === "needs-check-in") {
+    return now.toISOString();
+  }
+
+  const candidate = weeklyStreak?.graceEndsAt || "";
+  const timestamp = Date.parse(candidate);
+  if (!Number.isFinite(timestamp)) {
+    return "";
+  }
+
+  return new Date(Math.max(timestamp, now.getTime())).toISOString();
+}
+
+function webPushSubscriptionRequestBody({
+  subscription,
+  weeklyStreak,
+  now,
+  navigatorRef
+}) {
+  const reminderAfter = nextTrendReminderAfter(weeklyStreak, now);
+
+  return {
+    subscription,
+    context: "trend-stale",
+    userAgentFamily: userAgentFamily(navigatorRef),
+    createdAt: now.toISOString(),
+    nextReminderAfter: reminderAfter || null
+  };
 }
 
 export async function subscribeTrendPushNotifications({
@@ -210,6 +243,7 @@ export async function subscribeTrendPushNotifications({
   serviceWorker = serviceWorkerApi(),
   fetcher = fetchApi(),
   navigatorRef = typeof navigator === "undefined" ? null : navigator,
+  weeklyStreak = null,
   workerUrl = TREND_NOTIFICATION_WORKER_URL,
   configEndpoint = WEB_PUSH_CONFIG_ENDPOINT,
   subscriptionsEndpoint = WEB_PUSH_SUBSCRIPTIONS_ENDPOINT
@@ -265,17 +299,18 @@ export async function subscribeTrendPushNotifications({
         applicationServerKey: urlBase64ToUint8Array(config.vapidPublicKey)
       }));
     const payload = normalizePushSubscription(subscription);
+    const requestBody = webPushSubscriptionRequestBody({
+      subscription: payload,
+      weeklyStreak,
+      now,
+      navigatorRef
+    });
     const response = await fetcher(subscriptionsEndpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        subscription: payload,
-        context: "trend-stale",
-        userAgentFamily: userAgentFamily(navigatorRef),
-        createdAt: now.toISOString()
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
@@ -285,13 +320,15 @@ export async function subscribeTrendPushNotifications({
     const body = await response.json();
     const preference = persistRemotePushStatus("subscribed", adapter, {
       endpointHash: body.endpointHash,
-      now
+      now,
+      nextReminderAfter: body.nextReminderAfter || requestBody.nextReminderAfter || ""
     });
     return {
       subscribed: true,
       subscription: payload,
       endpointHash: body.endpointHash,
       deliveryConfigured: Boolean(body.deliveryConfigured),
+      nextReminderAfter: body.nextReminderAfter || requestBody.nextReminderAfter || "",
       preference
     };
   } catch (error) {
@@ -300,6 +337,87 @@ export async function subscribeTrendPushNotifications({
       subscribed: false,
       reason: "failed",
       preference
+    };
+  }
+}
+
+export async function syncTrendPushReminderSchedule({
+  adapter,
+  now = new Date(),
+  weeklyStreak = null,
+  serviceWorker = serviceWorkerApi(),
+  fetcher = fetchApi(),
+  navigatorRef = typeof navigator === "undefined" ? null : navigator,
+  workerUrl = TREND_NOTIFICATION_WORKER_URL,
+  subscriptionsEndpoint = WEB_PUSH_SUBSCRIPTIONS_ENDPOINT
+} = {}) {
+  const currentPreference = loadNotificationPreference(adapter);
+  if (currentPreference.remotePushStatus !== "subscribed") {
+    return {
+      synced: false,
+      reason: "not-subscribed",
+      preference: currentPreference
+    };
+  }
+
+  if (!serviceWorker || !fetcher) {
+    return {
+      synced: false,
+      reason: "unsupported",
+      preference: currentPreference
+    };
+  }
+
+  try {
+    const registration = await readyServiceWorkerRegistration(serviceWorker, workerUrl);
+    const subscription =
+      registration?.pushManager && typeof registration.pushManager.getSubscription === "function"
+        ? await registration.pushManager.getSubscription()
+        : null;
+    if (!subscription) {
+      return {
+        synced: false,
+        reason: "missing-subscription",
+        preference: currentPreference
+      };
+    }
+
+    const payload = normalizePushSubscription(subscription);
+    const requestBody = webPushSubscriptionRequestBody({
+      subscription: payload,
+      weeklyStreak,
+      now,
+      navigatorRef
+    });
+    const response = await fetcher(subscriptionsEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(requestBody)
+    });
+    if (!response.ok) {
+      throw new Error(`Web push schedule sync failed: ${response.status}`);
+    }
+
+    const body = await response.json();
+    const preference = persistRemotePushStatus("subscribed", adapter, {
+      endpointHash: body.endpointHash || currentPreference.remotePushEndpointHash,
+      now,
+      nextReminderAfter: body.nextReminderAfter || requestBody.nextReminderAfter || ""
+    });
+
+    return {
+      synced: true,
+      endpointHash: body.endpointHash || currentPreference.remotePushEndpointHash,
+      nextReminderAfter: body.nextReminderAfter || requestBody.nextReminderAfter || "",
+      preference
+    };
+  } catch (error) {
+    return {
+      synced: false,
+      reason: "failed",
+      preference: currentPreference
     };
   }
 }

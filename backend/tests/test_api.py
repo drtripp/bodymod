@@ -31,6 +31,7 @@ from app.repositories import (
     WebPushSubscriptionRepository,
     load_target_seed,
 )
+from app.web_push import trend_stale_push_payload
 
 
 client = TestClient(app)
@@ -578,6 +579,7 @@ def web_push_subscription_payload(endpoint: str = "https://push.example.test/sub
         "context": "trend-stale",
         "userAgentFamily": "Chrome",
         "createdAt": "2026-06-10T12:00:00.000Z",
+        "nextReminderAfter": "2026-06-20T12:00:00.000Z",
     }
 
 
@@ -612,6 +614,7 @@ def test_web_push_subscription_endpoint_stores_minimal_push_envelope() -> None:
     assert payload["stored"] is True
     assert payload["endpointHash"]
     assert payload["deliveryConfigured"] is False
+    assert payload["nextReminderAfter"] == "2026-06-20T12:00:00+00:00"
 
     subscriptions = [
         subscription
@@ -620,6 +623,7 @@ def test_web_push_subscription_endpoint_stores_minimal_push_envelope() -> None:
     ]
     assert len(subscriptions) == 1
     assert subscriptions[0]["context"] == "trend-stale"
+    assert subscriptions[0]["nextReminderAfter"] == "2026-06-20T12:00:00+00:00"
     assert subscriptions[0]["subscription"]["endpoint"] == endpoint
     assert "measurements" not in subscriptions[0]["subscription"]
 
@@ -642,6 +646,20 @@ def test_web_push_subscription_rejects_measurement_or_unsafe_payloads() -> None:
     unsafe_endpoint = web_push_subscription_payload("http://push.example.test/subscriptions/test-api-2")
     unsafe_response = client.post("/api/web-push/subscriptions", json=unsafe_endpoint)
     assert unsafe_response.status_code == 422
+
+    bad_schedule = web_push_subscription_payload("https://push.example.test/subscriptions/test-api-3")
+    bad_schedule["nextReminderAfter"] = "not-a-date"
+    schedule_response = client.post("/api/web-push/subscriptions", json=bad_schedule)
+    assert schedule_response.status_code == 422
+
+
+def test_web_push_delivery_payload_stays_non_personal() -> None:
+    payload = trend_stale_push_payload()
+
+    assert "Trend data is stale" in payload
+    assert "measurements" not in payload
+    assert "weight" not in payload
+    assert "waist" not in payload
 
 
 def share_dashboard_payload(title: str = "Mason bodymod dashboard") -> dict:

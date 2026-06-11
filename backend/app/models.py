@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -614,6 +615,18 @@ class WebPushSubscriptionRequest(BaseModel):
     context: Literal["trend-stale"] = "trend-stale"
     userAgentFamily: str = Field(default="Unknown", max_length=40)
     createdAt: str = Field(min_length=1, max_length=40)
+    nextReminderAfter: str | None = Field(default=None, max_length=40)
+
+    @field_validator("createdAt", "nextReminderAfter")
+    @classmethod
+    def require_isoish_timestamp(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        try:
+            datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("Web push timestamps must be ISO-8601 strings.") from error
+        return value
 
 
 class WebPushUnsubscribeRequest(BaseModel):
@@ -633,6 +646,7 @@ class WebPushSubscriptionResponse(BaseModel):
     stored: bool = True
     endpointHash: str
     deliveryConfigured: bool = False
+    nextReminderAfter: str | None = None
 
 
 class WebPushUnsubscribeResponse(BaseModel):
