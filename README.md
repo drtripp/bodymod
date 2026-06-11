@@ -127,6 +127,7 @@ Implemented now:
 - population charts load the backend mixed NHANES/scaffold reference model when available and fall back locally when offline
 - Body/Diet top-level switcher
 - Diet tracker with backend USDA-style generic food search, Open Food Facts search, barcode lookup, optional browser barcode scanner, CSV import, local food log, macro targets, and expanded micronutrient target rows
+- backend USDA-style food seed file with dummy FDC provenance, search keywords, and nutrient validation
 - public marketing page at `/landing.html` with current app screenshots, privacy stance, planned store links, and local Pro waitlist capture
 - method/privacy content collapsed into a hover footnote
 - header share icon that copies an encoded measurement URL without showing a share panel

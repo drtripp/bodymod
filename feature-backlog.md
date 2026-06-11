@@ -359,7 +359,10 @@ Protocol Tracker → Diet upgrades → Native app.
       in one tap, and copy the latest logged day.
 - [x] USDA FoodData Central as a second lookup source **(new)**: backend
       now serves dummy FDC-style generic foods and Diet merges them with Open
-      Food Facts results.
+      Food Facts results. The dummy rows now live in
+      `backend/app/data/food_usda.seed.json`, with validation for duplicate
+      IDs/FDC IDs, search keywords, required macro/micronutrient keys, and
+      nonnegative nutrient values.
 - [ ] Production FDC import/API pipeline, API-key decision, and nutrient
       validation. **[human]**
 - [x] Water/fluid logging **(new)**: Diet has local fluid entries, quick ml

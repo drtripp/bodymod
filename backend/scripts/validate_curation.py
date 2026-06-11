@@ -1,4 +1,4 @@
-"""Validate editable curation JSON for target, guide, planning, and strategy data.
+"""Validate editable curation JSON for target, guide, food, planning, and strategy data.
 
 Run from the backend directory:
 
@@ -9,6 +9,7 @@ Pass explicit files to validate a draft before replacing a seed:
     .\\.venv\\Scripts\\python.exe scripts\\validate_curation.py \\
         --target-file ..\\target-profiles-template.json \\
         --guide-file app\\data\\measurement_guides.seed.json \\
+        --food-file app\\data\\food_usda.seed.json \\
         --planning-file app\\data\\planning.seed.json \\
         --corpus-file ..\\strategy-corpus-template.json
 """
@@ -25,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.measurement_schema import load_measurement_schema  # noqa: E402
 from app.models import (  # noqa: E402
+    FoodSearchResponse,
     MeasurementGuideLibrary,
     PlanningData,
     StrategyCorpusSeed,
@@ -44,6 +46,9 @@ DEFAULT_PLANNING_FILES = [
 DEFAULT_GUIDE_FILES = [
     BACKEND_ROOT / "app" / "data" / "measurement_guides.seed.json",
 ]
+DEFAULT_FOOD_FILES = [
+    BACKEND_ROOT / "app" / "data" / "food_usda.seed.json",
+]
 DEFAULT_CORPUS_FILES = [
     BACKEND_ROOT / "app" / "data" / "strategy_corpus.seed.json",
     REPO_ROOT / "strategy-corpus-template.json",
@@ -53,6 +58,20 @@ HIGH_RISK_SENSITIVITIES = {
     "surgical",
     "pharmaceutical",
     "medical-adjacent",
+}
+REQUIRED_FOOD_MACRO_KEYS = {"calories", "protein", "carbs", "fat"}
+REQUIRED_FOOD_MICRO_KEYS = {
+    "fiber",
+    "sugar",
+    "sodium",
+    "potassium",
+    "calcium",
+    "iron",
+    "magnesium",
+    "zinc",
+    "vitaminC",
+    "vitaminD",
+    "vitaminB12",
 }
 
 
@@ -169,6 +188,46 @@ def validate_measurement_guide_file(path: Path) -> str:
     return f"{path}: {len(library.guides)} measurement guide(s)"
 
 
+def validate_food_file(path: Path) -> str:
+    payload = read_json(path)
+    library = FoodSearchResponse.model_validate(payload)
+    food_ids = [food.id for food in library.foods]
+    fdc_ids = [food.fdcId or "" for food in library.foods]
+    id_duplicates = duplicate_values(food_ids)
+    fdc_duplicates = duplicate_values([fdc_id for fdc_id in fdc_ids if fdc_id])
+
+    if not library.foods:
+        raise ValueError(f"{path}: expected at least one food row.")
+    if id_duplicates:
+        raise ValueError(f"{path}: duplicate food ids: {', '.join(id_duplicates)}.")
+    if fdc_duplicates:
+        raise ValueError(f"{path}: duplicate FDC ids: {', '.join(fdc_duplicates)}.")
+
+    for food in library.foods:
+        if not food.keywords:
+            raise ValueError(f"{path}: food {food.id!r} needs search keywords.")
+        if not food.fdcId or not food.fdcId.startswith("dummy-"):
+            raise ValueError(f"{path}: food {food.id!r} needs dummy FDC provenance.")
+
+    for food in payload.get("foods", []):
+        food_id = food.get("id")
+        for group, required_keys in {
+            "macros": REQUIRED_FOOD_MACRO_KEYS,
+            "micros": REQUIRED_FOOD_MICRO_KEYS,
+        }.items():
+            nutrients = food.get(group, {})
+            missing = required_keys - set(nutrients.keys())
+            if missing:
+                raise ValueError(
+                    f"{path}: food {food_id!r} missing {group}: {', '.join(sorted(missing))}."
+                )
+            for key, value in nutrients.items():
+                if not isinstance(value, (int, float)) or value < 0:
+                    raise ValueError(f"{path}: food {food_id!r} has invalid {group}.{key}.")
+
+    return f"{path}: {len(library.foods)} USDA-style food row(s)"
+
+
 def validate_strategy_corpus_file(path: Path) -> str:
     payload = read_json(path)
     corpus = StrategyCorpusSeed.model_validate(payload)
@@ -237,7 +296,7 @@ def validate_strategy_corpus_file(path: Path) -> str:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Validate target-profile and strategy-corpus curation JSON."
+        description="Validate editable seed and curation JSON."
     )
     parser.add_argument(
         "--target-file",
@@ -267,6 +326,13 @@ def parse_args() -> argparse.Namespace:
         dest="guide_files",
         help="Measurement guide JSON file to validate. Repeatable.",
     )
+    parser.add_argument(
+        "--food-file",
+        action="append",
+        type=Path,
+        dest="food_files",
+        help="USDA-style food seed JSON file to validate. Repeatable.",
+    )
     return parser.parse_args()
 
 
@@ -274,11 +340,13 @@ def main() -> int:
     args = parse_args()
     target_files = args.target_files or DEFAULT_TARGET_FILES
     guide_files = args.guide_files or DEFAULT_GUIDE_FILES
+    food_files = args.food_files or DEFAULT_FOOD_FILES
     planning_files = args.planning_files or DEFAULT_PLANNING_FILES
     corpus_files = args.corpus_files or DEFAULT_CORPUS_FILES
     summaries = [
         *(validate_target_file(path) for path in target_files),
         *(validate_measurement_guide_file(path) for path in guide_files),
+        *(validate_food_file(path) for path in food_files),
         *(validate_planning_file(path) for path in planning_files),
         *(validate_strategy_corpus_file(path) for path in corpus_files),
     ]

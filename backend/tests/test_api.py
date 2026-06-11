@@ -4,7 +4,7 @@ from app.data.bloodwork import BLOODWORK_LIBRARY
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY, EXERCISE_SEED_PATH
-from app.data.food_usda import USDA_FOOD_LIBRARY
+from app.data.food_usda import USDA_FOOD_LIBRARY, USDA_FOOD_SEED_PATH
 from app.data.measurement_guides import (
     MEASUREMENT_GUIDES,
     MEASUREMENT_GUIDE_SEED_PATH,
@@ -399,6 +399,7 @@ def test_food_search_endpoint_returns_usda_style_dummy_foods() -> None:
     response = client.get("/api/food/search?query=oats")
 
     assert response.status_code == 200
+    assert USDA_FOOD_SEED_PATH.exists()
     payload = response.json()
     food = payload["foods"][0]
 

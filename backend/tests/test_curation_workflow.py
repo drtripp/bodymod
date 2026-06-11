@@ -4,9 +4,11 @@ import pytest
 
 from scripts.validate_curation import (
     DEFAULT_CORPUS_FILES,
+    DEFAULT_FOOD_FILES,
     DEFAULT_GUIDE_FILES,
     DEFAULT_PLANNING_FILES,
     DEFAULT_TARGET_FILES,
+    validate_food_file,
     validate_measurement_guide_file,
     validate_planning_file,
     validate_strategy_corpus_file,
@@ -17,11 +19,13 @@ from scripts.validate_curation import (
 def test_default_curation_files_validate() -> None:
     target_summaries = [validate_target_file(path) for path in DEFAULT_TARGET_FILES]
     guide_summaries = [validate_measurement_guide_file(path) for path in DEFAULT_GUIDE_FILES]
+    food_summaries = [validate_food_file(path) for path in DEFAULT_FOOD_FILES]
     planning_summaries = [validate_planning_file(path) for path in DEFAULT_PLANNING_FILES]
     corpus_summaries = [validate_strategy_corpus_file(path) for path in DEFAULT_CORPUS_FILES]
 
     assert any("target profile" in summary for summary in target_summaries)
     assert any("measurement guide" in summary for summary in guide_summaries)
+    assert any("USDA-style food" in summary for summary in food_summaries)
     assert any("10 persona" in summary for summary in planning_summaries)
     assert any("case log" in summary for summary in corpus_summaries)
 

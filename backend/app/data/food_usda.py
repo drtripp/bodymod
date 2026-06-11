@@ -1,197 +1,68 @@
-USDA_FOOD_LIBRARY = {
-    "version": 1,
-    "source": "Dummy USDA FoodData Central-style seed data for generic food lookup.",
-    "notes": [
-        "Values are representative placeholders, not a production FoodData Central import.",
-        "Use this shape for the future FDC API/import pipeline once keys and validation are approved.",
-    ],
-    "foods": [
-        {
-            "id": "fdc-rolled-oats-dry",
-            "fdcId": "dummy-11001",
-            "name": "Rolled oats, dry",
-            "brand": "USDA generic",
-            "serving": "40 g",
-            "source": "USDA FoodData Central",
-            "keywords": ["oats", "oatmeal", "grain", "breakfast"],
-            "macros": {"calories": 150, "protein": 5, "carbs": 27, "fat": 3},
-            "micros": {
-                "fiber": 4,
-                "sugar": 1,
-                "sodium": 2,
-                "potassium": 140,
-                "calcium": 20,
-                "iron": 1.7,
-                "magnesium": 55,
-                "zinc": 1.2,
-                "vitaminC": 0,
-                "vitaminD": 0,
-                "vitaminB12": 0,
-            },
-        },
-        {
-            "id": "fdc-chicken-breast-cooked",
-            "fdcId": "dummy-11002",
-            "name": "Chicken breast, cooked",
-            "brand": "USDA generic",
-            "serving": "100 g",
-            "source": "USDA FoodData Central",
-            "keywords": ["chicken", "breast", "protein", "poultry"],
-            "macros": {"calories": 165, "protein": 31, "carbs": 0, "fat": 3.6},
-            "micros": {
-                "fiber": 0,
-                "sugar": 0,
-                "sodium": 74,
-                "potassium": 256,
-                "calcium": 15,
-                "iron": 1.0,
-                "magnesium": 29,
-                "zinc": 1.0,
-                "vitaminC": 0,
-                "vitaminD": 0.1,
-                "vitaminB12": 0.3,
-            },
-        },
-        {
-            "id": "fdc-tofu-firm",
-            "fdcId": "dummy-11003",
-            "name": "Tofu, firm",
-            "brand": "USDA generic",
-            "serving": "100 g",
-            "source": "USDA FoodData Central",
-            "keywords": ["tofu", "soy", "plant protein"],
-            "macros": {"calories": 144, "protein": 17, "carbs": 3, "fat": 8},
-            "micros": {
-                "fiber": 2,
-                "sugar": 1,
-                "sodium": 14,
-                "potassium": 237,
-                "calcium": 683,
-                "iron": 2.7,
-                "magnesium": 58,
-                "zinc": 1.6,
-                "vitaminC": 0,
-                "vitaminD": 0,
-                "vitaminB12": 0,
-            },
-        },
-        {
-            "id": "fdc-salmon-cooked",
-            "fdcId": "dummy-11004",
-            "name": "Salmon, cooked",
-            "brand": "USDA generic",
-            "serving": "100 g",
-            "source": "USDA FoodData Central",
-            "keywords": ["salmon", "fish", "seafood", "protein"],
-            "macros": {"calories": 206, "protein": 22, "carbs": 0, "fat": 12},
-            "micros": {
-                "fiber": 0,
-                "sugar": 0,
-                "sodium": 59,
-                "potassium": 384,
-                "calcium": 15,
-                "iron": 0.3,
-                "magnesium": 30,
-                "zinc": 0.4,
-                "vitaminC": 0,
-                "vitaminD": 13.1,
-                "vitaminB12": 3.2,
-            },
-        },
-        {
-            "id": "fdc-black-beans-cooked",
-            "fdcId": "dummy-11005",
-            "name": "Black beans, cooked",
-            "brand": "USDA generic",
-            "serving": "130 g",
-            "source": "USDA FoodData Central",
-            "keywords": ["black beans", "beans", "legume", "fiber"],
-            "macros": {"calories": 176, "protein": 11, "carbs": 32, "fat": 1},
-            "micros": {
-                "fiber": 11,
-                "sugar": 0.5,
-                "sodium": 2,
-                "potassium": 475,
-                "calcium": 46,
-                "iron": 2.6,
-                "magnesium": 88,
-                "zinc": 1.1,
-                "vitaminC": 0,
-                "vitaminD": 0,
-                "vitaminB12": 0,
-            },
-        },
-        {
-            "id": "fdc-sweet-potato-baked",
-            "fdcId": "dummy-11006",
-            "name": "Sweet potato, baked",
-            "brand": "USDA generic",
-            "serving": "130 g",
-            "source": "USDA FoodData Central",
-            "keywords": ["sweet potato", "potato", "carb", "potassium"],
-            "macros": {"calories": 117, "protein": 2, "carbs": 27, "fat": 0.2},
-            "micros": {
-                "fiber": 4,
-                "sugar": 8,
-                "sodium": 41,
-                "potassium": 448,
-                "calcium": 39,
-                "iron": 0.8,
-                "magnesium": 33,
-                "zinc": 0.4,
-                "vitaminC": 22,
-                "vitaminD": 0,
-                "vitaminB12": 0,
-            },
-        },
-        {
-            "id": "fdc-whole-milk",
-            "fdcId": "dummy-11007",
-            "name": "Milk, whole",
-            "brand": "USDA generic",
-            "serving": "244 g",
-            "source": "USDA FoodData Central",
-            "keywords": ["milk", "dairy", "calcium"],
-            "macros": {"calories": 149, "protein": 7.7, "carbs": 11.7, "fat": 7.9},
-            "micros": {
-                "fiber": 0,
-                "sugar": 12.3,
-                "sodium": 105,
-                "potassium": 322,
-                "calcium": 276,
-                "iron": 0.1,
-                "magnesium": 24,
-                "zinc": 1.0,
-                "vitaminC": 0,
-                "vitaminD": 2.9,
-                "vitaminB12": 1.3,
-            },
-        },
-        {
-            "id": "fdc-spinach-raw",
-            "fdcId": "dummy-11008",
-            "name": "Spinach, raw",
-            "brand": "USDA generic",
-            "serving": "85 g",
-            "source": "USDA FoodData Central",
-            "keywords": ["spinach", "greens", "vegetable", "magnesium"],
-            "macros": {"calories": 20, "protein": 2.5, "carbs": 3, "fat": 0.3},
-            "micros": {
-                "fiber": 1.9,
-                "sugar": 0.4,
-                "sodium": 67,
-                "potassium": 475,
-                "calcium": 84,
-                "iron": 2.3,
-                "magnesium": 67,
-                "zinc": 0.5,
-                "vitaminC": 24,
-                "vitaminD": 0,
-                "vitaminB12": 0,
-            },
-        },
-    ],
+import json
+from pathlib import Path
+
+
+USDA_FOOD_SEED_PATH = Path(__file__).with_name("food_usda.seed.json")
+REQUIRED_MACRO_KEYS = {"calories", "protein", "carbs", "fat"}
+REQUIRED_MICRO_KEYS = {
+    "fiber",
+    "sugar",
+    "sodium",
+    "potassium",
+    "calcium",
+    "iron",
+    "magnesium",
+    "zinc",
+    "vitaminC",
+    "vitaminD",
+    "vitaminB12",
 }
+
+
+def _missing_keys(record: dict, required_keys: set[str]) -> set[str]:
+    return required_keys - set(record.keys())
+
+
+def load_usda_food_library() -> dict:
+    payload = json.loads(USDA_FOOD_SEED_PATH.read_text(encoding="utf-8"))
+    foods = payload.get("foods", [])
+    food_ids = set()
+    fdc_ids = set()
+
+    if not foods:
+        raise ValueError("USDA-style food seed needs at least one food.")
+
+    for food in foods:
+        food_id = food.get("id")
+        if food_id in food_ids:
+            raise ValueError(f"Duplicate USDA-style food id: {food_id}")
+        food_ids.add(food_id)
+
+        fdc_id = food.get("fdcId")
+        if fdc_id in fdc_ids:
+            raise ValueError(f"Duplicate USDA-style fdcId: {fdc_id}")
+        fdc_ids.add(fdc_id)
+
+        if not food.get("keywords"):
+            raise ValueError(f"{food_id} needs search keywords.")
+
+        missing_macros = _missing_keys(food.get("macros", {}), REQUIRED_MACRO_KEYS)
+        if missing_macros:
+            raise ValueError(f"{food_id} missing macros: {', '.join(sorted(missing_macros))}")
+
+        missing_micros = _missing_keys(food.get("micros", {}), REQUIRED_MICRO_KEYS)
+        if missing_micros:
+            raise ValueError(f"{food_id} missing micros: {', '.join(sorted(missing_micros))}")
+
+        for group in ("macros", "micros"):
+            for key, value in food.get(group, {}).items():
+                if not isinstance(value, (int, float)) or value < 0:
+                    raise ValueError(f"{food_id} has invalid {group}.{key}: {value}")
+
+    return payload
+
+
+USDA_FOOD_LIBRARY = load_usda_food_library()
 
 
 def search_usda_foods(query: str, limit: int = 12) -> list[dict]:
