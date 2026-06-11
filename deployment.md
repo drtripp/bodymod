@@ -58,6 +58,7 @@ Remote web-push subscription uses the backend defaults unless overridden:
 ```bash
 set VITE_WEB_PUSH_CONFIG_ENDPOINT=https://api.example.com/api/web-push/config
 set VITE_WEB_PUSH_SUBSCRIPTIONS_ENDPOINT=https://api.example.com/api/web-push/subscriptions
+set VITE_SYNC_VAULTS_ENDPOINT=https://api.example.com/api/sync-vaults
 npm run build
 ```
 
@@ -137,6 +138,18 @@ cd backend
 The worker sends the fixed data-decay reminder copy only, records last delivery
 status in SQLite, and moves the next attempted reminder at least 24 hours
 forward. Native app push remains separate native-app scope.
+
+## Encrypted Sync Vaults
+
+`/api/sync-vaults` is a prototype sync substrate, not production identity. The
+API stores only client-encrypted backup blobs, device IDs, hashed sync tokens,
+and revision metadata. It does not accept plaintext measurement fields, account
+emails, notes, or photos.
+
+Create/read/update/revoke requests use the browser-held sync token as a bearer
+secret. Treat that token like a password. Stale writes return `409` with the
+current revision so a future client can read, decrypt locally, merge, and write
+again. There is no email magic-link recovery or production sync UI yet.
 
 ## Dependency Updates
 

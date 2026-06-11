@@ -10,6 +10,7 @@ from typing import Any
 
 from app.models import (
     ClientErrorEvent,
+    EncryptedSyncBlob,
     ProductAnalyticsEvent,
     ShareDashboardPayload,
     TargetProfile,
@@ -187,6 +188,17 @@ def hash_web_push_endpoint(endpoint: str) -> str:
     return hashlib.sha256(endpoint.encode("utf-8")).hexdigest()
 
 
+def hash_sync_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+class SyncConflictError(Exception):
+    def __init__(self, current_revision: int, updated_at: str) -> None:
+        self.current_revision = current_revision
+        self.updated_at = updated_at
+        super().__init__("Sync vault revision conflict.")
+
+
 class ShareDashboardRepository:
     def __init__(self, db_path: Path | str | None = None) -> None:
         self.db_path = Path(db_path) if db_path is not None else configured_database_path()
@@ -347,6 +359,175 @@ class ShareDashboardRepository:
             "createdAt": row["created_at"],
             "updatedAt": row["updated_at"],
             "dashboard": json.loads(row["payload_json"]),
+        }
+
+
+class SyncVaultRepository:
+    def __init__(self, db_path: Path | str | None = None) -> None:
+        self.db_path = Path(db_path) if db_path is not None else configured_database_path()
+
+    def create_vault(self, device_id: str, blob: EncryptedSyncBlob) -> dict[str, Any]:
+        vault_id = secrets.token_urlsafe(18)
+        sync_token = secrets.token_urlsafe(32)
+        timestamp = utc_timestamp()
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            with connection:
+                connection.execute(
+                    """
+                    INSERT INTO sync_vaults (
+                        vault_id,
+                        sync_token_hash,
+                        revision,
+                        device_id,
+                        blob_json,
+                        created_at,
+                        updated_at,
+                        revoked_at
+                    )
+                    VALUES (?, ?, 1, ?, ?, ?, ?, NULL)
+                    """,
+                    (
+                        vault_id,
+                        hash_sync_token(sync_token),
+                        device_id,
+                        self._blob_json(blob),
+                        timestamp,
+                        timestamp,
+                    ),
+                )
+
+        return {
+            **self.get_vault(vault_id, sync_token),
+            "syncToken": sync_token,
+        }
+
+    def get_vault(self, vault_id: str, sync_token: str) -> dict[str, Any] | None:
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            row = self._private_row(connection, vault_id)
+            if not row:
+                return None
+            if not self._sync_token_matches(row, sync_token):
+                raise PermissionError("Invalid sync token.")
+
+        return self._record(row)
+
+    def update_vault(
+        self,
+        vault_id: str,
+        sync_token: str,
+        expected_revision: int,
+        device_id: str,
+        blob: EncryptedSyncBlob,
+        force: bool = False,
+    ) -> dict[str, Any] | None:
+        timestamp = utc_timestamp()
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            row = self._private_row(connection, vault_id)
+            if not row:
+                return None
+            if not self._sync_token_matches(row, sync_token):
+                raise PermissionError("Invalid sync token.")
+            if not force and row["revision"] != expected_revision:
+                raise SyncConflictError(row["revision"], row["updated_at"])
+
+            next_revision = int(row["revision"]) + 1
+            with connection:
+                connection.execute(
+                    """
+                    UPDATE sync_vaults
+                    SET revision = ?,
+                        device_id = ?,
+                        blob_json = ?,
+                        updated_at = ?
+                    WHERE vault_id = ? AND revoked_at IS NULL
+                    """,
+                    (
+                        next_revision,
+                        device_id,
+                        self._blob_json(blob),
+                        timestamp,
+                        vault_id,
+                    ),
+                )
+            updated = self._private_row(connection, vault_id)
+
+        return self._record(updated) if updated else None
+
+    def revoke_vault(self, vault_id: str, sync_token: str) -> bool:
+        timestamp = utc_timestamp()
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            row = self._private_row(connection, vault_id)
+            if not row:
+                return False
+            if not self._sync_token_matches(row, sync_token):
+                raise PermissionError("Invalid sync token.")
+
+            with connection:
+                cursor = connection.execute(
+                    """
+                    UPDATE sync_vaults
+                    SET revoked_at = ?, updated_at = ?
+                    WHERE vault_id = ? AND revoked_at IS NULL
+                    """,
+                    (timestamp, timestamp, vault_id),
+                )
+
+        return cursor.rowcount > 0
+
+    def _connect(self) -> sqlite3.Connection:
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        connection = sqlite3.connect(self.db_path)
+        connection.row_factory = sqlite3.Row
+        return connection
+
+    def _ensure_schema(self, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sync_vaults (
+                vault_id TEXT PRIMARY KEY,
+                sync_token_hash TEXT NOT NULL,
+                revision INTEGER NOT NULL,
+                device_id TEXT NOT NULL,
+                blob_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                revoked_at TEXT
+            )
+            """
+        )
+
+    def _private_row(self, connection: sqlite3.Connection, vault_id: str) -> sqlite3.Row | None:
+        return connection.execute(
+            """
+            SELECT vault_id, sync_token_hash, revision, device_id, blob_json,
+                   created_at, updated_at, revoked_at
+            FROM sync_vaults
+            WHERE vault_id = ? AND revoked_at IS NULL
+            """,
+            (vault_id,),
+        ).fetchone()
+
+    def _sync_token_matches(self, row: sqlite3.Row, sync_token: str) -> bool:
+        return secrets.compare_digest(row["sync_token_hash"], hash_sync_token(sync_token))
+
+    def _blob_json(self, blob: EncryptedSyncBlob) -> str:
+        return json.dumps(blob.model_dump(mode="json"), separators=(",", ":"), sort_keys=True)
+
+    def _record(self, row: sqlite3.Row) -> dict[str, Any]:
+        return {
+            "vaultId": row["vault_id"],
+            "revision": row["revision"],
+            "deviceId": row["device_id"],
+            "createdAt": row["created_at"],
+            "updatedAt": row["updated_at"],
+            "blob": json.loads(row["blob_json"]),
         }
 
 

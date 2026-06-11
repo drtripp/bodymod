@@ -660,6 +660,50 @@ class WebPushConfigResponse(BaseModel):
     reason: str = ""
 
 
+class EncryptedSyncBlob(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    version: int = Field(ge=1, le=10)
+    algorithm: Literal["AES-GCM"]
+    kdf: str = Field(min_length=2, max_length=80)
+    salt: str = Field(min_length=8, max_length=256, pattern=r"^[A-Za-z0-9+/=_-]+$")
+    iv: str = Field(min_length=8, max_length=128, pattern=r"^[A-Za-z0-9+/=_-]+$")
+    ciphertext: str = Field(min_length=16, max_length=2_000_000, pattern=r"^[A-Za-z0-9+/=_-]+$")
+
+
+class SyncVaultRecord(BaseModel):
+    vaultId: str
+    revision: int = Field(ge=1)
+    deviceId: str
+    createdAt: str
+    updatedAt: str
+    blob: EncryptedSyncBlob
+
+
+class SyncVaultCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    deviceId: str = Field(min_length=3, max_length=80, pattern=r"^[A-Za-z0-9._:-]+$")
+    blob: EncryptedSyncBlob
+
+
+class SyncVaultCreateResponse(SyncVaultRecord):
+    syncToken: str
+
+
+class SyncVaultTokenRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    syncToken: str = Field(min_length=24, max_length=160, pattern=r"^[A-Za-z0-9._~-]+$")
+
+
+class SyncVaultUpdateRequest(SyncVaultTokenRequest):
+    expectedRevision: int = Field(ge=1)
+    deviceId: str = Field(min_length=3, max_length=80, pattern=r"^[A-Za-z0-9._:-]+$")
+    blob: EncryptedSyncBlob
+    force: bool = False
+
+
 class ShareDashboardSnapshot(BaseModel):
     id: str
     label: str = ""

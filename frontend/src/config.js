@@ -22,3 +22,7 @@ export const WEB_PUSH_CONFIG_ENDPOINT =
 export const WEB_PUSH_SUBSCRIPTIONS_ENDPOINT =
   import.meta.env?.VITE_WEB_PUSH_SUBSCRIPTIONS_ENDPOINT ||
   `${API_BASE_URL}/api/web-push/subscriptions`;
+
+export const SYNC_VAULTS_ENDPOINT =
+  import.meta.env?.VITE_SYNC_VAULTS_ENDPOINT ||
+  `${API_BASE_URL}/api/sync-vaults`;

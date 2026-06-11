@@ -15,7 +15,7 @@ The current app is a small full-stack prototype:
 - Storage: adapter-backed browser `localStorage` for local snapshots and account data
 - Rendering: deterministic SVG silhouette generated from measurements
 
-The app is measurement-first. It does not accept photos, does not provide medical or procedural guidance, and does not include accounts.
+The app is measurement-first. It does not provide medical or procedural guidance. Accounts are still browser-local by default; production server-side identity and sync are not enabled.
 
 ## Run
 
@@ -99,6 +99,7 @@ Implemented now:
 - historical weight CSV import for local daily logs, with lb/kg handling, optional calories, and duplicate-date skipping
 - optional left/right bicep, forearm, thigh, and calf split logs with local symmetry summaries
 - passphrase-encrypted local backup and restore for snapshots and account logs, including procedure and local-only bloodwork records, with photo metadata manifest only
+- backend encrypted sync-vault scaffold that stores only opaque AES-GCM backup blobs, hashed sync tokens, device IDs, and revision metadata, plus frontend helper tests that keep plaintext measurements out of request bodies
 - adaptive TDEE estimate from reliable daily weight and calorie logs, with reliability-window exclusions
 - guided weekly check-in flow with snapshot save, streak/grace state, heatmap, milestones, insight drops, and weekly digest
 - first Snapshot #1 save requests browser notification permission, stores the local preference, and stale-trend reminders use data-decay copy with service-worker delivery when available
@@ -185,7 +186,7 @@ Not implemented yet:
 - full production percentile replacement across all supported fields
 - vetted ANSUR or equivalent breadth data behind the population charts; NHANES now covers adult height, weight, waist, and hip only
 - production-quality target dataset
-- server-side accounts, encrypted sync, or cross-device history
+- production server-side email accounts, cross-device sync UI, or cross-device history; the backend only has an opaque encrypted sync-vault scaffold
 - hosted photo/body inference work; current face scans are browser-local only
 - production FoodData Central import/API ownership; Diet currently has dummy backend USDA-style seed rows plus Open Food Facts lookup
 - source-reviewed procedure taxonomy and clinical/body-mod validation; current procedure data is a dummy review scaffold

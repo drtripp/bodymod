@@ -122,6 +122,8 @@ Required input:
     `/api/product-analytics` path; the remaining decision is provider/hosting
     approval and whether to enable upload in production
 - account/sync decision
+  - current code has a token-scoped encrypted sync-vault scaffold, but no
+    production email identity, recovery, or user-facing sync UI
 - photo/vision upload decision
 - legal owner/contact details
 - approval of privacy policy, terms, and medical disclaimer drafts

@@ -1,7 +1,9 @@
 import sqlite3
 
-from app.models import TargetProfile, WebPushSubscriptionPayload
+from app.models import EncryptedSyncBlob, TargetProfile, WebPushSubscriptionPayload
 from app.repositories import (
+    SyncConflictError,
+    SyncVaultRepository,
     TargetRepository,
     WebPushSubscriptionRepository,
     load_target_seed,
@@ -126,3 +128,83 @@ def test_web_push_repository_tracks_due_reminder_delivery(tmp_path) -> None:
     assert cooled_down == []
     assert len(next_day) == 1
     assert next_day[0]["lastDeliveryStatus"] == "sent"
+
+
+def encrypted_sync_blob(ciphertext: str = "QUJDREVGR0hJSktMTU5PUA==") -> EncryptedSyncBlob:
+    return EncryptedSyncBlob.model_validate(
+        {
+            "version": 1,
+            "algorithm": "AES-GCM",
+            "kdf": "PBKDF2-SHA256",
+            "salt": "YWJjZGVmZ2hpamtsbW5vcA==",
+            "iv": "YWJjZGVmZ2hpams=",
+            "ciphertext": ciphertext,
+        }
+    )
+
+
+def test_sync_vault_repository_stores_only_encrypted_blobs_and_hashes_tokens(tmp_path) -> None:
+    db_path = tmp_path / "bodymod.sqlite3"
+    repository = SyncVaultRepository(db_path=db_path)
+
+    created = repository.create_vault("browser-a", encrypted_sync_blob())
+    vault_id = created["vaultId"]
+    sync_token = created["syncToken"]
+    read_back = repository.get_vault(vault_id, sync_token)
+
+    assert created["revision"] == 1
+    assert read_back["blob"]["ciphertext"] == "QUJDREVGR0hJSktMTU5PUA=="
+    assert "measurements" not in str(read_back["blob"])
+
+    with sqlite3.connect(db_path) as connection:
+        connection.row_factory = sqlite3.Row
+        row = connection.execute(
+            "SELECT sync_token_hash, blob_json FROM sync_vaults WHERE vault_id = ?",
+            (vault_id,),
+        ).fetchone()
+
+    assert row["sync_token_hash"] != sync_token
+    assert sync_token not in row["blob_json"]
+
+
+def test_sync_vault_repository_detects_conflicts_and_revokes(tmp_path) -> None:
+    repository = SyncVaultRepository(db_path=tmp_path / "bodymod.sqlite3")
+    created = repository.create_vault("browser-a", encrypted_sync_blob())
+
+    updated = repository.update_vault(
+        created["vaultId"],
+        created["syncToken"],
+        expected_revision=1,
+        device_id="browser-b",
+        blob=encrypted_sync_blob("VVBEQVRFREVORUNSWVBURUQ="),
+    )
+
+    assert updated["revision"] == 2
+    assert updated["deviceId"] == "browser-b"
+
+    try:
+        repository.update_vault(
+            created["vaultId"],
+            created["syncToken"],
+            expected_revision=1,
+            device_id="browser-c",
+            blob=encrypted_sync_blob("U1RBTEVSRVZJU0lPTg=="),
+        )
+    except SyncConflictError as error:
+        assert error.current_revision == 2
+    else:
+        raise AssertionError("Expected stale sync revision to raise conflict.")
+
+    forced = repository.update_vault(
+        created["vaultId"],
+        created["syncToken"],
+        expected_revision=1,
+        device_id="browser-c",
+        blob=encrypted_sync_blob("Rk9SQ0VEVVBEQVRFRA=="),
+        force=True,
+    )
+    revoked = repository.revoke_vault(created["vaultId"], created["syncToken"])
+
+    assert forced["revision"] == 3
+    assert revoked is True
+    assert repository.get_vault(created["vaultId"], created["syncToken"]) is None

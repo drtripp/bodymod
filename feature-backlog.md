@@ -516,9 +516,18 @@ land. No social features, no marketplace.
       local-first remains the default — accounts are opt-in for sync.
 - [ ] Encrypted sync: client-side-encrypted blob sync so the server cannot
       read measurements (the data-custody story the trans audience and
-      cycle-tracking feature demand).
+      cycle-tracking feature demand). **First backend scaffold:** FastAPI now
+      exposes `/api/sync-vaults` create/read/update/revoke endpoints backed by
+      SQLite, storing only opaque AES-GCM backup blobs, hashed sync tokens,
+      device IDs, and revision metadata. `frontend/src/lib/encryptedSync.js`
+      converts the existing encrypted local backup format into that sync blob
+      and helper tests assert that emails, notes, and measurement keys are not
+      sent in request bodies. Production identity, recovery, and UI are still
+      open.
 - [ ] Cross-device restore + conflict handling (last-write-wins per snapshot
-      is fine v1).
+      is fine v1). The sync-vault scaffold now returns `409` on stale
+      revisions and supports explicit force overwrites, but true client-side
+      merge/restore UI remains open.
 - [ ] Multi-profile **(new)**: household/coach use; profiles are separate
       encrypted stores.
       - First browser-local pass is in: the account panel now lists local

@@ -47,6 +47,7 @@ try {
     Invoke-Checked { npm run test:snapshot-trends }
     Invoke-Checked { npm run test:history-import }
     Invoke-Checked { npm run test:local-backup }
+    Invoke-Checked { npm run test:encrypted-sync }
     Invoke-Checked { npm run test:tracking }
     Invoke-Checked { npm run test:protocols }
     Invoke-Checked { npm run test:procedures }

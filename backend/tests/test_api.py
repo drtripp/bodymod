@@ -662,6 +662,111 @@ def test_web_push_delivery_payload_stays_non_personal() -> None:
     assert "waist" not in payload
 
 
+def encrypted_sync_blob(ciphertext: str = "QUJDREVGR0hJSktMTU5PUA==") -> dict:
+    return {
+        "version": 1,
+        "algorithm": "AES-GCM",
+        "kdf": "PBKDF2-SHA256",
+        "salt": "YWJjZGVmZ2hpamtsbW5vcA==",
+        "iv": "YWJjZGVmZ2hpams=",
+        "ciphertext": ciphertext,
+    }
+
+
+def test_sync_vault_endpoints_store_opaque_encrypted_blob_with_conflicts() -> None:
+    created = client.post(
+        "/api/sync-vaults",
+        json={"deviceId": "browser-a", "blob": encrypted_sync_blob()},
+    )
+
+    assert created.status_code == 201
+    created_payload = created.json()
+    vault_id = created_payload["vaultId"]
+    sync_token = created_payload["syncToken"]
+    assert created_payload["revision"] == 1
+    assert "measurements" not in str(created_payload["blob"])
+
+    read_back = client.post(
+        f"/api/sync-vaults/{vault_id}/read",
+        json={"syncToken": sync_token},
+    )
+    assert read_back.status_code == 200
+    assert read_back.json()["blob"]["ciphertext"] == encrypted_sync_blob()["ciphertext"]
+
+    updated = client.put(
+        f"/api/sync-vaults/{vault_id}",
+        json={
+            "syncToken": sync_token,
+            "expectedRevision": 1,
+            "deviceId": "browser-b",
+            "blob": encrypted_sync_blob("VVBEQVRFREVORUNSWVBURUQ="),
+        },
+    )
+    assert updated.status_code == 200
+    assert updated.json()["revision"] == 2
+    assert updated.json()["deviceId"] == "browser-b"
+
+    conflict = client.put(
+        f"/api/sync-vaults/{vault_id}",
+        json={
+            "syncToken": sync_token,
+            "expectedRevision": 1,
+            "deviceId": "browser-c",
+            "blob": encrypted_sync_blob("U1RBTEVSRVZJU0lPTg=="),
+        },
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"]["currentRevision"] == 2
+
+    forced = client.put(
+        f"/api/sync-vaults/{vault_id}",
+        json={
+            "syncToken": sync_token,
+            "expectedRevision": 1,
+            "deviceId": "browser-c",
+            "blob": encrypted_sync_blob("Rk9SQ0VEVVBEQVRFRA=="),
+            "force": True,
+        },
+    )
+    assert forced.status_code == 200
+    assert forced.json()["revision"] == 3
+
+    revoked = client.post(
+        f"/api/sync-vaults/{vault_id}/revoke",
+        json={"syncToken": sync_token},
+    )
+    assert revoked.status_code == 200
+    assert revoked.json() == {"status": "revoked"}
+
+    missing_after_revoke = client.post(
+        f"/api/sync-vaults/{vault_id}/read",
+        json={"syncToken": sync_token},
+    )
+    assert missing_after_revoke.status_code == 404
+
+
+def test_sync_vault_endpoints_reject_plaintext_measurements_and_bad_tokens() -> None:
+    plaintext = encrypted_sync_blob()
+    plaintext["measurements"] = TARGETS[0]["measurements"]
+    rejected_plaintext = client.post(
+        "/api/sync-vaults",
+        json={"deviceId": "browser-a", "blob": plaintext},
+    )
+
+    created = client.post(
+        "/api/sync-vaults",
+        json={"deviceId": "browser-a", "blob": encrypted_sync_blob()},
+    )
+    vault_id = created.json()["vaultId"]
+    wrong_token = client.post(
+        f"/api/sync-vaults/{vault_id}/read",
+        json={"syncToken": "wrong-token-but-long-enough-0123456789"},
+    )
+
+    assert rejected_plaintext.status_code == 422
+    assert wrong_token.status_code == 403
+
+
 def share_dashboard_payload(title: str = "Mason bodymod dashboard") -> dict:
     return {
         "dashboard": {

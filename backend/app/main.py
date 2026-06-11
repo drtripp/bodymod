@@ -35,6 +35,11 @@ from app.models import ShareDashboardPublicRecord
 from app.models import ShareDashboardRevokeRequest
 from app.models import ShareDashboardUpdateRequest
 from app.models import StrategyCorpusSeed
+from app.models import SyncVaultCreateRequest
+from app.models import SyncVaultCreateResponse
+from app.models import SyncVaultRecord
+from app.models import SyncVaultTokenRequest
+from app.models import SyncVaultUpdateRequest
 from app.models import WebPushConfigResponse
 from app.models import WebPushSubscriptionRequest
 from app.models import WebPushSubscriptionResponse
@@ -45,6 +50,8 @@ from app.repositories import (
     ClientErrorRepository,
     ProductAnalyticsRepository,
     ShareDashboardRepository,
+    SyncConflictError,
+    SyncVaultRepository,
     WebPushSubscriptionRepository,
 )
 from app.services import build_match_response, get_match_priorities, get_targets
@@ -231,6 +238,73 @@ def create_web_push_subscription(request: WebPushSubscriptionRequest) -> dict:
 )
 def revoke_web_push_subscription(request: WebPushUnsubscribeRequest) -> dict:
     return WebPushSubscriptionRepository().revoke_subscription(request.endpoint)
+
+
+@app.post(
+    "/api/sync-vaults",
+    response_model=SyncVaultCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_sync_vault(request: SyncVaultCreateRequest) -> dict:
+    return SyncVaultRepository().create_vault(request.deviceId, request.blob)
+
+
+@app.post(
+    "/api/sync-vaults/{vault_id}/read",
+    response_model=SyncVaultRecord,
+)
+def read_sync_vault(vault_id: str, request: SyncVaultTokenRequest) -> dict:
+    try:
+        vault = SyncVaultRepository().get_vault(vault_id, request.syncToken)
+    except PermissionError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+
+    if not vault:
+        raise HTTPException(status_code=404, detail="Sync vault not found.")
+    return vault
+
+
+@app.put(
+    "/api/sync-vaults/{vault_id}",
+    response_model=SyncVaultRecord,
+)
+def update_sync_vault(vault_id: str, request: SyncVaultUpdateRequest) -> dict:
+    try:
+        vault = SyncVaultRepository().update_vault(
+            vault_id,
+            request.syncToken,
+            request.expectedRevision,
+            request.deviceId,
+            request.blob,
+            request.force,
+        )
+    except PermissionError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except SyncConflictError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "message": str(error),
+                "currentRevision": error.current_revision,
+                "updatedAt": error.updated_at,
+            },
+        ) from error
+
+    if not vault:
+        raise HTTPException(status_code=404, detail="Sync vault not found.")
+    return vault
+
+
+@app.post("/api/sync-vaults/{vault_id}/revoke")
+def revoke_sync_vault(vault_id: str, request: SyncVaultTokenRequest) -> dict[str, str]:
+    try:
+        revoked = SyncVaultRepository().revoke_vault(vault_id, request.syncToken)
+    except PermissionError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+
+    if not revoked:
+        raise HTTPException(status_code=404, detail="Sync vault not found.")
+    return {"status": "revoked"}
 
 
 @app.post(
