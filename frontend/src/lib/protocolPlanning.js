@@ -1,4 +1,19 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
+const KJ_PER_KCAL = 4.184;
+const DEFAULT_HALL_AGE_YEARS = 35;
+const DEFAULT_HALL_PAL = 1.5;
+
+const hallConstants = {
+  betaTef: 0.1,
+  betaAdaptiveThermogenesis: 0.14,
+  fatEnergyDensityKjPerKg: 39500,
+  leanEnergyDensityKjPerKg: 7600,
+  fatSynthesisEfficiencyKjPerKg: 750,
+  leanSynthesisEfficiencyKjPerKg: 960,
+  fatRmrCoefficientKjPerKgDay: 13,
+  leanRmrCoefficientKjPerKgDay: 92,
+  forbesLeanFatKg: 10.4
+};
 
 const trackedOutcomeMetrics = [
   ["weight", "Weight", "kg"],
@@ -36,6 +51,92 @@ function roundTenth(value) {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function normalizedSex(value) {
+  return String(value || "").toLowerCase().startsWith("female") ? "female" : "male";
+}
+
+function estimateMifflinRmrKcal({ weightKg, heightCm, ageYears, sex }) {
+  const sexConstant = normalizedSex(sex) === "female" ? -161 : 5;
+  return 10 * weightKg + 6.25 * heightCm - 5 * ageYears + sexConstant;
+}
+
+export function estimateHallInitialFatMassKg({ weightKg, heightCm, ageYears, sex }) {
+  const heightMeters = heightCm / 100;
+  if (!heightMeters || !weightKg || !Number.isFinite(heightMeters) || !Number.isFinite(weightKg)) {
+    return null;
+  }
+
+  const bmi = weightKg / heightMeters ** 2;
+  const sexCoefficient = normalizedSex(sex) === "female" ? 39.96 : 37.31;
+  const sexIntercept = normalizedSex(sex) === "female" ? -102.01 : -103.94;
+  const bodyFatPercent = 0.14 * ageYears + sexCoefficient * Math.log(bmi) + sexIntercept;
+  return clamp((weightKg * bodyFatPercent) / 100, weightKg * 0.05, weightKg * 0.65);
+}
+
+export function buildHallLinearizedParameters(measurements = {}, options = {}) {
+  const weightKg = numeric(measurements.weight);
+  const heightCm = numeric(measurements.height);
+  if (weightKg === null || heightCm === null) {
+    return null;
+  }
+
+  const ageYears = clamp(
+    numeric(options.ageYears ?? measurements.ageYears ?? measurements.age) ?? DEFAULT_HALL_AGE_YEARS,
+    18,
+    90
+  );
+  const physicalActivityLevel = clamp(
+    numeric(options.physicalActivityLevel ?? measurements.physicalActivityLevel) ?? DEFAULT_HALL_PAL,
+    1.1,
+    2.5
+  );
+  const sex = normalizedSex(measurements.sex);
+  const fatMassKg = estimateHallInitialFatMassKg({
+    weightKg,
+    heightCm,
+    ageYears,
+    sex
+  });
+
+  if (fatMassKg === null) {
+    return null;
+  }
+
+  const beta = hallConstants.betaTef + hallConstants.betaAdaptiveThermogenesis;
+  const alpha = hallConstants.forbesLeanFatKg / fatMassKg;
+  const restingMetabolicRateKj =
+    estimateMifflinRmrKcal({ weightKg, heightCm, ageYears, sex }) * KJ_PER_KCAL;
+  const activityCoefficientKjPerKgDay =
+    (((1 - hallConstants.betaTef) * physicalActivityLevel - 1) * restingMetabolicRateKj) /
+    weightKg;
+  const expenditureSlopeKjPerKgDay =
+    ((hallConstants.fatRmrCoefficientKjPerKgDay +
+      alpha * hallConstants.leanRmrCoefficientKjPerKgDay) /
+      (1 + alpha) +
+      activityCoefficientKjPerKgDay) /
+    (1 - beta);
+  const effectiveEnergyDensityKjPerKg =
+    (hallConstants.fatSynthesisEfficiencyKjPerKg +
+      hallConstants.fatEnergyDensityKjPerKg +
+      alpha *
+        (hallConstants.leanSynthesisEfficiencyKjPerKg +
+          hallConstants.leanEnergyDensityKjPerKg)) /
+    ((1 - beta) * (1 + alpha));
+
+  return {
+    sex,
+    ageYears,
+    physicalActivityLevel,
+    estimatedFatMassKg: fatMassKg,
+    alpha,
+    restingMetabolicRateKcal: restingMetabolicRateKj / KJ_PER_KCAL,
+    activityCoefficientKjPerKgDay,
+    expenditureSlopeKjPerKgDay,
+    effectiveEnergyDensityKjPerKg,
+    timeConstantDays: effectiveEnergyDensityKjPerKg / expenditureSlopeKjPerKgDay
+  };
 }
 
 export function splitAffectedFields(value) {
@@ -109,23 +210,35 @@ export function buildEnergyProjection(protocol, currentMeasurements = {}) {
   const startDate = protocol.startDate || protocol.createdAt || new Date().toISOString();
   const endDate = protocol.endDate || new Date(dateMs(startDate) + 84 * DAY_MS).toISOString();
   const durationDays = Math.min(365, Math.max(14, daysBetween(startDate, endDate)));
+  const baseline = {
+    ...currentMeasurements,
+    ...(protocol.startingMeasurements || {})
+  };
   const startWeight = numeric(protocol.startingMeasurements?.weight) ?? numeric(currentMeasurements.weight);
 
   if (startWeight === null) {
     return null;
   }
 
-  // Hall-style dynamic behavior: weight change slows toward a new steady state.
-  // This is a conservative local estimate, not the full NIH Body Weight Planner equation set.
-  const steadyStateKg = dailyDelta / 22;
-  const dynamicFraction = 1 - Math.exp(-durationDays / 180);
+  const parameters = buildHallLinearizedParameters(baseline, {
+    ageYears: protocol.ageYears,
+    physicalActivityLevel: protocol.physicalActivityLevel
+  });
+
+  if (!parameters) {
+    return null;
+  }
+
+  const dailyDeltaKj = dailyDelta * KJ_PER_KCAL;
+  const steadyStateKg = dailyDeltaKj / parameters.expenditureSlopeKjPerKgDay;
+  const dynamicFraction = 1 - Math.exp(-durationDays / parameters.timeConstantDays);
   const projectedDeltaKg = steadyStateKg * dynamicFraction;
   const uncertainty = Math.max(0.5, Math.abs(projectedDeltaKg) * 0.35);
   const waistDelta = projectedDeltaKg * 0.75;
   const monthCount = Math.max(2, Math.ceil(durationDays / 30));
   const points = Array.from({ length: monthCount + 1 }, (_, index) => {
     const day = Math.round((durationDays / monthCount) * index);
-    const fraction = 1 - Math.exp(-day / 180);
+    const fraction = 1 - Math.exp(-day / parameters.timeConstantDays);
     const delta = steadyStateKg * fraction;
 
     return {
@@ -137,16 +250,23 @@ export function buildEnergyProjection(protocol, currentMeasurements = {}) {
   });
 
   return {
-    model: "NIDDK/Hall-inspired dynamic planning band",
+    model: "NIDDK/Hall 2011 linearized planning band",
     dailyDelta,
     durationDays,
     startWeight,
+    steadyStateDeltaKg: Number(steadyStateKg.toFixed(1)),
     projectedDeltaKg: Number(projectedDeltaKg.toFixed(1)),
     lowDeltaKg: Number((projectedDeltaKg - uncertainty).toFixed(1)),
     highDeltaKg: Number((projectedDeltaKg + uncertainty).toFixed(1)),
     waistDeltaCm: Number(waistDelta.toFixed(1)),
+    assumptions: {
+      ageYears: parameters.ageYears,
+      physicalActivityLevel: Number(parameters.physicalActivityLevel.toFixed(2)),
+      estimatedFatMassKg: Number(parameters.estimatedFatMassKg.toFixed(1)),
+      timeConstantDays: Math.round(parameters.timeConstantDays)
+    },
     points,
-    note: "Planning context only; not the full NIH Body Weight Planner and not medical advice."
+    note: "Planning context only; ports the documented long-term linearized Hall equation, not the full NIH Body Weight Planner early-phase model."
   };
 }
 

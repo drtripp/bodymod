@@ -3250,6 +3250,14 @@ export default function AccountGoalPanel({
                                 <p>
                                   {projection.model}: {projection.lowDeltaKg} to {projection.highDeltaKg} kg over {projection.durationDays} days.
                                 </p>
+                                {projection.assumptions ? (
+                                  <small>
+                                    Adult model assumptions: age {projection.assumptions.ageYears}, PAL{" "}
+                                    {projection.assumptions.physicalActivityLevel}, estimated fat mass{" "}
+                                    {projection.assumptions.estimatedFatMassKg} kg, time constant{" "}
+                                    {projection.assumptions.timeConstantDays} days.
+                                  </small>
+                                ) : null}
                                 <small>{projection.note}</small>
                                 {projectedSilhouette ? (
                                   <div

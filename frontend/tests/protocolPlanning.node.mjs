@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildEnergyProjection,
+  buildHallLinearizedParameters,
   buildPlanRetro,
   buildProjectedMeasurements,
   buildProtocolCaseLog,
   buildProtocolOutcomeSummary,
+  estimateHallInitialFatMassKg,
   formatProtocolSchemaSummary,
   protocolSnapshots,
   splitAffectedFields
@@ -88,13 +90,43 @@ test("builds conservative energy projections, retros, and case logs", () => {
   const retro = buildPlanRetro(protocol, currentMeasurements, snapshots);
   const caseLog = buildProtocolCaseLog(protocol, currentMeasurements, snapshots);
 
-  assert.equal(projection.model, "NIDDK/Hall-inspired dynamic planning band");
+  assert.equal(projection.model, "NIDDK/Hall 2011 linearized planning band");
   assert.equal(projection.dailyDelta, -300);
+  assert.equal(projection.steadyStateDeltaKg, -14);
+  assert.equal(projection.assumptions.ageYears, 35);
+  assert.equal(projection.assumptions.physicalActivityLevel, 1.5);
+  assert.equal(projection.assumptions.estimatedFatMassKg, 22.5);
+  assert.equal(projection.assumptions.timeConstantDays, 443);
   assert.ok(projection.projectedDeltaKg < 0);
+  assert.ok(projection.projectedDeltaKg > projection.steadyStateDeltaKg);
   assert.equal(retro.actualDeltaKg, -3);
   assert.match(retro.projectedBand, /kg/);
   assert.equal(caseLog.adherenceCount, 2);
   assert.match(caseLog.projectionSummary, /NIDDK/);
+});
+
+test("ports the Hall linearized long-term body-weight equation parameters", () => {
+  const maleFatMass = estimateHallInitialFatMassKg({
+    weightKg: 90,
+    heightCm: 180,
+    ageYears: 35,
+    sex: "male"
+  });
+  const femaleFatMass = estimateHallInitialFatMassKg({
+    weightKg: 90,
+    heightCm: 180,
+    ageYears: 35,
+    sex: "female"
+  });
+  const parameters = buildHallLinearizedParameters(startingMeasurements);
+
+  assert.equal(Number(maleFatMass.toFixed(1)), 22.5);
+  assert.ok(femaleFatMass > maleFatMass);
+  assert.equal(parameters.sex, "male");
+  assert.equal(Number(parameters.restingMetabolicRateKcal.toFixed(0)), 1855);
+  assert.equal(Number(parameters.expenditureSlopeKjPerKgDay.toFixed(1)), 89.7);
+  assert.equal(Number(parameters.effectiveEnergyDensityKjPerKg.toFixed(0)), 39775);
+  assert.equal(Number(parameters.timeConstantDays.toFixed(0)), 443);
 });
 
 test("builds a projected silhouette measurement set for calorie-linked fields only", () => {

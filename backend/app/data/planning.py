@@ -541,7 +541,7 @@ PROTOCOL_TAXONOMY = [
         "doseFields": ["daily calories", "protein", "meal pattern", "confounders"],
         "adherencePrompt": "How close was intake to the planned calorie/protein range?",
         "outcomeMetrics": ["weight", "waistCircumference", "hipCircumference"],
-        "projectionModel": "NIDDK/Hall-inspired dynamic planning band",
+        "projectionModel": "NIDDK/Hall 2011 linearized planning band",
         "notes": "Projection is informational planning context, not medical advice.",
     },
     {

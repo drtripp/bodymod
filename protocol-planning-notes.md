@@ -18,16 +18,24 @@ The protocol tracker is a local-first n=1 planning log. It supports:
 
 ## Projection Model
 
-The current projection is intentionally conservative. It uses a dynamic,
-asymptotic response to a daily calorie delta so it does not repeat the old
-linear 3,500-kcal-per-pound rule. It is labeled as a
-NIDDK/Hall-inspired planning band, not a full NIH Body Weight Planner clone.
+The current projection is intentionally conservative. It uses the documented
+linearized long-term Hall body-weight equation from the 2011 NIDDK/Lancet web
+appendix:
 
-The NIDDK Body Weight Planner is based on Kevin Hall's research group and the
-Lancet 2011 paper "Quantification of the effect of energy imbalance on
-bodyweight." NIDDK also publishes the full model equation PDF through the Body
-Weight Planner research page. A future exact implementation should port or call
-the documented equation set rather than treating this v1 band as equivalent.
+```text
+dBW/dt = deltaEI / rho - (BW - BW0) / tau
+tau = rho / epsilon
+```
+
+The implementation estimates adult baseline fat mass with the appendix's
+Jackson regression, uses the Mifflin-St. Jeor resting metabolic rate assumption
+from the appendix, and exposes fallback assumptions in the UI: age 35 and PAL
+1.5 when no richer user data exists. This avoids the old linear
+3,500-kcal-per-pound rule and replaces the previous fixed time constant.
+
+This is still not a full NIH Body Weight Planner clone. The app does not model
+early glycogen, sodium, extracellular-fluid, or carbohydrate-intake changes, so
+the label remains planning context only rather than a clinical prediction.
 
 ## Safety Posture
 

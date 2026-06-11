@@ -105,7 +105,7 @@ Implemented now:
 - procedure tracker with backend dummy procedure taxonomy, local surgery/filler/piercing/tattoo/body-mod logs, healing windows, photo stream hints, generated reliability events, and case-log output
 - local-only bloodwork log with backend dummy marker/range seed, manual lab-result entry, trend sparklines, protocol links, readable export/backup/report inclusion, and share-dashboard exclusion
 - reliability events pause affected weight and tape trend inference during healing or disruption windows, and pause saved goals whose target metrics are affected
-- projected silhouettes for calorie-target protocol planning bands, with uncertainty copy
+- projected silhouettes for calorie-target protocol planning bands, with uncertainty copy and the documented Hall 2011 linearized long-term body-weight equation
 - local goals can target preset deltas, custom deltas, target profiles, or saved past-self snapshots, with distance-to-target progress copy
 - readable local JSON export for snapshots and diet data without an account, plus account-scoped logs when signed in
 - opt-in server-side read-only share dashboards with opaque public links and browser-held revoke tokens

@@ -198,13 +198,15 @@ Protocol Tracker → Diet upgrades → Native app.
       active protocol.
 - [x] Outcome attribution: snapshots taken during a protocol window are linked
       to it; per-protocol before/after measurement summary.
-- [ ] Defensible projections only: NIH/Hall energy-balance model for
+- [x] Defensible projections only: NIH/Hall energy-balance model for
       bodyweight/waist under a calorie target (public, validated,
       deterministic); novice/intermediate lean-mass gain shown as wide
       published ranges; everything else shows case logs, never curves.
-      **First pass:** local calorie-target protocols show a conservative
-      NIDDK/Hall-inspired planning band with explicit caveats in
-      `protocol-planning-notes.md`; exact equation-port remains open.
+      Local calorie-target protocols now use a documented Hall 2011
+      linearized long-term body-weight equation port with adult age/PAL/fat-mass
+      assumptions shown in the UI, uncertainty bands, and explicit caveats in
+      `protocol-planning-notes.md`. The app still does not claim to be the full
+      NIH Body Weight Planner early-phase glycogen/sodium model.
 - [x] Projected-silhouette rendering for the defensible projections, using the
       existing SVG renderer, with explicit uncertainty copy.
 - [x] Case logs: structured n=1 reports (protocol, adherence, before/after,

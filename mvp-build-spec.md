@@ -239,6 +239,8 @@ Implemented:
   rejection, and export round trips
 - local-only honest referral scaffold records future Pro credits without
   gating any existing tracking, result, export, or restore path
+- calorie-target protocol projections use the documented Hall 2011 linearized
+  long-term body-weight equation with visible adult assumptions and caveats
 - persisted locale preference and i18n message catalog cover top-level
   shell/header/navigation strings as groundwork for later full translation
 - Playwright desktop and phone-viewport user-flow tests

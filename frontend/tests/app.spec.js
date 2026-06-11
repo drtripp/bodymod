@@ -313,7 +313,7 @@ const planningData = {
       doseFields: ["daily calories", "protein", "confounders"],
       adherencePrompt: "How close was intake to the planned calorie/protein range?",
       outcomeMetrics: ["weight", "waistCircumference"],
-      projectionModel: "NIDDK/Hall-inspired dynamic planning band"
+      projectionModel: "NIDDK/Hall 2011 linearized planning band"
     }
   ]
 };
@@ -1641,7 +1641,9 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Active protocols")).toContainText("Dose: 4-day upper/lower split; frequency: 4 sessions/week");
   await expect(page.getByLabel("Active protocols")).toContainText("Daily energy delta: -300 kcal");
   await expect(page.getByLabel("Progressive resistance training outcome attribution")).toContainText("snapshot(s) linked");
-  await expect(page.getByLabel("Progressive resistance training projection band")).toContainText("NIDDK/Hall-inspired");
+  await expect(page.getByLabel("Progressive resistance training projection band")).toContainText("NIDDK/Hall 2011 linearized");
+  await expect(page.getByLabel("Progressive resistance training projection band")).toContainText("Adult model assumptions");
+  await expect(page.getByLabel("Progressive resistance training projection band")).toContainText("time constant");
   await expect(page.getByLabel("Progressive resistance training projected silhouette")).toContainText("Projected endpoint:");
   await expect(page.getByRole("img", { name: "Progressive resistance training projected endpoint silhouette" })).toBeVisible();
   await expect(page.getByLabel("Progressive resistance training projected silhouette")).toContainText(

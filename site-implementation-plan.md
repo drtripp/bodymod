@@ -360,6 +360,10 @@ Status:
 - account workspace supports passphrase-encrypted backup/restore through
   `frontend/src/lib/localBackup.js`; photos are exported as metadata manifests
   rather than image payloads
+- calorie-target protocols use `frontend/src/lib/protocolPlanning.js` to build
+  Hall 2011 linearized long-term body-weight planning bands with visible adult
+  age/PAL/fat-mass assumptions and no claim to full NIH Body Weight Planner
+  early-phase modeling
 - account workspace supports first-class procedure logs through
   `backend/app/data/procedures.seed.json`, `/api/procedure-library`,
   `frontend/src/lib/procedures.js`, and account-scoped local storage; surgery,
