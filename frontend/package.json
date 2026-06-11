@@ -39,6 +39,7 @@
     "test:measurement-schema": "node --test tests/measurementSchema.node.mjs",
     "test:entitlements": "node --test tests/entitlements.node.mjs",
     "test:error-monitoring": "node --test tests/errorMonitoring.node.mjs",
+    "test:analytics": "node --test tests/productAnalytics.node.mjs",
     "test:face-measurements": "node --test tests/faceMeasurements.node.mjs",
     "test:result-card": "node --test tests/resultCard.node.mjs",
     "test:progress-report": "node --test tests/progressReport.node.mjs",

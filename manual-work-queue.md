@@ -87,6 +87,9 @@ Required input:
 
 - share URL decision
 - production analytics decision
+  - agent wiring now exists as a disabled-by-default first-party sanitized
+    `/api/product-analytics` path; the remaining decision is provider/hosting
+    approval and whether to enable upload in production
 - account/sync decision
 - photo/vision upload decision
 - legal owner/contact details

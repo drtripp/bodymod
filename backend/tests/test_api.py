@@ -12,7 +12,7 @@ from app.data.reference import REFERENCE_DATA
 from app.data.strategy_corpus import STRATEGY_CORPUS
 from app.main import allowed_cors_origins, app
 from app.measurement_schema import measurement_field_names
-from app.repositories import ClientErrorRepository, load_target_seed
+from app.repositories import ClientErrorRepository, ProductAnalyticsRepository, load_target_seed
 
 
 client = TestClient(app)
@@ -442,6 +442,57 @@ def test_client_error_endpoint_rejects_unsanitized_source_paths() -> None:
     payload["event"]["route"] = "/profile/dawson@example.com"
 
     response = client.post("/api/client-errors", json=payload)
+
+    assert response.status_code == 422
+
+
+def product_analytics_payload() -> dict:
+    return {
+        "event": {
+            "id": "analytics:test-1",
+            "name": "app_opened",
+            "surface": "app",
+            "context": "desktop",
+            "route": "/workspace",
+            "anonymousSessionId": "analytics-session:0123456789abcdef",
+            "release": "test",
+            "userAgentFamily": "Chrome",
+            "createdAt": "2026-06-10T12:00:00.000Z",
+        }
+    }
+
+
+def test_product_analytics_endpoint_stores_minimized_envelope() -> None:
+    response = client.post("/api/product-analytics", json=product_analytics_payload())
+
+    assert response.status_code == 202
+    assert response.json() == {"status": "accepted", "stored": True}
+
+    stored_events = ProductAnalyticsRepository().list_event_dicts()
+    assert len(stored_events) == 1
+    assert stored_events[0]["id"] == "analytics:test-1"
+    assert stored_events[0]["name"] == "app_opened"
+    assert stored_events[0]["route"] == "/workspace"
+    assert "measurements" not in stored_events[0]
+    assert "properties" not in stored_events[0]
+    assert "height" not in str(stored_events[0]).lower()
+
+
+def test_product_analytics_endpoint_rejects_raw_properties() -> None:
+    payload = product_analytics_payload()
+    payload["event"]["properties"] = {"height": 182, "weight": 74}
+    payload["event"]["measurementValue"] = 182
+
+    response = client.post("/api/product-analytics", json=payload)
+
+    assert response.status_code == 422
+
+
+def test_product_analytics_endpoint_rejects_unsanitized_routes() -> None:
+    payload = product_analytics_payload()
+    payload["event"]["route"] = "/profile/dawson@example.com?height=182"
+
+    response = client.post("/api/product-analytics", json=payload)
 
     assert response.status_code == 422
 

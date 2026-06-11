@@ -40,6 +40,19 @@ fingerprints, source path, route path, line/column, release, and browser family.
 Do not point the frontend at a third-party endpoint until a human monitoring
 provider decision has been made.
 
+Product analytics upload is also disabled unless explicitly configured:
+
+```bash
+set VITE_PRODUCT_ANALYTICS_UPLOAD_ENABLED=true
+set VITE_PRODUCT_ANALYTICS_ENDPOINT=https://api.example.com/api/product-analytics
+npm run build
+```
+
+The first-party `/api/product-analytics` sink accepts only allowlisted event
+names, sanitized routes, anonymous session IDs, release, and browser family.
+It does not accept arbitrary properties or measurement payloads. Do not enable
+external analytics until the provider and hosting decision is approved.
+
 ## Backend
 
 Install and run the API:
@@ -148,4 +161,4 @@ This deployment path is suitable for a prototype. Public launch still needs:
 - vetted reference-population percentile data
 - production-quality target profiles
 - source-reviewed strategy corpus data
-- final decisions on encoded share URLs and analytics
+- final decisions on encoded share URLs and analytics provider/hosting

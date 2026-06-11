@@ -7,3 +7,10 @@ export const ERROR_MONITORING_ENDPOINT =
 
 export const ERROR_MONITORING_UPLOAD_ENABLED =
   import.meta.env?.VITE_ERROR_MONITORING_UPLOAD_ENABLED === "true";
+
+export const PRODUCT_ANALYTICS_ENDPOINT =
+  import.meta.env?.VITE_PRODUCT_ANALYTICS_ENDPOINT ||
+  `${API_BASE_URL}/api/product-analytics`;
+
+export const PRODUCT_ANALYTICS_UPLOAD_ENABLED =
+  import.meta.env?.VITE_PRODUCT_ANALYTICS_UPLOAD_ENABLED === "true";

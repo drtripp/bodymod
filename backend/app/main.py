@@ -25,6 +25,8 @@ from app.models import MeasurementSet
 from app.models import PlanningData
 from app.models import PopulationReferenceData
 from app.models import ProcedureLibrary
+from app.models import ProductAnalyticsReportRequest
+from app.models import ProductAnalyticsReportResponse
 from app.models import ShareDashboardCreateRequest
 from app.models import ShareDashboardCreateResponse
 from app.models import ShareDashboardPublicRecord
@@ -32,7 +34,7 @@ from app.models import ShareDashboardRevokeRequest
 from app.models import ShareDashboardUpdateRequest
 from app.models import StrategyCorpusSeed
 from app.rate_limit import enforce_match_rate_limit
-from app.repositories import ClientErrorRepository, ShareDashboardRepository
+from app.repositories import ClientErrorRepository, ProductAnalyticsRepository, ShareDashboardRepository
 from app.services import build_match_response, get_match_priorities, get_targets
 
 app = FastAPI(title="bodymod api", version="0.1.0")
@@ -158,6 +160,15 @@ def food_search(query: str = "") -> dict:
 )
 def report_client_error(request: ClientErrorReportRequest) -> dict:
     return ClientErrorRepository().record_event(request.event)
+
+
+@app.post(
+    "/api/product-analytics",
+    response_model=ProductAnalyticsReportResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def report_product_analytics(request: ProductAnalyticsReportRequest) -> dict:
+    return ProductAnalyticsRepository().record_event(request.event)
 
 
 @app.post(

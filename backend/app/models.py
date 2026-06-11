@@ -473,6 +473,78 @@ class ClientErrorReportResponse(BaseModel):
     stored: bool = True
 
 
+class ProductAnalyticsEvent(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9:_-]+$")
+    name: Literal[
+        "app_opened",
+        "app_interaction",
+        "tab_selected",
+        "theme_changed",
+        "account_opened",
+        "snapshot_saved",
+        "goal_saved",
+        "protocol_saved",
+        "diet_logged",
+        "share_dashboard_published",
+        "backup_exported",
+    ]
+    surface: Literal[
+        "app",
+        "body",
+        "diet",
+        "account",
+        "goals",
+        "protocols",
+        "sharing",
+        "backup",
+        "settings",
+    ] = "app"
+    context: Literal[
+        "none",
+        "desktop",
+        "mobile",
+        "result",
+        "target",
+        "gender",
+        "scatter",
+        "distribution",
+        "first-run",
+        "signed-in",
+        "signed-out",
+    ] = "none"
+    route: str = Field(default="/", max_length=160)
+    anonymousSessionId: str = Field(
+        min_length=1,
+        max_length=80,
+        pattern=r"^analytics-session:[a-f0-9]{16}$",
+    )
+    release: str = Field(default="", max_length=80)
+    userAgentFamily: str = Field(default="Unknown", max_length=40)
+    createdAt: str = Field(min_length=1, max_length=40)
+
+    @field_validator("route")
+    @classmethod
+    def reject_query_or_hash(cls, value: str) -> str:
+        if "?" in value or "#" in value:
+            raise ValueError("Analytics routes must not include query strings.")
+        if value and (not value.startswith("/") or not re.fullmatch(r"/[A-Za-z0-9._/:-]*", value)):
+            raise ValueError("Analytics routes must be sanitized paths.")
+        return value
+
+
+class ProductAnalyticsReportRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event: ProductAnalyticsEvent
+
+
+class ProductAnalyticsReportResponse(BaseModel):
+    status: str = "accepted"
+    stored: bool = True
+
+
 class ShareDashboardSnapshot(BaseModel):
     id: str
     label: str = ""

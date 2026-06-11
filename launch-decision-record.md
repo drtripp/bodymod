@@ -5,7 +5,7 @@ prototype as a public product.
 
 The current app is local-first and measurement-first. It does not include
 accounts, photo uploads, external analytics, production corpus content, or
-server-side sharing.
+default server-side sync.
 
 ## Current Decisions
 
@@ -35,9 +35,12 @@ Status: not approved for current build.
 
 Rationale:
 
-- current telemetry is local-only in browser storage
-- production analytics need a privacy review and event minimization pass
+- current telemetry is local-only in browser storage unless an explicit build
+  flag enables the first-party minimized analytics sink
+- production analytics need a provider/hosting privacy review
 - measurement data should not be sent to analytics providers by default
+- the implemented first-party analytics envelope has allowlisted event names,
+  sanitized routes, anonymous session IDs, and no arbitrary properties
 
 ### Strategy Recommendations
 
@@ -88,8 +91,9 @@ Before public launch, decide:
 
 Current behavior:
 
-- percentiles use an approximate adult reference model
-- output is labeled as not NHANES-calibrated
+- height, weight, waist, and hip percentiles use the NHANES August 2021-August
+  2023 adult overlay
+- unsupported fields still use a labeled approximate scaffold
 
 Before public launch, decide:
 

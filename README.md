@@ -133,6 +133,10 @@ Implemented now:
 - privacy-preserving browser error event ring plus optional opt-in backend
   upload to `/api/client-errors`; reports contain fingerprints and source
   metadata, not raw messages, stacks, measurements, or form payloads
+- privacy-first product analytics wiring with a local ring buffer, sanitized
+  first-party `/api/product-analytics` sink, allowlisted event names, no
+  arbitrary properties, and disabled-by-default upload pending a provider
+  decision
 - accessibility baseline with skip-to-main navigation, visible focus rings, live status messages, form error associations, and chart descriptions
 - backend-served free/pro entitlement config, with all current tracking/data/export tools free
 - local-only Pro waitlist capture and blurred Pro preview cards in the account panel
@@ -181,8 +185,9 @@ Not implemented yet:
 - source-reviewed bloodwork marker taxonomy, units, and reference ranges; current bloodwork data is a dummy local-only review scaffold
 - full app-wide translation coverage; current i18n work is top-level shell groundwork
 - full public measurement-guide coverage with reviewed illustrations and final copy
-- production error monitoring provider/enablement decision; sanitized first-party
-  wiring exists but upload is disabled unless configured at build time
+- production error monitoring and product analytics provider/enablement
+  decisions; sanitized first-party wiring exists but upload is disabled unless
+  configured at build time
 - human/legal review of draft privacy, terms, and medical disclaimer pages
 
 ## Current Measurement Schema
@@ -219,7 +224,8 @@ The planned next work is documented in `mvp-build-spec.md` and `site-implementat
 - expand and clean up the target library
 - replace the seed strategy corpus with a manually sourced corpus
 - continue mobile polish from Playwright coverage and manual screenshots
-- decide whether production analytics are acceptable
+- decide whether production analytics are acceptable; first-party minimized
+  analytics wiring exists but external provider/hosting is not approved
 
 Longer-term ideas are captured in `body-modding-platform-plan.md`.
 Launch privacy and moderation gates are captured in `launch-decision-record.md`.

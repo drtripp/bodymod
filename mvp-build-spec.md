@@ -220,6 +220,8 @@ Implemented:
 - header share icon that copies a measurement-encoded URL without showing a share panel
 - local event logging for lightweight analytics
 - privacy control for local event count and clearing local events
+- disabled-by-default first-party product analytics sink with allowlisted event
+  names, sanitized routes, anonymous session IDs, and no arbitrary properties
 - outcome-first strategy explorer with one efficacy/risk plot per desired outcome
 - strategy explorer opens as an overlay from the main header action
 - clickable strategy dots with synopsis modal and dedicated detail view
@@ -272,7 +274,8 @@ Still needed:
 - source-reviewed bloodwork marker taxonomy, units, and reference ranges
 - production FoodData Central import/API pipeline and nutrient validation
 - vetted ANSUR or equivalent source tables for population-chart fields not covered by the partial NHANES overlay
-- production analytics decision
+- production analytics provider/hosting decision; minimized first-party wiring
+  exists but upload is disabled by default
 - share-link privacy decision before public launch
 - launch gate decision record in `launch-decision-record.md`
 
@@ -327,7 +330,8 @@ Exit condition:
 ### Phase 4: Launch Layer
 
 - decide whether encoded measurement URLs are acceptable for public launch or whether server-side snapshot IDs are needed
-- decide whether local-only analytics are sufficient or whether a production analytics provider is justified
+- decide whether local-only plus disabled first-party analytics wiring is
+  sufficient or whether a production analytics provider is justified
 - review and approve the draft privacy, terms, and medical disclaimer pages
 - harden deployment beyond the prototype notes in `deployment.md`
 - run a final copy pass

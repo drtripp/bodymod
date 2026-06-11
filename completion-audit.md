@@ -16,6 +16,7 @@ User request:
 | Rewrite docs using current repo state as truth | `README.md`, `mvp-build-spec.md`, `site-implementation-plan.md`, `body-modding-platform-plan.md`, and `deployment.md` describe the implemented React/Vite + FastAPI app rather than the older plan. | Done |
 | Frontend state decomposition | `frontend/src/hooks/useMeasurementFormState.js`, `frontend/src/hooks/useSnapshotState.js`, and `frontend/src/hooks/useComparisonState.js` now own measurement/unit, snapshot, and comparison state so `frontend/src/App.jsx` remains the orchestration/render shell. | Done |
 | Privacy-preserving client error wiring | `frontend/src/lib/errorMonitoring.js`, `frontend/src/main.jsx`, `backend/app/models.py`, `backend/app/repositories.py`, and `backend/app/main.py` implement sanitized browser error capture, a local ring buffer, opt-in upload, and the first-party `POST /api/client-errors` sink. Raw messages, stacks, measurements, and form payload fields are not part of the accepted envelope. | Agent wiring done; provider decision pending |
+| Privacy-first product analytics wiring | `frontend/src/lib/analytics.js`, `frontend/src/lib/productAnalytics.js`, `frontend/src/components/InfoFootnote.jsx`, `backend/app/models.py`, `backend/app/repositories.py`, `backend/app/main.py`, and `frontend/tests/productAnalytics.node.mjs` implement a minimized analytics path: existing local usage events map to allowlisted product events, local event clearing removes both local buffers, optional upload uses the first-party `POST /api/product-analytics` sink, and raw properties or measurement payloads are rejected. | Agent wiring done; external provider decision pending |
 | i18n groundwork | `frontend/src/lib/i18n.js`, `frontend/src/App.jsx`, `frontend/src/components/SiteHeader.jsx`, `frontend/tests/i18n.node.mjs`, and Playwright shell coverage implement persisted locale selection, a message catalog, fallback/interpolation helpers, and initial top-level shell/header/tab strings. | Groundwork done; full translation pass pending |
 | Flesh out measurement-first app features | `frontend/src/App.jsx`, components, and libs implement expanded measurement entry, validation, persisted cafe/graphite themes, skip-to-main navigation, visible focus rings, live status regions, form error associations, chart descriptions, front/side silhouette projections with themed line-art styling, a 10-profile silhouette QA fixture set, configurable match-priority presets, top match plus runner-up display, simplified result metrics, snapshots, local trend charting, per-metric snapshot history charts, historical weight CSV import, optional left/right limb-symmetry check-ins, optional local cycle phase logs, first-snapshot browser notification permission and stale-trend reminder helpers, readable local JSON export with or without an account, encrypted local backup/restore, local free/pro entitlement display, Pro waitlist capture, opt-in read-only share dashboards, goal progress with target-relative distance copy, life-event goal pausing, first-class local procedure logs with healing windows/case logs/photo stream hints, maintenance drift alerts, current-vs-prior snapshot silhouette comparison, target metadata/explanation display, target difference tables, tabbed result / vs Target / vs US Population panes, Body/Diet top-level navigation, Diet backend USDA-style food search, Open Food Facts lookup/barcode/logging/import, expanded micronutrient target rows, header share action, method/privacy footnote, public landing page, public methodology page, public measurement-guide pages for every measurable schema field, draft legal pages, local events, and corpus UI. | Implemented as prototype |
 | Backend target, match, entitlement, food, procedure, corpus, sharing, and hardening support | `backend/app/main.py`, `backend/app/rate_limit.py`, `backend/app/services.py`, `backend/app/repositories.py`, `backend/app/data/targets.seed.json`, `backend/app/data/match_priorities.py`, `backend/app/data/entitlements.py`, `backend/app/data/food_usda.py`, `backend/app/data/procedures.seed.json`, `backend/app/data/strategy_corpus.py`, `backend/app/data/strategy_corpus.seed.json`, `backend/app/models.py`, `backend/scripts/validate_curation.py`, `target-profiles-template.json`, and `target-profile-curation.md` expose health, targets, rate-limited match endpoints, configurable scoring-priority presets, free/pro entitlement config, dummy USDA-style food search data, a backend-served procedure taxonomy seed, a backend-served strategy corpus seed with linked case logs, a SQLite-backed target repository, an opaque-token share-dashboard repository/API, a target data template, and a structured curation validator. | Done |
@@ -67,7 +68,7 @@ npm run capture:screenshots
 Observed result:
 
 - frontend build passed
-- backend pytest passed `40` tests
+- backend pytest passed `45` tests
 - curation JSON validation passed for target/corpus seeds and templates
 - Node corpus validation passed `8` tests
 - Node diet validation passed `13` tests
@@ -83,6 +84,7 @@ Observed result:
 - Node shared measurement schema validation passed `3` tests
 - Node entitlement validation passed `3` tests
 - Node error monitoring validation passed `4` tests
+- Node product analytics validation passed `8` tests
 - Node population chart validation passed `6` tests
 - Node measurement guide validation passed `4` tests
 - all frontend Node helper suites in `verify.ps1` passed
@@ -109,7 +111,7 @@ cd backend
 
 Observed result:
 
-- backend pytest passed `40` tests
+- backend pytest passed `45` tests
 
 ## Current Decision
 

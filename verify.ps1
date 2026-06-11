@@ -56,6 +56,7 @@ try {
     Invoke-Checked { npm run test:measurement-schema }
     Invoke-Checked { npm run test:entitlements }
     Invoke-Checked { npm run test:error-monitoring }
+    Invoke-Checked { npm run test:analytics }
     Invoke-Checked { npm run test:face-measurements }
     Invoke-Checked { npm run test:result-card }
     Invoke-Checked { npm run test:progress-report }

@@ -473,6 +473,12 @@ land. No social features, no marketplace.
 - [ ] Privacy-first product analytics: self-hosted PostHog or Plausible;
       event minimization; measurement values never in payloads (resolves the
       open analytics gate). **[human]** provider/hosting decision.
+      Agent wiring is in place: existing local UI usage events now also map to
+      a minimized first-party `POST /api/product-analytics` envelope with
+      allowlisted event names, sanitized routes, anonymous session IDs, no
+      arbitrary properties, no measurement values, disabled-by-default upload,
+      SQLite storage, and frontend/backend privacy tests. External provider
+      selection and production enablement remain open.
 
 ## 14. Accounts, Sync & Multi-Profile
 

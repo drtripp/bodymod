@@ -493,6 +493,9 @@ Status:
 
 - implemented as lightweight local event logging through the frontend storage adapter
 - privacy section exposes local event count and a clear-local-events control
+- local events now map into a disabled-by-default first-party
+  `/api/product-analytics` sink with allowlisted names, sanitized routes,
+  anonymous session IDs, and no arbitrary properties
 - no external analytics provider is wired
 
 Candidate events:
@@ -572,7 +575,8 @@ Next:
 
 - harden deployment beyond the prototype notes in `deployment.md`
 - larger target library
-- production analytics provider if acceptable
+- production analytics provider/hosting if acceptable; first-party minimized
+  wiring exists but remains disabled by default
 - optional account system only if local storage becomes a real limitation
 
 ## Launch Checklist
