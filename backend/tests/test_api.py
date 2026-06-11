@@ -6,7 +6,13 @@ from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY, EXERCISE_SEED_PATH
 from app.data.food_usda import USDA_FOOD_LIBRARY
 from app.data.measurement_guides import MEASUREMENT_GUIDES
-from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TEMPLATES
+from app.data.planning import (
+    GOAL_PRESETS,
+    PERSONAS,
+    PLANNING_SEED,
+    PLANNING_SEED_PATH,
+    PROTOCOL_TEMPLATES,
+)
 from app.data.procedures import PROCEDURE_LIBRARY
 from app.data.reference import REFERENCE_DATA
 from app.data.strategy_corpus import STRATEGY_CORPUS
@@ -98,6 +104,8 @@ def test_planning_endpoint_returns_personas_goals_and_protocols() -> None:
     response = client.get("/api/planning")
 
     assert response.status_code == 200
+    assert PLANNING_SEED_PATH.exists()
+    assert "Dummy planning seed data" in PLANNING_SEED["reference"]
     payload = response.json()
     assert len(payload["personas"]) == 10
     assert payload["goalPresets"]
@@ -115,9 +123,12 @@ def test_planning_endpoint_returns_personas_goals_and_protocols() -> None:
 def test_planning_data_references_are_consistent() -> None:
     goal_ids = {goal["id"] for goal in GOAL_PRESETS}
     protocol_ids = {protocol["id"] for protocol in PROTOCOL_TEMPLATES}
+    persona_ids = {persona["id"] for persona in PERSONAS}
 
     assert len(PERSONAS) == 10
+    assert len(persona_ids) == 10
     assert all(persona["likelyGoals"] for persona in PERSONAS)
+    assert all(persona["walkthrough"] for persona in PERSONAS)
 
     for persona in PERSONAS:
         assert set(persona["likelyGoals"]).issubset(goal_ids)

@@ -1,4 +1,4 @@
-"""Validate editable curation JSON for target profiles and strategy corpus data.
+"""Validate editable curation JSON for target, planning, and strategy data.
 
 Run from the backend directory:
 
@@ -8,6 +8,7 @@ Pass explicit files to validate a draft before replacing a seed:
 
     .\\.venv\\Scripts\\python.exe scripts\\validate_curation.py \\
         --target-file ..\\target-profiles-template.json \\
+        --planning-file app\\data\\planning.seed.json \\
         --corpus-file ..\\strategy-corpus-template.json
 """
 
@@ -21,7 +22,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.models import StrategyCorpusSeed, TargetProfile  # noqa: E402
+from app.models import PlanningData, StrategyCorpusSeed, TargetProfile  # noqa: E402
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -29,6 +30,9 @@ BACKEND_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_TARGET_FILES = [
     BACKEND_ROOT / "app" / "data" / "targets.seed.json",
     REPO_ROOT / "target-profiles-template.json",
+]
+DEFAULT_PLANNING_FILES = [
+    BACKEND_ROOT / "app" / "data" / "planning.seed.json",
 ]
 DEFAULT_CORPUS_FILES = [
     BACKEND_ROOT / "app" / "data" / "strategy_corpus.seed.json",
@@ -77,6 +81,57 @@ def validate_target_file(path: Path) -> str:
             raise ValueError(f"{path}: target {target.get('id')} needs uncertainty notes.")
 
     return f"{path}: {len(targets)} target profile(s)"
+
+
+def validate_planning_file(path: Path) -> str:
+    payload = read_json(path)
+    planning = PlanningData.model_validate(
+        {
+            "personas": payload.get("personas", []),
+            "goalPresets": payload.get("goalPresets", []),
+            "protocolTemplates": payload.get("protocolTemplates", []),
+            "protocolTaxonomy": payload.get("protocolTaxonomy", []),
+        }
+    )
+    persona_ids = [persona.id for persona in planning.personas]
+    goal_ids = [goal.id for goal in planning.goalPresets]
+    protocol_ids = [protocol.id for protocol in planning.protocolTemplates]
+
+    for label, values in {
+        "persona": persona_ids,
+        "goal": goal_ids,
+        "protocol": protocol_ids,
+    }.items():
+        duplicates = duplicate_values(values)
+        if duplicates:
+            raise ValueError(f"{path}: duplicate {label} ids: {', '.join(duplicates)}.")
+
+    goal_id_set = set(goal_ids)
+    protocol_id_set = set(protocol_ids)
+
+    for persona in planning.personas:
+        missing_goals = sorted(set(persona.likelyGoals) - goal_id_set)
+        if missing_goals:
+            raise ValueError(
+                f"{path}: persona {persona.id!r} references unknown goals: "
+                f"{', '.join(missing_goals)}."
+            )
+        if not persona.walkthrough:
+            raise ValueError(f"{path}: persona {persona.id!r} needs walkthrough steps.")
+
+    for goal in planning.goalPresets:
+        missing_protocols = sorted(set(goal.suggestedProtocols) - protocol_id_set)
+        if missing_protocols:
+            raise ValueError(
+                f"{path}: goal {goal.id!r} references unknown protocols: "
+                f"{', '.join(missing_protocols)}."
+            )
+
+    return (
+        f"{path}: {len(planning.personas)} persona(s), "
+        f"{len(planning.goalPresets)} goal preset(s), "
+        f"{len(planning.protocolTemplates)} protocol template(s)"
+    )
 
 
 def validate_strategy_corpus_file(path: Path) -> str:
@@ -163,15 +218,24 @@ def parse_args() -> argparse.Namespace:
         dest="corpus_files",
         help="Strategy corpus JSON file to validate. Repeatable.",
     )
+    parser.add_argument(
+        "--planning-file",
+        action="append",
+        type=Path,
+        dest="planning_files",
+        help="Planning/persona JSON file to validate. Repeatable.",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     target_files = args.target_files or DEFAULT_TARGET_FILES
+    planning_files = args.planning_files or DEFAULT_PLANNING_FILES
     corpus_files = args.corpus_files or DEFAULT_CORPUS_FILES
     summaries = [
         *(validate_target_file(path) for path in target_files),
+        *(validate_planning_file(path) for path in planning_files),
         *(validate_strategy_corpus_file(path) for path in corpus_files),
     ]
 

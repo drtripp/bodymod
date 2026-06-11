@@ -428,6 +428,10 @@ land. No social features, no marketplace.
       check-in: <date>"); notification permission asked here only.
 - [x] Demo mode: "explore with a sample profile" on the first screen.
 - [x] Dense form retained as the post-onboarding power-user editing surface.
+- [x] Persona walkthrough seed file **(new)**: backend planning data now lives
+      in `backend/app/data/planning.seed.json` with 10 validation personas,
+      goal presets, protocol templates, and loader/curation checks for
+      dangling persona-goal and goal-protocol references.
 
 ## 12. Brand & Theming
 

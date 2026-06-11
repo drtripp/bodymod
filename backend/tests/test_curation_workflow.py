@@ -4,7 +4,9 @@ import pytest
 
 from scripts.validate_curation import (
     DEFAULT_CORPUS_FILES,
+    DEFAULT_PLANNING_FILES,
     DEFAULT_TARGET_FILES,
+    validate_planning_file,
     validate_strategy_corpus_file,
     validate_target_file,
 )
@@ -12,9 +14,11 @@ from scripts.validate_curation import (
 
 def test_default_curation_files_validate() -> None:
     target_summaries = [validate_target_file(path) for path in DEFAULT_TARGET_FILES]
+    planning_summaries = [validate_planning_file(path) for path in DEFAULT_PLANNING_FILES]
     corpus_summaries = [validate_strategy_corpus_file(path) for path in DEFAULT_CORPUS_FILES]
 
     assert any("target profile" in summary for summary in target_summaries)
+    assert any("10 persona" in summary for summary in planning_summaries)
     assert any("case log" in summary for summary in corpus_summaries)
 
 
