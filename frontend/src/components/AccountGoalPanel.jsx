@@ -81,6 +81,13 @@ import {
   summarizeLocalBackupBundle
 } from "../lib/localBackup";
 import {
+  deleteNativeEncryptedBackup,
+  loadNativeBackupState,
+  persistNativeBackupState,
+  readNativeEncryptedBackup,
+  saveNativeEncryptedBackup
+} from "../lib/nativeBackup";
+import {
   clearSyncVaultState,
   createSyncVault,
   loadSyncVaultState,
@@ -499,6 +506,11 @@ export default function AccountGoalPanel({
   const [historyImportStatus, setHistoryImportStatus] = useState("");
   const [backupPassphrase, setBackupPassphrase] = useState("");
   const [backupStatus, setBackupStatus] = useState("");
+  const [nativeBackupState, setNativeBackupState] = useState(() => loadNativeBackupState());
+  const [nativeBackupAutoEnabled, setNativeBackupAutoEnabled] = useState(
+    () => loadNativeBackupState().autoBackupEnabled
+  );
+  const [nativeBackupStatus, setNativeBackupStatus] = useState("");
   const [jsonExportStatus, setJsonExportStatus] = useState("");
   const [shareDashboardState, setShareDashboardState] = useState(() =>
     loadShareDashboardState()
@@ -934,6 +946,37 @@ export default function AccountGoalPanel({
       workoutSessions
     ]
   );
+  const nativeBackupSignature = useMemo(
+    () =>
+      [
+        account?.id || "",
+        snapshotProps.snapshots.length,
+        snapshotProps.snapshots[0]?.updatedAt || snapshotProps.snapshots[0]?.createdAt || "",
+        goals.length,
+        protocols.length,
+        checkIns.length,
+        checkIns[0]?.updatedAt || checkIns[0]?.createdAt || "",
+        workoutSessions.length,
+        procedures.length,
+        bloodworkResults.length,
+        referralCredits.length,
+        photos.length,
+        faceMeasurements.length
+      ].join("|"),
+    [
+      account?.id,
+      bloodworkResults.length,
+      checkIns,
+      faceMeasurements.length,
+      goals.length,
+      photos.length,
+      procedures.length,
+      protocols.length,
+      referralCredits.length,
+      snapshotProps.snapshots,
+      workoutSessions.length
+    ]
+  );
   useEffect(() => {
     if (!account) {
       return;
@@ -967,6 +1010,23 @@ export default function AccountGoalPanel({
       cadenceDueState
     }));
   }, [account?.id, cadenceDueState, checkIns, weeklyStreak]);
+
+  useEffect(() => {
+    if (!account || !nativeBackupAutoEnabled || backupPassphrase.length < 8) {
+      return;
+    }
+
+    let isCancelled = false;
+    saveNativeBackupFile({ automatic: true }).then((record) => {
+      if (!isCancelled && record) {
+        setNativeBackupStatus(`Native backup autosaved ${formatDate(record.lastBackupAt)}.`);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [account?.id, backupPassphrase, nativeBackupAutoEnabled, nativeBackupSignature]);
 
   const protocolSchemaSummary = useMemo(
     () => formatProtocolSchemaSummary(planningData.protocolTaxonomy),
@@ -2020,6 +2080,91 @@ export default function AccountGoalPanel({
     reader.readAsText(file);
   }
 
+  async function saveNativeBackupFile({ automatic = false } = {}) {
+    if (!account) {
+      return null;
+    }
+
+    try {
+      if (!automatic) {
+        setNativeBackupStatus("Saving encrypted backup to native storage...");
+      }
+      const bundle = currentBackupBundle();
+      const summary = summarizeLocalBackupBundle(bundle);
+      const encryptedBackup = await encryptLocalBackup(bundle, backupPassphrase);
+      const record = await saveNativeEncryptedBackup({
+        encryptedBackup,
+        summary,
+        previousState: {
+          ...nativeBackupState,
+          autoBackupEnabled: nativeBackupAutoEnabled
+        }
+      });
+      setNativeBackupState(record);
+      if (!automatic) {
+        setNativeBackupStatus(
+          `Native encrypted backup saved: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), and ${summary.photoManifest} photo manifest item(s).`
+        );
+      }
+      return record;
+    } catch (error) {
+      setNativeBackupStatus(error.message || "Native encrypted backup save failed.");
+      return null;
+    }
+  }
+
+  async function handleSaveNativeBackupFile() {
+    await saveNativeBackupFile();
+  }
+
+  async function handleRestoreNativeBackupFile() {
+    if (!account) {
+      return;
+    }
+
+    try {
+      setNativeBackupStatus("Restoring encrypted backup from native storage...");
+      const encryptedBackup = await readNativeEncryptedBackup({
+        state: nativeBackupState
+      });
+      const bundle = await decryptLocalBackup(encryptedBackup, backupPassphrase);
+      setNativeBackupStatus(restoreBackupBundle(bundle));
+    } catch (error) {
+      setNativeBackupStatus(error.message || "Native encrypted backup restore failed.");
+    }
+  }
+
+  async function handleDeleteNativeBackupFile() {
+    try {
+      const result = await deleteNativeEncryptedBackup({
+        state: nativeBackupState
+      });
+      setNativeBackupState(result.state);
+      setNativeBackupStatus(
+        result.deleted
+          ? "Native encrypted backup file deleted."
+          : "No native encrypted backup file was available to delete."
+      );
+    } catch (error) {
+      setNativeBackupStatus(error.message || "Native encrypted backup delete failed.");
+    }
+  }
+
+  function handleNativeBackupAutoChange(event) {
+    const enabled = event.target.checked;
+    const nextState = persistNativeBackupState({
+      ...nativeBackupState,
+      autoBackupEnabled: enabled
+    });
+    setNativeBackupAutoEnabled(enabled);
+    setNativeBackupState(nextState);
+    setNativeBackupStatus(
+      enabled
+        ? "Native backup autosave enabled for this app session when a passphrase is present."
+        : "Native backup autosave disabled."
+    );
+  }
+
   async function handleCreateSyncVault() {
     if (!account) {
       return;
@@ -2783,6 +2928,48 @@ export default function AccountGoalPanel({
                   {backupStatus}
                 </small>
               ) : null}
+              <div className="native-backup-panel" aria-label="Native encrypted backup">
+                <div>
+                  <h4>Native app backup</h4>
+                  <p>
+                    Installed apps can save the same encrypted backup into
+                    native storage. Platform cloud backup still depends on the
+                    generated iOS/Android project settings.
+                  </p>
+                  {nativeBackupState.lastBackupAt ? (
+                    <small>
+                      Last saved {formatDate(nativeBackupState.lastBackupAt)} / {nativeBackupState.byteLength} bytes
+                    </small>
+                  ) : (
+                    <small>No native backup file saved yet.</small>
+                  )}
+                </div>
+                <label className="native-backup-toggle">
+                  <input
+                    aria-label="Native backup autosave"
+                    type="checkbox"
+                    checked={nativeBackupAutoEnabled}
+                    onChange={handleNativeBackupAutoChange}
+                  />
+                  <span>Autosave this session</span>
+                </label>
+                <div className="native-backup-actions">
+                  <button className="button" type="button" onClick={handleSaveNativeBackupFile}>
+                    Save native backup
+                  </button>
+                  <button className="button" type="button" onClick={handleRestoreNativeBackupFile}>
+                    Restore native backup
+                  </button>
+                  <button className="button" type="button" onClick={handleDeleteNativeBackupFile}>
+                    Delete native backup
+                  </button>
+                </div>
+                {nativeBackupStatus ? (
+                  <small className="native-backup-status" role="status" aria-live="polite">
+                    {nativeBackupStatus}
+                  </small>
+                ) : null}
+              </div>
             </section>
 
             <section className="encrypted-sync-section" aria-label="Encrypted sync vault">

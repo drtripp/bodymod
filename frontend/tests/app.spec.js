@@ -2093,6 +2093,11 @@ test("exports and restores encrypted local backups through the account UI", asyn
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe("bodymod-encrypted-backup.json");
   await expect(page.getByLabel("Encrypted local backup")).toContainText("Encrypted backup downloaded");
+  await expect(page.getByLabel("Native encrypted backup")).toContainText("No native backup file saved yet.");
+  await page.getByLabel("Native backup autosave").check();
+  await expect(page.getByLabel("Native backup autosave")).toBeChecked();
+  await page.getByRole("button", { name: "Save native backup" }).click();
+  await expect(page.getByLabel("Native encrypted backup")).toContainText("installed app");
   const backupPath = await download.path();
 
   await page.evaluate(() => {

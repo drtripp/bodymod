@@ -675,6 +675,48 @@ textarea {
   gap: 8px;
 }
 
+.native-backup-panel {
+  border-top: 1px solid var(--color-border);
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(260px, 1fr) minmax(160px, 0.25fr) minmax(190px, 0.34fr);
+  gap: 12px;
+  padding-top: 12px;
+  align-items: start;
+}
+
+.native-backup-panel h4 {
+  font-size: 0.92rem;
+  margin: 0 0 4px;
+}
+
+.native-backup-panel p,
+.native-backup-panel small,
+.native-backup-status {
+  color: var(--color-muted);
+}
+
+.native-backup-toggle {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.native-backup-toggle input {
+  inline-size: 16px;
+  block-size: 16px;
+}
+
+.native-backup-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.native-backup-status {
+  grid-column: 1 / -1;
+}
+
 .encrypted-sync-fields {
   display: grid;
   gap: 8px;
@@ -4984,6 +5026,7 @@ textarea {
   .share-dashboard-section,
   .local-json-export-section,
   .encrypted-backup-section,
+  .native-backup-panel,
   .encrypted-sync-section,
   .personal-data-api-section,
   .entitlement-grid,

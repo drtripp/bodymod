@@ -113,6 +113,7 @@ Implemented now:
 - historical weight CSV import for local daily logs, with lb/kg handling, optional calories, and duplicate-date skipping
 - optional left/right bicep, forearm, thigh, and calf split logs with local symmetry summaries
 - passphrase-encrypted local backup and restore for snapshots and account logs, including procedure and local-only bloodwork records, with photo metadata manifest only
+- native encrypted-backup file scaffold that saves/restores/deletes the same AES-GCM backup through Capacitor Filesystem in installed apps, with session autosave controls
 - backend encrypted sync-vault scaffold that stores only opaque AES-GCM backup blobs, hashed sync tokens, device IDs, and revision metadata, plus account-panel create/push/pull/merge/force-push/revoke UI and tests that keep plaintext measurements out of request bodies
 - token-scoped personal data API scaffold that issues read-only bearer tokens for the encrypted sync vault, stores only token hashes, and lets account-panel users issue/test/revoke access without exposing plaintext measurements
 - adaptive TDEE estimate from reliable daily weight and calorie logs, with reliability-window exclusions
@@ -219,7 +220,7 @@ Not implemented yet:
 - source-reviewed procedure taxonomy and clinical/body-mod validation; current procedure data is a dummy review scaffold
 - source-reviewed bloodwork marker taxonomy, units, and reference ranges; current bloodwork data is a dummy local-only review scaffold
 - full app-wide translation coverage; current i18n work is top-level shell groundwork
-- generated Android/iOS native project folders, store signing, APNs/FCM production credentials/device validation, HealthKit plugins, native home-screen widget extensions, native store icon generation, and native release workflows
+- generated Android/iOS native project folders, store signing, APNs/FCM production credentials/device validation, HealthKit plugins, native home-screen widget extensions, iCloud/Google Drive backup policy wiring, native store icon generation, and native release workflows
 - full public measurement-guide coverage with reviewed illustrations and final copy
 - production error monitoring and product analytics provider/enablement
   decisions; sanitized first-party wiring exists but upload is disabled unless

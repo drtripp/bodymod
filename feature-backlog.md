@@ -621,6 +621,12 @@ land. No social features, no marketplace.
       reviews.
 - [ ] Automatic encrypted backup to iCloud/Google Drive **(new)** via native
       storage hooks; the local-first answer to "what if I lose my phone."
+      First native file scaffold is in: `frontend/src/lib/nativeBackup.js`
+      writes the existing AES-GCM backup JSON to Capacitor Filesystem, tracks
+      metadata/autosave state through the storage adapter, and the account
+      panel exposes save/restore/delete plus session autosave controls.
+      Real iCloud/Google Drive policy and app-group/shared-storage wiring
+      remain tied to generated native project folders.
 - [ ] macOS CI lane (GitHub Actions + fastlane) for build/sign/upload;
       **[human]**: Apple Developer account ($99/yr), signing setup.
 - [ ] App Store content strategy for the corpus: trimmed pharma categories on

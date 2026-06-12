@@ -49,6 +49,16 @@ photo metadata plus a local file reference, then hydrates file-backed photos
 back into preview data URLs for the gallery/comparison UI. Browser builds keep
 the existing inline `localStorage` behavior for local-only web photos.
 
+Encrypted local backup files use the same plugin through
+`src/lib/nativeBackup.js`. The account panel can write, restore, and delete the
+latest passphrase-encrypted backup at
+`bodymod-encrypted-backups/latest.bodymod-encrypted-backup.json` in
+`Directory.Data`; it also keeps metadata and a session-autosave preference in
+the storage adapter. The saved file is already AES-GCM encrypted and contains
+photo manifests only, not photo bytes. Actual iCloud/Google Drive backup policy
+still requires generated native project folders and platform-specific backup
+rules.
+
 ## Barcode Scanning
 
 Diet barcode scanning uses `@capacitor-mlkit/barcode-scanning` through
