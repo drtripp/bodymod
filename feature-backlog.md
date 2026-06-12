@@ -482,7 +482,10 @@ land. No social features, no marketplace.
       theme (renderer geometry unchanged, stroke/fill treatment themed).
 - [ ] Copy/tone pass: competence + non-judgment; "check-in"/"log", never
       "cheat" or moralized food language; tea-voice for insights. **[human]**
-      final voice review.
+      final voice review. First automated guardrail is in:
+      `frontend/src/lib/toneGuard.js` defines blocked moralized food/body
+      phrases, `frontend/tests/toneGuard.node.mjs` scans app/content surfaces,
+      and the weekly digest test preserves the "Tea:" voice.
 
 ## 13. Sharing & Growth
 
