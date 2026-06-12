@@ -85,6 +85,11 @@ environment variable:
 set BODYMOD_CORS_ORIGINS=https://bodymod.example.com
 ```
 
+The local default list includes the Vite dev origins and
+`capacitor://localhost` for the Capacitor native shell. If
+`BODYMOD_CORS_ORIGINS` is set, include every hosted web origin and native shell
+origin explicitly.
+
 Do not serve the public API over plain HTTP. The TLS boundary should also set
 security headers, redirect HTTP to HTTPS, and strip untrusted forwarding
 headers before passing requests to Uvicorn.

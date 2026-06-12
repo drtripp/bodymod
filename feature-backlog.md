@@ -569,8 +569,14 @@ land. No social features, no marketplace.
 
 ## 16. Native Apps (Capacitor)
 
-- [ ] Capacitor scaffold wrapping the Vite build; iOS + Android projects;
-      `capacitor://localhost` added to CORS handling.
+- [x] Capacitor web bootstrap wrapping the Vite build: `@capacitor/*`
+      packages, `capacitor.config.json`, native add/open/sync package scripts,
+      Vite `dist/` as the sync target, and backend `capacitor://localhost`
+      CORS handling are in place.
+- [ ] Generate and maintain Android/iOS Capacitor project folders once native
+      toolchains and signing choices are available. This remains separate from
+      the web bootstrap so repo verification does not depend on Xcode/Android
+      Studio being installed in this workspace.
 - [ ] Native storage via the adapter (Preferences/SQLite); migration from any
       existing webview localStorage.
 - [ ] Native barcode plugin (ML Kit) behind the existing manual-entry

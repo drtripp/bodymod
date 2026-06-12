@@ -7,6 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "native:add:android": "cap add android",
+    "native:add:ios": "cap add ios",
+    "native:open:android": "cap open android",
+    "native:open:ios": "cap open ios",
+    "native:sync": "npm run build && cap sync",
     "capture:screenshots": "node tests/capture-screenshots.mjs",
     "test:corpus": "node --test tests/strategyCorpus.node.mjs",
     "test:diet": "node --test tests/diet.node.mjs",
@@ -49,11 +54,15 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@capacitor/core": "^8.4.0",
     "@mediapipe/tasks-vision": "^0.10.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/ios": "^8.4.0",
     "@playwright/test": "^1.59.1",
     "@vitejs/plugin-react": "^4.3.1",
     "vite": "^5.4.2"

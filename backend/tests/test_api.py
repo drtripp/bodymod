@@ -57,6 +57,12 @@ def test_cors_origins_can_be_configured(monkeypatch) -> None:
     ]
 
 
+def test_default_cors_origins_include_capacitor_shell(monkeypatch) -> None:
+    monkeypatch.delenv("BODYMOD_CORS_ORIGINS", raising=False)
+
+    assert "capacitor://localhost" in allowed_cors_origins()
+
+
 def test_targets_endpoint_returns_curated_profiles() -> None:
     response = client.get("/api/targets")
 

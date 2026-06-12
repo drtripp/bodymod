@@ -63,6 +63,15 @@ Set `VITE_API_BASE_URL` if the backend is not running on `http://localhost:8000`
 
 Deployment notes are in `deployment.md`. For a hosted frontend, set
 `BODYMOD_CORS_ORIGINS` on the backend to the public frontend origin.
+The backend default CORS list also includes `capacitor://localhost` for the
+native shell bootstrap.
+
+### Native Shell
+
+Capacitor config and scripts live in `frontend/`. After native toolchains are
+available, run `npm run native:add:android` or `npm run native:add:ios`, then
+`npm run native:sync` after web changes. Set `VITE_API_BASE_URL` before syncing
+when testing on a device or emulator. See `frontend/native-readme.md`.
 
 ## Current Scope
 
@@ -170,6 +179,7 @@ Implemented now:
 - backend and Node schema tests for frontend/backend measurement alignment
 - backend and Node entitlement tests proving current data tools stay non-paywalled
 - persisted locale preference with a lightweight i18n message catalog for the top-level shell/header/navigation strings
+- Capacitor native-shell bootstrap with package scripts, app metadata, Vite `dist/` sync target, and backend `capacitor://localhost` CORS origin
 - Node accessibility contrast tests for cafe/graphite theme tokens and Playwright keyboard/accessibility semantics coverage
 - backend target-data and SQLite repository tests for IDs, schemas, and placeholder uncertainty notes
 - target profile template and curation guide for future production target data
@@ -192,6 +202,7 @@ Not implemented yet:
 - source-reviewed procedure taxonomy and clinical/body-mod validation; current procedure data is a dummy review scaffold
 - source-reviewed bloodwork marker taxonomy, units, and reference ranges; current bloodwork data is a dummy local-only review scaffold
 - full app-wide translation coverage; current i18n work is top-level shell groundwork
+- generated Android/iOS native project folders, store signing, native plugins, and native release workflows
 - full public measurement-guide coverage with reviewed illustrations and final copy
 - production error monitoring and product analytics provider/enablement
   decisions; sanitized first-party wiring exists but upload is disabled unless
