@@ -13,7 +13,7 @@ The current app is a small full-stack prototype:
 - Frontend: React 18, Vite, plain CSS
 - Backend: FastAPI, Uvicorn, Pydantic, SQLite
 - Storage: adapter-backed browser `localStorage` for web plus Capacitor
-  Preferences hydration/migration in native runtimes
+  Preferences and Filesystem storage in native runtimes
 - Rendering: deterministic SVG silhouette generated from measurements
 
 The app is measurement-first. It does not provide medical or procedural guidance. Accounts are still browser-local by default; production server-side identity and sync are not enabled.
@@ -73,8 +73,10 @@ Capacitor config and scripts live in `frontend/`. After native toolchains are
 available, run `npm run native:add:android` or `npm run native:add:ios`, then
 `npm run native:sync` after web changes. Native runtimes use the same storage
 adapter with a Capacitor Preferences cache and one-time migration from existing
-`bodymod:` webview `localStorage` keys. Set `VITE_API_BASE_URL` before syncing
-when testing on a device or emulator. See `frontend/native-readme.md`.
+`bodymod:` webview `localStorage` keys. Progress-photo bytes are stored through
+Capacitor Filesystem while account JSON keeps only photo metadata. Set
+`VITE_API_BASE_URL` before syncing when testing on a device or emulator. See
+`frontend/native-readme.md`.
 
 ## Current Scope
 
@@ -128,6 +130,7 @@ Implemented now:
 - opt-in server-side read-only share dashboards with opaque public links and browser-held revoke tokens
 - local browser face measurement logger using self-hosted MediaPipe assets for camera/photo landmark scans
 - local progress photo streams for body, face, and hair with ghost overlay and comparison slider
+- Capacitor Filesystem-backed native progress-photo asset storage, keeping photo bytes out of Preferences/account metadata while preserving local-only web photo behavior
 - current-vs-selected-snapshot silhouette comparison
 - side-by-side and overlap comparison modes
 - animated current-to-target morph mode with an SVG morph share-card download
@@ -208,7 +211,7 @@ Not implemented yet:
 - source-reviewed procedure taxonomy and clinical/body-mod validation; current procedure data is a dummy review scaffold
 - source-reviewed bloodwork marker taxonomy, units, and reference ranges; current bloodwork data is a dummy local-only review scaffold
 - full app-wide translation coverage; current i18n work is top-level shell groundwork
-- generated Android/iOS native project folders, store signing, native barcode/push/HealthKit plugins, native file/SQLite photo storage, and native release workflows
+- generated Android/iOS native project folders, store signing, native barcode/push/HealthKit plugins, and native release workflows
 - full public measurement-guide coverage with reviewed illustrations and final copy
 - production error monitoring and product analytics provider/enablement
   decisions; sanitized first-party wiring exists but upload is disabled unless

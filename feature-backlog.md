@@ -582,8 +582,11 @@ land. No social features, no marketplace.
       switches to Capacitor Preferences in native runtimes, hydrates before
       first render, keeps synchronous readers backed by a native cache, and
       migrates existing `bodymod:` webview `localStorage` keys.
-- [ ] Native file/SQLite storage for large photo/blob data so local progress
-      photos are not limited by key-value Preferences or webview storage.
+- [x] Native file storage for large photo/blob data: progress-photo imports now
+      use `@capacitor/filesystem` in native runtimes, store image bytes under
+      app data files, keep only photo metadata in the account JSON store, and
+      hydrate/delete those assets through the account UI. SQLite is no longer
+      required for this photo blob path.
 - [ ] Native barcode plugin (ML Kit) behind the existing manual-entry
       fallback (BarcodeDetector doesn't exist in WKWebView).
 - [ ] HealthKit: weight read/write, measurement write, nutrition write;

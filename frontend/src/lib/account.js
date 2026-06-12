@@ -1,5 +1,6 @@
 import { readJsonSync, removeStoredItemSync, writeJsonSync } from "./storageAdapter.js";
 import { filterReliableEntries } from "./reliabilityEvents.js";
+import { defaultPhotoAssetAdapter } from "./photoStorage.js";
 
 const ACCOUNTS_KEY = "bodymod:accounts:v1";
 const SESSION_KEY = "bodymod:session:v1";
@@ -553,6 +554,35 @@ export function persistUserPhoto(accountId, photo) {
   return nextPhoto;
 }
 
+export async function persistUserPhotoAsset(
+  accountId,
+  photo,
+  { photoAssetAdapter = defaultPhotoAssetAdapter } = {}
+) {
+  const parsed = readStorage(PHOTOS_KEY, { photos: [] });
+  const photos = Array.isArray(parsed.photos) ? parsed.photos : [];
+  const nextPhoto = {
+    id: crypto.randomUUID(),
+    accountId,
+    createdAt: new Date().toISOString(),
+    ...photo
+  };
+
+  try {
+    const stored = await photoAssetAdapter.storePhoto(nextPhoto);
+    const persistedPhoto = stored.persistedPhoto || nextPhoto;
+
+    writeStorage(PHOTOS_KEY, {
+      version: STORAGE_VERSION,
+      photos: [persistedPhoto, ...photos]
+    });
+
+    return stored.runtimePhoto || persistedPhoto;
+  } catch (error) {
+    return persistUserPhoto(accountId, photo);
+  }
+}
+
 export function persistUserFaceMeasurement(accountId, faceMeasurement) {
   const parsed = readStorage(FACE_MEASUREMENTS_KEY, { faceMeasurements: [] });
   const faceMeasurements = Array.isArray(parsed.faceMeasurements)
@@ -586,6 +616,43 @@ export function deleteUserPhoto(accountId, photoId) {
   });
 
   return nextPhotos.filter((photo) => photo.accountId === accountId);
+}
+
+export async function hydrateUserPhotoAssets(
+  photos,
+  { photoAssetAdapter = defaultPhotoAssetAdapter } = {}
+) {
+  if (!Array.isArray(photos) || !photos.length) {
+    return [];
+  }
+
+  try {
+    return await photoAssetAdapter.hydratePhotos(photos);
+  } catch (error) {
+    return photos;
+  }
+}
+
+export async function deleteUserPhotoAsset(
+  accountId,
+  photoId,
+  { photoAssetAdapter = defaultPhotoAssetAdapter } = {}
+) {
+  const parsed = readStorage(PHOTOS_KEY, { photos: [] });
+  const photos = Array.isArray(parsed.photos) ? parsed.photos : [];
+  const targetPhoto = photos.find(
+    (photo) => photo.accountId === accountId && photo.id === photoId
+  );
+
+  if (targetPhoto) {
+    try {
+      await photoAssetAdapter.removePhoto(targetPhoto);
+    } catch (error) {
+      // Metadata deletion should still succeed if the asset file is already gone.
+    }
+  }
+
+  return deleteUserPhoto(accountId, photoId);
 }
 
 export function appendGoalCheckIn(accountId, goalId, checkIn) {

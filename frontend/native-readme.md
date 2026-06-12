@@ -28,6 +28,8 @@ the existing synchronous React state initializers can read from a native-backed
 cache. Hydration also migrates existing `bodymod:` webview `localStorage` keys
 into Preferences once.
 
-Large progress-photo/blob storage still needs a dedicated native file or SQLite
-pass before release builds; Preferences is only the first native key-value
-storage layer for the current JSON stores.
+Progress-photo bytes use `@capacitor/filesystem` through
+`src/lib/photoStorage.js` in native runtimes. The account store keeps only
+photo metadata plus a local file reference, then hydrates file-backed photos
+back into preview data URLs for the gallery/comparison UI. Browser builds keep
+the existing inline `localStorage` behavior for local-only web photos.

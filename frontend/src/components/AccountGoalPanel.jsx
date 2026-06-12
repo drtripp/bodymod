@@ -25,7 +25,8 @@ import {
   clearSession,
   createLocalAccount,
   deleteUserCheckInsByType,
-  deleteUserPhoto,
+  deleteUserPhotoAsset,
+  hydrateUserPhotoAssets,
   loadAccounts,
   loadUserCheckIns,
   loadUserBloodworkResults,
@@ -43,7 +44,7 @@ import {
   persistUserBloodworkResult,
   persistUserFaceMeasurement,
   persistUserGoal,
-  persistUserPhoto,
+  persistUserPhotoAsset,
   persistUserProcedure,
   persistUserProtocol,
   persistUserWorkoutSession,
@@ -303,6 +304,23 @@ function photoOptionLabel(photo) {
 
 function findPhoto(photos, photoId) {
   return photos.find((photo) => photo.id === photoId) || null;
+}
+
+function PhotoImage({ photo, alt, className = "", ...props }) {
+  if (!photo?.dataUrl) {
+    return (
+      <b
+        className={`photo-image-placeholder ${className}`.trim()}
+        role="img"
+        aria-label={alt}
+        {...props}
+      >
+        Photo loading
+      </b>
+    );
+  }
+
+  return <img src={photo.dataUrl} alt={alt} className={className || undefined} {...props} />;
 }
 
 function formatCadenceFields(fields) {
@@ -944,6 +962,28 @@ export default function AccountGoalPanel({
       return exerciseLibrary.exercises[0]?.id || "";
     });
   }, [exerciseLibrary.exercises]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const storedPhotos = loadUserPhotos(account?.id);
+
+    if (!storedPhotos.length) {
+      setPhotos([]);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    hydrateUserPhotoAssets(storedPhotos).then((hydratedPhotos) => {
+      if (!cancelled) {
+        setPhotos(hydratedPhotos);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [account?.id]);
 
   useEffect(() => {
     const defaults = defaultPhotoComparison(photos, photoFilter);
@@ -1634,7 +1674,7 @@ export default function AccountGoalPanel({
     }
 
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
         const record = createPhotoRecord({
           dataUrl: reader.result,
@@ -1644,7 +1684,7 @@ export default function AccountGoalPanel({
           category: photoCategory,
           note: photoNote
         });
-        const nextPhoto = persistUserPhoto(account.id, record);
+        const nextPhoto = await persistUserPhotoAsset(account.id, record);
         const nextPhotos = [nextPhoto, ...photos];
         setPhotos(nextPhotos);
         setPhotoNote("");
@@ -1663,9 +1703,10 @@ export default function AccountGoalPanel({
     event.target.value = "";
   }
 
-  function handleDeletePhoto(photoId) {
-    const nextPhotos = deleteUserPhoto(account.id, photoId);
-    setPhotos(nextPhotos);
+  async function handleDeletePhoto(photoId) {
+    const nextPhotos = await deleteUserPhotoAsset(account.id, photoId);
+    const hydratedPhotos = await hydrateUserPhotoAssets(nextPhotos);
+    setPhotos(hydratedPhotos);
     setStatus("Photo deleted from this browser profile.");
   }
 
@@ -4351,8 +4392,8 @@ export default function AccountGoalPanel({
                     />
                   </label>
                   <div className="photo-ghost-frame">
-                    <img
-                      src={ghostPhoto.dataUrl}
+                    <PhotoImage
+                      photo={ghostPhoto}
                       alt={`${ghostPhoto.category} ghost reference`}
                       style={{ opacity: Number(ghostOpacity) / 100 }}
                     />
@@ -4406,10 +4447,10 @@ export default function AccountGoalPanel({
                   </div>
                   {beforePhoto && afterPhoto ? (
                     <div className="photo-compare-frame">
-                      <img src={beforePhoto.dataUrl} alt="Before progress" />
-                      <img
+                      <PhotoImage photo={beforePhoto} alt="Before progress" />
+                      <PhotoImage
                         className="photo-compare-after"
-                        src={afterPhoto.dataUrl}
+                        photo={afterPhoto}
                         alt="After progress"
                         style={{ clipPath: `inset(0 ${100 - Number(photoSlider)}% 0 0)` }}
                       />
@@ -4422,7 +4463,7 @@ export default function AccountGoalPanel({
               {latestPhoto ? (
                 <div className="photo-silhouette-pair" aria-label="Photo beside silhouette">
                   <figure>
-                    <img src={latestPhoto.dataUrl} alt={`${latestPhoto.category} progress`} />
+                    <PhotoImage photo={latestPhoto} alt={`${latestPhoto.category} progress`} />
                     <figcaption>{photoOptionLabel(latestPhoto)}</figcaption>
                   </figure>
                   <SilhouetteView
@@ -4438,7 +4479,7 @@ export default function AccountGoalPanel({
                   <ul className="photo-gallery-list">
                     {visiblePhotos.map((photo) => (
                       <li key={photo.id}>
-                        <img src={photo.dataUrl} alt={`${photo.category} progress thumbnail`} />
+                        <PhotoImage photo={photo} alt={`${photo.category} progress thumbnail`} />
                         <div>
                           <strong>{photo.fileName}</strong>
                           <span>{photo.category} / {formatDate(photo.createdAt)}</span>

@@ -83,7 +83,8 @@ function photoManifest(photos = []) {
     mimeType: photo.mimeType,
     size: photo.size,
     note: photo.note,
-    hasImageData: Boolean(photo.dataUrl)
+    hasImageData: Boolean(photo.dataUrl),
+    storageKind: photo.photoStorage?.kind || (photo.dataUrl ? "inline-data-url" : "metadata-only")
   }));
 }
 
