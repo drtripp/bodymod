@@ -1189,6 +1189,15 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   await page.getByLabel("Language").selectOption("es");
   await expect(page.getByRole("button", { name: "Crear plan" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Cuerpo" })).toBeVisible();
+  await expect(page.getByLabel("Primer uso")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Ganar musculo" })).toBeVisible();
+  await expect(page.getByLabel("Medidor de progreso")).toContainText(
+    "0 de 5 campos basicos confirmados"
+  );
+  await expect(page.getByRole("heading", { name: "Medidas", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Sistema de unidades de medida")).toContainText("Metrico");
+  await expect(page.getByLabel("Guias de medidas")).toBeVisible();
+  await expect(page.locator("legend").filter({ hasText: "Perfil" })).toBeVisible();
   expect(await page.evaluate(() => window.localStorage.getItem("bodymod:locale:v1"))).toBe(
     JSON.stringify("es")
   );

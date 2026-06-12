@@ -17,6 +17,39 @@ function buildCategoryGroups() {
     .filter((group) => group.fields.length);
 }
 
+const categoryKeyByName = {
+  Profile: "profile",
+  Head: "head",
+  Shoulders: "shoulders",
+  Arms: "arms",
+  Chest: "chest",
+  "Lower Body": "lowerBody",
+  Legs: "legs"
+};
+
+function copy(t, key, fallback, values = {}) {
+  return Object.entries(values).reduce(
+    (text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
+    t(key, values, fallback)
+  );
+}
+
+function fieldLabel(t, field) {
+  return copy(t, `measurement.field.${field.name}.label`, field.label);
+}
+
+function fieldHelp(t, field) {
+  return copy(t, `measurement.field.${field.name}.help`, field.help || "");
+}
+
+function optionLabel(t, field, option) {
+  return copy(
+    t,
+    `measurement.field.${field.name}.option.${option.value}`,
+    option.label
+  );
+}
+
 export default function MeasurementForm({
   formState,
   errors,
@@ -30,7 +63,8 @@ export default function MeasurementForm({
   onFieldUnitReset,
   hoveredMeasurement,
   onMeasurementHover,
-  measurementGuideLibrary = emptyMeasurementGuideLibrary
+  measurementGuideLibrary = emptyMeasurementGuideLibrary,
+  t = (key, values, fallback) => fallback || key
 }) {
   const categoryGroups = buildCategoryGroups();
   const guidesByField = useMemo(
@@ -43,9 +77,9 @@ export default function MeasurementForm({
         .filter((field) => guidesByField[field.name])
         .map((field) => ({
           field: field.name,
-          label: guidesByField[field.name].label || field.label
+          label: fieldLabel(t, field) || guidesByField[field.name].label || field.label
         })),
-    [guidesByField]
+    [guidesByField, t]
   );
   const defaultGuideField = useMemo(
     () => getDefaultMeasurementGuideField(measurementGuideLibrary),
@@ -56,6 +90,12 @@ export default function MeasurementForm({
     guidesByField[selectedGuideField] ||
     guidesByField[defaultGuideField] ||
     null;
+  const selectedGuideDefinition = selectedGuide
+    ? measurementFields.find((field) => field.name === selectedGuide.field)
+    : null;
+  const selectedGuideLabel = selectedGuideDefinition
+    ? fieldLabel(t, selectedGuideDefinition)
+    : selectedGuide?.label;
 
   useEffect(() => {
     if (!guideOptions.length) {
@@ -72,40 +112,52 @@ export default function MeasurementForm({
     <section id="measurement-form" className="panel" aria-labelledby="measurement-form-heading">
       <div className="panel-header panel-header-row">
         <div>
-          <h2 id="measurement-form-heading">Measurements</h2>
-          <p>Enter the core values for the current comparison. Results update live.</p>
+          <h2 id="measurement-form-heading">{copy(t, "measurement.title", "Measurements")}</h2>
+          <p>
+            {copy(
+              t,
+              "measurement.intro",
+              "Enter the core values for the current comparison. Results update live."
+            )}
+          </p>
         </div>
 
-        <div className="unit-toggle" aria-label="Measurement unit system">
+        <div
+          className="unit-toggle"
+          aria-label={copy(t, "measurement.unit.aria", "Measurement unit system")}
+        >
           <button
             className={`button ${globalUnitSystem === "metric" ? "is-active" : ""}`}
             type="button"
             onClick={() => onGlobalUnitChange("metric")}
           >
-            Metric
+            {copy(t, "measurement.unit.metric", "Metric")}
           </button>
           <button
             className={`button ${globalUnitSystem === "imperial" ? "is-active" : ""}`}
             type="button"
             onClick={() => onGlobalUnitChange("imperial")}
           >
-            Imperial
+            {copy(t, "measurement.unit.imperial", "Imperial")}
           </button>
         </div>
       </div>
 
       {selectedGuide ? (
-        <div className="measurement-guide-panel" aria-label="Measurement guides">
+        <div
+          className="measurement-guide-panel"
+          aria-label={copy(t, "measurement.guides.aria", "Measurement guides")}
+        >
           <div className="measurement-guide-header">
             <div>
-              <h3>Measurement guides</h3>
+              <h3>{copy(t, "measurement.guides.title", "Measurement guides")}</h3>
               <p>{selectedGuide.summary}</p>
             </div>
 
             <label className="measurement-guide-select">
-              <span>Field</span>
+              <span>{copy(t, "measurement.guide.field", "Field")}</span>
               <select
-                aria-label="Measurement guide field"
+                aria-label={copy(t, "measurement.guide.field.aria", "Measurement guide field")}
                 value={selectedGuide.field}
                 onChange={(event) => setSelectedGuideField(event.target.value)}
               >
@@ -119,12 +171,15 @@ export default function MeasurementForm({
                 className="button public-guide-link"
                 href={publicMeasurementGuidePath(selectedGuide.field)}
               >
-                Public guide
+                {copy(t, "measurement.guide.public", "Public guide")}
               </a>
             </label>
           </div>
 
-          <div className="measurement-guide-body" aria-label="Selected measurement guide">
+          <div
+            className="measurement-guide-body"
+            aria-label={copy(t, "measurement.guide.selected.aria", "Selected measurement guide")}
+          >
             <div
               className={`guide-illustration guide-illustration--${selectedGuide.illustration}`}
               aria-hidden="true"
@@ -140,13 +195,13 @@ export default function MeasurementForm({
 
             <div className="measurement-guide-copy">
               <div className="guide-meta">
-                <strong>{selectedGuide.label}</strong>
+                <strong>{selectedGuideLabel}</strong>
                 <span>{selectedGuide.cadence}</span>
               </div>
 
               <div className="guide-list-grid">
                 <div>
-                  <h4>Steps</h4>
+                  <h4>{copy(t, "measurement.guide.steps", "Steps")}</h4>
                   <ol>
                     {selectedGuide.steps.map((step) => (
                       <li key={step}>{step}</li>
@@ -156,7 +211,7 @@ export default function MeasurementForm({
 
                 {selectedGuide.commonMistakes.length ? (
                   <div>
-                    <h4>Common mistakes</h4>
+                    <h4>{copy(t, "measurement.guide.commonMistakes", "Common mistakes")}</h4>
                     <ul>
                       {selectedGuide.commonMistakes.map((mistake) => (
                         <li key={mistake}>{mistake}</li>
@@ -173,10 +228,18 @@ export default function MeasurementForm({
       <form className="measurement-form" onSubmit={onSubmit}>
         {categoryGroups.map((group) => (
           <fieldset key={group.category} className="measurement-group">
-            <legend>{group.category}</legend>
+            <legend>
+              {copy(
+                t,
+                `measurement.category.${categoryKeyByName[group.category] || group.category}`,
+                group.category
+              )}
+            </legend>
 
             <div className="measurement-group-fields">
               {group.fields.map((field) => {
+                const localizedFieldLabel = fieldLabel(t, field);
+                const localizedFieldHelp = fieldHelp(t, field);
                 const resolvedUnitSystem = resolveFieldUnitSystem(
                   field.name,
                   globalUnitSystem,
@@ -196,12 +259,12 @@ export default function MeasurementForm({
                   >
                     <span className="field-label">
                       <span>
-                        {field.label}
+                        {localizedFieldLabel}
                         {field.help ? (
                           <span className="field-info">
                             i
                             <span className="field-tooltip" role="tooltip">
-                              {field.help}
+                              {localizedFieldHelp}
                             </span>
                           </span>
                         ) : null}
@@ -221,7 +284,7 @@ export default function MeasurementForm({
                         >
                           {field.options.map((option) => (
                             <option key={option.value} value={option.value}>
-                              {option.label}
+                              {optionLabel(t, field, option)}
                             </option>
                           ))}
                         </select>
@@ -250,7 +313,12 @@ export default function MeasurementForm({
                         >
                           <div
                             className="mini-unit-toggle"
-                            aria-label={`${field.label} unit`}
+                            aria-label={copy(
+                              t,
+                              "measurement.fieldUnit.aria",
+                              "{field} unit",
+                              { field: localizedFieldLabel }
+                            )}
                           >
                             <button
                               className={`button ${
@@ -277,8 +345,17 @@ export default function MeasurementForm({
                             }`}
                             type="button"
                             onClick={() => onFieldUnitReset(field.name)}
-                            aria-label={`Reset ${field.label} unit override`}
-                            title="Reset to global unit setting"
+                            aria-label={copy(
+                              t,
+                              "measurement.resetUnit.aria",
+                              "Reset {field} unit override",
+                              { field: localizedFieldLabel }
+                            )}
+                            title={copy(
+                              t,
+                              "measurement.resetUnit.title",
+                              "Reset to global unit setting"
+                            )}
                           >
                             {"\u21BA"}
                           </button>

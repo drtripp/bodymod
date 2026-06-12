@@ -56,9 +56,13 @@ Protocol Tracker → Diet upgrades → Native app.
       the shared artifact covered.
 - [x] i18n groundwork **(new)**: extract user-facing strings behind a
       lightweight i18n layer now, while the copy surface is small;
-      translations come later. Implemented as a persisted locale preference,
-      message catalog, fallback/interpolation helpers, and initial top-level
-      shell/header/tab wiring with English default and Spanish header preview.
+      full translations come later. Implemented as a persisted locale
+      preference, message catalog, fallback/interpolation helpers, and
+      English/Spanish coverage for the top-level shell/header/tabs, first-run
+      onboarding, measurement categories/field labels/help, unit controls, and
+      measurement-guide chrome. Node tests keep locale persistence, fallback
+      interpolation, and English/Spanish catalog parity covered; Playwright
+      verifies the Spanish onboarding/form surface.
       Full app-wide copy extraction and translation remain future passes.
 
 ## 2. Reference Data & Scoring

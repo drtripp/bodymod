@@ -8,20 +8,35 @@ import {
   optionalUnlockFields
 } from "../lib/onboarding";
 
-function formatPercentile(value) {
-  return Number.isFinite(Number(value)) ? `${Number(value)}th pct` : "pending";
+function formatPercentile(value, t) {
+  if (!Number.isFinite(Number(value))) {
+    return copy(t, "onboarding.percentile.pending", "pending");
+  }
+
+  return copy(t, "onboarding.percentile.value", "{value}th pct", {
+    value: Number(value)
+  });
 }
 
-function nextCheckInDate() {
+function nextCheckInDate(locale = undefined) {
   const nextDate = new Date();
   nextDate.setDate(nextDate.getDate() + 7);
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(nextDate);
+  return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(nextDate);
+}
+
+function copy(t, key, fallback, values = {}) {
+  return Object.entries(values).reduce(
+    (text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
+    t(key, values, fallback)
+  );
 }
 
 export default function OnboardingPanel({
   profile,
   measurements,
   result,
+  locale,
+  t = (key, values, fallback) => fallback || key,
   onProfileChange,
   onSetMeasurement,
   onApplyDemo,
@@ -33,8 +48,37 @@ export default function OnboardingPanel({
   const currentStep = coreOnboardingFields[
     Math.min(profile.coreStepIndex || 0, coreOnboardingFields.length - 1)
   ];
-  const completedFields = new Set(profile.completedFields || []);
-  const topMatch = result.top_match?.label || result.matches?.[0]?.label || "Target loading";
+  const currentStepLabel = copy(
+    t,
+    `onboarding.core.${currentStep.name}.label`,
+    currentStep.label
+  );
+  const currentStepUnlock = copy(
+    t,
+    `onboarding.core.${currentStep.name}.unlock`,
+    currentStep.unlock
+  );
+  const topMatch =
+    result.top_match?.label ||
+    result.matches?.[0]?.label ||
+    copy(t, "onboarding.target.loading", "Target loading");
+  const percentileHeight = copy(
+    t,
+    "onboarding.payoff.height",
+    "Height {percentile}",
+    {
+      percentile: formatPercentile(result.percentiles?.height, t)
+    }
+  );
+  const percentileWaist = copy(
+    t,
+    "onboarding.payoff.waist",
+    "Waist {percentile}",
+    {
+      percentile: formatPercentile(result.percentiles?.waistCircumference, t)
+    }
+  );
+  const fieldAriaPrefix = copy(t, "onboarding.field.ariaPrefix", "Onboarding");
 
   function handleGoalSelect(goal) {
     onProfileChange({
@@ -76,13 +120,22 @@ export default function OnboardingPanel({
   }
 
   return (
-    <section className="onboarding-panel panel" aria-label="First run onboarding">
+    <section
+      className="onboarding-panel panel"
+      aria-label={copy(t, "onboarding.aria", "First run onboarding")}
+    >
       <div className="panel-header">
-        <h2>First run</h2>
-        <p>Choose a starting intent, confirm the core five, then keep using the full editor below.</p>
+        <h2>{copy(t, "onboarding.title", "First run")}</h2>
+        <p>
+          {copy(
+            t,
+            "onboarding.intro",
+            "Choose a starting intent, confirm the core five, then keep using the full editor below."
+          )}
+        </p>
       </div>
 
-      <div className="onboarding-goals" aria-label="Goal question">
+      <div className="onboarding-goals" aria-label={copy(t, "onboarding.goal.aria", "Goal question")}>
         {onboardingGoalOptions.map((goal) => (
           <button
             key={goal.id}
@@ -90,20 +143,39 @@ export default function OnboardingPanel({
             type="button"
             onClick={() => handleGoalSelect(goal)}
           >
-            {goal.label}
+            {copy(t, `onboarding.goal.${goal.id}.label`, goal.label)}
           </button>
         ))}
       </div>
       {selectedGoal ? (
-        <p className="muted-text" aria-label="Selected onboarding intent">
-          {selectedGoal.tone}
+        <p
+          className="muted-text"
+          aria-label={copy(t, "onboarding.selected.aria", "Selected onboarding intent")}
+        >
+          {copy(t, `onboarding.goal.${selectedGoal.id}.tone`, selectedGoal.tone)}
         </p>
       ) : null}
 
       <div className="onboarding-main">
-        <div className="core-flow" aria-label="Core five progressive flow">
-          <div className="completion-meter" aria-label="Completion meter">
-            <strong>{completion.completeCount} of {completion.totalCount} core fields confirmed</strong>
+        <div
+          className="core-flow"
+          aria-label={copy(t, "onboarding.core.aria", "Core five progressive flow")}
+        >
+          <div
+            className="completion-meter"
+            aria-label={copy(t, "onboarding.completion.aria", "Completion meter")}
+          >
+            <strong>
+              {copy(
+                t,
+                "onboarding.completion.text",
+                "{completeCount} of {totalCount} core fields confirmed",
+                {
+                  completeCount: completion.completeCount,
+                  totalCount: completion.totalCount
+                }
+              )}
+            </strong>
             <div className="completion-track">
               <i style={{ width: `${completion.percent}%` }} />
             </div>
@@ -111,24 +183,28 @@ export default function OnboardingPanel({
 
           <label className="field">
             <span className="field-label">
-              {currentStep.label}
+              {currentStepLabel}
               {currentStep.unit ? ` (${currentStep.unit})` : ""}
             </span>
             {currentStep.type === "select" ? (
               <select
-                aria-label={`Onboarding ${currentStep.label}`}
+                aria-label={`${fieldAriaPrefix} ${currentStepLabel}`}
                 value={measurements[currentStep.name]}
                 onChange={(event) => onSetMeasurement(currentStep.name, event.target.value)}
               >
                 {currentStep.options.map((option) => (
                   <option key={option.value} value={option.value}>
-                    {option.label}
+                    {copy(
+                      t,
+                      `measurement.field.${currentStep.name}.option.${option.value}`,
+                      option.label
+                    )}
                   </option>
                 ))}
               </select>
             ) : (
               <input
-                aria-label={`Onboarding ${currentStep.label}`}
+                aria-label={`${fieldAriaPrefix} ${currentStepLabel}`}
                 type="number"
                 inputMode="decimal"
                 value={measurements[currentStep.name]}
@@ -136,39 +212,55 @@ export default function OnboardingPanel({
               />
             )}
           </label>
-          <p className="muted-text">{currentStep.unlock}</p>
+          <p className="muted-text">{currentStepUnlock}</p>
           <button className="button" type="button" onClick={handleNextField}>
-            Confirm field
+            {copy(t, "onboarding.confirmField", "Confirm field")}
           </button>
 
-          <div className="optional-unlocks" aria-label="Optional field unlocks">
-            <h3>Optional fields</h3>
-            <p>Everything below is optional forever. Add fields only when they are useful.</p>
+          <div
+            className="optional-unlocks"
+            aria-label={copy(t, "onboarding.optional.aria", "Optional field unlocks")}
+          >
+            <h3>{copy(t, "onboarding.optional.title", "Optional fields")}</h3>
+            <p>
+              {copy(
+                t,
+                "onboarding.optional.body",
+                "Everything below is optional forever. Add fields only when they are useful."
+              )}
+            </p>
             <ul>
               {optionalUnlockFields.map((field) => (
                 <li key={field.name}>
-                  <strong>{field.label}</strong>
-                  <span>{field.unlock}</span>
+                  <strong>
+                    {copy(t, `onboarding.optional.${field.name}.label`, field.label)}
+                  </strong>
+                  <span>
+                    {copy(t, `onboarding.optional.${field.name}.unlock`, field.unlock)}
+                  </span>
                 </li>
               ))}
             </ul>
           </div>
         </div>
 
-        <div className="onboarding-payoff" aria-label="Instant payoff">
+        <div
+          className="onboarding-payoff"
+          aria-label={copy(t, "onboarding.payoff.aria", "Instant payoff")}
+        >
           <SilhouetteView
             measurements={measurements}
-            label="Onboarding profile"
+            label={copy(t, "onboarding.profile.label", "Onboarding profile")}
             view={silhouetteView}
           />
           <div className="payoff-copy">
             <strong>{topMatch}</strong>
-            <span>Height {formatPercentile(result.percentiles?.height)}</span>
-            <span>Waist {formatPercentile(result.percentiles?.waistCircumference)}</span>
+            <span>{percentileHeight}</span>
+            <span>{percentileWaist}</span>
           </div>
           <div className="onboarding-actions">
             <button className="button" type="button" onClick={handleDemoMode}>
-              Explore with a sample profile
+              {copy(t, "onboarding.demo", "Explore with a sample profile")}
             </button>
             <button
               className="button"
@@ -177,8 +269,13 @@ export default function OnboardingPanel({
               onClick={handleSnapshot}
             >
               {profile.firstSnapshotSavedAt
-                ? `Snapshot #1 saved. Next check-in: ${nextCheckInDate()}`
-                : "Save Snapshot #1"}
+                ? copy(
+                    t,
+                    "onboarding.snapshot.savedNext",
+                    "Snapshot #1 saved. Next check-in: {date}",
+                    { date: nextCheckInDate(locale) }
+                  )
+                : copy(t, "onboarding.snapshot.save", "Save Snapshot #1")}
             </button>
           </div>
         </div>

@@ -540,6 +540,8 @@ export default function App() {
                 profile={onboardingProfile}
                 measurements={currentMeasurements}
                 result={result}
+                locale={locale}
+                t={t}
                 onProfileChange={updateOnboardingProfile}
                 onSetMeasurement={setOnboardingMeasurement}
                 onApplyDemo={applyMeasurementSet}
@@ -561,6 +563,7 @@ export default function App() {
                 hoveredMeasurement={hoveredMeasurement}
                 onMeasurementHover={setHoveredMeasurement}
                 measurementGuideLibrary={measurementGuideLibrary}
+                t={t}
               />
 
             </section>

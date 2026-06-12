@@ -7,6 +7,7 @@ import {
   loadLocalePreference,
   LOCALE_STORAGE_KEY,
   localeOptions,
+  messageCatalog,
   normalizeLocale,
   persistLocalePreference,
   translate,
@@ -37,11 +38,28 @@ test("loads and persists locale preference through the storage adapter", () => {
 test("translates known keys, falls back to English, and interpolates values", () => {
   assert.equal(translate("en", "nav.buildPlan"), "Build Plan");
   assert.equal(translate("es", "nav.buildPlan"), "Crear plan");
+  assert.equal(translate("es", "onboarding.title"), "Primer uso");
+  assert.equal(translate("es", "measurement.title"), "Medidas");
+  assert.equal(translate("es", "measurement.field.waistCircumference.label"), "Cintura");
   assert.equal(translate("bad-locale", "nav.buildPlan"), "Build Plan");
   assert.equal(translate("es", "missing.key"), "missing.key");
+  assert.equal(
+    translate(
+      "es",
+      "onboarding.completion.text",
+      { completeCount: 2, totalCount: 5 },
+      "{completeCount} of {totalCount}"
+    ),
+    "2 de 5 campos basicos confirmados"
+  );
+  assert.equal(
+    translate("es", "missing.{name}", { name: "Taylor" }, "Fallback {name}"),
+    "Fallback Taylor"
+  );
 
   const t = createTranslator("es");
   assert.equal(t("nav.section.diet"), "Dieta");
+  assert.equal(t("measurement.unit.metric"), "Metrico");
   assert.equal(translate("en", "hello.{name}", { name: "Taylor" }), "hello.Taylor");
 });
 
@@ -50,4 +68,11 @@ test("builds locale option labels for the active locale", () => {
     { id: "en", label: "English" },
     { id: "es", label: "Espanol" }
   ]);
+});
+
+test("keeps Spanish message coverage aligned with English keys", () => {
+  const englishKeys = Object.keys(messageCatalog.en).sort();
+  const spanishKeys = Object.keys(messageCatalog.es).sort();
+
+  assert.deepEqual(spanishKeys, englishKeys);
 });
