@@ -90,3 +90,19 @@ legacy `BODYMOD_FCM_SERVER_KEY` is also supported for test deployments. Set
 
 Successful account check-in saves call `@capacitor/haptics` in native runtimes.
 The haptic call is best-effort and ignored on web or unsupported devices.
+
+## Home-Screen Widget Payload
+
+`src/lib/widgetSnapshot.js` writes `bodymod:home-widget-snapshot:v1` through the
+same storage adapter used by the app. Browser builds store it in localStorage;
+native Capacitor builds store it through Preferences. The payload is designed
+for future iOS/Android widget extensions and intentionally contains only:
+
+- weekly streak count/status/label
+- next weekly check-in label/date
+- daily-log status text
+- updated timestamp and action label
+
+It does not include account email, notes, photos, or raw body values. Real iOS
+WidgetKit / Android Glance extensions still require generated native project
+folders and platform-specific app-group/shared-storage wiring.

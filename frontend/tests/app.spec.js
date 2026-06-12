@@ -1791,6 +1791,18 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Weekly body tea digest")).toContainText("Tea:");
   await expect(page.getByLabel("Check-in calendar heatmap")).toBeVisible();
   await expect(page.getByLabel("Check-in milestones")).toContainText("Weekly snapshot saved");
+  const widgetSection = page.getByRole("region", { name: "Home-screen widget" });
+  await expect(widgetSection).toContainText("week streak");
+  await expect(widgetSection).toContainText("Next check-in");
+  await page.getByRole("button", { name: "Refresh widget snapshot" }).click();
+  await expect(widgetSection).toContainText("Widget snapshot saved");
+  const widgetSnapshot = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("bodymod:home-widget-snapshot:v1"))
+  );
+  expect(widgetSnapshot.kind).toBe("bodymod.home-widget-snapshot");
+  expect(JSON.stringify(widgetSnapshot)).not.toMatch(
+    /mason@example\.com|waistCircumference|hipCircumference|Low sodium|First persona/
+  );
 
   await page.getByLabel("Snapshot label").fill("Baseline");
   await page.getByRole("textbox", { name: "Snapshot note" }).fill("First persona walkthrough log.");

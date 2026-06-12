@@ -122,6 +122,7 @@ Implemented now:
 - native Capacitor push-token registration/revocation scaffold for stale-trend reminders, plus native haptic feedback after successful check-in saves
 - dry-runable native stale-trend reminder worker with FCM/APNs sender hooks that use the same generic, measurement-free notification copy
 - native shell polish with Capacitor status-bar/splash configuration, safe-area-aware app padding, and a shared web manifest/SVG app icon
+- native home-screen widget payload scaffold that keeps a measurement-free streak and next-check-in snapshot ready in local/native storage
 - maintenance drift alerts for saved goals once an at-target snapshot exists
 - optional local cycle phase logs that add weight/waist fluctuation context, remain off by default, and can be deleted separately
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
@@ -218,7 +219,7 @@ Not implemented yet:
 - source-reviewed procedure taxonomy and clinical/body-mod validation; current procedure data is a dummy review scaffold
 - source-reviewed bloodwork marker taxonomy, units, and reference ranges; current bloodwork data is a dummy local-only review scaffold
 - full app-wide translation coverage; current i18n work is top-level shell groundwork
-- generated Android/iOS native project folders, store signing, APNs/FCM production credentials/device validation, HealthKit plugins, native store icon generation, and native release workflows
+- generated Android/iOS native project folders, store signing, APNs/FCM production credentials/device validation, HealthKit plugins, native home-screen widget extensions, native store icon generation, and native release workflows
 - full public measurement-guide coverage with reviewed illustrations and final copy
 - production error monitoring and product analytics provider/enablement
   decisions; sanitized first-party wiring exists but upload is disabled unless

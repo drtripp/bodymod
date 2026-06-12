@@ -108,6 +108,12 @@ import {
   buildWeeklyStreak
 } from "../lib/checkInLoop";
 import {
+  buildHomeWidgetSnapshot,
+  formatWidgetDate,
+  loadHomeWidgetSnapshot,
+  syncHomeWidgetSnapshot
+} from "../lib/widgetSnapshot";
+import {
   buildReliabilityPauseSummary
 } from "../lib/reliabilityEvents";
 import {
@@ -508,6 +514,10 @@ export default function AccountGoalPanel({
   );
   const [referralCodeInput, setReferralCodeInput] = useState("");
   const [referralStatus, setReferralStatus] = useState("");
+  const [homeWidgetSnapshot, setHomeWidgetSnapshot] = useState(() =>
+    loadHomeWidgetSnapshot()
+  );
+  const [homeWidgetStatus, setHomeWidgetStatus] = useState("");
   const [selectedProtocolIds, setSelectedProtocolIds] = useState([]);
   const [status, setStatus] = useState("");
 
@@ -849,6 +859,18 @@ export default function AccountGoalPanel({
     [checkIns]
   );
   const weeklyStreak = useMemo(() => buildWeeklyStreak(checkIns), [checkIns]);
+  const homeWidgetPreview = useMemo(
+    () =>
+      buildHomeWidgetSnapshot({
+        checkIns,
+        weeklyStreak,
+        cadenceDueState
+      }),
+    [cadenceDueState, checkIns, weeklyStreak]
+  );
+  const visibleHomeWidgetSnapshot = homeWidgetSnapshot.updatedAt
+    ? homeWidgetSnapshot
+    : homeWidgetPreview;
   const checkInHeatmap = useMemo(() => buildCheckInHeatmap(checkIns), [checkIns]);
   const milestones = useMemo(
     () =>
@@ -933,6 +955,18 @@ export default function AccountGoalPanel({
     weeklyStreak.latestAt,
     weeklyStreak.status
   ]);
+
+  useEffect(() => {
+    if (!account) {
+      return;
+    }
+
+    setHomeWidgetSnapshot(syncHomeWidgetSnapshot({
+      checkIns,
+      weeklyStreak,
+      cadenceDueState
+    }));
+  }, [account?.id, cadenceDueState, checkIns, weeklyStreak]);
 
   const protocolSchemaSummary = useMemo(
     () => formatProtocolSchemaSummary(planningData.protocolTaxonomy),
@@ -2217,6 +2251,18 @@ export default function AccountGoalPanel({
     }
   }
 
+  function handleRefreshHomeWidgetSnapshot() {
+    const snapshot = syncHomeWidgetSnapshot({
+      checkIns,
+      weeklyStreak,
+      cadenceDueState
+    });
+    setHomeWidgetSnapshot(snapshot);
+    setHomeWidgetStatus(
+      `Widget snapshot saved: ${snapshot.streakLabel}; ${snapshot.nextCheckInLabel}.`
+    );
+  }
+
   function handleDownloadProgressReport() {
     downloadProgressReport({
       account,
@@ -2582,6 +2628,32 @@ export default function AccountGoalPanel({
                   </small>
                 ) : null}
               </form>
+            </section>
+
+            <section className="home-widget-section" aria-label="Home-screen widget">
+              <div>
+                <h3>Home-screen widget</h3>
+                <div className="home-widget-preview">
+                  <strong>{visibleHomeWidgetSnapshot.streakLabel}</strong>
+                  <span>{visibleHomeWidgetSnapshot.nextCheckInLabel}</span>
+                  <small>{visibleHomeWidgetSnapshot.dailyLabel}</small>
+                </div>
+              </div>
+              <div className="home-widget-actions">
+                <button className="button" type="button" onClick={handleRefreshHomeWidgetSnapshot}>
+                  Refresh widget snapshot
+                </button>
+                {visibleHomeWidgetSnapshot.updatedAt ? (
+                  <small>
+                    Updated {formatWidgetDate(visibleHomeWidgetSnapshot.updatedAt)}
+                  </small>
+                ) : null}
+              </div>
+              {homeWidgetStatus ? (
+                <small className="home-widget-status" role="status" aria-live="polite">
+                  {homeWidgetStatus}
+                </small>
+              ) : null}
             </section>
 
             <section className="progress-report-section" aria-label="Progress report">

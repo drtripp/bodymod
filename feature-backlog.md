@@ -611,7 +611,12 @@ land. No social features, no marketplace.
       polish now exist. APNs/FCM sender hooks now exist; production
       credentials/device validation remain.
 - [ ] Home-screen widget **(new)**: streak + next check-in date (also helps
-      App Review minimum-functionality).
+      App Review minimum-functionality). First payload scaffold is in:
+      frontend now writes a measurement-free `bodymod:home-widget-snapshot:v1`
+      record with streak status, next weekly check-in label/date, and daily-log
+      status through the existing storage adapter, and the account panel shows
+      a refreshable widget preview. Native iOS/Android widget extensions remain
+      tied to generated project folders.
 - [ ] JS live updates (e.g. Capgo) so web and app don't drift between binary
       reviews.
 - [ ] Automatic encrypted backup to iCloud/Google Drive **(new)** via native

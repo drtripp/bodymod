@@ -388,6 +388,37 @@ textarea {
   padding: 12px;
 }
 
+.home-widget-section {
+  border: 1px solid var(--color-border);
+  background: var(--color-page);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.34fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+}
+
+.home-widget-preview {
+  display: grid;
+  gap: 3px;
+}
+
+.home-widget-preview span,
+.home-widget-preview small,
+.home-widget-actions small,
+.home-widget-status {
+  color: var(--color-muted);
+}
+
+.home-widget-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.home-widget-status {
+  grid-column: 1 / -1;
+}
+
 .share-dashboard-section {
   border: 1px solid var(--color-border);
   background: var(--color-page);
@@ -602,6 +633,7 @@ textarea {
 }
 
 .progress-report-section h3,
+.home-widget-section h3,
 .share-dashboard-section h3,
 .local-json-export-section h3 {
   margin: 0 0 4px;
@@ -4948,6 +4980,7 @@ textarea {
   .photo-gallery-list li,
   .face-scan-grid,
   .progress-report-section,
+  .home-widget-section,
   .share-dashboard-section,
   .local-json-export-section,
   .encrypted-backup-section,
