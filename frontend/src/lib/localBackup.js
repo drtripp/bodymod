@@ -152,6 +152,57 @@ export function normalizeLocalBackupBundle(bundle) {
   };
 }
 
+function timestampMs(record = {}) {
+  const value = record.createdAt || record.updatedAt || record.date || record.procedureDate || "";
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function mergeRecordsById(localRecords = [], remoteRecords = []) {
+  const recordsById = new Map();
+  const anonymousRecords = [];
+
+  for (const record of [...safeArray(remoteRecords), ...safeArray(localRecords)]) {
+    if (!record || typeof record !== "object") {
+      continue;
+    }
+    if (!record.id) {
+      anonymousRecords.push(record);
+      continue;
+    }
+    recordsById.set(record.id, {
+      ...(recordsById.get(record.id) || {}),
+      ...record
+    });
+  }
+
+  return [...recordsById.values(), ...anonymousRecords].sort(
+    (left, right) => timestampMs(right) - timestampMs(left)
+  );
+}
+
+export function mergeLocalBackupBundles(localBundle, remoteBundle) {
+  const local = normalizeLocalBackupBundle(localBundle);
+  const remote = normalizeLocalBackupBundle(remoteBundle);
+  const notes = Array.from(new Set([...safeArray(remote.notes), ...safeArray(local.notes)]));
+
+  return {
+    ...local,
+    exportedAt: new Date().toISOString(),
+    snapshots: mergeRecordsById(local.snapshots, remote.snapshots),
+    goals: mergeRecordsById(local.goals, remote.goals),
+    protocols: mergeRecordsById(local.protocols, remote.protocols),
+    checkIns: mergeRecordsById(local.checkIns, remote.checkIns),
+    workoutSessions: mergeRecordsById(local.workoutSessions, remote.workoutSessions),
+    procedures: mergeRecordsById(local.procedures, remote.procedures),
+    bloodworkResults: mergeRecordsById(local.bloodworkResults, remote.bloodworkResults),
+    referralCredits: mergeRecordsById(local.referralCredits, remote.referralCredits),
+    faceMeasurements: mergeRecordsById(local.faceMeasurements, remote.faceMeasurements),
+    photoManifest: mergeRecordsById(local.photoManifest, remote.photoManifest),
+    notes
+  };
+}
+
 export async function encryptLocalBackup(bundle, passphrase) {
   const cryptoApi = getCrypto();
   const salt = cryptoApi.getRandomValues(new Uint8Array(SALT_BYTES));

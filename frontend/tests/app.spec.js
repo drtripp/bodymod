@@ -2054,8 +2054,45 @@ test("syncs encrypted backup vaults through the account UI", async ({ page }) =>
   expect(vaultId).toMatch(/^mock-sync-/);
   expect(syncToken).toHaveLength(24);
 
+  await page.getByLabel("Daily weight").fill("83.7");
+  await page.getByLabel("Daily calories").fill("2360");
+  await page.getByRole("button", { name: "Log daily check-in" }).click();
+  await page.getByLabel("Snapshot label").fill("Sync local-only");
+  await page.getByRole("button", { name: "Save current snapshot" }).click();
+  await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Sync local-only" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Log out" }).click();
+  await page.getByLabel("Display name").fill("Sync Remote");
+  await page.getByLabel("Account email").fill("sync-remote@example.com");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await page.getByLabel("Backup passphrase").fill("correct horse battery staple");
+  await page.getByLabel("Sync vault ID").fill(vaultId);
+  await page.getByLabel("Sync token").fill(syncToken);
+  await page.getByRole("button", { name: "Pull encrypted sync" }).click();
+  await expect(syncSection).toContainText("Pulled encrypted sync vault revision 1");
+  await page.getByLabel("Daily weight").fill("84.2");
+  await page.getByLabel("Daily calories").fill("2450");
+  await page.getByRole("button", { name: "Log daily check-in" }).click();
+  await page.getByLabel("Snapshot label").fill("Sync remote-only");
+  await page.getByRole("button", { name: "Save current snapshot" }).click();
   await page.getByRole("button", { name: "Push encrypted sync" }).click();
   await expect(syncSection).toContainText("Encrypted sync vault pushed at revision 2");
+
+  await page.getByRole("button", { name: "Log out" }).click();
+  await page.getByLabel("Login email").fill("sync-source@example.com");
+  await page.getByRole("button", { name: "Log in" }).click();
+  await expect(accountDialog).toContainText("Signed in as Sync Source.");
+  await page.getByLabel("Backup passphrase").fill("correct horse battery staple");
+  await page.getByLabel("Sync vault ID").fill(vaultId);
+  await page.getByLabel("Sync token").fill(syncToken);
+  await page.getByRole("button", { name: "Push encrypted sync" }).click();
+  await expect(syncSection).toContainText("Encrypted sync conflict at server revision 2");
+  await page.getByRole("button", { name: "Merge + push" }).click();
+  await expect(syncSection).toContainText("Merged encrypted sync vault at revision 3");
+  await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 83.7 kg / 2360 kcal");
+  await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 84.2 kg / 2450 kcal");
+  await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Sync local-only" })).toBeVisible();
+  await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Sync remote-only" })).toBeVisible();
 
   await page.evaluate(() => {
     Object.keys(window.localStorage)
@@ -2074,10 +2111,14 @@ test("syncs encrypted backup vaults through the account UI", async ({ page }) =>
   await page.getByRole("button", { name: "Pull encrypted sync" }).click();
 
   await expect(page.getByLabel("Encrypted sync vault")).toContainText(
-    "Pulled encrypted sync vault revision 2"
+    "Pulled encrypted sync vault revision 3"
   );
   await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 83.1 kg / 2350 kcal");
+  await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 83.7 kg / 2360 kcal");
+  await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 84.2 kg / 2450 kcal");
   await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Sync baseline" })).toBeVisible();
+  await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Sync local-only" })).toBeVisible();
+  await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Sync remote-only" })).toBeVisible();
 
   await page.getByRole("button", { name: "Revoke sync vault" }).click();
   await expect(page.getByLabel("Encrypted sync vault")).toContainText(

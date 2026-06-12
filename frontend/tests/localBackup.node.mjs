@@ -16,6 +16,7 @@ import {
   buildLocalBackupBundle,
   decryptLocalBackup,
   encryptLocalBackup,
+  mergeLocalBackupBundles,
   summarizeLocalBackupBundle
 } from "../src/lib/localBackup.js";
 import {
@@ -253,6 +254,69 @@ test("encrypts and decrypts local backup bundles with a passphrase", async () =>
   assert.equal(decrypted.checkIns[0].weight, 82);
   assert.equal(decrypted.checkIns[1].type, "cycle-phase");
   assert.equal(decrypted.checkIns[1].localOnlySensitive, true);
+});
+
+test("merges local and remote backup bundles without duplicating record ids", () => {
+  const localBundle = buildLocalBackupBundle({
+    account: {
+      displayName: "Local",
+      email: "local@example.com"
+    },
+    snapshots: [
+      {
+        id: "shared-snapshot",
+        createdAt: "2026-06-03T00:00:00.000Z",
+        label: "Local label",
+        measurements: { weight: 83 }
+      }
+    ],
+    checkIns: [
+      {
+        id: "local-check",
+        createdAt: "2026-06-04T00:00:00.000Z",
+        type: "daily-weight",
+        weight: 83
+      }
+    ]
+  });
+  const remoteBundle = buildLocalBackupBundle({
+    account: {
+      displayName: "Remote",
+      email: "remote@example.com"
+    },
+    snapshots: [
+      {
+        id: "shared-snapshot",
+        createdAt: "2026-06-02T00:00:00.000Z",
+        label: "Remote label",
+        measurements: { weight: 82 }
+      },
+      {
+        id: "remote-snapshot",
+        createdAt: "2026-06-05T00:00:00.000Z",
+        label: "Remote-only",
+        measurements: { weight: 81 }
+      }
+    ],
+    checkIns: [
+      {
+        id: "remote-check",
+        createdAt: "2026-06-05T12:00:00.000Z",
+        type: "daily-weight",
+        weight: 81
+      }
+    ]
+  });
+
+  const merged = mergeLocalBackupBundles(localBundle, remoteBundle);
+
+  assert.equal(merged.account.email, "local@example.com");
+  assert.deepEqual(merged.snapshots.map((snapshot) => snapshot.id), [
+    "remote-snapshot",
+    "shared-snapshot"
+  ]);
+  assert.equal(merged.snapshots.find((snapshot) => snapshot.id === "shared-snapshot").label, "Local label");
+  assert.deepEqual(merged.checkIns.map((checkIn) => checkIn.id), ["remote-check", "local-check"]);
 });
 
 test("rejects short or incorrect backup passphrases", async () => {

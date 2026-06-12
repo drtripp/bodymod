@@ -123,8 +123,8 @@ Required input:
     approval and whether to enable upload in production
 - account/sync decision
   - current code has a token-scoped encrypted sync-vault scaffold and manual
-    account-panel create/push/pull/revoke UI, but no production email identity,
-    account recovery, or true automatic cross-device merge
+    account-panel create/push/pull/merge/revoke UI, but no production email
+    identity, account recovery, or automatic background cross-device sync
 - photo/vision upload decision
 - legal owner/contact details
 - approval of privacy policy, terms, and medical disclaimer drafts

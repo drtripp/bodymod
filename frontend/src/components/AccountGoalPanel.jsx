@@ -76,6 +76,7 @@ import {
   buildLocalBackupBundle,
   decryptLocalBackup,
   encryptLocalBackup,
+  mergeLocalBackupBundles,
   summarizeLocalBackupBundle
 } from "../lib/localBackup";
 import {
@@ -1966,7 +1967,7 @@ export default function AccountGoalPanel({
     } catch (error) {
       if (error.status === 409) {
         setSyncStatus(
-          `Encrypted sync conflict at server revision ${error.detail?.currentRevision || "unknown"}. Pull first, or force push to overwrite.`
+          `Encrypted sync conflict at server revision ${error.detail?.currentRevision || "unknown"}. Merge remote changes first, or force push to overwrite.`
         );
       } else {
         setSyncStatus(error.message || "Encrypted sync push failed.");
@@ -1996,6 +1997,51 @@ export default function AccountGoalPanel({
       setSyncStatus(`Pulled encrypted sync vault revision ${record.revision}. ${restoreSummary}`);
     } catch (error) {
       setSyncStatus(error.message || "Encrypted sync pull failed.");
+    }
+  }
+
+  async function handleMergeSyncVault() {
+    if (!account) {
+      return;
+    }
+    if (missingSyncCredentials()) {
+      setSyncStatus("Enter a sync vault ID and token before merging.");
+      return;
+    }
+
+    try {
+      setSyncStatus("Merging encrypted sync vault...");
+      const localBundle = currentBackupBundle();
+      const remoteRecord = await readSyncVault({
+        vaultId: syncVaultId.trim(),
+        syncToken: syncVaultToken.trim()
+      });
+      const remoteEncryptedBackup = syncBlobToEncryptedBackup(remoteRecord.blob, remoteRecord.updatedAt);
+      const remoteBundle = await decryptLocalBackup(remoteEncryptedBackup, backupPassphrase);
+      const mergedBundle = mergeLocalBackupBundles(localBundle, remoteBundle);
+      const restoreSummary = restoreBackupBundle(remoteBundle);
+      const encryptedBackup = await encryptLocalBackup(mergedBundle, backupPassphrase);
+      const summary = summarizeLocalBackupBundle(mergedBundle);
+      const updatedRecord = await updateSyncVault({
+        vaultId: syncVaultId.trim(),
+        syncToken: syncVaultToken.trim(),
+        expectedRevision: Math.max(1, Number(remoteRecord.revision || 1)),
+        encryptedBackup,
+        deviceId: syncDeviceId.trim() || "browser-local",
+        force: false
+      });
+      persistSyncRecord(updatedRecord);
+      setSyncStatus(
+        `Merged encrypted sync vault at revision ${updatedRecord.revision}: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.goals} goal(s), and ${summary.protocols} protocol(s). ${restoreSummary}`
+      );
+    } catch (error) {
+      if (error.status === 409) {
+        setSyncStatus(
+          `Encrypted sync changed again at server revision ${error.detail?.currentRevision || "unknown"}. Merge again, or force push to overwrite.`
+        );
+      } else {
+        setSyncStatus(error.message || "Encrypted sync merge failed.");
+      }
     }
   }
 
@@ -2565,6 +2611,9 @@ export default function AccountGoalPanel({
                 </button>
                 <button className="button" type="button" onClick={handlePullSyncVault}>
                   Pull encrypted sync
+                </button>
+                <button className="button" type="button" onClick={handleMergeSyncVault}>
+                  Merge + push
                 </button>
                 <button className="button" type="button" onClick={() => handlePushSyncVault({ force: true })}>
                   Force push

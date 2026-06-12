@@ -523,14 +523,17 @@ land. No social features, no marketplace.
       converts the existing encrypted local backup format into that sync blob
       and helper tests assert that emails, notes, and measurement keys are not
       sent in request bodies. The account panel now exposes manual create,
-      push, pull, force-push, and revoke controls; Playwright covers a
-      no-backend-cheating restore into a second browser-local account. Production
-      identity and recovery are still open.
-- [ ] Cross-device restore + conflict handling (last-write-wins per snapshot
-      is fine v1). The sync-vault scaffold now returns `409` on stale
-      revisions and supports explicit force overwrites from the account panel,
-      but true client-side merge, account recovery, and automatic cross-device
-      history remain open.
+      push, pull, merge-and-push, force-push, and revoke controls; Playwright
+      covers a no-backend-cheating restore into a second browser-local account.
+      Production identity and recovery are still open.
+- [x] Cross-device restore + conflict handling prototype (last-write-wins per
+      snapshot is fine v1). The sync-vault scaffold returns `409` on stale
+      revisions and supports explicit force overwrites from the account panel.
+      The manual merge-and-push flow pulls the remote encrypted vault,
+      decrypts locally, unions remote-only and local-only backup records by ID,
+      restores missing remote records into the active profile, and pushes the
+      merged encrypted blob at the remote revision. Production account
+      recovery and automatic background cross-device history remain open.
 - [ ] Multi-profile **(new)**: household/coach use; profiles are separate
       encrypted stores.
       - First browser-local pass is in: the account panel now lists local
