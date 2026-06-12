@@ -12,7 +12,8 @@ The current app is a small full-stack prototype:
 
 - Frontend: React 18, Vite, plain CSS
 - Backend: FastAPI, Uvicorn, Pydantic, SQLite
-- Storage: adapter-backed browser `localStorage` for local snapshots and account data
+- Storage: adapter-backed browser `localStorage` for web plus Capacitor
+  Preferences hydration/migration in native runtimes
 - Rendering: deterministic SVG silhouette generated from measurements
 
 The app is measurement-first. It does not provide medical or procedural guidance. Accounts are still browser-local by default; production server-side identity and sync are not enabled.
@@ -70,7 +71,9 @@ native shell bootstrap.
 
 Capacitor config and scripts live in `frontend/`. After native toolchains are
 available, run `npm run native:add:android` or `npm run native:add:ios`, then
-`npm run native:sync` after web changes. Set `VITE_API_BASE_URL` before syncing
+`npm run native:sync` after web changes. Native runtimes use the same storage
+adapter with a Capacitor Preferences cache and one-time migration from existing
+`bodymod:` webview `localStorage` keys. Set `VITE_API_BASE_URL` before syncing
 when testing on a device or emulator. See `frontend/native-readme.md`.
 
 ## Current Scope
@@ -95,7 +98,7 @@ Implemented now:
 - runner-up match shown directly under the top match
 - 2x3 metric block grid for height, BMI, estimated body fat, SHR, WHR, and SWR
 - local snapshot save, label, note, load, compare, export, import, and delete in browser storage
-- shared frontend storage adapter for current web storage and future native storage
+- shared frontend storage adapter for web storage, native Capacitor Preferences, and tests
 - local snapshot trend summary across saved entries
 - compact local trend chart for key saved-snapshot metrics
 - per-field noise bands on snapshot trend charts using the documented re-measurement error model
@@ -180,6 +183,9 @@ Implemented now:
 - backend and Node entitlement tests proving current data tools stay non-paywalled
 - persisted locale preference with a lightweight i18n message catalog for the top-level shell/header/navigation strings
 - Capacitor native-shell bootstrap with package scripts, app metadata, Vite `dist/` sync target, and backend `capacitor://localhost` CORS origin
+- Capacitor Preferences-backed storage adapter that hydrates before first render,
+  keeps synchronous UI storage reads working from a cache, and migrates existing
+  `bodymod:` webview `localStorage` data into native key-value storage
 - Node accessibility contrast tests for cafe/graphite theme tokens and Playwright keyboard/accessibility semantics coverage
 - backend target-data and SQLite repository tests for IDs, schemas, and placeholder uncertainty notes
 - target profile template and curation guide for future production target data
@@ -202,7 +208,7 @@ Not implemented yet:
 - source-reviewed procedure taxonomy and clinical/body-mod validation; current procedure data is a dummy review scaffold
 - source-reviewed bloodwork marker taxonomy, units, and reference ranges; current bloodwork data is a dummy local-only review scaffold
 - full app-wide translation coverage; current i18n work is top-level shell groundwork
-- generated Android/iOS native project folders, store signing, native plugins, and native release workflows
+- generated Android/iOS native project folders, store signing, native barcode/push/HealthKit plugins, native file/SQLite photo storage, and native release workflows
 - full public measurement-guide coverage with reviewed illustrations and final copy
 - production error monitoring and product analytics provider/enablement
   decisions; sanitized first-party wiring exists but upload is disabled unless

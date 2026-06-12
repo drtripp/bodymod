@@ -25,8 +25,9 @@ Protocol Tracker → Diet upgrades → Native app.
       dark system), user-toggleable, persisted locally.
 - [x] Storage adapter: frontend persistence now goes through
       `frontend/src/lib/storageAdapter.js`, which exposes async adapter methods
-      for web `localStorage` and a memory test adapter while preserving the
-      current synchronous UI helpers until native storage lands.
+      for web `localStorage`, a Capacitor Preferences-backed native adapter,
+      and a memory test adapter while preserving the current synchronous UI
+      helpers through a hydrated cache.
 - [x] Decompose `App.jsx` (~500 lines): extract state into hooks/contexts per
       domain (measurements, snapshots, comparison, units) before the feature
       wave makes it worse. Measurement/unit state now lives in
@@ -577,8 +578,12 @@ land. No social features, no marketplace.
       toolchains and signing choices are available. This remains separate from
       the web bootstrap so repo verification does not depend on Xcode/Android
       Studio being installed in this workspace.
-- [ ] Native storage via the adapter (Preferences/SQLite); migration from any
-      existing webview localStorage.
+- [x] Native storage via the adapter (Preferences first): the default adapter
+      switches to Capacitor Preferences in native runtimes, hydrates before
+      first render, keeps synchronous readers backed by a native cache, and
+      migrates existing `bodymod:` webview `localStorage` keys.
+- [ ] Native file/SQLite storage for large photo/blob data so local progress
+      photos are not limited by key-value Preferences or webview storage.
 - [ ] Native barcode plugin (ML Kit) behind the existing manual-entry
       fallback (BarcodeDetector doesn't exist in WKWebView).
 - [ ] HealthKit: weight read/write, measurement write, nutrition write;

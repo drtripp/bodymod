@@ -1,3 +1,8 @@
+import { Capacitor } from "@capacitor/core";
+import { Preferences } from "@capacitor/preferences";
+
+export const BODYMOD_STORAGE_PREFIX = "bodymod:";
+
 function browserLocalStorage() {
   if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
     return null;
@@ -57,6 +62,18 @@ export function createWebStorageAdapter() {
       } catch (error) {
         // Local persistence must not interrupt the measurement flow.
       }
+    },
+    keysSync() {
+      const storage = browserLocalStorage();
+      if (!storage) {
+        return [];
+      }
+
+      try {
+        return Array.from({ length: storage.length }, (_, index) => storage.key(index)).filter(Boolean);
+      } catch (error) {
+        return [];
+      }
     }
   };
 }
@@ -84,13 +101,181 @@ export function createMemoryStorageAdapter(initialEntries = {}) {
     removeItemSync(key) {
       entries.delete(key);
     },
+    keysSync() {
+      return Array.from(entries.keys());
+    },
     dump() {
       return Object.fromEntries(entries);
     }
   };
 }
 
-export const defaultStorageAdapter = createWebStorageAdapter();
+export function isNativeCapacitorRuntime(capacitor = Capacitor) {
+  try {
+    return (
+      typeof capacitor?.isNativePlatform === "function" &&
+      capacitor.isNativePlatform()
+    );
+  } catch (error) {
+    return false;
+  }
+}
+
+function scheduledNativeWrite(operation) {
+  void operation.catch(() => {
+    // Local persistence must not interrupt the measurement flow.
+  });
+}
+
+export function createCapacitorPreferencesAdapter({
+  preferences = Preferences,
+  webAdapter = createWebStorageAdapter(),
+  storagePrefix = BODYMOD_STORAGE_PREFIX
+} = {}) {
+  const cache = new Map();
+  let hydrated = false;
+
+  async function hydrate({ migrateWebStorage = true } = {}) {
+    let migratedCount = 0;
+
+    try {
+      const { keys = [] } = await preferences.keys();
+      const bodymodPreferenceKeys = keys.filter((key) => key.startsWith(storagePrefix));
+
+      await Promise.all(
+        bodymodPreferenceKeys.map(async (key) => {
+          const { value } = await preferences.get({ key });
+          if (value !== null && value !== undefined) {
+            cache.set(key, value);
+          }
+        })
+      );
+
+      if (migrateWebStorage && typeof webAdapter.keysSync === "function") {
+        const webKeys = webAdapter.keysSync().filter((key) => key.startsWith(storagePrefix));
+
+        for (const key of webKeys) {
+          if (cache.has(key)) {
+            continue;
+          }
+
+          const value = webAdapter.getItemSync(key);
+          if (value === null || value === undefined) {
+            continue;
+          }
+
+          await preferences.set({ key, value: String(value) });
+          cache.set(key, String(value));
+          migratedCount += 1;
+        }
+      }
+
+      hydrated = true;
+      return {
+        adapterName: "capacitor-preferences",
+        hydrated: true,
+        migratedCount
+      };
+    } catch (error) {
+      hydrated = false;
+      return {
+        adapterName: "capacitor-preferences",
+        hydrated: false,
+        migratedCount
+      };
+    }
+  }
+
+  return {
+    name: "capacitor-preferences",
+    async hydrate(options) {
+      return hydrate(options);
+    },
+    isHydrated() {
+      return hydrated;
+    },
+    async getItem(key) {
+      if (!hydrated) {
+        await hydrate();
+      }
+
+      if (cache.has(key)) {
+        return cache.get(key);
+      }
+
+      try {
+        const { value } = await preferences.get({ key });
+        if (value !== null && value !== undefined) {
+          cache.set(key, value);
+          return value;
+        }
+      } catch (error) {
+        // Fall through to the webview storage fallback.
+      }
+
+      return typeof webAdapter.getItem === "function"
+        ? webAdapter.getItem(key)
+        : webAdapter.getItemSync?.(key) ?? null;
+    },
+    async setItem(key, value) {
+      const normalizedValue = String(value);
+      cache.set(key, normalizedValue);
+      await preferences.set({ key, value: normalizedValue });
+    },
+    async removeItem(key) {
+      cache.delete(key);
+      await preferences.remove({ key });
+    },
+    getItemSync(key) {
+      if (cache.has(key)) {
+        return cache.get(key);
+      }
+
+      return typeof webAdapter.getItemSync === "function" ? webAdapter.getItemSync(key) : null;
+    },
+    setItemSync(key, value) {
+      const normalizedValue = String(value);
+      cache.set(key, normalizedValue);
+      scheduledNativeWrite(preferences.set({ key, value: normalizedValue }));
+    },
+    removeItemSync(key) {
+      cache.delete(key);
+      scheduledNativeWrite(preferences.remove({ key }));
+    },
+    keysSync() {
+      const webKeys = typeof webAdapter.keysSync === "function" ? webAdapter.keysSync() : [];
+      return Array.from(new Set([...cache.keys(), ...webKeys]));
+    }
+  };
+}
+
+export function createDefaultStorageAdapter() {
+  return isNativeCapacitorRuntime()
+    ? createCapacitorPreferencesAdapter()
+    : createWebStorageAdapter();
+}
+
+export const defaultStorageAdapter = createDefaultStorageAdapter();
+
+export async function hydrateDefaultStorageAdapter(options) {
+  if (typeof defaultStorageAdapter.hydrate !== "function") {
+    return {
+      adapterName: defaultStorageAdapter.name,
+      hydrated: true,
+      migratedCount: 0
+    };
+  }
+
+  try {
+    return await defaultStorageAdapter.hydrate(options);
+  } catch (error) {
+    return {
+      adapterName: defaultStorageAdapter.name,
+      hydrated: false,
+      migratedCount: 0
+    };
+  }
+}
 
 export async function readJson(key, fallback, adapter = defaultStorageAdapter) {
   try {
