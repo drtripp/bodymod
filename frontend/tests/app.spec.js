@@ -2004,6 +2004,17 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await page.getByRole("button", { name: "Repeat latest workout" }).click();
   await expect(page.getByLabel("Lift PRs")).toContainText("2 session(s)");
   await expect(page.getByLabel("Lift history charts")).toContainText("2 session(s)");
+  await expect(page.getByLabel("Health data sync preview")).toContainText("HealthKit");
+  await page.getByRole("button", { name: "Prepare health sync preview" }).click();
+  await expect(page.getByLabel("Health data sync preview")).toContainText("Prepared");
+  await expect(page.getByLabel("Prepared health sync batch")).toContainText("Weight samples:");
+  await expect(page.getByLabel("Prepared health sync batch")).toContainText("Workout samples: 2");
+  const healthSyncState = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("bodymod:health-sync:v1"))
+  );
+  expect(JSON.stringify(healthSyncState)).not.toMatch(
+    /mason@example\.com|waistCircumference|Low sodium|Strict reps|First persona/
+  );
 
   await page.getByLabel("Photo category").selectOption("body");
   await page.getByLabel("Photo note").fill("Baseline front pose.");

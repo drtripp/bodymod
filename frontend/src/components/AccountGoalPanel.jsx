@@ -108,6 +108,10 @@ import {
   summarizePlainJsonExport
 } from "../lib/localExport";
 import {
+  loadDietLog,
+  loadFluidLog
+} from "../lib/storage";
+import {
   buildCheckInHeatmap,
   buildCheckInInsights,
   buildMilestones,
@@ -203,6 +207,12 @@ import {
   saveProWaitlistSignup
 } from "../lib/entitlements";
 import { buildDataExplainerResponse } from "../lib/dataExplainer";
+import {
+  buildHealthWriteBatch,
+  loadHealthSyncState,
+  persistHealthSyncState,
+  summarizeHealthWriteBatch
+} from "../lib/healthSync";
 import { loadStrategyCorpusBundle } from "../lib/strategyCorpus";
 import {
   loadNotificationPreference,
@@ -536,6 +546,9 @@ export default function AccountGoalPanel({
     loadHomeWidgetSnapshot()
   );
   const [homeWidgetStatus, setHomeWidgetStatus] = useState("");
+  const [healthSyncState, setHealthSyncState] = useState(() => loadHealthSyncState());
+  const [healthSyncPreview, setHealthSyncPreview] = useState(null);
+  const [healthSyncStatus, setHealthSyncStatus] = useState("");
   const [selectedProtocolIds, setSelectedProtocolIds] = useState([]);
   const [status, setStatus] = useState("");
 
@@ -2418,6 +2431,25 @@ export default function AccountGoalPanel({
     );
   }
 
+  function handlePrepareHealthSyncPreview() {
+    const batch = buildHealthWriteBatch({
+      currentMeasurements,
+      snapshots: snapshotProps.snapshots,
+      checkIns,
+      workoutSessions,
+      dietLog: loadDietLog(),
+      fluidLog: loadFluidLog()
+    });
+    const preview = summarizeHealthWriteBatch(batch);
+    const nextState = persistHealthSyncState(preview);
+
+    setHealthSyncPreview(preview);
+    setHealthSyncState(nextState);
+    setHealthSyncStatus(
+      `Prepared ${preview.counts.total} HealthKit/Health Connect write item(s). Native plugins are not configured yet, so no data was written.`
+    );
+  }
+
   function handleDownloadProgressReport() {
     downloadProgressReport({
       account,
@@ -2918,6 +2950,52 @@ export default function AccountGoalPanel({
               {homeWidgetStatus ? (
                 <small className="home-widget-status" role="status" aria-live="polite">
                   {homeWidgetStatus}
+                </small>
+              ) : null}
+            </section>
+
+            <section className="health-sync-section" aria-label="Health data sync preview">
+              <div>
+                <h3>Health data sync</h3>
+                <p>
+                  Prepare a native write batch for HealthKit or Health Connect
+                  from local weights, measurements, workouts, nutrition days,
+                  and fluid logs.
+                </p>
+                <small>
+                  Current build is preview-only: plugin choice, permissions,
+                  and store review remain native-project work.
+                </small>
+              </div>
+              <div className="health-sync-status-block">
+                <strong>{healthSyncState.recordCount} prepared item(s)</strong>
+                <span>
+                  {healthSyncState.lastPreparedAt
+                    ? `Last prepared ${formatDate(healthSyncState.lastPreparedAt)}`
+                    : "No native health batch prepared yet."}
+                </span>
+                <small>{healthSyncState.privacy}</small>
+              </div>
+              <div className="health-sync-actions">
+                <button className="button" type="button" onClick={handlePrepareHealthSyncPreview}>
+                  Prepare health sync preview
+                </button>
+                <small>Metadata is stored locally; raw health values are not persisted in preview state.</small>
+              </div>
+              {healthSyncPreview ? (
+                <div className="health-sync-preview" aria-label="Prepared health sync batch">
+                  <h4>Prepared batch</h4>
+                  <ul>
+                    {healthSyncPreview.lines.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                  <p>{healthSyncPreview.privacy}</p>
+                </div>
+              ) : null}
+              {healthSyncStatus ? (
+                <small className="health-sync-status" role="status" aria-live="polite">
+                  {healthSyncStatus}
                 </small>
               ) : null}
             </section>

@@ -428,7 +428,11 @@ land. No social features, no marketplace.
       into goal-specific workout discovery.
 - [x] PR tracking and per-lift history charts: local sessions now produce
       per-exercise best load/volume summaries and compact progression charts.
-- [ ] HealthKit/Health Connect workout write-back once native ships.
+- [x] HealthKit/Health Connect workout write-back scaffold **(new)**:
+      frontend now builds a local native-health write preview for logged
+      strength sessions without notes, account IDs, or private labels. Actual
+      HealthKit / Health Connect plugin writes remain native-project scope in
+      section 16.
 
 ## 10. Photos
 
@@ -612,7 +616,13 @@ land. No social features, no marketplace.
       values for Open Food Facts lookup, handle permission/module-install
       states, and keep manual entry available.
 - [ ] HealthKit: weight read/write, measurement write, nutrition write;
-      Google Fit / Health Connect equivalent on Android.
+      Google Fit / Health Connect equivalent on Android. First write-batch
+      scaffold is in: `frontend/src/lib/healthSync.js` prepares HealthKit /
+      Health Connect preview records for local weights, measurements, logged
+      workouts, nutrition days, and fluid days; the account panel stores only
+      metadata about the prepared batch. Native plugin selection, permission
+      prompts, real device writes, and read/import flows remain pending
+      generated native project folders.
 - [ ] Push notifications (native), safe-area/status-bar/splash/icon polish,
       haptics on check-in save. Native push token registration/revocation and
       native check-in save haptics now exist. Safe-area CSS, native status-bar

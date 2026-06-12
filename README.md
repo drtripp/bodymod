@@ -124,6 +124,7 @@ Implemented now:
 - dry-runable native stale-trend reminder worker with FCM/APNs sender hooks that use the same generic, measurement-free notification copy
 - native shell polish with Capacitor status-bar/splash configuration, safe-area-aware app padding, and a shared web manifest/SVG app icon
 - native home-screen widget payload scaffold that keeps a measurement-free streak and next-check-in snapshot ready in local/native storage
+- native HealthKit/Health Connect write-batch preview that prepares local weights, measurements, workouts, nutrition days, and fluid days while persisting only metadata
 - maintenance drift alerts for saved goals once an at-target snapshot exists
 - optional local cycle phase logs that add weight/waist fluctuation context, remain off by default, and can be deleted separately
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
@@ -225,7 +226,7 @@ Not implemented yet:
 - full app-wide translation coverage; current i18n work covers the shell,
   onboarding, and measurement-form chrome, while deeper account, diet,
   strategy, and report copy remains English-first
-- generated Android/iOS native project folders, store signing, APNs/FCM production credentials/device validation, HealthKit plugins, native home-screen widget extensions, iCloud/Google Drive backup policy wiring, native store icon generation, and native release workflows
+- generated Android/iOS native project folders, store signing, APNs/FCM production credentials/device validation, real HealthKit/Health Connect plugin reads/writes, native home-screen widget extensions, iCloud/Google Drive backup policy wiring, native store icon generation, and native release workflows
 - full public measurement-guide coverage with reviewed illustrations and final copy
 - production error monitoring and product analytics provider/enablement
   decisions; sanitized first-party wiring exists but upload is disabled unless

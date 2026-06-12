@@ -43,6 +43,7 @@ try {
     Invoke-Checked { npm run test:notifications }
     Invoke-Checked { npm run test:haptics }
     Invoke-Checked { npm run test:native-shell }
+    Invoke-Checked { npm run test:health-sync }
     Invoke-Checked { npm run test:widget-snapshot }
     Invoke-Checked { npm run test:native-backup }
     Invoke-Checked { npm run test:share-dashboard }

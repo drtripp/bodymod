@@ -68,6 +68,20 @@ manual UPC/EAN entry remains the fallback everywhere. On Android, the adapter
 starts Google Barcode Scanner module installation when the module is missing
 and asks the user to retry after installation.
 
+## Health Data Sync
+
+`src/lib/healthSync.js` prepares a native-health write batch for future
+HealthKit / Health Connect integration. The account panel can build a preview
+from local daily weights, current and saved measurements, logged workouts,
+nutrition-day totals, and fluid-day totals. The persisted
+`bodymod:health-sync:v1` state stores metadata only: counts, timestamps,
+destination labels, and privacy copy. It does not persist health values,
+account emails, local account IDs, notes, food names, or photo data.
+
+Actual native reads/writes still require generated iOS/Android projects, plugin
+selection, platform permissions, App Store / Play policy review, and device
+validation. Browser builds use the unavailable adapter and do not write data.
+
 ## Push And Haptics
 
 Remote stale-trend reminders use `@capacitor/push-notifications` in native
