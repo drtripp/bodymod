@@ -976,7 +976,7 @@ async function mockApi(page) {
 
     if (!vaultId && request.method() === "POST") {
       const rawBody = request.postData() || "";
-      expect(rawBody).not.toMatch(/backup-source@example\.com|Sync baseline|measurements|waistCircumference/);
+      expect(rawBody).not.toMatch(/backup-source@example\.com|Sync baseline|Sync auto-only|measurements|waistCircumference/);
       const body = request.postDataJSON();
       syncCounter += 1;
       const record = {
@@ -1019,7 +1019,7 @@ async function mockApi(page) {
 
     if (request.method() === "PUT" && !action) {
       const rawBody = request.postData() || "";
-      expect(rawBody).not.toMatch(/backup-source@example\.com|Sync baseline|measurements|waistCircumference/);
+      expect(rawBody).not.toMatch(/backup-source@example\.com|Sync baseline|Sync auto-only|measurements|waistCircumference/);
       if (!body.force && Number(body.expectedRevision) !== record.revision) {
         await route.fulfill({
           status: 409,
@@ -1079,7 +1079,7 @@ async function mockApi(page) {
 
     if (request.method() === "POST" && suffix === "/tokens") {
       const rawBody = request.postData() || "";
-      expect(rawBody).not.toMatch(/backup-source@example\.com|Sync baseline|measurements|waistCircumference|note/);
+      expect(rawBody).not.toMatch(/backup-source@example\.com|Sync baseline|Sync auto-only|measurements|waistCircumference|note/);
       const body = request.postDataJSON();
       const vault = syncVaults.get(body.vaultId);
       if (!vault || vault.revoked) {
@@ -2351,10 +2351,28 @@ test("syncs encrypted backup vaults through the account UI", async ({ page }) =>
   await expect(syncSection).toContainText("Encrypted sync conflict at server revision 2");
   await page.getByRole("button", { name: "Merge + push" }).click();
   await expect(syncSection).toContainText("Merged encrypted sync vault at revision 3");
+  await page.getByRole("textbox", { name: "Daily weight" }).fill("84.8");
+  await page.getByRole("textbox", { name: "Daily calories" }).fill("2500");
+  await page.getByRole("button", { name: "Log daily check-in" }).click();
+  await page.getByLabel("Snapshot label").fill("Sync auto-only");
+  await page.getByRole("button", { name: "Save current snapshot" }).click();
+  await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Sync auto-only" })).toBeVisible();
+  const autoSyncPanel = page.locator('[aria-label="Automatic sync preview"]');
+  await page.getByLabel("Automatic sync preview toggle").check();
+  await expect(autoSyncPanel).toContainText("Automatic sync preview enabled.");
+  await page.getByRole("button", { name: "Run auto-sync now" }).click();
+  await expect(autoSyncPanel).toContainText("Automatic sync preview ran at revision 4");
+  const autoSyncState = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("bodymod:auto-sync:v1"))
+  );
+  expect(autoSyncState.enabled).toBe(true);
+  expect(autoSyncState.vaultId).toBe(vaultId);
+  expect(autoSyncState.lastRevision).toBe(4);
+  expect(JSON.stringify(autoSyncState)).not.toMatch(/mock-sync-token|correct horse battery staple/);
   await page.getByLabel("Personal data API token", { exact: true }).fill(personalApiToken);
   await page.getByRole("button", { name: "Test API read" }).click();
   await expect(personalApiSection).toContainText(
-    "Personal data API read encrypted sync vault revision 3"
+    "Personal data API read encrypted sync vault revision 4"
   );
   await page.getByRole("button", { name: "Revoke API token" }).click();
   await expect(personalApiSection).toContainText("Personal data API token revoked.");
@@ -2380,14 +2398,16 @@ test("syncs encrypted backup vaults through the account UI", async ({ page }) =>
   await page.getByRole("button", { name: "Pull encrypted sync" }).click();
 
   await expect(page.getByLabel("Encrypted sync vault")).toContainText(
-    "Pulled encrypted sync vault revision 3"
+    "Pulled encrypted sync vault revision 4"
   );
   await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 83.1 kg / 2350 kcal");
   await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 83.7 kg / 2360 kcal");
   await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 84.2 kg / 2450 kcal");
+  await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 84.8 kg / 2500 kcal");
   await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Sync baseline" })).toBeVisible();
   await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Sync local-only" })).toBeVisible();
   await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Sync remote-only" })).toBeVisible();
+  await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Sync auto-only" })).toBeVisible();
 
   await page.getByRole("button", { name: "Revoke sync vault" }).click();
   await expect(page.getByLabel("Encrypted sync vault")).toContainText(

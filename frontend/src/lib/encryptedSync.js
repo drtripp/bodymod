@@ -3,6 +3,8 @@ import { readJsonSync, removeStoredItemSync, writeJsonSync } from "./storageAdap
 
 
 export const SYNC_VAULT_STATE_KEY = "bodymod:sync-vault:v1";
+export const AUTO_SYNC_STATE_KEY = "bodymod:auto-sync:v1";
+export const DEFAULT_AUTO_SYNC_INTERVAL_MINUTES = 15;
 
 
 export function defaultSyncVaultState() {
@@ -41,6 +43,137 @@ export function persistSyncVaultState(state, adapter) {
 export function clearSyncVaultState(adapter) {
   removeStoredItemSync(SYNC_VAULT_STATE_KEY, adapter);
   return defaultSyncVaultState();
+}
+
+export function defaultAutoSyncState() {
+  return {
+    version: 1,
+    enabled: false,
+    accountId: "",
+    vaultId: "",
+    deviceId: "",
+    lastRunAt: "",
+    lastResult: "",
+    lastRevision: 0,
+    lastTrigger: "",
+    lastError: "",
+    pendingReason: "",
+    lastBackupSignature: "",
+    intervalMinutes: DEFAULT_AUTO_SYNC_INTERVAL_MINUTES
+  };
+}
+
+export function normalizeAutoSyncState(state = {}) {
+  const version = Number(state.version);
+  const lastRevision = Number(state.lastRevision);
+  const intervalMinutes = Number(state.intervalMinutes);
+  const defaults = defaultAutoSyncState();
+  return {
+    ...defaults,
+    version: Number.isFinite(version) && version > 0 ? version : defaults.version,
+    enabled: Boolean(state.enabled),
+    accountId: String(state.accountId || ""),
+    vaultId: String(state.vaultId || ""),
+    deviceId: String(state.deviceId || ""),
+    lastRunAt: String(state.lastRunAt || ""),
+    lastResult: String(state.lastResult || ""),
+    lastRevision: Number.isFinite(lastRevision) && lastRevision > 0 ? lastRevision : 0,
+    lastTrigger: String(state.lastTrigger || ""),
+    lastError: String(state.lastError || ""),
+    pendingReason: String(state.pendingReason || ""),
+    lastBackupSignature: String(state.lastBackupSignature || ""),
+    intervalMinutes:
+      Number.isFinite(intervalMinutes) && intervalMinutes > 0
+        ? intervalMinutes
+        : DEFAULT_AUTO_SYNC_INTERVAL_MINUTES
+  };
+}
+
+export function loadAutoSyncState(adapter) {
+  try {
+    return normalizeAutoSyncState(readJsonSync(AUTO_SYNC_STATE_KEY, null, adapter) || {});
+  } catch {
+    return defaultAutoSyncState();
+  }
+}
+
+export function persistAutoSyncState(state, adapter) {
+  const nextState = normalizeAutoSyncState(state);
+  writeJsonSync(AUTO_SYNC_STATE_KEY, nextState, adapter);
+  return nextState;
+}
+
+export function clearAutoSyncState(adapter) {
+  removeStoredItemSync(AUTO_SYNC_STATE_KEY, adapter);
+  return defaultAutoSyncState();
+}
+
+export function buildAutoSyncReadiness({
+  accountId = "",
+  vaultId = "",
+  syncToken = "",
+  passphrase = ""
+} = {}) {
+  if (!String(accountId || "").trim()) {
+    return {
+      ready: false,
+      reason: "Sign in before enabling automatic sync preview."
+    };
+  }
+
+  if (String(passphrase || "").length < 8) {
+    return {
+      ready: false,
+      reason: "Enter an 8+ character backup passphrase before automatic sync can run."
+    };
+  }
+
+  if (!String(vaultId || "").trim()) {
+    return {
+      ready: false,
+      reason: "Create or enter a sync vault ID before automatic sync can run."
+    };
+  }
+
+  if (!String(syncToken || "").trim()) {
+    return {
+      ready: false,
+      reason: "Enter the sync token before automatic sync can run."
+    };
+  }
+
+  return {
+    ready: true,
+    reason: "Automatic sync preview is ready."
+  };
+}
+
+export function shouldRunAutoSync({
+  state = {},
+  currentBackupSignature = "",
+  now = Date.now()
+} = {}) {
+  const normalized = normalizeAutoSyncState(state);
+  if (!normalized.enabled) {
+    return false;
+  }
+
+  const signature = String(currentBackupSignature || "");
+  if (signature && signature !== normalized.lastBackupSignature) {
+    return true;
+  }
+
+  if (!normalized.lastRunAt) {
+    return true;
+  }
+
+  const lastRunMs = Date.parse(normalized.lastRunAt);
+  if (!Number.isFinite(lastRunMs)) {
+    return true;
+  }
+
+  const intervalMs = Math.max(1, normalized.intervalMinutes) * 60 * 1000;
+  return Number(now) - lastRunMs >= intervalMs;
 }
 
 function fetchApi() {

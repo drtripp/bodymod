@@ -542,8 +542,8 @@ land. No social features, no marketplace.
       session, and `/api/accounts/logout` revokes it. The account panel exposes
       a magic-link identity preview that sends only email/display-name/user-agent
       metadata and keeps measurements/logs local unless encrypted sync is used.
-      Production email delivery, account recovery, and identity-linked automatic
-      sync remain open.
+      Production email delivery, account recovery, and identity-linked
+      production automatic sync remain open.
 - [x] Encrypted sync prototype: client-side-encrypted blob sync so the server cannot
       read measurements (the data-custody story the trans audience and
       cycle-tracking feature demand). **First backend scaffold:** FastAPI now
@@ -555,6 +555,10 @@ land. No social features, no marketplace.
       sent in request bodies. The account panel now exposes manual create,
       push, pull, merge-and-push, force-push, and revoke controls; Playwright
       covers a no-backend-cheating restore into a second browser-local account.
+      A first opt-in automatic sync preview reuses the same browser-held vault
+      token and in-memory passphrase to run client-side merge-and-push checks
+      after local log changes or focus/interval checks without storing the
+      passphrase or sending plaintext measurements.
       Production identity and recovery are still open.
 - [x] Cross-device restore + conflict handling prototype (last-write-wins per
       snapshot is fine v1). The sync-vault scaffold returns `409` on stale
@@ -562,8 +566,10 @@ land. No social features, no marketplace.
       The manual merge-and-push flow pulls the remote encrypted vault,
       decrypts locally, unions remote-only and local-only backup records by ID,
       restores missing remote records into the active profile, and pushes the
-      merged encrypted blob at the remote revision. Production account
-      recovery and automatic background cross-device history remain open.
+      merged encrypted blob at the remote revision. A browser-local automatic
+      sync preview can run that same merge-and-push path when enabled.
+      Production account recovery and provider-backed background cross-device
+      history remain open.
 - [ ] Multi-profile **(new)**: household/coach use; profiles are separate
       encrypted stores.
       - First browser-local pass is in: the account panel now lists local

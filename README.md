@@ -118,6 +118,7 @@ Implemented now:
 - passphrase-encrypted local backup and restore for snapshots and account logs, including procedure and local-only bloodwork records, with photo metadata manifest only
 - native encrypted-backup file scaffold that saves/restores/deletes the same AES-GCM backup through Capacitor Filesystem in installed apps, with session autosave controls
 - backend encrypted sync-vault scaffold that stores only opaque AES-GCM backup blobs, hashed sync tokens, device IDs, and revision metadata, plus account-panel create/push/pull/merge/force-push/revoke UI and tests that keep plaintext measurements out of request bodies
+- opt-in automatic encrypted sync preview that reuses the browser-held sync vault token and in-memory backup passphrase to run client-side merge-and-push checks without sending plaintext logs to the server
 - token-scoped personal data API scaffold that issues read-only bearer tokens for the encrypted sync vault, stores only token hashes, and lets account-panel users issue/test/revoke access without exposing plaintext measurements
 - adaptive TDEE estimate from reliable daily weight and calorie logs, with reliability-window exclusions
 - guided weekly check-in flow with snapshot save, streak/grace state, heatmap, milestones, insight drops, and weekly digest
@@ -222,9 +223,10 @@ Not implemented yet:
 - full production percentile replacement across all supported fields
 - vetted ANSUR or equivalent breadth data behind the population charts; NHANES now covers adult height, weight, waist, and hip only
 - production-quality target dataset
-- production email delivery/provider setup, account recovery, automatic
-  background sync/merge, or cross-device history beyond the manual encrypted
-  sync-vault, personal data API, and magic-link identity scaffolds
+- production email delivery/provider setup, account recovery, or
+  identity-linked production background sync/merge beyond the encrypted
+  sync-vault, automatic sync preview, personal data API, and magic-link
+  identity scaffolds
 - hosted photo/body inference work; current face scans are browser-local only
 - production FoodData Central import/API ownership; Diet currently has dummy backend USDA-style seed rows plus Open Food Facts lookup
 - source-reviewed procedure taxonomy and clinical/body-mod validation; current procedure data is a dummy review scaffold

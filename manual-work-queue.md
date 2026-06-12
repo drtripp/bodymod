@@ -124,9 +124,10 @@ Required input:
 - account/sync decision
   - current code has an email magic-link identity scaffold with dev-token
     verification for local testing, plus a token-scoped encrypted sync-vault
-    scaffold and manual account-panel create/push/pull/merge/revoke UI, but no
-    production email provider, account recovery, or automatic background
-    cross-device sync
+    scaffold, manual account-panel create/push/pull/merge/revoke UI, and an
+    opt-in browser auto-sync preview that reuses the encrypted vault path, but
+    no production email provider, account recovery, or provider-backed
+    background cross-device sync
 - photo/vision upload decision
 - legal owner/contact details
 - approval of privacy policy, terms, and medical disclaimer drafts

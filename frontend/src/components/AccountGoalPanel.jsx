@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import FaceMeasurementPanel from "./FaceMeasurementPanel";
 import SilhouetteView from "./SilhouetteView";
 import SnapshotPanel from "./SnapshotPanel";
@@ -88,12 +88,18 @@ import {
   saveNativeEncryptedBackup
 } from "../lib/nativeBackup";
 import {
+  buildAutoSyncReadiness,
+  clearAutoSyncState,
   clearSyncVaultState,
   createSyncVault,
+  defaultAutoSyncState,
+  loadAutoSyncState,
   loadSyncVaultState,
+  persistAutoSyncState,
   persistSyncVaultState,
   readSyncVault,
   revokeSyncVault,
+  shouldRunAutoSync,
   syncBlobToEncryptedBackup,
   updateSyncVault
 } from "../lib/encryptedSync";
@@ -251,6 +257,32 @@ function formatDate(timestamp) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(
     new Date(timestamp)
   );
+}
+
+function recordTimestamp(record = {}) {
+  return record.updatedAt || record.createdAt || record.date || record.procedureDate || "";
+}
+
+function firstRecordTimestamp(records = []) {
+  return Array.isArray(records) && records[0] ? recordTimestamp(records[0]) : "";
+}
+
+function backupBundleSignature(accountId, bundle = {}, currentPhotos = []) {
+  return [
+    accountId || "",
+    Array.isArray(bundle.snapshots) ? bundle.snapshots.length : 0,
+    firstRecordTimestamp(bundle.snapshots),
+    Array.isArray(bundle.goals) ? bundle.goals.length : 0,
+    Array.isArray(bundle.protocols) ? bundle.protocols.length : 0,
+    Array.isArray(bundle.checkIns) ? bundle.checkIns.length : 0,
+    firstRecordTimestamp(bundle.checkIns),
+    Array.isArray(bundle.workoutSessions) ? bundle.workoutSessions.length : 0,
+    Array.isArray(bundle.procedures) ? bundle.procedures.length : 0,
+    Array.isArray(bundle.bloodworkResults) ? bundle.bloodworkResults.length : 0,
+    Array.isArray(bundle.referralCredits) ? bundle.referralCredits.length : 0,
+    Array.isArray(currentPhotos) ? currentPhotos.length : 0,
+    Array.isArray(bundle.faceMeasurements) ? bundle.faceMeasurements.length : 0
+  ].join("|");
 }
 
 function protocolLabels(protocolIds, protocolTemplates) {
@@ -432,6 +464,7 @@ export default function AccountGoalPanel({
   const initialAccount = loadSessionAccount();
   const [account, setAccount] = useState(() => initialAccount);
   const initialSyncVaultState = loadSyncVaultState();
+  const initialAutoSyncState = loadAutoSyncState();
   const [goals, setGoals] = useState(() => loadUserGoals(initialAccount?.id));
   const [protocols, setProtocols] = useState(() => loadUserProtocols(initialAccount?.id));
   const [checkIns, setCheckIns] = useState(() => loadUserCheckIns(initialAccount?.id));
@@ -455,6 +488,10 @@ export default function AccountGoalPanel({
     () => initialSyncVaultState.deviceId || "browser-local"
   );
   const [syncStatus, setSyncStatus] = useState("");
+  const [autoSyncState, setAutoSyncState] = useState(() => initialAutoSyncState);
+  const [autoSyncStatus, setAutoSyncStatus] = useState("");
+  const [isAutoSyncing, setIsAutoSyncing] = useState(false);
+  const autoSyncInFlightRef = useRef(false);
   const [accountIdentitySession, setAccountIdentitySession] = useState(() =>
     loadAccountIdentitySession()
   );
@@ -636,6 +673,14 @@ export default function AccountGoalPanel({
     setPersonalDataApiTokenMeta(null);
     setPersonalDataApiStatus("");
     const stored = loadSyncVaultState();
+    const storedAutoSync = loadAutoSyncState();
+    if (account?.id && storedAutoSync.accountId === account.id) {
+      setAutoSyncState(storedAutoSync);
+      setAutoSyncStatus("");
+    } else {
+      setAutoSyncState(defaultAutoSyncState());
+      setAutoSyncStatus("");
+    }
     if (account?.id && stored.accountId === account.id) {
       setSyncVaultState(stored);
       setSyncVaultId(stored.vaultId);
@@ -1015,6 +1060,16 @@ export default function AccountGoalPanel({
       workoutSessions.length
     ]
   );
+  const autoSyncReadiness = useMemo(
+    () =>
+      buildAutoSyncReadiness({
+        accountId: account?.id || "",
+        vaultId: syncVaultId,
+        syncToken: syncVaultToken,
+        passphrase: backupPassphrase
+      }),
+    [account?.id, backupPassphrase, syncVaultId, syncVaultToken]
+  );
   useEffect(() => {
     if (!account) {
       return;
@@ -1065,6 +1120,79 @@ export default function AccountGoalPanel({
       isCancelled = true;
     };
   }, [account?.id, backupPassphrase, nativeBackupAutoEnabled, nativeBackupSignature]);
+
+  useEffect(() => {
+    if (!autoSyncState.enabled) {
+      return;
+    }
+
+    if (!autoSyncReadiness.ready) {
+      persistAutoSyncRecord({
+        enabled: true,
+        pendingReason: autoSyncReadiness.reason
+      });
+      setAutoSyncStatus(autoSyncReadiness.reason);
+      return;
+    }
+
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return;
+    }
+
+    let isCancelled = false;
+    const intervalMs = Math.max(1, Number(autoSyncState.intervalMinutes || 15)) * 60 * 1000;
+
+    function attemptAutoSync(trigger) {
+      if (isCancelled || autoSyncInFlightRef.current) {
+        return;
+      }
+
+      const storedState = loadAutoSyncState();
+      if (
+        !shouldRunAutoSync({
+          state: storedState,
+          currentBackupSignature: nativeBackupSignature
+        })
+      ) {
+        return;
+      }
+
+      void runAutoSyncCycle(trigger);
+    }
+
+    const kickoffTimer = window.setTimeout(() => attemptAutoSync("background"), 750);
+    const intervalTimer = window.setInterval(
+      () => attemptAutoSync("background"),
+      intervalMs
+    );
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        attemptAutoSync("background");
+      }
+    };
+
+    window.addEventListener("focus", handleVisibility);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      isCancelled = true;
+      window.clearTimeout(kickoffTimer);
+      window.clearInterval(intervalTimer);
+      window.removeEventListener("focus", handleVisibility);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [
+    account?.id,
+    autoSyncReadiness.ready,
+    autoSyncReadiness.reason,
+    autoSyncState.enabled,
+    autoSyncState.intervalMinutes,
+    backupPassphrase,
+    nativeBackupSignature,
+    syncDeviceId,
+    syncVaultId,
+    syncVaultToken
+  ]);
 
   const protocolSchemaSummary = useMemo(
     () => formatProtocolSchemaSummary(planningData.protocolTaxonomy),
@@ -2008,6 +2136,19 @@ export default function AccountGoalPanel({
     return `Restored backup: ${snapshotRestore.importedCount} snapshot(s), ${restoreResult.imported.checkIns} check-in(s), ${restoreResult.imported.goals} goal(s), ${restoreResult.imported.protocols} protocol(s), ${restoreResult.imported.workoutSessions} workout(s), ${restoreResult.imported.procedures} procedure(s), ${restoreResult.imported.bloodworkResults} lab result(s), ${referralRestore.importedCount} referral credit(s), ${restoreResult.imported.faceMeasurements} face scan(s). Photo manifest: ${summary.photoManifest} item(s); image files are not included.`;
   }
 
+  function persistAutoSyncRecord(partial = {}) {
+    const nextState = persistAutoSyncState({
+      ...autoSyncState,
+      ...partial,
+      accountId: partial.accountId ?? account?.id ?? autoSyncState.accountId,
+      vaultId: partial.vaultId ?? syncVaultId.trim(),
+      deviceId: partial.deviceId ?? (syncDeviceId.trim() || "browser-local")
+    });
+
+    setAutoSyncState(nextState);
+    return nextState;
+  }
+
   function persistSyncRecord(record, token = syncVaultToken) {
     const nextState = persistSyncVaultState({
       accountId: account?.id || "",
@@ -2023,6 +2164,15 @@ export default function AccountGoalPanel({
     setSyncVaultId(nextState.vaultId);
     setSyncVaultToken(nextState.syncToken);
     setSyncDeviceId(nextState.deviceId || syncDeviceId);
+    setAutoSyncState(
+      persistAutoSyncState({
+        ...autoSyncState,
+        accountId: account?.id || autoSyncState.accountId,
+        vaultId: nextState.vaultId,
+        deviceId: nextState.deviceId || syncDeviceId,
+        lastRevision: Number(nextState.revision || autoSyncState.lastRevision || 0)
+      })
+    );
     return nextState;
   }
 
@@ -2036,6 +2186,37 @@ export default function AccountGoalPanel({
 
   function missingSyncCredentials() {
     return !syncVaultId.trim() || !syncVaultToken.trim();
+  }
+
+  async function mergeAndPushSyncVault() {
+    const localBundle = currentBackupBundle();
+    const remoteRecord = await readSyncVault({
+      vaultId: syncVaultId.trim(),
+      syncToken: syncVaultToken.trim()
+    });
+    const remoteEncryptedBackup = syncBlobToEncryptedBackup(remoteRecord.blob, remoteRecord.updatedAt);
+    const remoteBundle = await decryptLocalBackup(remoteEncryptedBackup, backupPassphrase);
+    const mergedBundle = mergeLocalBackupBundles(localBundle, remoteBundle);
+    const restoreSummary = restoreBackupBundle(remoteBundle);
+    const encryptedBackup = await encryptLocalBackup(mergedBundle, backupPassphrase);
+    const summary = summarizeLocalBackupBundle(mergedBundle);
+    const mergedBackupSignature = backupBundleSignature(account?.id || "", mergedBundle, photos);
+    const updatedRecord = await updateSyncVault({
+      vaultId: syncVaultId.trim(),
+      syncToken: syncVaultToken.trim(),
+      expectedRevision: Math.max(1, Number(remoteRecord.revision || 1)),
+      encryptedBackup,
+      deviceId: syncDeviceId.trim() || "browser-local",
+      force: false
+    });
+
+    persistSyncRecord(updatedRecord);
+    return {
+      updatedRecord,
+      summary,
+      backupSignature: mergedBackupSignature,
+      restoreSummary
+    };
   }
 
   async function handlePublishShareDashboard() {
@@ -2373,26 +2554,7 @@ export default function AccountGoalPanel({
 
     try {
       setSyncStatus("Merging encrypted sync vault...");
-      const localBundle = currentBackupBundle();
-      const remoteRecord = await readSyncVault({
-        vaultId: syncVaultId.trim(),
-        syncToken: syncVaultToken.trim()
-      });
-      const remoteEncryptedBackup = syncBlobToEncryptedBackup(remoteRecord.blob, remoteRecord.updatedAt);
-      const remoteBundle = await decryptLocalBackup(remoteEncryptedBackup, backupPassphrase);
-      const mergedBundle = mergeLocalBackupBundles(localBundle, remoteBundle);
-      const restoreSummary = restoreBackupBundle(remoteBundle);
-      const encryptedBackup = await encryptLocalBackup(mergedBundle, backupPassphrase);
-      const summary = summarizeLocalBackupBundle(mergedBundle);
-      const updatedRecord = await updateSyncVault({
-        vaultId: syncVaultId.trim(),
-        syncToken: syncVaultToken.trim(),
-        expectedRevision: Math.max(1, Number(remoteRecord.revision || 1)),
-        encryptedBackup,
-        deviceId: syncDeviceId.trim() || "browser-local",
-        force: false
-      });
-      persistSyncRecord(updatedRecord);
+      const { updatedRecord, summary, restoreSummary } = await mergeAndPushSyncVault();
       setSyncStatus(
         `Merged encrypted sync vault at revision ${updatedRecord.revision}: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.goals} goal(s), and ${summary.protocols} protocol(s). ${restoreSummary}`
       );
@@ -2407,11 +2569,109 @@ export default function AccountGoalPanel({
     }
   }
 
+  function handleAutoSyncToggle(event) {
+    const enabled = event.target.checked;
+    const now = new Date().toISOString();
+    const nextState = persistAutoSyncRecord({
+      enabled,
+      accountId: account?.id || "",
+      vaultId: syncVaultId.trim(),
+      deviceId: syncDeviceId.trim() || "browser-local",
+      pendingReason: enabled && !autoSyncReadiness.ready ? autoSyncReadiness.reason : "",
+      lastError: "",
+      lastRunAt: enabled ? now : autoSyncState.lastRunAt,
+      lastBackupSignature: enabled ? nativeBackupSignature : autoSyncState.lastBackupSignature
+    });
+
+    setAutoSyncStatus(
+      enabled
+        ? autoSyncReadiness.ready
+          ? `Automatic sync preview enabled. Last checked ${formatDate(nextState.lastRunAt)}.`
+          : autoSyncReadiness.reason
+        : "Automatic sync preview disabled."
+    );
+  }
+
+  async function runAutoSyncCycle(trigger = "manual") {
+    if (!account) {
+      return null;
+    }
+
+    if (!autoSyncReadiness.ready) {
+      persistAutoSyncRecord({
+        enabled: autoSyncState.enabled,
+        pendingReason: autoSyncReadiness.reason
+      });
+      setAutoSyncStatus(autoSyncReadiness.reason);
+      return null;
+    }
+
+    if (autoSyncInFlightRef.current) {
+      return null;
+    }
+
+    autoSyncInFlightRef.current = true;
+    setIsAutoSyncing(true);
+    setAutoSyncStatus(
+      trigger === "manual"
+        ? "Running automatic sync preview..."
+        : "Background automatic sync preview running..."
+    );
+
+    try {
+      const { updatedRecord, summary, backupSignature, restoreSummary } = await mergeAndPushSyncVault();
+      const ranAt = new Date().toISOString();
+      const result = `Revision ${updatedRecord.revision}: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.goals} goal(s), and ${summary.protocols} protocol(s).`;
+      persistAutoSyncRecord({
+        enabled: true,
+        accountId: account.id,
+        vaultId: updatedRecord.vaultId || syncVaultId.trim(),
+        deviceId: updatedRecord.deviceId || syncDeviceId.trim() || "browser-local",
+        lastRunAt: ranAt,
+        lastResult: result,
+        lastRevision: updatedRecord.revision,
+        lastTrigger: trigger,
+        lastError: "",
+        pendingReason: "",
+        lastBackupSignature: backupSignature || nativeBackupSignature
+      });
+      setAutoSyncStatus(
+        `Automatic sync preview ${trigger === "manual" ? "ran" : "background ran"} at revision ${updatedRecord.revision}. ${restoreSummary}`
+      );
+      return updatedRecord;
+    } catch (error) {
+      const ranAt = new Date().toISOString();
+      const message =
+        error.status === 409
+          ? `Automatic sync preview found a newer server revision ${error.detail?.currentRevision || "unknown"}. Run merge again, or use the manual force-push control if you intend to overwrite.`
+          : error.message || "Automatic sync preview failed.";
+      persistAutoSyncRecord({
+        enabled: autoSyncState.enabled,
+        lastRunAt: ranAt,
+        lastTrigger: trigger,
+        lastError: message,
+        pendingReason: message,
+        lastBackupSignature: nativeBackupSignature
+      });
+      setAutoSyncStatus(message);
+      return null;
+    } finally {
+      autoSyncInFlightRef.current = false;
+      setIsAutoSyncing(false);
+    }
+  }
+
+  async function handleRunAutoSyncNow() {
+    await runAutoSyncCycle("manual");
+  }
+
   async function handleRevokeSyncVault() {
     if (missingSyncCredentials()) {
       setSyncVaultState(clearSyncVaultState());
       setSyncVaultId("");
       setSyncVaultToken("");
+      setAutoSyncState(clearAutoSyncState());
+      setAutoSyncStatus("Automatic sync preview cleared with local sync credentials.");
       setSyncStatus("No sync vault credentials to revoke.");
       return;
     }
@@ -2423,9 +2683,12 @@ export default function AccountGoalPanel({
         syncToken: syncVaultToken.trim()
       });
       const cleared = clearSyncVaultState();
+      const clearedAutoSync = clearAutoSyncState();
       setSyncVaultState(cleared);
+      setAutoSyncState(clearedAutoSync);
       setSyncVaultId("");
       setSyncVaultToken("");
+      setAutoSyncStatus("Automatic sync preview cleared with the sync vault.");
       setSyncStatus("Encrypted sync vault revoked and local credentials cleared.");
     } catch (error) {
       setSyncStatus(error.message || "Encrypted sync revoke failed.");
@@ -3382,6 +3645,46 @@ export default function AccountGoalPanel({
                   {syncVaultState.updatedAt ? ` / updated ${formatDate(syncVaultState.updatedAt)}` : ""}
                 </small>
               ) : null}
+              <div className="auto-sync-panel" aria-label="Automatic sync preview">
+                <div>
+                  <h4>Automatic sync preview</h4>
+                  <p>
+                    Opt in to periodic client-side merge-and-push for this
+                    browser. The passphrase stays in memory and the server
+                    still receives only encrypted vault blobs.
+                  </p>
+                  <small>
+                    {autoSyncState.lastRunAt
+                      ? `Last checked ${formatDate(autoSyncState.lastRunAt)}${autoSyncState.lastRevision ? ` / revision ${autoSyncState.lastRevision}` : ""}`
+                      : autoSyncReadiness.reason}
+                  </small>
+                </div>
+                <label className="auto-sync-toggle">
+                  <input
+                    aria-label="Automatic sync preview toggle"
+                    type="checkbox"
+                    checked={autoSyncState.enabled}
+                    onChange={handleAutoSyncToggle}
+                    disabled={!account}
+                  />
+                  <span>Enable preview</span>
+                </label>
+                <div className="auto-sync-actions">
+                  <button
+                    className="button"
+                    type="button"
+                    onClick={handleRunAutoSyncNow}
+                    disabled={!autoSyncReadiness.ready || isAutoSyncing}
+                  >
+                    {isAutoSyncing ? "Syncing..." : "Run auto-sync now"}
+                  </button>
+                </div>
+                {autoSyncStatus ? (
+                  <small className="auto-sync-status" role="status" aria-live="polite">
+                    {autoSyncStatus}
+                  </small>
+                ) : null}
+              </div>
               {syncStatus ? (
                 <small className="encrypted-sync-status" role="status" aria-live="polite">
                   {syncStatus}

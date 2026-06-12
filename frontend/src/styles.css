@@ -773,36 +773,54 @@ textarea {
   align-items: start;
 }
 
-.native-backup-panel h4 {
+.native-backup-panel h4,
+.auto-sync-panel h4 {
   font-size: 0.92rem;
   margin: 0 0 4px;
 }
 
 .native-backup-panel p,
 .native-backup-panel small,
-.native-backup-status {
+.native-backup-status,
+.auto-sync-panel p,
+.auto-sync-panel small,
+.auto-sync-status {
   color: var(--color-muted);
 }
 
-.native-backup-toggle {
+.native-backup-toggle,
+.auto-sync-toggle {
   align-items: center;
   display: flex;
   gap: 8px;
   min-height: 36px;
 }
 
-.native-backup-toggle input {
+.native-backup-toggle input,
+.auto-sync-toggle input {
   inline-size: 16px;
   block-size: 16px;
 }
 
-.native-backup-actions {
+.native-backup-actions,
+.auto-sync-actions {
   display: grid;
   gap: 8px;
 }
 
-.native-backup-status {
+.native-backup-status,
+.auto-sync-status {
   grid-column: 1 / -1;
+}
+
+.auto-sync-panel {
+  border-top: 1px solid var(--color-border);
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(260px, 1fr) minmax(160px, 0.25fr) minmax(190px, 0.34fr);
+  gap: 12px;
+  padding-top: 12px;
+  align-items: start;
 }
 
 .encrypted-sync-fields {
@@ -5118,6 +5136,7 @@ textarea {
   .encrypted-backup-section,
   .native-backup-panel,
   .encrypted-sync-section,
+  .auto-sync-panel,
   .personal-data-api-section,
   .entitlement-grid,
   .referral-code-row,

@@ -2,13 +2,19 @@ import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
 import { test } from "node:test";
 import {
+  AUTO_SYNC_STATE_KEY,
+  buildAutoSyncReadiness,
   createSyncVault,
+  clearAutoSyncState,
   clearSyncVaultState,
   encryptedBackupToSyncBlob,
+  loadAutoSyncState,
   loadSyncVaultState,
+  persistAutoSyncState,
   persistSyncVaultState,
   readSyncVault,
   revokeSyncVault,
+  shouldRunAutoSync,
   syncBlobToEncryptedBackup,
   updateSyncVault
 } from "../src/lib/encryptedSync.js";
@@ -91,6 +97,89 @@ test("persists sync vault credentials locally until cleared", () => {
   assert.equal(loadSyncVaultState(adapter).vaultId, "vault-1");
   assert.equal(clearSyncVaultState(adapter).vaultId, "");
   assert.equal(loadSyncVaultState(adapter).syncToken, "");
+});
+
+test("persists automatic sync preview state without passphrases or tokens", () => {
+  const adapter = createMemoryStorageAdapter();
+  const stored = persistAutoSyncState(
+    {
+      enabled: true,
+      accountId: "account-1",
+      vaultId: "vault-1",
+      deviceId: "browser-a",
+      lastRunAt: "2026-06-10T12:00:00Z",
+      lastResult: "Revision 3",
+      lastRevision: 3,
+      lastTrigger: "background",
+      lastBackupSignature: "account-1|2|snapshot-1",
+      intervalMinutes: 5,
+      syncToken: "sync-token-1",
+      passphrase: "correct horse battery staple"
+    },
+    adapter
+  );
+  const rawState = adapter.getItemSync(AUTO_SYNC_STATE_KEY);
+
+  assert.equal(stored.enabled, true);
+  assert.equal(stored.vaultId, "vault-1");
+  assert.equal(loadAutoSyncState(adapter).lastRevision, 3);
+  assert.doesNotMatch(rawState, /sync-token-1|correct horse battery staple/);
+  assert.equal(clearAutoSyncState(adapter).enabled, false);
+  assert.equal(loadAutoSyncState(adapter).vaultId, "");
+});
+
+test("checks automatic sync readiness and due timing", () => {
+  assert.equal(buildAutoSyncReadiness().ready, false);
+  assert.match(buildAutoSyncReadiness({ accountId: "account-1" }).reason, /passphrase/);
+  assert.match(
+    buildAutoSyncReadiness({
+      accountId: "account-1",
+      passphrase: "correct horse battery staple"
+    }).reason,
+    /vault ID/
+  );
+  assert.equal(
+    buildAutoSyncReadiness({
+      accountId: "account-1",
+      vaultId: "vault-1",
+      syncToken: "sync-token-1",
+      passphrase: "correct horse battery staple"
+    }).ready,
+    true
+  );
+
+  const baseState = {
+    enabled: true,
+    lastRunAt: "2026-06-10T12:00:00Z",
+    lastBackupSignature: "account-1|snapshot-a",
+    intervalMinutes: 15
+  };
+
+  assert.equal(
+    shouldRunAutoSync({
+      state: baseState,
+      currentBackupSignature: "account-1|snapshot-a",
+      now: Date.parse("2026-06-10T12:10:00Z")
+    }),
+    false
+  );
+  assert.equal(
+    shouldRunAutoSync({
+      state: baseState,
+      currentBackupSignature: "account-1|snapshot-a",
+      now: Date.parse("2026-06-10T12:15:00Z")
+    }),
+    true
+  );
+  assert.equal(
+    shouldRunAutoSync({
+      state: baseState,
+      currentBackupSignature: "account-1|snapshot-b",
+      now: Date.parse("2026-06-10T12:01:00Z")
+    }),
+    true
+  );
+  assert.equal(shouldRunAutoSync({ state: { ...baseState, enabled: false } }), false);
 });
 
 test("creates sync vaults without sending plaintext account data", async () => {
