@@ -206,8 +206,11 @@ Protocol Tracker → Diet upgrades → Native app.
       timestamp-only `nextReminderAfter` schedule, the backend tracks due
       stale-trend deliveries and last delivery status, and
       `backend/scripts/send_trend_push_reminders.py` can run from cron in
-      dry-run or VAPID-send mode without reading measurements. Native push
-      remains open.
+      dry-run or VAPID-send mode without reading measurements. **Native pass:**
+      Capacitor runtimes can register native push tokens through
+      `@capacitor/push-notifications`, store only the token envelope plus
+      timestamp-only `nextReminderAfter` schedule on the backend, and revoke by
+      token hash. APNs/FCM delivery worker configuration remains open.
 
 ## 5. Protocol Tracker ("Build Plan" button)
 
@@ -595,7 +598,9 @@ land. No social features, no marketplace.
 - [ ] HealthKit: weight read/write, measurement write, nutrition write;
       Google Fit / Health Connect equivalent on Android.
 - [ ] Push notifications (native), safe-area/status-bar/splash/icon polish,
-      haptics on check-in save.
+      haptics on check-in save. Native push token registration/revocation and
+      native check-in save haptics now exist; APNs/FCM delivery, safe-area,
+      status-bar, splash/icon polish remain.
 - [ ] Home-screen widget **(new)**: streak + next check-in date (also helps
       App Review minimum-functionality).
 - [ ] JS live updates (e.g. Capgo) so web and app don't drift between binary

@@ -1,5 +1,9 @@
+import { Capacitor } from "@capacitor/core";
+import { PushNotifications } from "@capacitor/push-notifications";
 import { readJsonSync, writeJsonSync } from "./storageAdapter.js";
+import { isNativeCapacitorRuntime } from "./storageAdapter.js";
 import {
+  NATIVE_PUSH_TOKENS_ENDPOINT,
   WEB_PUSH_CONFIG_ENDPOINT,
   WEB_PUSH_SUBSCRIPTIONS_ENDPOINT
 } from "../config.js";
@@ -18,7 +22,12 @@ export function defaultNotificationPreference() {
     remotePushStatus: "not-configured",
     remotePushEndpointHash: "",
     remotePushUpdatedAt: "",
-    remotePushNextReminderAfter: ""
+    remotePushNextReminderAfter: "",
+    nativePushStatus: "not-configured",
+    nativePushTokenHash: "",
+    nativePushPlatform: "",
+    nativePushUpdatedAt: "",
+    nativePushNextReminderAfter: ""
   };
 }
 
@@ -81,6 +90,39 @@ function userAgentFamily(navigatorRef = typeof navigator === "undefined" ? null 
     return "Safari";
   }
   return "Unknown";
+}
+
+const grantedNativePushPermissionStates = new Set(["granted"]);
+
+export function nativePushPlatform(capacitor = Capacitor) {
+  try {
+    const platform =
+      typeof capacitor?.getPlatform === "function" ? capacitor.getPlatform() : "";
+    return platform === "ios" || platform === "android" ? platform : "";
+  } catch (error) {
+    return "";
+  }
+}
+
+export function isNativePushRuntime({
+  capacitor = Capacitor,
+  pushNotifications = PushNotifications
+} = {}) {
+  return (
+    isNativeCapacitorRuntime(capacitor) &&
+    typeof pushNotifications?.register === "function"
+  );
+}
+
+export function trendPushStatusFromPreference(preference = loadNotificationPreference()) {
+  if (
+    preference.nativePushStatus &&
+    preference.nativePushStatus !== "not-configured"
+  ) {
+    return preference.nativePushStatus;
+  }
+
+  return preference.remotePushStatus;
 }
 
 function decodeBase64(value) {
@@ -205,6 +247,20 @@ function persistRemotePushStatus(status, adapter, details = {}) {
   );
 }
 
+function persistNativePushStatus(status, adapter, details = {}) {
+  return persistNotificationPreference(
+    {
+      ...loadNotificationPreference(adapter),
+      nativePushStatus: status,
+      nativePushTokenHash: details.tokenHash || "",
+      nativePushPlatform: details.platform || "",
+      nativePushUpdatedAt: details.now ? details.now.toISOString() : new Date().toISOString(),
+      nativePushNextReminderAfter: details.nextReminderAfter || ""
+    },
+    adapter
+  );
+}
+
 export function nextTrendReminderAfter(weeklyStreak = {}, now = new Date()) {
   if (weeklyStreak?.status === "needs-check-in") {
     return now.toISOString();
@@ -236,6 +292,321 @@ function webPushSubscriptionRequestBody({
   };
 }
 
+function nativePushTokenRequestBody({
+  token,
+  platform,
+  weeklyStreak,
+  now
+}) {
+  const reminderAfter = nextTrendReminderAfter(weeklyStreak, now);
+
+  return {
+    token,
+    platform,
+    context: "trend-stale",
+    createdAt: now.toISOString(),
+    nextReminderAfter: reminderAfter || null
+  };
+}
+
+async function ensureNativePushPermission(pushNotifications) {
+  const currentPermission =
+    typeof pushNotifications.checkPermissions === "function"
+      ? await pushNotifications.checkPermissions()
+      : { receive: "prompt" };
+
+  if (grantedNativePushPermissionStates.has(currentPermission?.receive)) {
+    return true;
+  }
+
+  if (typeof pushNotifications.requestPermissions !== "function") {
+    return false;
+  }
+
+  const requestedPermission = await pushNotifications.requestPermissions();
+  return grantedNativePushPermissionStates.has(requestedPermission?.receive);
+}
+
+async function removeNativeListener(handle) {
+  if (typeof handle?.remove === "function") {
+    await handle.remove();
+  }
+}
+
+async function registerNativePushToken(pushNotifications, timeoutMs = 10000) {
+  const listenerHandles = [];
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let timeoutId = null;
+
+    function settle(callback, value) {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      void Promise.all(listenerHandles.map(removeNativeListener));
+      callback(value);
+    }
+
+    async function register() {
+      if (typeof pushNotifications.addListener === "function") {
+        listenerHandles.push(
+          await pushNotifications.addListener("registration", (token) => {
+            const value = String(token?.value || "").trim();
+            if (value) {
+              settle(resolve, value);
+            } else {
+              settle(reject, new Error("Native push registration returned an empty token."));
+            }
+          })
+        );
+        listenerHandles.push(
+          await pushNotifications.addListener("registrationError", (error) => {
+            settle(
+              reject,
+              new Error(error?.error || "Native push registration failed.")
+            );
+          })
+        );
+      }
+
+      timeoutId = setTimeout(() => {
+        settle(reject, new Error("Native push registration timed out."));
+      }, timeoutMs);
+
+      await pushNotifications.register();
+    }
+
+    void register().catch((error) => settle(reject, error));
+  });
+}
+
+export async function subscribeNativeTrendPushNotifications({
+  adapter,
+  now = new Date(),
+  pushNotifications = PushNotifications,
+  capacitor = Capacitor,
+  fetcher = fetchApi(),
+  weeklyStreak = null,
+  subscriptionsEndpoint = NATIVE_PUSH_TOKENS_ENDPOINT,
+  registrationTimeoutMs = 10000
+} = {}) {
+  if (!isNativePushRuntime({ capacitor, pushNotifications }) || !fetcher) {
+    const preference = persistNativePushStatus("unsupported", adapter, { now });
+    return {
+      subscribed: false,
+      native: true,
+      reason: "unsupported",
+      preference
+    };
+  }
+
+  try {
+    const permissionGranted = await ensureNativePushPermission(pushNotifications);
+    if (!permissionGranted) {
+      const preference = persistNativePushStatus("permission-required", adapter, { now });
+      return {
+        subscribed: false,
+        native: true,
+        reason: "permission-required",
+        preference
+      };
+    }
+
+    const token = await registerNativePushToken(pushNotifications, registrationTimeoutMs);
+    const platform = nativePushPlatform(capacitor);
+    if (!platform) {
+      const preference = persistNativePushStatus("unsupported", adapter, { now });
+      return {
+        subscribed: false,
+        native: true,
+        reason: "unsupported",
+        preference
+      };
+    }
+
+    const requestBody = nativePushTokenRequestBody({
+      token,
+      platform,
+      weeklyStreak,
+      now
+    });
+    const response = await fetcher(subscriptionsEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Native push subscribe failed: ${response.status}`);
+    }
+
+    const body = await response.json();
+    const preference = persistNativePushStatus("subscribed", adapter, {
+      tokenHash: body.tokenHash,
+      platform,
+      now,
+      nextReminderAfter: body.nextReminderAfter || requestBody.nextReminderAfter || ""
+    });
+
+    return {
+      subscribed: true,
+      native: true,
+      tokenHash: body.tokenHash,
+      platform,
+      deliveryConfigured: Boolean(body.deliveryConfigured),
+      nextReminderAfter: body.nextReminderAfter || requestBody.nextReminderAfter || "",
+      preference
+    };
+  } catch (error) {
+    const preference = persistNativePushStatus("failed", adapter, { now });
+    return {
+      subscribed: false,
+      native: true,
+      reason: "failed",
+      preference
+    };
+  }
+}
+
+export async function syncNativeTrendPushReminderSchedule({
+  adapter,
+  now = new Date(),
+  weeklyStreak = null,
+  pushNotifications = PushNotifications,
+  capacitor = Capacitor,
+  fetcher = fetchApi(),
+  subscriptionsEndpoint = NATIVE_PUSH_TOKENS_ENDPOINT,
+  registrationTimeoutMs = 10000
+} = {}) {
+  const currentPreference = loadNotificationPreference(adapter);
+  if (currentPreference.nativePushStatus !== "subscribed") {
+    return {
+      synced: false,
+      native: true,
+      reason: "not-subscribed",
+      preference: currentPreference
+    };
+  }
+
+  if (!isNativePushRuntime({ capacitor, pushNotifications }) || !fetcher) {
+    return {
+      synced: false,
+      native: true,
+      reason: "unsupported",
+      preference: currentPreference
+    };
+  }
+
+  try {
+    const token = await registerNativePushToken(pushNotifications, registrationTimeoutMs);
+    const platform = nativePushPlatform(capacitor);
+    if (!platform) {
+      return {
+        synced: false,
+        native: true,
+        reason: "unsupported",
+        preference: currentPreference
+      };
+    }
+    const requestBody = nativePushTokenRequestBody({
+      token,
+      platform,
+      weeklyStreak,
+      now
+    });
+    const response = await fetcher(subscriptionsEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Native push schedule sync failed: ${response.status}`);
+    }
+
+    const body = await response.json();
+    const preference = persistNativePushStatus("subscribed", adapter, {
+      tokenHash: body.tokenHash || currentPreference.nativePushTokenHash,
+      platform,
+      now,
+      nextReminderAfter: body.nextReminderAfter || requestBody.nextReminderAfter || ""
+    });
+
+    return {
+      synced: true,
+      native: true,
+      tokenHash: body.tokenHash || currentPreference.nativePushTokenHash,
+      nextReminderAfter: body.nextReminderAfter || requestBody.nextReminderAfter || "",
+      preference
+    };
+  } catch (error) {
+    return {
+      synced: false,
+      native: true,
+      reason: "failed",
+      preference: currentPreference
+    };
+  }
+}
+
+export async function unsubscribeNativeTrendPushNotifications({
+  adapter,
+  now = new Date(),
+  pushNotifications = PushNotifications,
+  capacitor = Capacitor,
+  fetcher = fetchApi(),
+  subscriptionsEndpoint = NATIVE_PUSH_TOKENS_ENDPOINT
+} = {}) {
+  const currentPreference = loadNotificationPreference(adapter);
+
+  try {
+    if (
+      isNativePushRuntime({ capacitor, pushNotifications }) &&
+      typeof pushNotifications.unregister === "function"
+    ) {
+      await pushNotifications.unregister();
+    }
+
+    if (currentPreference.nativePushTokenHash && fetcher) {
+      await fetcher(`${subscriptionsEndpoint}/unsubscribe`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          tokenHash: currentPreference.nativePushTokenHash,
+          createdAt: now.toISOString()
+        })
+      });
+    }
+
+    const preference = persistNativePushStatus("unsubscribed", adapter, { now });
+    return {
+      unsubscribed: true,
+      native: true,
+      preference
+    };
+  } catch (error) {
+    const preference = persistNativePushStatus("failed", adapter, { now });
+    return {
+      unsubscribed: false,
+      native: true,
+      reason: "failed",
+      preference
+    };
+  }
+}
+
 export async function subscribeTrendPushNotifications({
   adapter,
   now = new Date(),
@@ -246,8 +617,25 @@ export async function subscribeTrendPushNotifications({
   weeklyStreak = null,
   workerUrl = TREND_NOTIFICATION_WORKER_URL,
   configEndpoint = WEB_PUSH_CONFIG_ENDPOINT,
-  subscriptionsEndpoint = WEB_PUSH_SUBSCRIPTIONS_ENDPOINT
+  subscriptionsEndpoint = WEB_PUSH_SUBSCRIPTIONS_ENDPOINT,
+  pushNotifications = PushNotifications,
+  capacitor = Capacitor,
+  nativeSubscriptionsEndpoint = NATIVE_PUSH_TOKENS_ENDPOINT,
+  registrationTimeoutMs = 10000
 } = {}) {
+  if (isNativePushRuntime({ capacitor, pushNotifications })) {
+    return subscribeNativeTrendPushNotifications({
+      adapter,
+      now,
+      pushNotifications,
+      capacitor,
+      fetcher,
+      weeklyStreak,
+      subscriptionsEndpoint: nativeSubscriptionsEndpoint,
+      registrationTimeoutMs
+    });
+  }
+
   if (api?.permission !== "granted") {
     const preference = persistRemotePushStatus("permission-required", adapter, { now });
     return {
@@ -349,9 +737,26 @@ export async function syncTrendPushReminderSchedule({
   fetcher = fetchApi(),
   navigatorRef = typeof navigator === "undefined" ? null : navigator,
   workerUrl = TREND_NOTIFICATION_WORKER_URL,
-  subscriptionsEndpoint = WEB_PUSH_SUBSCRIPTIONS_ENDPOINT
+  subscriptionsEndpoint = WEB_PUSH_SUBSCRIPTIONS_ENDPOINT,
+  pushNotifications = PushNotifications,
+  capacitor = Capacitor,
+  nativeSubscriptionsEndpoint = NATIVE_PUSH_TOKENS_ENDPOINT,
+  registrationTimeoutMs = 10000
 } = {}) {
   const currentPreference = loadNotificationPreference(adapter);
+  if (currentPreference.nativePushStatus === "subscribed") {
+    return syncNativeTrendPushReminderSchedule({
+      adapter,
+      now,
+      weeklyStreak,
+      pushNotifications,
+      capacitor,
+      fetcher,
+      subscriptionsEndpoint: nativeSubscriptionsEndpoint,
+      registrationTimeoutMs
+    });
+  }
+
   if (currentPreference.remotePushStatus !== "subscribed") {
     return {
       synced: false,
@@ -427,8 +832,23 @@ export async function unsubscribeTrendPushNotifications({
   now = new Date(),
   serviceWorker = serviceWorkerApi(),
   fetcher = fetchApi(),
-  subscriptionsEndpoint = WEB_PUSH_SUBSCRIPTIONS_ENDPOINT
+  subscriptionsEndpoint = WEB_PUSH_SUBSCRIPTIONS_ENDPOINT,
+  pushNotifications = PushNotifications,
+  capacitor = Capacitor,
+  nativeSubscriptionsEndpoint = NATIVE_PUSH_TOKENS_ENDPOINT
 } = {}) {
+  const currentPreference = loadNotificationPreference(adapter);
+  if (currentPreference.nativePushStatus === "subscribed") {
+    return unsubscribeNativeTrendPushNotifications({
+      adapter,
+      now,
+      pushNotifications,
+      capacitor,
+      fetcher,
+      subscriptionsEndpoint: nativeSubscriptionsEndpoint
+    });
+  }
+
   try {
     const registration =
       serviceWorker?.ready && typeof serviceWorker.ready.then === "function"

@@ -660,6 +660,76 @@ class WebPushConfigResponse(BaseModel):
     reason: str = ""
 
 
+class NativePushTokenRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    token: str = Field(min_length=16, max_length=4096)
+    platform: Literal["ios", "android"]
+    context: Literal["trend-stale"] = "trend-stale"
+    createdAt: str = Field(min_length=1, max_length=40)
+    nextReminderAfter: str | None = Field(default=None, max_length=40)
+
+    @field_validator("token")
+    @classmethod
+    def require_supported_token(cls, value: str) -> str:
+        if not re.fullmatch(r"[A-Za-z0-9._:-]+", value):
+            raise ValueError("Native push token contains unsupported characters.")
+        return value
+
+    @field_validator("createdAt", "nextReminderAfter")
+    @classmethod
+    def require_isoish_timestamp(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        try:
+            datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("Native push timestamps must be ISO-8601 strings.") from error
+        return value
+
+
+class NativePushUnsubscribeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    token: str | None = Field(default=None, min_length=16, max_length=4096)
+    tokenHash: str | None = Field(default=None, min_length=64, max_length=64, pattern=r"^[a-f0-9]+$")
+    createdAt: str = Field(min_length=1, max_length=40)
+
+    @field_validator("token")
+    @classmethod
+    def require_supported_token(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        return NativePushTokenRequest.require_supported_token(value)
+
+    @field_validator("createdAt")
+    @classmethod
+    def require_isoish_timestamp(cls, value: str) -> str:
+        return NativePushTokenRequest.require_isoish_timestamp(value) or value
+
+    @field_validator("tokenHash")
+    @classmethod
+    def require_token_or_hash(cls, value: str | None) -> str | None:
+        return value
+
+    def model_post_init(self, __context: object) -> None:
+        if not self.token and not self.tokenHash:
+            raise ValueError("Native push unsubscribe needs a token or token hash.")
+
+
+class NativePushTokenResponse(BaseModel):
+    status: str = "accepted"
+    stored: bool = True
+    tokenHash: str
+    deliveryConfigured: bool = False
+    nextReminderAfter: str | None = None
+
+
+class NativePushUnsubscribeResponse(BaseModel):
+    status: str = "revoked"
+    revoked: bool = True
+
+
 class EncryptedSyncBlob(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

@@ -23,10 +23,11 @@ from app.data.planning import (
 from app.data.procedures import PROCEDURE_LIBRARY
 from app.data.reference import REFERENCE_DATA
 from app.data.strategy_corpus import STRATEGY_CORPUS
-from app.main import allowed_cors_origins, app, web_push_config_payload
+from app.main import allowed_cors_origins, app, native_push_delivery_configured, web_push_config_payload
 from app.measurement_schema import measurement_field_names
 from app.repositories import (
     ClientErrorRepository,
+    NativePushTokenRepository,
     ProductAnalyticsRepository,
     WebPushSubscriptionRepository,
     load_target_seed,
@@ -666,6 +667,75 @@ def test_web_push_delivery_payload_stays_non_personal() -> None:
     assert "measurements" not in payload
     assert "weight" not in payload
     assert "waist" not in payload
+
+
+def native_push_token_payload(token: str = "ios-native-token-abcdefghijklmnopqrstuvwxyz123") -> dict:
+    return {
+        "token": token,
+        "platform": "ios",
+        "context": "trend-stale",
+        "createdAt": "2026-06-10T12:00:00.000Z",
+        "nextReminderAfter": "2026-06-20T12:00:00.000Z",
+    }
+
+
+def test_native_push_token_endpoint_stores_minimal_device_envelope(monkeypatch) -> None:
+    monkeypatch.delenv("BODYMOD_APNS_KEY_ID", raising=False)
+    monkeypatch.delenv("BODYMOD_APNS_TEAM_ID", raising=False)
+    monkeypatch.delenv("BODYMOD_APNS_BUNDLE_ID", raising=False)
+    monkeypatch.delenv("BODYMOD_APNS_AUTH_KEY", raising=False)
+
+    token = "ios-native-token-api-abcdefghijklmnopqrstuvwxyz123"
+    response = client.post("/api/native-push/tokens", json=native_push_token_payload(token))
+
+    assert response.status_code == 202
+    payload = response.json()
+    assert payload["status"] == "accepted"
+    assert payload["stored"] is True
+    assert payload["tokenHash"]
+    assert payload["deliveryConfigured"] is False
+    assert payload["nextReminderAfter"] == "2026-06-20T12:00:00+00:00"
+
+    tokens = [
+        item
+        for item in NativePushTokenRepository().list_token_dicts()
+        if item["tokenHash"] == payload["tokenHash"]
+    ]
+    assert len(tokens) == 1
+    assert tokens[0]["platform"] == "ios"
+    assert tokens[0]["context"] == "trend-stale"
+    assert tokens[0]["nextReminderAfter"] == "2026-06-20T12:00:00+00:00"
+    assert tokens[0]["token"] == token
+    assert "measurements" not in tokens[0]
+
+    revoked = client.post(
+        "/api/native-push/tokens/unsubscribe",
+        json={"tokenHash": payload["tokenHash"], "createdAt": "2026-06-10T13:00:00.000Z"},
+    )
+
+    assert revoked.status_code == 200
+    assert revoked.json() == {"status": "revoked", "revoked": True}
+
+
+def test_native_push_token_rejects_measurement_or_unsafe_payloads(monkeypatch) -> None:
+    payload = native_push_token_payload("android-native-token-abcdefghijklmnopqrstuvwxyz123")
+    payload["platform"] = "android"
+    payload["measurements"] = TARGETS[0]["measurements"]
+
+    extra_field = client.post("/api/native-push/tokens", json=payload)
+    assert extra_field.status_code == 422
+
+    unsafe_token = native_push_token_payload("https://push.example.test/token")
+    unsafe_response = client.post("/api/native-push/tokens", json=unsafe_token)
+    assert unsafe_response.status_code == 422
+
+    bad_schedule = native_push_token_payload("ios-native-token-bad-schedule-abcdefghijklmnopqrstuvwxyz")
+    bad_schedule["nextReminderAfter"] = "not-a-date"
+    schedule_response = client.post("/api/native-push/tokens", json=bad_schedule)
+    assert schedule_response.status_code == 422
+
+    monkeypatch.setenv("BODYMOD_FCM_SERVER_KEY", "fcm-test-key")
+    assert native_push_delivery_configured("android") is True
 
 
 def encrypted_sync_blob(ciphertext: str = "QUJDREVGR0hJSktMTU5PUA==") -> dict:

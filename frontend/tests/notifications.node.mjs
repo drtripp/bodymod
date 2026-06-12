@@ -5,13 +5,16 @@ import {
   fetchWebPushConfig,
   loadNotificationPreference,
   nextTrendReminderAfter,
+  persistNotificationPreference,
   recordTrendReminderSent,
   registerTrendNotificationWorker,
   requestTrendNotificationPermission,
   sendTrendReminderNotificationIfDue,
   shouldSendTrendReminder,
+  subscribeNativeTrendPushNotifications,
   syncTrendPushReminderSchedule,
   subscribeTrendPushNotifications,
+  trendPushStatusFromPreference,
   unsubscribeTrendPushNotifications,
   urlBase64ToUint8Array
 } from "../src/lib/notifications.js";
@@ -364,6 +367,190 @@ test("subscribes remote web push only after notification permission is granted",
     loadNotificationPreference(adapter).remotePushNextReminderAfter,
     "2026-06-20T12:00:00.000Z"
   );
+});
+
+function createNativeCapacitor(platform = "ios") {
+  return {
+    isNativePlatform() {
+      return true;
+    },
+    getPlatform() {
+      return platform;
+    }
+  };
+}
+
+function createNativePushPlugin({
+  token = "ios-native-token-abcdefghijklmnopqrstuvwxyz123",
+  permission = "prompt"
+} = {}) {
+  const calls = [];
+  const listeners = {};
+  const plugin = {
+    async checkPermissions() {
+      calls.push("checkPermissions");
+      return { receive: permission };
+    },
+    async requestPermissions() {
+      calls.push("requestPermissions");
+      return { receive: "granted" };
+    },
+    async addListener(eventName, listener) {
+      calls.push(["addListener", eventName]);
+      listeners[eventName] = listener;
+      return {
+        async remove() {
+          calls.push(["remove", eventName]);
+        }
+      };
+    },
+    async register() {
+      calls.push("register");
+      listeners.registration({ value: token });
+    },
+    async unregister() {
+      calls.push("unregister");
+    }
+  };
+
+  return { calls, plugin };
+}
+
+test("subscribes native push tokens inside Capacitor without measurement data", async () => {
+  const adapter = createMemoryStorageAdapter();
+  const { calls, plugin } = createNativePushPlugin();
+  const fetchCalls = [];
+
+  const result = await subscribeTrendPushNotifications({
+    adapter,
+    capacitor: createNativeCapacitor("ios"),
+    pushNotifications: plugin,
+    nativeSubscriptionsEndpoint: "/native-push-tokens",
+    weeklyStreak: {
+      status: "current",
+      graceEndsAt: "2026-06-20T12:00:00.000Z"
+    },
+    now: new Date("2026-06-10T12:30:00Z"),
+    async fetcher(endpoint, options = {}) {
+      fetchCalls.push({ endpoint, options });
+      return {
+        ok: true,
+        async json() {
+          return {
+            status: "accepted",
+            stored: true,
+            tokenHash: "nativehash123",
+            deliveryConfigured: false,
+            nextReminderAfter: "2026-06-20T12:00:00.000Z"
+          };
+        }
+      };
+    }
+  });
+
+  const posted = JSON.parse(fetchCalls[0].options.body);
+  const preference = loadNotificationPreference(adapter);
+  assert.equal(result.subscribed, true);
+  assert.equal(result.native, true);
+  assert.equal(result.tokenHash, "nativehash123");
+  assert.equal(preference.nativePushStatus, "subscribed");
+  assert.equal(trendPushStatusFromPreference(preference), "subscribed");
+  assert.equal(preference.nativePushTokenHash, "nativehash123");
+  assert.deepEqual(calls.slice(0, 4), [
+    "checkPermissions",
+    "requestPermissions",
+    ["addListener", "registration"],
+    ["addListener", "registrationError"]
+  ]);
+  assert.equal(calls.includes("register"), true);
+  assert.equal(fetchCalls[0].endpoint, "/native-push-tokens");
+  assert.equal(posted.platform, "ios");
+  assert.equal(posted.context, "trend-stale");
+  assert.equal(posted.nextReminderAfter, "2026-06-20T12:00:00.000Z");
+  assert.equal(posted.token, "ios-native-token-abcdefghijklmnopqrstuvwxyz123");
+  assert.equal(String(fetchCalls[0].options.body).includes("measurements"), false);
+});
+
+test("syncs native push reminder schedule and unsubscribes by token hash", async () => {
+  const adapter = createMemoryStorageAdapter();
+  persistNotificationPreference(
+    {
+      permission: "granted",
+      nativePushStatus: "subscribed",
+      nativePushTokenHash: "existing-native-hash",
+      nativePushPlatform: "android"
+    },
+    adapter
+  );
+  const { calls, plugin } = createNativePushPlugin({
+    token: "android-native-token-abcdefghijklmnopqrstuvwxyz123",
+    permission: "granted"
+  });
+  const fetchCalls = [];
+
+  const syncResult = await syncTrendPushReminderSchedule({
+    adapter,
+    capacitor: createNativeCapacitor("android"),
+    pushNotifications: plugin,
+    nativeSubscriptionsEndpoint: "/native-push-tokens",
+    weeklyStreak: { status: "needs-check-in" },
+    now: new Date("2026-06-11T12:00:00Z"),
+    async fetcher(endpoint, options = {}) {
+      fetchCalls.push({ endpoint, options });
+      return {
+        ok: true,
+        async json() {
+          return {
+            status: "accepted",
+            stored: true,
+            tokenHash: "synced-native-hash",
+            nextReminderAfter: "2026-06-11T12:00:00.000Z"
+          };
+        }
+      };
+    }
+  });
+
+  const syncPosted = JSON.parse(fetchCalls[0].options.body);
+  assert.equal(syncResult.synced, true);
+  assert.equal(syncResult.native, true);
+  assert.equal(syncPosted.platform, "android");
+  assert.equal(syncPosted.nextReminderAfter, "2026-06-11T12:00:00.000Z");
+  assert.equal(String(fetchCalls[0].options.body).includes("measurements"), false);
+  assert.equal(loadNotificationPreference(adapter).nativePushTokenHash, "synced-native-hash");
+
+  const unsubscribeResult = await unsubscribeTrendPushNotifications({
+    adapter,
+    capacitor: createNativeCapacitor("android"),
+    pushNotifications: plugin,
+    nativeSubscriptionsEndpoint: "/native-push-tokens",
+    async fetcher(endpoint, options = {}) {
+      fetchCalls.push({ endpoint, options });
+      return {
+        ok: true,
+        async json() {
+          return { status: "revoked", revoked: true };
+        }
+      };
+    },
+    now: new Date("2026-06-11T13:00:00Z")
+  });
+
+  const unsubscribePosted = JSON.parse(fetchCalls[1].options.body);
+  assert.equal(unsubscribeResult.unsubscribed, true);
+  assert.equal(unsubscribeResult.native, true);
+  assert.equal(calls.includes("unregister"), true);
+  assert.equal(fetchCalls[1].endpoint, "/native-push-tokens/unsubscribe");
+  assert.equal(unsubscribePosted.tokenHash, "synced-native-hash");
+  assert.equal(loadNotificationPreference(adapter).nativePushStatus, "unsubscribed");
+
+  const unsupported = await subscribeNativeTrendPushNotifications({
+    adapter: createMemoryStorageAdapter(),
+    capacitor: { isNativePlatform: () => false },
+    pushNotifications: {},
+    fetcher: async () => ({ ok: true })
+  });
+  assert.equal(unsupported.reason, "unsupported");
 });
 
 test("syncs remote web push reminder schedule without measurement data", async () => {

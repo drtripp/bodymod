@@ -188,6 +188,10 @@ def hash_web_push_endpoint(endpoint: str) -> str:
     return hashlib.sha256(endpoint.encode("utf-8")).hexdigest()
 
 
+def hash_native_push_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
 def hash_sync_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
@@ -928,4 +932,241 @@ class WebPushSubscriptionRepository:
             if column not in columns:
                 connection.execute(
                     f"ALTER TABLE web_push_subscriptions ADD COLUMN {column} {definition}"
+                )
+
+
+class NativePushTokenRepository:
+    def __init__(self, db_path: Path | str | None = None) -> None:
+        self.db_path = Path(db_path) if db_path is not None else configured_database_path()
+
+    def upsert_token(
+        self,
+        token: str,
+        platform: str,
+        context: str,
+        created_at: str,
+        next_reminder_after: str | None = None,
+    ) -> dict[str, Any]:
+        token_hash = hash_native_push_token(token)
+        timestamp = utc_timestamp()
+        normalized_next_reminder_after = normalize_iso_timestamp(next_reminder_after)
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            with connection:
+                connection.execute(
+                    """
+                    INSERT INTO native_push_tokens (
+                        token_hash,
+                        platform,
+                        context,
+                        token,
+                        app_created_at,
+                        next_reminder_after,
+                        created_at,
+                        updated_at,
+                        revoked_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)
+                    ON CONFLICT(token_hash) DO UPDATE SET
+                        platform = excluded.platform,
+                        context = excluded.context,
+                        token = excluded.token,
+                        app_created_at = excluded.app_created_at,
+                        next_reminder_after = excluded.next_reminder_after,
+                        updated_at = excluded.updated_at,
+                        revoked_at = NULL
+                    """,
+                    (
+                        token_hash,
+                        platform,
+                        context,
+                        token,
+                        created_at,
+                        normalized_next_reminder_after,
+                        timestamp,
+                        timestamp,
+                    ),
+                )
+
+        return {
+            "status": "accepted",
+            "stored": True,
+            "tokenHash": token_hash,
+            "nextReminderAfter": normalized_next_reminder_after,
+        }
+
+    def revoke_token(self, token: str | None = None, token_hash: str | None = None) -> dict[str, Any]:
+        resolved_token_hash = token_hash or (hash_native_push_token(token) if token else "")
+        timestamp = utc_timestamp()
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            with connection:
+                cursor = connection.execute(
+                    """
+                    UPDATE native_push_tokens
+                    SET revoked_at = ?, updated_at = ?
+                    WHERE token_hash = ? AND revoked_at IS NULL
+                    """,
+                    (timestamp, timestamp, resolved_token_hash),
+                )
+
+        return {"status": "revoked", "revoked": cursor.rowcount > 0}
+
+    def list_token_dicts(self, include_revoked: bool = False) -> list[dict[str, Any]]:
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            where_clause = "" if include_revoked else "WHERE revoked_at IS NULL"
+            rows = connection.execute(
+                f"""
+                SELECT token_hash, platform, context, token, app_created_at,
+                       next_reminder_after, last_delivery_attempt_at,
+                       last_delivered_at, last_delivery_status, last_delivery_error,
+                       created_at, updated_at, revoked_at
+                FROM native_push_tokens
+                {where_clause}
+                ORDER BY updated_at ASC, token_hash ASC
+                """
+            ).fetchall()
+
+        return [
+            {
+                "tokenHash": row["token_hash"],
+                "platform": row["platform"],
+                "context": row["context"],
+                "token": row["token"],
+                "appCreatedAt": row["app_created_at"],
+                "nextReminderAfter": row["next_reminder_after"],
+                "lastDeliveryAttemptAt": row["last_delivery_attempt_at"],
+                "lastDeliveredAt": row["last_delivered_at"],
+                "lastDeliveryStatus": row["last_delivery_status"],
+                "lastDeliveryError": row["last_delivery_error"],
+                "createdAt": row["created_at"],
+                "updatedAt": row["updated_at"],
+                "revokedAt": row["revoked_at"],
+            }
+            for row in rows
+        ]
+
+    def list_due_trend_reminder_dicts(
+        self,
+        now: str | datetime | None = None,
+        limit: int = 100,
+        delivery_cooldown_hours: int = 24,
+    ) -> list[dict[str, Any]]:
+        reference = parse_iso_timestamp(normalize_iso_timestamp(now) or utc_timestamp())
+        cooldown_after = reference - timedelta(hours=delivery_cooldown_hours)
+        due_tokens: list[dict[str, Any]] = []
+
+        for token in self.list_token_dicts():
+            if token["context"] != "trend-stale" or not token["nextReminderAfter"]:
+                continue
+
+            reminder_after = parse_iso_timestamp(token["nextReminderAfter"])
+            if not reminder_after or reminder_after > reference:
+                continue
+
+            last_attempt = parse_iso_timestamp(token["lastDeliveryAttemptAt"])
+            if last_attempt and last_attempt > cooldown_after:
+                continue
+
+            due_tokens.append(token)
+
+        return sorted(
+            due_tokens,
+            key=lambda item: (item["nextReminderAfter"], item["tokenHash"]),
+        )[:limit]
+
+    def record_delivery_attempt(
+        self,
+        token_hash: str,
+        status: str,
+        attempted_at: str | datetime | None = None,
+        error: str = "",
+        next_reminder_after: str | datetime | None = None,
+    ) -> dict[str, Any]:
+        if status not in {"sent", "failed"}:
+            raise ValueError("Native push delivery status must be sent or failed.")
+
+        normalized_attempted_at = normalize_iso_timestamp(attempted_at or utc_timestamp())
+        attempted_datetime = parse_iso_timestamp(normalized_attempted_at)
+        normalized_next_reminder_after = normalize_iso_timestamp(
+            next_reminder_after or (attempted_datetime + timedelta(hours=24))
+        )
+        truncated_error = error[:240]
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            with connection:
+                cursor = connection.execute(
+                    """
+                    UPDATE native_push_tokens
+                    SET last_delivery_attempt_at = ?,
+                        last_delivered_at = CASE WHEN ? = 'sent' THEN ? ELSE last_delivered_at END,
+                        last_delivery_status = ?,
+                        last_delivery_error = ?,
+                        next_reminder_after = ?,
+                        updated_at = ?
+                    WHERE token_hash = ? AND revoked_at IS NULL
+                    """,
+                    (
+                        normalized_attempted_at,
+                        status,
+                        normalized_attempted_at,
+                        status,
+                        truncated_error,
+                        normalized_next_reminder_after,
+                        normalized_attempted_at,
+                        token_hash,
+                    ),
+                )
+
+        return {
+            "status": status,
+            "recorded": cursor.rowcount > 0,
+            "nextReminderAfter": normalized_next_reminder_after,
+        }
+
+    def _connect(self) -> sqlite3.Connection:
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        connection = sqlite3.connect(self.db_path)
+        connection.row_factory = sqlite3.Row
+        return connection
+
+    def _ensure_schema(self, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS native_push_tokens (
+                token_hash TEXT PRIMARY KEY,
+                platform TEXT NOT NULL,
+                context TEXT NOT NULL,
+                token TEXT NOT NULL,
+                app_created_at TEXT NOT NULL,
+                next_reminder_after TEXT,
+                last_delivery_attempt_at TEXT,
+                last_delivered_at TEXT,
+                last_delivery_status TEXT,
+                last_delivery_error TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                revoked_at TEXT
+            )
+            """
+        )
+        columns = {
+            row["name"]
+            for row in connection.execute("PRAGMA table_info(native_push_tokens)").fetchall()
+        }
+        migrations = {
+            "next_reminder_after": "TEXT",
+            "last_delivery_attempt_at": "TEXT",
+            "last_delivered_at": "TEXT",
+            "last_delivery_status": "TEXT",
+            "last_delivery_error": "TEXT",
+        }
+        for column, definition in migrations.items():
+            if column not in columns:
+                connection.execute(
+                    f"ALTER TABLE native_push_tokens ADD COLUMN {column} {definition}"
                 )

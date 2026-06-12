@@ -2,6 +2,7 @@ import sqlite3
 
 from app.models import EncryptedSyncBlob, TargetProfile, WebPushSubscriptionPayload
 from app.repositories import (
+    NativePushTokenRepository,
     SyncConflictError,
     SyncVaultRepository,
     TargetRepository,
@@ -117,6 +118,75 @@ def test_web_push_repository_tracks_due_reminder_delivery(tmp_path) -> None:
 
     recorded = repository.record_delivery_attempt(
         stored["endpointHash"],
+        "sent",
+        attempted_at="2026-06-12T12:05:00Z",
+    )
+    cooled_down = repository.list_due_trend_reminder_dicts(now="2026-06-12T18:05:00Z")
+    next_day = repository.list_due_trend_reminder_dicts(now="2026-06-13T12:06:00Z")
+
+    assert recorded["recorded"] is True
+    assert recorded["nextReminderAfter"] == "2026-06-13T12:05:00+00:00"
+    assert cooled_down == []
+    assert len(next_day) == 1
+    assert next_day[0]["lastDeliveryStatus"] == "sent"
+
+
+def test_native_push_token_repository_upserts_and_revokes(tmp_path) -> None:
+    db_path = tmp_path / "bodymod.sqlite3"
+    repository = NativePushTokenRepository(db_path=db_path)
+    token = "ios-native-token-repository-abcdefghijklmnopqrstuvwxyz123"
+
+    first = repository.upsert_token(
+        token,
+        "ios",
+        "trend-stale",
+        "2026-06-10T12:00:00.000Z",
+        "2026-06-20T12:00:00.000Z",
+    )
+    second = repository.upsert_token(
+        token,
+        "ios",
+        "trend-stale",
+        "2026-06-10T12:05:00.000Z",
+        "2026-06-21T12:00:00.000Z",
+    )
+
+    assert first["tokenHash"] == second["tokenHash"]
+    assert first["tokenHash"] != token
+    stored = repository.list_token_dicts()
+    assert len(stored) == 1
+    assert stored[0]["platform"] == "ios"
+    assert stored[0]["nextReminderAfter"] == "2026-06-21T12:00:00+00:00"
+    assert stored[0]["token"] == token
+
+    revoked = repository.revoke_token(token_hash=first["tokenHash"])
+
+    assert revoked == {"status": "revoked", "revoked": True}
+    assert repository.list_token_dicts() == []
+    assert repository.list_token_dicts(include_revoked=True)[0]["revokedAt"]
+
+
+def test_native_push_repository_tracks_due_reminder_delivery(tmp_path) -> None:
+    db_path = tmp_path / "bodymod.sqlite3"
+    repository = NativePushTokenRepository(db_path=db_path)
+    stored = repository.upsert_token(
+        "android-native-token-repository-abcdefghijklmnopqrstuvwxyz123",
+        "android",
+        "trend-stale",
+        "2026-06-10T12:00:00.000Z",
+        "2026-06-12T12:00:00.000Z",
+    )
+
+    early = repository.list_due_trend_reminder_dicts(now="2026-06-12T11:59:00Z")
+    due = repository.list_due_trend_reminder_dicts(now="2026-06-12T12:01:00Z")
+
+    assert early == []
+    assert len(due) == 1
+    assert due[0]["tokenHash"] == stored["tokenHash"]
+    assert "measurements" not in due[0]
+
+    recorded = repository.record_delivery_attempt(
+        stored["tokenHash"],
         "sent",
         attempted_at="2026-06-12T12:05:00Z",
     )

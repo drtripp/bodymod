@@ -23,6 +23,10 @@ export const WEB_PUSH_SUBSCRIPTIONS_ENDPOINT =
   import.meta.env?.VITE_WEB_PUSH_SUBSCRIPTIONS_ENDPOINT ||
   `${API_BASE_URL}/api/web-push/subscriptions`;
 
+export const NATIVE_PUSH_TOKENS_ENDPOINT =
+  import.meta.env?.VITE_NATIVE_PUSH_TOKENS_ENDPOINT ||
+  `${API_BASE_URL}/api/native-push/tokens`;
+
 export const SYNC_VAULTS_ENDPOINT =
   import.meta.env?.VITE_SYNC_VAULTS_ENDPOINT ||
   `${API_BASE_URL}/api/sync-vaults`;

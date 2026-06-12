@@ -29,6 +29,7 @@
     "test:photos": "node --test tests/photos.node.mjs",
     "test:onboarding": "node --test tests/onboarding.node.mjs",
     "test:notifications": "node --test tests/notifications.node.mjs",
+    "test:haptics": "node --test tests/haptics.node.mjs",
     "test:share-dashboard": "node --test tests/shareDashboard.node.mjs",
     "test:storage": "node --test tests/storageAdapter.node.mjs",
     "test:theme": "node --test tests/theme.node.mjs",
@@ -58,7 +59,9 @@
     "@capacitor-mlkit/barcode-scanning": "^8.1.0",
     "@capacitor/core": "^8.4.0",
     "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/haptics": "^8.0.2",
     "@capacitor/preferences": "^8.0.1",
+    "@capacitor/push-notifications": "^8.1.1",
     "@mediapipe/tasks-vision": "^0.10.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

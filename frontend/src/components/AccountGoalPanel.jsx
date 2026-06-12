@@ -189,8 +189,10 @@ import {
   sendTrendReminderNotificationIfDue,
   syncTrendPushReminderSchedule,
   subscribeTrendPushNotifications,
+  trendPushStatusFromPreference,
   unsubscribeTrendPushNotifications
 } from "../lib/notifications";
+import { notifyCheckInSaved } from "../lib/haptics";
 import {
   buildShareDashboardPayload,
   clearShareDashboardState,
@@ -227,21 +229,21 @@ function formatSignedDelta(value) {
 function remotePushStatusLabel(status) {
   switch (status) {
     case "subscribed":
-      return "Remote stale-trend reminders are subscribed for this browser.";
+      return "Remote stale-trend reminders are subscribed for this device.";
     case "permission-required":
       return "Save Snapshot #1 and allow notifications before remote reminders can subscribe.";
     case "not-configured":
-      return "Remote web push is not configured on this backend yet.";
+      return "Remote push delivery is not configured on this backend yet.";
     case "unsupported":
-      return "Remote web push is not supported in this browser.";
+      return "Remote push is not supported in this environment.";
     case "unsubscribed":
-      return "Remote stale-trend reminders are unsubscribed for this browser.";
+      return "Remote stale-trend reminders are unsubscribed for this device.";
     case "failed":
-      return "Remote reminder setup failed. Local reminders still work when this browser is open.";
+      return "Remote reminder setup failed. Local reminders still work when this app is open.";
     case "checking":
       return "Checking remote reminder support...";
     default:
-      return "Local reminders work in this browser; remote push is optional.";
+      return "Local reminders work in this app; remote push is optional.";
   }
 }
 
@@ -488,7 +490,7 @@ export default function AccountGoalPanel({
   );
   const [shareDashboardStatus, setShareDashboardStatus] = useState("");
   const [remotePushStatus, setRemotePushStatus] = useState(
-    () => loadNotificationPreference().remotePushStatus
+    () => trendPushStatusFromPreference(loadNotificationPreference())
   );
   const [proWaitlistEmail, setProWaitlistEmail] = useState("");
   const [proWaitlistStatus, setProWaitlistStatus] = useState("");
@@ -1093,6 +1095,10 @@ export default function AccountGoalPanel({
     }));
   }
 
+  function triggerCheckInHaptic() {
+    void notifyCheckInSaved();
+  }
+
   function handleSetGoal(event) {
     event.preventDefault();
     if (!account || !selectedGoal) {
@@ -1171,6 +1177,7 @@ export default function AccountGoalPanel({
       snapshotCount: snapshotProps.snapshots.length
     });
     setGoals(nextGoals);
+    triggerCheckInHaptic();
     setStatus("Goal check-in logged.");
   }
 
@@ -1200,6 +1207,7 @@ export default function AccountGoalPanel({
     setCheckIns([nextCheckIn, ...checkIns]);
     setDailyWeight("");
     setDailyCalories("");
+    triggerCheckInHaptic();
     setStatus("Daily check-in logged.");
   }
 
@@ -1239,6 +1247,7 @@ export default function AccountGoalPanel({
     setCheckIns([nextCheckIn, ...checkIns]);
     setLimbSplitValues({});
     setLimbSplitNote("");
+    triggerCheckInHaptic();
     setStatus("Limb symmetry split logged.");
   }
 
@@ -1269,6 +1278,7 @@ export default function AccountGoalPanel({
     setCycleFlow("not-tracked");
     setCycleSymptoms("");
     setCycleNote("");
+    triggerCheckInHaptic();
     setStatus("Cycle context logged locally.");
   }
 
@@ -1351,6 +1361,7 @@ export default function AccountGoalPanel({
 
     setCheckIns([nextCheckIn, ...checkIns]);
     setCheckInNote("");
+    triggerCheckInHaptic();
     const activeProtocols = protocols.filter((protocol) => protocol.status !== "archived");
     if (source === "guided" && activeProtocols.length) {
       let nextProtocols = protocols;
@@ -1402,30 +1413,31 @@ export default function AccountGoalPanel({
     });
 
     setCheckIns([nextCheckIn, ...checkIns]);
+    triggerCheckInHaptic();
     setStatus("Weekly streak freeze used.");
   }
 
   async function handleEnableRemoteTrendPush() {
     setRemotePushStatus("checking");
     const result = await subscribeTrendPushNotifications({ weeklyStreak });
-    setRemotePushStatus(result.preference.remotePushStatus);
+    setRemotePushStatus(trendPushStatusFromPreference(result.preference));
     setStatus(
       result.subscribed
         ? result.deliveryConfigured
-          ? "Remote stale-trend reminders subscribed for this browser."
-          : "Remote reminder subscription saved; server delivery still needs VAPID send configuration."
-        : remotePushStatusLabel(result.preference.remotePushStatus)
+          ? "Remote stale-trend reminders subscribed for this device."
+          : "Remote reminder subscription saved; server delivery still needs push provider configuration."
+        : remotePushStatusLabel(trendPushStatusFromPreference(result.preference))
     );
   }
 
   async function handleDisableRemoteTrendPush() {
     setRemotePushStatus("checking");
     const result = await unsubscribeTrendPushNotifications();
-    setRemotePushStatus(result.preference.remotePushStatus);
+    setRemotePushStatus(trendPushStatusFromPreference(result.preference));
     setStatus(
       result.unsubscribed
-        ? "Remote stale-trend reminders unsubscribed for this browser."
-        : remotePushStatusLabel(result.preference.remotePushStatus)
+        ? "Remote stale-trend reminders unsubscribed for this device."
+        : remotePushStatusLabel(trendPushStatusFromPreference(result.preference))
     );
   }
 
@@ -1493,6 +1505,7 @@ export default function AccountGoalPanel({
       confounders: protocolConfounders.trim()
     });
     setProtocols(nextProtocols);
+    triggerCheckInHaptic();
     setStatus("Protocol adherence check-in logged.");
   }
 
@@ -1531,6 +1544,7 @@ export default function AccountGoalPanel({
 
     setCheckIns([nextCheckIn, ...checkIns]);
     setLifeEventNote("");
+    triggerCheckInHaptic();
     setStatus("Reliability event logged.");
   }
 
@@ -1576,6 +1590,7 @@ export default function AccountGoalPanel({
       setLifeEventFields(nextProcedure.affectedFields.join(", "));
       setLifeEventDurationDays(String(nextProcedure.healingDays));
       setProcedureNote("");
+      triggerCheckInHaptic();
       setStatus(`Procedure logged: ${nextProcedure.label}. Healing window added to reliability events.`);
     } catch (error) {
       setStatus(error.message);

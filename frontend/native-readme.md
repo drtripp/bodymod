@@ -42,3 +42,22 @@ builds keep the existing camera + `BarcodeDetector` path when available and
 manual UPC/EAN entry remains the fallback everywhere. On Android, the adapter
 starts Google Barcode Scanner module installation when the module is missing
 and asks the user to retry after installation.
+
+## Push And Haptics
+
+Remote stale-trend reminders use `@capacitor/push-notifications` in native
+Capacitor runtimes. The account-panel reminder control requests native receive
+permission, registers the APNs/FCM token, and posts only the token, platform,
+context, created timestamp, and timestamp-only `nextReminderAfter` schedule to
+`/api/native-push/tokens`. Unsubscribe revokes the backend row by token hash.
+No measurement payload is accepted by the native push endpoint.
+
+Backend native delivery is still configuration-gated. Android delivery expects
+either `BODYMOD_FCM_SERVICE_ACCOUNT_JSON` or `BODYMOD_FCM_SERVER_KEY`. iOS
+delivery expects `BODYMOD_APNS_KEY_ID`, `BODYMOD_APNS_TEAM_ID`,
+`BODYMOD_APNS_BUNDLE_ID`, and `BODYMOD_APNS_AUTH_KEY`. Until those are set and
+a sender job is added, the app can save native subscriptions but the backend
+reports delivery as not configured.
+
+Successful account check-in saves call `@capacitor/haptics` in native runtimes.
+The haptic call is best-effort and ignored on web or unsupported devices.

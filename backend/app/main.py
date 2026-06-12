@@ -24,6 +24,10 @@ from app.models import ExerciseLibrary
 from app.models import FoodSearchResponse
 from app.models import MeasurementGuideLibrary
 from app.models import MeasurementSet
+from app.models import NativePushTokenRequest
+from app.models import NativePushTokenResponse
+from app.models import NativePushUnsubscribeRequest
+from app.models import NativePushUnsubscribeResponse
 from app.models import PlanningData
 from app.models import PopulationReferenceData
 from app.models import ProcedureLibrary
@@ -48,6 +52,7 @@ from app.models import WebPushUnsubscribeResponse
 from app.rate_limit import enforce_match_rate_limit
 from app.repositories import (
     ClientErrorRepository,
+    NativePushTokenRepository,
     ProductAnalyticsRepository,
     ShareDashboardRepository,
     SyncConflictError,
@@ -88,6 +93,25 @@ def web_push_config_payload() -> dict[str, str | bool]:
         if enabled
         else "Remote web push is disabled until VAPID public key, private key, and subject are configured.",
     }
+
+
+def native_push_delivery_configured(platform: str | None = None) -> bool:
+    android_configured = bool(
+        os.getenv("BODYMOD_FCM_SERVICE_ACCOUNT_JSON", "").strip()
+        or os.getenv("BODYMOD_FCM_SERVER_KEY", "").strip()
+    )
+    ios_configured = bool(
+        os.getenv("BODYMOD_APNS_KEY_ID", "").strip()
+        and os.getenv("BODYMOD_APNS_TEAM_ID", "").strip()
+        and os.getenv("BODYMOD_APNS_BUNDLE_ID", "").strip()
+        and os.getenv("BODYMOD_APNS_AUTH_KEY", "").strip()
+    )
+
+    if platform == "android":
+        return android_configured
+    if platform == "ios":
+        return ios_configured
+    return android_configured or ios_configured
 
 
 app.add_middleware(
@@ -239,6 +263,31 @@ def create_web_push_subscription(request: WebPushSubscriptionRequest) -> dict:
 )
 def revoke_web_push_subscription(request: WebPushUnsubscribeRequest) -> dict:
     return WebPushSubscriptionRepository().revoke_subscription(request.endpoint)
+
+
+@app.post(
+    "/api/native-push/tokens",
+    response_model=NativePushTokenResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def create_native_push_token(request: NativePushTokenRequest) -> dict:
+    response = NativePushTokenRepository().upsert_token(
+        request.token,
+        request.platform,
+        request.context,
+        request.createdAt,
+        request.nextReminderAfter,
+    )
+    response["deliveryConfigured"] = native_push_delivery_configured(request.platform)
+    return response
+
+
+@app.post(
+    "/api/native-push/tokens/unsubscribe",
+    response_model=NativePushUnsubscribeResponse,
+)
+def revoke_native_push_token(request: NativePushUnsubscribeRequest) -> dict:
+    return NativePushTokenRepository().revoke_token(request.token, request.tokenHash)
 
 
 @app.post(
