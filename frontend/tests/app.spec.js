@@ -1921,6 +1921,21 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await page.getByRole("button", { name: "Finish guided weekly check-in" }).click();
   await expect(page.getByLabel("Active protocols")).toContainText("1 adherence check-in(s)");
   await expect(page.getByLabel("Active protocols")).toContainText("5.0/5 average adherence");
+  await expect(page.getByLabel("Explain my data preview")).toContainText("Prompt-boundary");
+  await page.getByLabel("Data explainer question").fill(
+    "What changed for my shoulder waist goal and deltoid training?"
+  );
+  await page.getByRole("button", { name: "Generate data explainer" }).click();
+  await expect(page.getByLabel("Data explainer response")).toContainText("Local data snapshot");
+  await expect(page.getByLabel("Data explainer response")).toContainText("Corpus citations");
+  await expect(page.getByLabel("Data explainer response")).toContainText("Deltoid hypertrophy block");
+  await expect(page.getByLabel("Data explainer response")).not.toContainText("mason@example.com");
+  await page.getByLabel("Data explainer question").fill("What dose of retinoid should I take?");
+  await page.getByRole("button", { name: "Generate data explainer" }).click();
+  await expect(page.getByLabel("Data explainer response")).toContainText("Boundary applied");
+  await expect(page.getByLabel("Data explainer response")).toContainText(
+    "cannot provide dosing, prescribing, diagnosis, or medical instructions"
+  );
   await page.getByRole("button", { name: "Edit protocol" }).click();
   await page.getByLabel("Protocol frequency").fill("5 sessions/week");
   await page.getByRole("button", { name: "Save protocol edits" }).click();

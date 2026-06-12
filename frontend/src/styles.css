@@ -434,6 +434,47 @@ textarea {
   gap: 8px;
 }
 
+.data-explainer-section {
+  border: 1px solid var(--color-border);
+  background: var(--color-page);
+  display: grid;
+  grid-template-columns: minmax(220px, 0.75fr) minmax(260px, 1fr) minmax(190px, 0.35fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+}
+
+.data-explainer-question textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.data-explainer-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.data-explainer-response {
+  border: 1px solid var(--color-border);
+  display: grid;
+  gap: 12px;
+  grid-column: 1 / -1;
+  padding: 10px;
+}
+
+.data-explainer-response ul,
+.data-explainer-citations ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.data-explainer-citations li {
+  display: grid;
+  gap: 3px;
+}
+
 .local-json-export-section {
   border: 1px solid var(--color-border);
   background: var(--color-page);
@@ -635,6 +676,8 @@ textarea {
 .progress-report-section h3,
 .home-widget-section h3,
 .share-dashboard-section h3,
+.data-explainer-section h3,
+.data-explainer-section h4,
 .local-json-export-section h3 {
   margin: 0 0 4px;
   font-size: 1rem;
@@ -652,6 +695,11 @@ textarea {
 .share-dashboard-section p,
 .share-dashboard-section span,
 .share-dashboard-status,
+.data-explainer-section p,
+.data-explainer-section small,
+.data-explainer-actions small,
+.data-explainer-response span,
+.data-explainer-response p,
 .local-json-export-section p,
 .local-json-export-status,
 .encrypted-backup-section p,
@@ -5023,6 +5071,7 @@ textarea {
   .face-scan-grid,
   .progress-report-section,
   .home-widget-section,
+  .data-explainer-section,
   .share-dashboard-section,
   .local-json-export-section,
   .encrypted-backup-section,

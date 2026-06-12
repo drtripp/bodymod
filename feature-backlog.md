@@ -365,10 +365,15 @@ Protocol Tracker → Diet upgrades → Native app.
       post-23andMe-bankruptcy scrutiny). If ever: parsed and stored on-device
       only, never synced. Revisit only with **[human]** legal review, not
       before accounts/sync are stable.
-- [ ] AI "explain my data" assistant: answers questions about the user's own
-      numbers, cites corpus entries, hard line against dosing/prescribing
-      (boundary copy from `launch-decision-record.md`). Pro tier. **[human]**
-      for prompt-boundary review before ship.
+- [x] Local AI "explain my data" assistant scaffold **(new)**: account panel
+      Pro preview now builds a browser-local, deterministic explanation from
+      the user's saved measurements, snapshots, goals, protocols, check-ins,
+      workouts, local-only labs, photos, and face metric logs. It cites matched
+      strategy corpus entries as context only, keeps account emails/IDs and
+      private notes out of generated responses, and applies a hard boundary for
+      dosing, prescribing, diagnosis, and medical instructions. Production AI
+      provider/model selection, true Pro gating, and final prompt-boundary copy
+      remain **[human]** review before ship.
 
 ## 8. Diet
 

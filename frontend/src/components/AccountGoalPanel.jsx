@@ -202,6 +202,8 @@ import {
   summarizeReferralCredits,
   saveProWaitlistSignup
 } from "../lib/entitlements";
+import { buildDataExplainerResponse } from "../lib/dataExplainer";
+import { loadStrategyCorpusBundle } from "../lib/strategyCorpus";
 import {
   loadNotificationPreference,
   sendTrendReminderNotificationIfDue,
@@ -521,6 +523,10 @@ export default function AccountGoalPanel({
   );
   const [proWaitlistEmail, setProWaitlistEmail] = useState("");
   const [proWaitlistStatus, setProWaitlistStatus] = useState("");
+  const [dataExplainerQuestion, setDataExplainerQuestion] = useState(
+    "What changed and what should I review next?"
+  );
+  const [dataExplainerResponse, setDataExplainerResponse] = useState(null);
   const [referralCredits, setReferralCredits] = useState(() =>
     loadReferralCredits(initialAccount?.id)
   );
@@ -543,6 +549,10 @@ export default function AccountGoalPanel({
   );
   const accountReferralCode = account ? referralCodeForAccount(account) : "";
   const referralSummary = summarizeReferralCredits(referralCredits, entitlementConfig);
+  const strategyCorpusBundle = useMemo(
+    () => loadStrategyCorpusBundle(),
+    [account?.id]
+  );
   const localProfileSummaries = useMemo(
     () => buildLocalProfileSummaries({ accounts }),
     [
@@ -2445,6 +2455,28 @@ export default function AccountGoalPanel({
     }
   }
 
+  function handleGenerateDataExplainer() {
+    setDataExplainerResponse(
+      buildDataExplainerResponse({
+        question: dataExplainerQuestion,
+        currentMeasurements,
+        snapshots: snapshotProps.snapshots,
+        goals,
+        protocols,
+        checkIns,
+        workoutSessions,
+        procedures,
+        bloodworkResults,
+        photos,
+        faceMeasurements,
+        strategyCorpus: strategyCorpusBundle,
+        weeklyStreak,
+        trendWeight,
+        insightDrops
+      })
+    );
+  }
+
   async function handleCopyReferralInvite() {
     if (!accountReferralCode) {
       return;
@@ -2773,6 +2805,95 @@ export default function AccountGoalPanel({
                   </small>
                 ) : null}
               </form>
+            </section>
+
+            <section className="data-explainer-section" aria-label="Explain my data preview">
+              <div>
+                <h3>Explain my data</h3>
+                <p>
+                  Local deterministic Pro preview for asking about this
+                  account's saved measurements, goals, protocols, labs,
+                  workouts, and face metric logs.
+                </p>
+                <small>
+                  Prompt-boundary: no dosing, prescribing, diagnosis, or medical instructions.
+                </small>
+              </div>
+              <label className="field data-explainer-question">
+                <span className="field-label">Question</span>
+                <textarea
+                  aria-label="Data explainer question"
+                  value={dataExplainerQuestion}
+                  onChange={(event) => setDataExplainerQuestion(event.target.value)}
+                  rows="4"
+                />
+              </label>
+              <div className="data-explainer-actions">
+                <button className="button" type="button" onClick={handleGenerateDataExplainer}>
+                  Generate data explainer
+                </button>
+                <small>
+                  Corpus citations are context only until production prompts and policy are reviewed.
+                </small>
+              </div>
+              {dataExplainerResponse ? (
+                <div className="data-explainer-response" aria-label="Data explainer response">
+                  <div>
+                    <strong>
+                      {dataExplainerResponse.status === "boundary"
+                        ? "Boundary applied"
+                        : "Local explainer summary"}
+                    </strong>
+                    <p>{dataExplainerResponse.answerSummary}</p>
+                  </div>
+                  <div>
+                    <h4>Local data snapshot</h4>
+                    <ul>
+                      {dataExplainerResponse.dataSnapshot.map((line) => (
+                        <li key={line}>{line}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4>Observations</h4>
+                    <ul>
+                      {dataExplainerResponse.observations.map((observation) => (
+                        <li key={observation}>{observation}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="data-explainer-citations">
+                    <h4>Corpus citations</h4>
+                    {dataExplainerResponse.citations.length ? (
+                      <ul>
+                        {dataExplainerResponse.citations.map((citation) => (
+                          <li key={`${citation.outcome}-${citation.label}`}>
+                            <strong>{citation.label}</strong>
+                            <span>
+                              {citation.outcome} / {citation.evidence} evidence / risk {citation.risk}
+                              {citation.contextOnly ? " / context only" : ""}
+                            </span>
+                            <p>{citation.summary}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p>No matched corpus citations yet. Ask about a saved goal or protocol.</p>
+                    )}
+                  </div>
+                  <div>
+                    <h4>Next questions</h4>
+                    <ul>
+                      {dataExplainerResponse.nextQuestions.map((question) => (
+                        <li key={question}>{question}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <small>
+                    {dataExplainerResponse.boundary} {dataExplainerResponse.reviewNote}
+                  </small>
+                </div>
+              ) : null}
             </section>
 
             <section className="home-widget-section" aria-label="Home-screen widget">

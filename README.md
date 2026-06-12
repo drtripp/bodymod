@@ -172,6 +172,7 @@ Implemented now:
 - backend-served free/pro entitlement config, with all current tracking/data/export tools free
 - local-only Pro waitlist capture and blurred Pro preview cards in the account panel
 - local-only honest referral scaffold with stable invite codes, future Pro-credit records, backup/export support, and no feature gating
+- local deterministic Pro data explainer preview that summarizes this account's saved logs, cites matching strategy corpus entries as context only, and blocks dosing/prescribing/diagnosis requests
 - backend workout seed file with validation-only exercises, programs, risk/source notes, and selected-exercise instructions in the account workspace
 - outcome-first strategy explorer with one efficacy/risk graph per desired outcome
 - strategy explorer opens as an overlay from the main header action
@@ -229,6 +230,9 @@ Not implemented yet:
 - production error monitoring and product analytics provider/enablement
   decisions; sanitized first-party wiring exists but upload is disabled unless
   configured at build time
+- production AI explain-my-data provider/model selection, account-tier gating,
+  prompt-boundary review, and launch policy approval; current explainer is a
+  local deterministic scaffold only
 - human/legal review of draft privacy, terms, and medical disclaimer pages
 
 ## Current Measurement Schema
