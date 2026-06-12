@@ -119,6 +119,7 @@ Implemented now:
 - first Snapshot #1 save requests browser notification permission, stores the local preference, and stale-trend reminders use data-decay copy with service-worker delivery when available
 - optional remote web-push subscription scaffold with backend VAPID config, strict subscription storage, account-panel enable/disable control, and a dry-runable scheduled stale-trend delivery worker
 - native Capacitor push-token registration/revocation scaffold for stale-trend reminders, plus native haptic feedback after successful check-in saves
+- native shell polish with Capacitor status-bar/splash configuration, safe-area-aware app padding, and a shared web manifest/SVG app icon
 - maintenance drift alerts for saved goals once an at-target snapshot exists
 - optional local cycle phase logs that add weight/waist fluctuation context, remain off by default, and can be deleted separately
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
@@ -215,7 +216,7 @@ Not implemented yet:
 - source-reviewed procedure taxonomy and clinical/body-mod validation; current procedure data is a dummy review scaffold
 - source-reviewed bloodwork marker taxonomy, units, and reference ranges; current bloodwork data is a dummy local-only review scaffold
 - full app-wide translation coverage; current i18n work is top-level shell groundwork
-- generated Android/iOS native project folders, store signing, APNs/FCM native push delivery, HealthKit plugins, and native release workflows
+- generated Android/iOS native project folders, store signing, APNs/FCM native push delivery, HealthKit plugins, native store icon generation, and native release workflows
 - full public measurement-guide coverage with reviewed illustrations and final copy
 - production error monitoring and product analytics provider/enablement
   decisions; sanitized first-party wiring exists but upload is disabled unless

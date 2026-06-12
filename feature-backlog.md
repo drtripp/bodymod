@@ -599,8 +599,9 @@ land. No social features, no marketplace.
       Google Fit / Health Connect equivalent on Android.
 - [ ] Push notifications (native), safe-area/status-bar/splash/icon polish,
       haptics on check-in save. Native push token registration/revocation and
-      native check-in save haptics now exist; APNs/FCM delivery, safe-area,
-      status-bar, splash/icon polish remain.
+      native check-in save haptics now exist. Safe-area CSS, native status-bar
+      color/style setup, splash fade configuration, and web manifest/SVG icon
+      polish now exist. APNs/FCM delivery remains.
 - [ ] Home-screen widget **(new)**: streak + next check-in date (also helps
       App Review minimum-functionality).
 - [ ] JS live updates (e.g. Capgo) so web and app don't drift between binary

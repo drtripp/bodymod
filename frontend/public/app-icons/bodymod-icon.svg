@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">bodymod app icon</title>
+  <rect width="512" height="512" fill="#f3efe6"/>
+  <rect x="52" y="52" width="408" height="408" rx="54" fill="#fffaf1" stroke="#2f4038" stroke-width="18"/>
+  <path d="M257 110c23 0 41 18 41 41s-18 41-41 41-41-18-41-41 18-41 41-41z" fill="none" stroke="#2f4038" stroke-width="18"/>
+  <path d="M196 216c18-16 40-24 61-24s43 8 61 24c19 73 21 139 8 198-28 18-110 18-138 0-13-59-11-125 8-198z" fill="#e9eadc" stroke="#2f4038" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M257 214v188M222 238c18 44 18 98 0 142M292 238c-18 44-18 98 0 142" fill="none" stroke="#789069" stroke-width="10" stroke-linecap="round"/>
+</svg>

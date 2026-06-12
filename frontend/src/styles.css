@@ -44,6 +44,10 @@
   --color-pink-glow: rgba(184, 92, 128, 0.26);
   --color-transparent-page: rgba(244, 239, 229, 0);
   --radius-ui: 6px;
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
 }
 
 :root[data-theme="graphite"] {
@@ -99,6 +103,8 @@ html {
 
 body {
   margin: 0;
+  min-height: 100vh;
+  min-height: 100svh;
   background: var(--color-page);
   color: var(--color-text);
 }
@@ -109,8 +115,8 @@ a {
 
 .skip-link {
   position: fixed;
-  top: 10px;
-  left: 12px;
+  top: calc(10px + var(--safe-area-top));
+  left: calc(12px + var(--safe-area-left));
   z-index: 100;
   padding: 8px 12px;
   border: 2px solid var(--color-focus);
@@ -160,8 +166,13 @@ textarea {
 
 .app-shell {
   min-height: 100vh;
+  min-height: 100svh;
   width: 100%;
-  padding: 14px 18px 18px;
+  padding:
+    calc(14px + var(--safe-area-top))
+    calc(18px + var(--safe-area-right))
+    calc(18px + var(--safe-area-bottom))
+    calc(18px + var(--safe-area-left));
 }
 
 .site-header {
@@ -267,7 +278,11 @@ textarea {
   inset: 0;
   z-index: 14;
   background: var(--color-backdrop-strong);
-  padding: 28px;
+  padding:
+    calc(28px + var(--safe-area-top))
+    calc(28px + var(--safe-area-right))
+    calc(28px + var(--safe-area-bottom))
+    calc(28px + var(--safe-area-left));
   overflow: auto;
 }
 

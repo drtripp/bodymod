@@ -20,6 +20,21 @@ For device testing, set `VITE_API_BASE_URL` before `npm run native:sync` to an
 API URL reachable from the device or emulator. The backend default CORS list
 includes `capacitor://localhost` for the native shell.
 
+## Shell Polish
+
+`src/lib/nativeShell.js` configures `@capacitor/status-bar` and
+`@capacitor/splash-screen` after the React app is handed to the root. Native
+runtimes keep the status bar visible, non-overlaid, styled for the cafe light
+background, and then hide the splash screen with a short fade. Browser builds
+skip the adapter.
+
+`src/styles.css` uses `env(safe-area-inset-*)` on the app shell, skip link, and
+account overlay so notches and home indicators do not cover controls.
+`index.html` opts into `viewport-fit=cover`, sets the theme color, links
+`public/manifest.webmanifest`, and reuses `public/app-icons/bodymod-icon.svg`
+for the installable web icon. Store-ready PNG icon generation remains tied to
+generated Android/iOS project folders.
+
 ## Storage
 
 The app uses `@capacitor/preferences` through `src/lib/storageAdapter.js` when

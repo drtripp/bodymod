@@ -1,0 +1,19 @@
+{
+  "name": "bodymod",
+  "short_name": "bodymod",
+  "description": "Local-first body measurement, goal, and trend tracking.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3efe6",
+  "theme_color": "#f3efe6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/app-icons/bodymod-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
