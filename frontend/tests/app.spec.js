@@ -792,6 +792,8 @@ function progressPhotoFile(name, color = "#8da9c4") {
 async function mockApi(page) {
   const shareDashboards = new Map();
   let shareCounter = 0;
+  const syncVaults = new Map();
+  let syncCounter = 0;
 
   await page.route("**/api/health", async (route) => {
     await route.fulfill({ json: { status: "ok" } });
@@ -941,6 +943,104 @@ async function mockApi(page) {
     if (request.method() === "POST" && action === "revoke") {
       record.revoked = true;
       shareDashboards.set(publicToken, record);
+      await route.fulfill({ json: { status: "revoked" } });
+      return;
+    }
+
+    await route.fulfill({ status: 405, json: { detail: "Method not allowed." } });
+  });
+
+  await page.route(/\/api\/sync-vaults(?:\/[^/?]+(?:\/read|\/revoke)?)?$/, async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const marker = "/api/sync-vaults";
+    const suffix = url.pathname.slice(url.pathname.indexOf(marker) + marker.length);
+    const [vaultId, action] = suffix.replace(/^\//, "").split("/");
+    const timestamp = "2026-06-10T12:00:00Z";
+
+    function publicRecord(record) {
+      return {
+        vaultId: record.vaultId,
+        revision: record.revision,
+        deviceId: record.deviceId,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
+        blob: record.blob
+      };
+    }
+
+    if (!vaultId && request.method() === "POST") {
+      const rawBody = request.postData() || "";
+      expect(rawBody).not.toMatch(/backup-source@example\.com|Sync baseline|measurements|waistCircumference/);
+      const body = request.postDataJSON();
+      syncCounter += 1;
+      const record = {
+        vaultId: `mock-sync-${syncCounter}`,
+        syncToken: `mock-sync-token-${syncCounter}`.padEnd(24, "x"),
+        revision: 1,
+        deviceId: body.deviceId,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        blob: body.blob,
+        revoked: false
+      };
+      syncVaults.set(record.vaultId, record);
+      await route.fulfill({
+        status: 201,
+        json: {
+          ...publicRecord(record),
+          syncToken: record.syncToken
+        }
+      });
+      return;
+    }
+
+    const record = syncVaults.get(vaultId);
+    if (!record || record.revoked) {
+      await route.fulfill({ status: 404, json: { detail: "Sync vault not found." } });
+      return;
+    }
+
+    const body = request.postDataJSON();
+    if (body.syncToken !== record.syncToken) {
+      await route.fulfill({ status: 403, json: { detail: "Invalid sync token." } });
+      return;
+    }
+
+    if (request.method() === "POST" && action === "read") {
+      await route.fulfill({ json: publicRecord(record) });
+      return;
+    }
+
+    if (request.method() === "PUT" && !action) {
+      const rawBody = request.postData() || "";
+      expect(rawBody).not.toMatch(/backup-source@example\.com|Sync baseline|measurements|waistCircumference/);
+      if (!body.force && Number(body.expectedRevision) !== record.revision) {
+        await route.fulfill({
+          status: 409,
+          json: {
+            detail: {
+              message: "Sync vault revision conflict.",
+              currentRevision: record.revision,
+              updatedAt: record.updatedAt
+            }
+          }
+        });
+        return;
+      }
+
+      record.revision += 1;
+      record.deviceId = body.deviceId;
+      record.blob = body.blob;
+      record.updatedAt = `2026-06-10T12:${String(record.revision).padStart(2, "0")}:00Z`;
+      syncVaults.set(record.vaultId, record);
+      await route.fulfill({ json: publicRecord(record) });
+      return;
+    }
+
+    if (request.method() === "POST" && action === "revoke") {
+      record.revoked = true;
+      syncVaults.set(record.vaultId, record);
       await route.fulfill({ json: { status: "revoked" } });
       return;
     }
@@ -1929,6 +2029,61 @@ test("exports and restores encrypted local backups through the account UI", asyn
   await expect(page.getByLabel("Recent bloodwork results")).toContainText("LDL-C: 92 mg/dL");
   await expect(page.getByLabel("Referral credits")).toContainText("BM-BACKUP1");
   await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Backup baseline" })).toBeVisible();
+});
+
+test("syncs encrypted backup vaults through the account UI", async ({ page }) => {
+  await page.getByRole("button", { name: "User profile" }).click();
+  let accountDialog = page.getByRole("dialog", { name: "Account, logs, and goals" });
+
+  await page.getByLabel("Display name").fill("Sync Source");
+  await page.getByLabel("Account email").fill("sync-source@example.com");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await page.getByLabel("Daily weight").fill("83.1");
+  await page.getByLabel("Daily calories").fill("2350");
+  await page.getByRole("button", { name: "Log daily check-in" }).click();
+  await page.getByLabel("Snapshot label").fill("Sync baseline");
+  await page.getByRole("button", { name: "Save current snapshot" }).click();
+  await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Sync baseline" })).toBeVisible();
+
+  await page.getByLabel("Backup passphrase").fill("correct horse battery staple");
+  await page.getByRole("button", { name: "Create sync vault" }).click();
+  const syncSection = page.getByLabel("Encrypted sync vault");
+  await expect(syncSection).toContainText("Encrypted sync vault created at revision 1");
+  const vaultId = await page.getByLabel("Sync vault ID").inputValue();
+  const syncToken = await page.getByLabel("Sync token").inputValue();
+  expect(vaultId).toMatch(/^mock-sync-/);
+  expect(syncToken).toHaveLength(24);
+
+  await page.getByRole("button", { name: "Push encrypted sync" }).click();
+  await expect(syncSection).toContainText("Encrypted sync vault pushed at revision 2");
+
+  await page.evaluate(() => {
+    Object.keys(window.localStorage)
+      .filter((key) => key.startsWith("bodymod:"))
+      .forEach((key) => window.localStorage.removeItem(key));
+  });
+  await page.reload();
+  await page.getByRole("button", { name: "User profile" }).click();
+  accountDialog = page.getByRole("dialog", { name: "Account, logs, and goals" });
+  await page.getByLabel("Display name").fill("Sync Restore");
+  await page.getByLabel("Account email").fill("sync-restore@example.com");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await page.getByLabel("Backup passphrase").fill("correct horse battery staple");
+  await page.getByLabel("Sync vault ID").fill(vaultId);
+  await page.getByLabel("Sync token").fill(syncToken);
+  await page.getByRole("button", { name: "Pull encrypted sync" }).click();
+
+  await expect(page.getByLabel("Encrypted sync vault")).toContainText(
+    "Pulled encrypted sync vault revision 2"
+  );
+  await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 83.1 kg / 2350 kcal");
+  await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Sync baseline" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Revoke sync vault" }).click();
+  await expect(page.getByLabel("Encrypted sync vault")).toContainText(
+    "Encrypted sync vault revoked and local credentials cleared."
+  );
+  await expect(page.getByLabel("Sync vault ID")).toHaveValue("");
 });
 
 test("publishes, updates, views, and revokes a read-only share dashboard", async ({ page }) => {

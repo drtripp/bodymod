@@ -514,7 +514,7 @@ land. No social features, no marketplace.
 
 - [ ] Accounts (email magic-link; no passwords, no social login requirement);
       local-first remains the default — accounts are opt-in for sync.
-- [ ] Encrypted sync: client-side-encrypted blob sync so the server cannot
+- [x] Encrypted sync prototype: client-side-encrypted blob sync so the server cannot
       read measurements (the data-custody story the trans audience and
       cycle-tracking feature demand). **First backend scaffold:** FastAPI now
       exposes `/api/sync-vaults` create/read/update/revoke endpoints backed by
@@ -522,12 +522,15 @@ land. No social features, no marketplace.
       device IDs, and revision metadata. `frontend/src/lib/encryptedSync.js`
       converts the existing encrypted local backup format into that sync blob
       and helper tests assert that emails, notes, and measurement keys are not
-      sent in request bodies. Production identity, recovery, and UI are still
-      open.
+      sent in request bodies. The account panel now exposes manual create,
+      push, pull, force-push, and revoke controls; Playwright covers a
+      no-backend-cheating restore into a second browser-local account. Production
+      identity and recovery are still open.
 - [ ] Cross-device restore + conflict handling (last-write-wins per snapshot
       is fine v1). The sync-vault scaffold now returns `409` on stale
-      revisions and supports explicit force overwrites, but true client-side
-      merge/restore UI remains open.
+      revisions and supports explicit force overwrites from the account panel,
+      but true client-side merge, account recovery, and automatic cross-device
+      history remain open.
 - [ ] Multi-profile **(new)**: household/coach use; profiles are separate
       encrypted stores.
       - First browser-local pass is in: the account panel now lists local
