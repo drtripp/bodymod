@@ -49,6 +49,7 @@ from app.models import WebPushSubscriptionRequest
 from app.models import WebPushSubscriptionResponse
 from app.models import WebPushUnsubscribeRequest
 from app.models import WebPushUnsubscribeResponse
+from app.native_push import native_push_delivery_configured
 from app.rate_limit import enforce_match_rate_limit
 from app.repositories import (
     ClientErrorRepository,
@@ -93,25 +94,6 @@ def web_push_config_payload() -> dict[str, str | bool]:
         if enabled
         else "Remote web push is disabled until VAPID public key, private key, and subject are configured.",
     }
-
-
-def native_push_delivery_configured(platform: str | None = None) -> bool:
-    android_configured = bool(
-        os.getenv("BODYMOD_FCM_SERVICE_ACCOUNT_JSON", "").strip()
-        or os.getenv("BODYMOD_FCM_SERVER_KEY", "").strip()
-    )
-    ios_configured = bool(
-        os.getenv("BODYMOD_APNS_KEY_ID", "").strip()
-        and os.getenv("BODYMOD_APNS_TEAM_ID", "").strip()
-        and os.getenv("BODYMOD_APNS_BUNDLE_ID", "").strip()
-        and os.getenv("BODYMOD_APNS_AUTH_KEY", "").strip()
-    )
-
-    if platform == "android":
-        return android_configured
-    if platform == "ios":
-        return ios_configured
-    return android_configured or ios_configured
 
 
 app.add_middleware(

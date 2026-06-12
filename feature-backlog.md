@@ -209,8 +209,10 @@ Protocol Tracker → Diet upgrades → Native app.
       dry-run or VAPID-send mode without reading measurements. **Native pass:**
       Capacitor runtimes can register native push tokens through
       `@capacitor/push-notifications`, store only the token envelope plus
-      timestamp-only `nextReminderAfter` schedule on the backend, and revoke by
-      token hash. APNs/FCM delivery worker configuration remains open.
+      timestamp-only `nextReminderAfter` schedule on the backend, revoke by
+      token hash, and a dry-runable native worker can send due reminders through
+      FCM or APNs without reading measurements. Provider credentials and real
+      device validation remain deployment work.
 
 ## 5. Protocol Tracker ("Build Plan" button)
 
@@ -601,7 +603,8 @@ land. No social features, no marketplace.
       haptics on check-in save. Native push token registration/revocation and
       native check-in save haptics now exist. Safe-area CSS, native status-bar
       color/style setup, splash fade configuration, and web manifest/SVG icon
-      polish now exist. APNs/FCM delivery remains.
+      polish now exist. APNs/FCM sender hooks now exist; production
+      credentials/device validation remain.
 - [ ] Home-screen widget **(new)**: streak + next check-in date (also helps
       App Review minimum-functionality).
 - [ ] JS live updates (e.g. Capgo) so web and app don't drift between binary

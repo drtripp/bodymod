@@ -71,8 +71,22 @@ Backend native delivery is still configuration-gated. Android delivery expects
 either `BODYMOD_FCM_SERVICE_ACCOUNT_JSON` or `BODYMOD_FCM_SERVER_KEY`. iOS
 delivery expects `BODYMOD_APNS_KEY_ID`, `BODYMOD_APNS_TEAM_ID`,
 `BODYMOD_APNS_BUNDLE_ID`, and `BODYMOD_APNS_AUTH_KEY`. Until those are set and
-a sender job is added, the app can save native subscriptions but the backend
+a sender job is scheduled, the app can save native subscriptions but the backend
 reports delivery as not configured.
+
+The backend sender is dry-runable:
+
+```bash
+cd ../backend
+.\.venv\Scripts\python.exe scripts\send_native_trend_push_reminders.py --dry-run
+```
+
+Without `--dry-run`, the worker inspects due native token rows, skips platforms
+without provider credentials, and records sent/failed delivery state without
+reading measurement or account data. FCM service-account JSON can be supplied
+directly in `BODYMOD_FCM_SERVICE_ACCOUNT_JSON` or as a path to the JSON file;
+legacy `BODYMOD_FCM_SERVER_KEY` is also supported for test deployments. Set
+`BODYMOD_APNS_USE_SANDBOX=true` for iOS sandbox device tokens.
 
 Successful account check-in saves call `@capacitor/haptics` in native runtimes.
 The haptic call is best-effort and ignored on web or unsupported devices.
