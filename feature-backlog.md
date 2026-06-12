@@ -587,8 +587,11 @@ land. No social features, no marketplace.
       app data files, keep only photo metadata in the account JSON store, and
       hydrate/delete those assets through the account UI. SQLite is no longer
       required for this photo blob path.
-- [ ] Native barcode plugin (ML Kit) behind the existing manual-entry
-      fallback (BarcodeDetector doesn't exist in WKWebView).
+- [x] Native barcode plugin (ML Kit) behind the existing manual-entry
+      fallback: Capacitor runtimes use `@capacitor-mlkit/barcode-scanning`
+      before the browser `BarcodeDetector` path, normalize scanned UPC/EAN
+      values for Open Food Facts lookup, handle permission/module-install
+      states, and keep manual entry available.
 - [ ] HealthKit: weight read/write, measurement write, nutrition write;
       Google Fit / Health Connect equivalent on Android.
 - [ ] Push notifications (native), safe-area/status-bar/splash/icon polish,

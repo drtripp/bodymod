@@ -144,7 +144,10 @@ Implemented now:
 - first-draft US population scatter and distribution plots with sex-colored reference bands
 - population charts load the backend mixed NHANES/scaffold reference model when available and fall back locally when offline
 - Body/Diet top-level switcher
-- Diet tracker with backend USDA-style generic food search, Open Food Facts search, barcode lookup, optional browser barcode scanner, CSV import, local food log, macro targets, and expanded micronutrient target rows
+- Diet tracker with backend USDA-style generic food search, Open Food Facts
+  search, barcode lookup, optional browser barcode scanner, native ML Kit
+  barcode scanner in Capacitor runtimes, CSV import, local food log, macro
+  targets, and expanded micronutrient target rows
 - backend USDA-style food seed file with dummy FDC provenance, search keywords, and nutrient validation
 - public marketing page at `/landing.html` with current app screenshots, privacy stance, planned store links, and local Pro waitlist capture
 - method/privacy content collapsed into a hover footnote
@@ -211,7 +214,7 @@ Not implemented yet:
 - source-reviewed procedure taxonomy and clinical/body-mod validation; current procedure data is a dummy review scaffold
 - source-reviewed bloodwork marker taxonomy, units, and reference ranges; current bloodwork data is a dummy local-only review scaffold
 - full app-wide translation coverage; current i18n work is top-level shell groundwork
-- generated Android/iOS native project folders, store signing, native barcode/push/HealthKit plugins, and native release workflows
+- generated Android/iOS native project folders, store signing, native push/HealthKit plugins, and native release workflows
 - full public measurement-guide coverage with reviewed illustrations and final copy
 - production error monitoring and product analytics provider/enablement
   decisions; sanitized first-party wiring exists but upload is disabled unless

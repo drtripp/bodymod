@@ -28,6 +28,7 @@ try {
     Invoke-Checked { npm run test:corpus }
     Invoke-Checked { npm run test:diet }
     Invoke-Checked { npm run test:diet-import }
+    Invoke-Checked { npm run test:barcode-scanner }
     Invoke-Checked { npm run test:adaptive-tdee }
     Invoke-Checked { npm run test:attractiveness-evidence }
     Invoke-Checked { npm run test:accessibility }

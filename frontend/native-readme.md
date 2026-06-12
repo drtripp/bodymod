@@ -33,3 +33,12 @@ Progress-photo bytes use `@capacitor/filesystem` through
 photo metadata plus a local file reference, then hydrates file-backed photos
 back into preview data URLs for the gallery/comparison UI. Browser builds keep
 the existing inline `localStorage` behavior for local-only web photos.
+
+## Barcode Scanning
+
+Diet barcode scanning uses `@capacitor-mlkit/barcode-scanning` through
+`src/lib/barcodeScanner.js` when running in a native Capacitor runtime. Browser
+builds keep the existing camera + `BarcodeDetector` path when available and
+manual UPC/EAN entry remains the fallback everywhere. On Android, the adapter
+starts Google Barcode Scanner module installation when the module is missing
+and asks the user to retry after installation.

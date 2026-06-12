@@ -41,6 +41,7 @@ import {
   persistDietLog,
   persistFluidLog
 } from "../lib/storage";
+import { defaultBarcodeScannerAdapter } from "../lib/barcodeScanner";
 
 function formatNumber(value, digits = 0) {
   return Number(value || 0).toFixed(digits);
@@ -419,6 +420,18 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
   }
 
   async function handleScanBarcode() {
+    if (defaultBarcodeScannerAdapter.isNativeScannerAvailable()) {
+      setStatus("Opening native barcode scanner...");
+      try {
+        const scannedBarcode = await defaultBarcodeScannerAdapter.scanBarcode();
+        setBarcode(scannedBarcode.value);
+        setStatus(`Scanned barcode ${scannedBarcode.value}.`);
+      } catch (error) {
+        setStatus(error.message || "Native barcode scan failed. Enter the barcode manually.");
+      }
+      return;
+    }
+
     try {
       const stream = await requestCameraStream();
       streamRef.current = stream;
