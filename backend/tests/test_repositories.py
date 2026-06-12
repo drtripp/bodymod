@@ -3,6 +3,7 @@ import sqlite3
 from app.models import EncryptedSyncBlob, TargetProfile, WebPushSubscriptionPayload
 from app.repositories import (
     NativePushTokenRepository,
+    PersonalDataTokenRepository,
     SyncConflictError,
     SyncVaultRepository,
     TargetRepository,
@@ -278,3 +279,88 @@ def test_sync_vault_repository_detects_conflicts_and_revokes(tmp_path) -> None:
     assert forced["revision"] == 3
     assert revoked is True
     assert repository.get_vault(created["vaultId"], created["syncToken"]) is None
+
+
+def test_personal_data_token_repository_hashes_tokens_and_reads_encrypted_vault(tmp_path) -> None:
+    db_path = tmp_path / "bodymod.sqlite3"
+    vault_repository = SyncVaultRepository(db_path=db_path)
+    token_repository = PersonalDataTokenRepository(db_path=db_path)
+    vault = vault_repository.create_vault("browser-a", encrypted_sync_blob("UEFUU1BBUkVFTkNSWVBU"))
+
+    created = token_repository.create_token(
+        vault["vaultId"],
+        vault["syncToken"],
+        "QS script",
+        ["sync-vault:read"],
+    )
+    read_back = token_repository.read_sync_vault(created["accessToken"])
+
+    assert created["accessToken"].startswith("bmd_pat_")
+    assert read_back["blob"]["ciphertext"] == "UEFUU1BBUkVFTkNSWVBU"
+    assert "measurements" not in str(read_back["blob"])
+
+    with sqlite3.connect(db_path) as connection:
+        connection.row_factory = sqlite3.Row
+        row = connection.execute(
+            """
+            SELECT access_token_hash, scopes_json, vault_id
+            FROM personal_data_tokens
+            WHERE token_id = ?
+            """,
+            (created["tokenId"],),
+        ).fetchone()
+
+    assert row["access_token_hash"] != created["accessToken"]
+    assert created["accessToken"] not in row["access_token_hash"]
+    assert vault["syncToken"] not in row["scopes_json"]
+    assert row["vault_id"] == vault["vaultId"]
+
+    listed = token_repository.list_token_dicts()
+
+    assert listed[0]["accessTokenHash"] == row["access_token_hash"]
+    assert "accessToken" not in listed[0]
+
+
+def test_personal_data_token_repository_expires_and_revokes_tokens(tmp_path) -> None:
+    db_path = tmp_path / "bodymod.sqlite3"
+    vault_repository = SyncVaultRepository(db_path=db_path)
+    token_repository = PersonalDataTokenRepository(db_path=db_path)
+    vault = vault_repository.create_vault("browser-a", encrypted_sync_blob())
+
+    expired = token_repository.create_token(
+        vault["vaultId"],
+        vault["syncToken"],
+        "Expired export",
+        ["sync-vault:read"],
+        expires_at="2020-01-01T00:00:00Z",
+    )
+    active = token_repository.create_token(
+        vault["vaultId"],
+        vault["syncToken"],
+        "Active export",
+        ["sync-vault:read"],
+    )
+
+    try:
+        token_repository.read_sync_vault(expired["accessToken"])
+    except PermissionError as error:
+        assert "Invalid or expired" in str(error)
+    else:
+        raise AssertionError("Expected expired personal data token to be rejected.")
+
+    revoked = token_repository.revoke_token(active["accessToken"])
+
+    assert revoked == {"status": "revoked", "revoked": True}
+    remaining = token_repository.list_token_dicts()
+    all_tokens = token_repository.list_token_dicts(include_revoked=True)
+    assert len(remaining) == 1
+    assert remaining[0]["label"] == "Expired export"
+    assert len(all_tokens) == 2
+    assert any(token["revokedAt"] for token in all_tokens if token["label"] == "Active export")
+
+    try:
+        token_repository.read_sync_vault(active["accessToken"])
+    except PermissionError as error:
+        assert "Invalid or expired" in str(error)
+    else:
+        raise AssertionError("Expected revoked personal data token to be rejected.")

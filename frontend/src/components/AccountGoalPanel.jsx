@@ -91,6 +91,11 @@ import {
   updateSyncVault
 } from "../lib/encryptedSync";
 import {
+  createPersonalDataToken,
+  readPersonalDataSyncVault,
+  revokePersonalDataToken
+} from "../lib/personalDataApi";
+import {
   buildPlainJsonExport,
   serializePlainJsonExport,
   summarizePlainJsonExport
@@ -417,6 +422,10 @@ export default function AccountGoalPanel({
     () => initialSyncVaultState.deviceId || "browser-local"
   );
   const [syncStatus, setSyncStatus] = useState("");
+  const [personalDataApiLabel, setPersonalDataApiLabel] = useState("Personal data export");
+  const [personalDataApiToken, setPersonalDataApiToken] = useState("");
+  const [personalDataApiTokenMeta, setPersonalDataApiTokenMeta] = useState(null);
+  const [personalDataApiStatus, setPersonalDataApiStatus] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
@@ -563,6 +572,9 @@ export default function AccountGoalPanel({
   }, [account?.email]);
 
   useEffect(() => {
+    setPersonalDataApiToken("");
+    setPersonalDataApiTokenMeta(null);
+    setPersonalDataApiStatus("");
     const stored = loadSyncVaultState();
     if (account?.id && stored.accountId === account.id) {
       setSyncVaultState(stored);
@@ -2126,6 +2138,85 @@ export default function AccountGoalPanel({
     }
   }
 
+  async function handleCreatePersonalDataApiToken() {
+    if (missingSyncCredentials()) {
+      setPersonalDataApiStatus("Create or enter a sync vault before issuing a personal data API token.");
+      return;
+    }
+
+    try {
+      setPersonalDataApiStatus("Issuing personal data API token...");
+      const record = await createPersonalDataToken({
+        vaultId: syncVaultId.trim(),
+        syncToken: syncVaultToken.trim(),
+        label: personalDataApiLabel.trim() || "Personal data export"
+      });
+      setPersonalDataApiToken(record.accessToken);
+      setPersonalDataApiTokenMeta(record);
+      setPersonalDataApiStatus(
+        `Personal data API token issued for vault ${record.vaultId}. It can read the encrypted sync vault only.`
+      );
+    } catch (error) {
+      setPersonalDataApiStatus(error.message || "Personal data API token creation failed.");
+    }
+  }
+
+  async function handleTestPersonalDataApiToken() {
+    if (!personalDataApiToken.trim()) {
+      setPersonalDataApiStatus("Enter a personal data API token before testing a read.");
+      return;
+    }
+
+    try {
+      setPersonalDataApiStatus("Reading encrypted sync vault through personal data API...");
+      const record = await readPersonalDataSyncVault({
+        accessToken: personalDataApiToken.trim()
+      });
+      setPersonalDataApiStatus(
+        `Personal data API read encrypted sync vault revision ${record.revision}. No plaintext measurements were returned.`
+      );
+    } catch (error) {
+      setPersonalDataApiStatus(error.message || "Personal data API read failed.");
+    }
+  }
+
+  async function handleCopyPersonalDataApiToken() {
+    if (!personalDataApiToken.trim()) {
+      setPersonalDataApiStatus("Create or paste a personal data API token before copying.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(personalDataApiToken.trim());
+      setPersonalDataApiStatus("Personal data API token copied.");
+    } catch {
+      setPersonalDataApiStatus("Copy failed. Select the token manually.");
+    }
+  }
+
+  async function handleRevokePersonalDataApiToken() {
+    if (!personalDataApiToken.trim()) {
+      setPersonalDataApiStatus("Enter a personal data API token before revoking it.");
+      return;
+    }
+
+    try {
+      setPersonalDataApiStatus("Revoking personal data API token...");
+      const result = await revokePersonalDataToken({
+        accessToken: personalDataApiToken.trim()
+      });
+      setPersonalDataApiToken("");
+      setPersonalDataApiTokenMeta(null);
+      setPersonalDataApiStatus(
+        result.revoked
+          ? "Personal data API token revoked."
+          : "No active personal data API token was found for revocation."
+      );
+    } catch (error) {
+      setPersonalDataApiStatus(error.message || "Personal data API token revocation failed.");
+    }
+  }
+
   function handleDownloadProgressReport() {
     downloadProgressReport({
       account,
@@ -2687,6 +2778,62 @@ export default function AccountGoalPanel({
               {syncStatus ? (
                 <small className="encrypted-sync-status" role="status" aria-live="polite">
                   {syncStatus}
+                </small>
+              ) : null}
+            </section>
+
+            <section className="personal-data-api-section" aria-label="Personal data API">
+              <div>
+                <h3>Personal data API</h3>
+                <p>
+                  Read-only tokens return the encrypted sync vault for personal
+                  tools. Decrypt the blob locally with your backup passphrase.
+                </p>
+              </div>
+              <div className="encrypted-sync-fields">
+                <label className="field">
+                  <span className="field-label">Token label</span>
+                  <input
+                    aria-label="Personal data API token label"
+                    value={personalDataApiLabel}
+                    onChange={(event) => setPersonalDataApiLabel(event.target.value)}
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">API token</span>
+                  <input
+                    aria-label="Personal data API token"
+                    type="password"
+                    value={personalDataApiToken}
+                    onChange={(event) => setPersonalDataApiToken(event.target.value)}
+                  />
+                </label>
+              </div>
+              <div className="encrypted-sync-actions">
+                <button className="button" type="button" onClick={handleCreatePersonalDataApiToken}>
+                  Issue API token
+                </button>
+                <button className="button" type="button" onClick={handleTestPersonalDataApiToken}>
+                  Test API read
+                </button>
+                <button className="button" type="button" onClick={handleCopyPersonalDataApiToken}>
+                  Copy API token
+                </button>
+                <button className="button" type="button" onClick={handleRevokePersonalDataApiToken}>
+                  Revoke API token
+                </button>
+              </div>
+              {personalDataApiTokenMeta ? (
+                <small className="personal-data-api-meta">
+                  Scope {personalDataApiTokenMeta.scopes.join(", ")}
+                  {personalDataApiTokenMeta.createdAt
+                    ? ` / created ${formatDate(personalDataApiTokenMeta.createdAt)}`
+                    : ""}
+                </small>
+              ) : null}
+              {personalDataApiStatus ? (
+                <small className="personal-data-api-status" role="status" aria-live="polite">
+                  {personalDataApiStatus}
                 </small>
               ) : null}
             </section>

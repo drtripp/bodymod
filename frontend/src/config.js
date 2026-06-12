@@ -30,3 +30,7 @@ export const NATIVE_PUSH_TOKENS_ENDPOINT =
 export const SYNC_VAULTS_ENDPOINT =
   import.meta.env?.VITE_SYNC_VAULTS_ENDPOINT ||
   `${API_BASE_URL}/api/sync-vaults`;
+
+export const PERSONAL_DATA_API_ENDPOINT =
+  import.meta.env?.VITE_PERSONAL_DATA_API_ENDPOINT ||
+  `${API_BASE_URL}/api/personal-data`;

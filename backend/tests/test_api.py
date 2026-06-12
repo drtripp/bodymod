@@ -843,6 +843,101 @@ def test_sync_vault_endpoints_reject_plaintext_measurements_and_bad_tokens() -> 
     assert wrong_token.status_code == 403
 
 
+def test_personal_data_api_token_reads_encrypted_sync_vault_and_revokes() -> None:
+    created = client.post(
+        "/api/sync-vaults",
+        json={"deviceId": "browser-api", "blob": encrypted_sync_blob("UEVSU09OQUxEQVRB")},
+    )
+    vault_id = created.json()["vaultId"]
+    sync_token = created.json()["syncToken"]
+
+    token_response = client.post(
+        "/api/personal-data/tokens",
+        json={
+            "vaultId": vault_id,
+            "syncToken": sync_token,
+            "label": "QS script",
+            "scopes": ["sync-vault:read"],
+        },
+    )
+
+    assert token_response.status_code == 201
+    token_payload = token_response.json()
+    access_token = token_payload["accessToken"]
+    assert access_token.startswith("bmd_pat_")
+    assert token_payload["vaultId"] == vault_id
+    assert token_payload["scopes"] == ["sync-vault:read"]
+    assert "syncToken" not in token_response.text
+    assert "measurements" not in token_response.text
+
+    read_response = client.get(
+        "/api/personal-data/sync-vault",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert read_response.status_code == 200
+    read_payload = read_response.json()
+    assert read_payload["vaultId"] == vault_id
+    assert read_payload["blob"]["ciphertext"] == "UEVSU09OQUxEQVRB"
+    assert "syncToken" not in read_response.text
+
+    revoked = client.post(
+        "/api/personal-data/tokens/revoke",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+    read_after_revoke = client.get(
+        "/api/personal-data/sync-vault",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert revoked.status_code == 200
+    assert revoked.json() == {"status": "revoked", "revoked": True}
+    assert read_after_revoke.status_code == 403
+
+
+def test_personal_data_api_rejects_bad_auth_and_plaintext_request_fields() -> None:
+    created = client.post(
+        "/api/sync-vaults",
+        json={"deviceId": "browser-api", "blob": encrypted_sync_blob("Tk9QTEFJTlRFWFQ=")},
+    )
+    vault_id = created.json()["vaultId"]
+
+    missing_auth = client.get("/api/personal-data/sync-vault")
+    wrong_sync_token = client.post(
+        "/api/personal-data/tokens",
+        json={
+            "vaultId": vault_id,
+            "syncToken": "wrong-token-but-long-enough-0123456789",
+            "label": "Wrong token",
+            "scopes": ["sync-vault:read"],
+        },
+    )
+    plaintext_field = client.post(
+        "/api/personal-data/tokens",
+        json={
+            "vaultId": vault_id,
+            "syncToken": created.json()["syncToken"],
+            "label": "Bad token",
+            "scopes": ["sync-vault:read"],
+            "measurements": TARGETS[0]["measurements"],
+        },
+    )
+    unsupported_scope = client.post(
+        "/api/personal-data/tokens",
+        json={
+            "vaultId": vault_id,
+            "syncToken": created.json()["syncToken"],
+            "label": "Bad scope",
+            "scopes": ["sync-vault:write"],
+        },
+    )
+
+    assert missing_auth.status_code == 401
+    assert wrong_sync_token.status_code == 403
+    assert plaintext_field.status_code == 422
+    assert unsupported_scope.status_code == 422
+
+
 def share_dashboard_payload(title: str = "Mason bodymod dashboard") -> dict:
     return {
         "dashboard": {

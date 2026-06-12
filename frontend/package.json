@@ -39,6 +39,7 @@
     "test:history-import": "node --test tests/historyImport.node.mjs",
     "test:local-backup": "node --test tests/localBackup.node.mjs",
     "test:encrypted-sync": "node --test tests/encryptedSync.node.mjs",
+    "test:personal-data-api": "node --test tests/personalDataApi.node.mjs",
     "test:tracking": "node --test tests/accountTracking.node.mjs",
     "test:protocols": "node --test tests/protocolPlanning.node.mjs",
     "test:procedures": "node --test tests/procedures.node.mjs",

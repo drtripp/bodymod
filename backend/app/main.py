@@ -1,6 +1,6 @@
 import os
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, Header, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.data.attractiveness_evidence import ATTRACTIVENESS_EVIDENCE
@@ -28,6 +28,9 @@ from app.models import NativePushTokenRequest
 from app.models import NativePushTokenResponse
 from app.models import NativePushUnsubscribeRequest
 from app.models import NativePushUnsubscribeResponse
+from app.models import PersonalDataTokenCreateRequest
+from app.models import PersonalDataTokenCreateResponse
+from app.models import PersonalDataTokenRevokeResponse
 from app.models import PlanningData
 from app.models import PopulationReferenceData
 from app.models import ProcedureLibrary
@@ -54,6 +57,7 @@ from app.rate_limit import enforce_match_rate_limit
 from app.repositories import (
     ClientErrorRepository,
     NativePushTokenRepository,
+    PersonalDataTokenRepository,
     ProductAnalyticsRepository,
     ShareDashboardRepository,
     SyncConflictError,
@@ -94,6 +98,16 @@ def web_push_config_payload() -> dict[str, str | bool]:
         if enabled
         else "Remote web push is disabled until VAPID public key, private key, and subject are configured.",
     }
+
+
+def bearer_access_token(authorization: str) -> str:
+    prefix = "Bearer "
+    if not authorization.startswith(prefix):
+        raise HTTPException(status_code=401, detail="Missing bearer token.")
+    access_token = authorization[len(prefix) :].strip()
+    if not access_token:
+        raise HTTPException(status_code=401, detail="Missing bearer token.")
+    return access_token
 
 
 app.add_middleware(
@@ -337,6 +351,53 @@ def revoke_sync_vault(vault_id: str, request: SyncVaultTokenRequest) -> dict[str
     if not revoked:
         raise HTTPException(status_code=404, detail="Sync vault not found.")
     return {"status": "revoked"}
+
+
+@app.post(
+    "/api/personal-data/tokens",
+    response_model=PersonalDataTokenCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_personal_data_token(request: PersonalDataTokenCreateRequest) -> dict:
+    try:
+        token = PersonalDataTokenRepository().create_token(
+            request.vaultId,
+            request.syncToken,
+            request.label,
+            request.scopes,
+            request.expiresAt,
+        )
+    except PermissionError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+
+    if not token:
+        raise HTTPException(status_code=404, detail="Sync vault not found.")
+    return token
+
+
+@app.get(
+    "/api/personal-data/sync-vault",
+    response_model=SyncVaultRecord,
+)
+def read_personal_data_sync_vault(authorization: str = Header(default="")) -> dict:
+    access_token = bearer_access_token(authorization)
+    try:
+        vault = PersonalDataTokenRepository().read_sync_vault(access_token)
+    except PermissionError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+
+    if not vault:
+        raise HTTPException(status_code=404, detail="Sync vault not found.")
+    return vault
+
+
+@app.post(
+    "/api/personal-data/tokens/revoke",
+    response_model=PersonalDataTokenRevokeResponse,
+)
+def revoke_personal_data_token(authorization: str = Header(default="")) -> dict:
+    access_token = bearer_access_token(authorization)
+    return PersonalDataTokenRepository().revoke_token(access_token)
 
 
 @app.post(

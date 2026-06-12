@@ -196,6 +196,10 @@ def hash_sync_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
+def hash_personal_data_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
 class SyncConflictError(Exception):
     def __init__(self, current_revision: int, updated_at: str) -> None:
         self.current_revision = current_revision
@@ -418,6 +422,13 @@ class SyncVaultRepository:
 
         return self._record(row)
 
+    def get_vault_record(self, vault_id: str) -> dict[str, Any] | None:
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            row = self._private_row(connection, vault_id)
+
+        return self._record(row) if row else None
+
     def update_vault(
         self,
         vault_id: str,
@@ -532,6 +543,173 @@ class SyncVaultRepository:
             "createdAt": row["created_at"],
             "updatedAt": row["updated_at"],
             "blob": json.loads(row["blob_json"]),
+        }
+
+
+class PersonalDataTokenRepository:
+    READ_SCOPE = "sync-vault:read"
+
+    def __init__(self, db_path: Path | str | None = None) -> None:
+        self.db_path = Path(db_path) if db_path is not None else configured_database_path()
+
+    def create_token(
+        self,
+        vault_id: str,
+        sync_token: str,
+        label: str,
+        scopes: list[str],
+        expires_at: str | None = None,
+    ) -> dict[str, Any] | None:
+        vault = SyncVaultRepository(self.db_path).get_vault(vault_id, sync_token)
+        if not vault:
+            return None
+
+        if scopes != [self.READ_SCOPE]:
+            raise ValueError("Personal data API currently supports only sync-vault:read.")
+
+        token_id = f"pdt_{secrets.token_urlsafe(12)}"
+        access_token = f"bmd_pat_{secrets.token_urlsafe(32)}"
+        timestamp = utc_timestamp()
+        normalized_expires_at = normalize_iso_timestamp(expires_at)
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            with connection:
+                connection.execute(
+                    """
+                    INSERT INTO personal_data_tokens (
+                        token_id,
+                        access_token_hash,
+                        vault_id,
+                        label,
+                        scopes_json,
+                        created_at,
+                        expires_at,
+                        revoked_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
+                    """,
+                    (
+                        token_id,
+                        hash_personal_data_token(access_token),
+                        vault_id,
+                        label,
+                        json.dumps(scopes, separators=(",", ":")),
+                        timestamp,
+                        normalized_expires_at,
+                    ),
+                )
+
+        return {
+            "tokenId": token_id,
+            "accessToken": access_token,
+            "vaultId": vault_id,
+            "label": label,
+            "scopes": scopes,
+            "createdAt": timestamp,
+            "expiresAt": normalized_expires_at,
+            "revokedAt": None,
+        }
+
+    def read_sync_vault(self, access_token: str) -> dict[str, Any] | None:
+        row = self._active_token_row(access_token)
+        if not row:
+            raise PermissionError("Invalid or expired personal data token.")
+
+        scopes = json.loads(row["scopes_json"])
+        if self.READ_SCOPE not in scopes:
+            raise PermissionError("Personal data token is missing sync-vault:read.")
+
+        return SyncVaultRepository(self.db_path).get_vault_record(row["vault_id"])
+
+    def revoke_token(self, access_token: str) -> dict[str, Any]:
+        timestamp = utc_timestamp()
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            with connection:
+                cursor = connection.execute(
+                    """
+                    UPDATE personal_data_tokens
+                    SET revoked_at = ?
+                    WHERE access_token_hash = ? AND revoked_at IS NULL
+                    """,
+                    (timestamp, hash_personal_data_token(access_token)),
+                )
+
+        return {"status": "revoked", "revoked": cursor.rowcount > 0}
+
+    def list_token_dicts(self, include_revoked: bool = False) -> list[dict[str, Any]]:
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            where_clause = "" if include_revoked else "WHERE revoked_at IS NULL"
+            rows = connection.execute(
+                f"""
+                SELECT token_id, access_token_hash, vault_id, label, scopes_json,
+                       created_at, expires_at, revoked_at
+                FROM personal_data_tokens
+                {where_clause}
+                ORDER BY created_at ASC, token_id ASC
+                """
+            ).fetchall()
+
+        return [self._record(row) for row in rows]
+
+    def _connect(self) -> sqlite3.Connection:
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        connection = sqlite3.connect(self.db_path)
+        connection.row_factory = sqlite3.Row
+        return connection
+
+    def _ensure_schema(self, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS personal_data_tokens (
+                token_id TEXT PRIMARY KEY,
+                access_token_hash TEXT NOT NULL UNIQUE,
+                vault_id TEXT NOT NULL,
+                label TEXT NOT NULL,
+                scopes_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                expires_at TEXT,
+                revoked_at TEXT
+            )
+            """
+        )
+
+    def _active_token_row(self, access_token: str) -> sqlite3.Row | None:
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            row = connection.execute(
+                """
+                SELECT token_id, access_token_hash, vault_id, label, scopes_json,
+                       created_at, expires_at, revoked_at
+                FROM personal_data_tokens
+                WHERE access_token_hash = ? AND revoked_at IS NULL
+                """,
+                (hash_personal_data_token(access_token),),
+            ).fetchone()
+
+        if not row:
+            return None
+
+        expires_at = parse_iso_timestamp(row["expires_at"])
+        now = parse_iso_timestamp(utc_timestamp())
+        if expires_at and now and expires_at <= now:
+            return None
+
+        return row
+
+    def _record(self, row: sqlite3.Row) -> dict[str, Any]:
+        return {
+            "tokenId": row["token_id"],
+            "accessTokenHash": row["access_token_hash"],
+            "vaultId": row["vault_id"],
+            "label": row["label"],
+            "scopes": json.loads(row["scopes_json"]),
+            "createdAt": row["created_at"],
+            "expiresAt": row["expires_at"],
+            "revokedAt": row["revoked_at"],
         }
 
 

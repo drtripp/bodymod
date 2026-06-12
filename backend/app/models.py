@@ -774,6 +774,66 @@ class SyncVaultUpdateRequest(SyncVaultTokenRequest):
     force: bool = False
 
 
+class PersonalDataTokenRecord(BaseModel):
+    tokenId: str
+    vaultId: str
+    label: str
+    scopes: list[Literal["sync-vault:read"]]
+    createdAt: str
+    expiresAt: str | None = None
+    revokedAt: str | None = None
+
+
+class PersonalDataTokenCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    vaultId: str = Field(min_length=8, max_length=160, pattern=r"^[A-Za-z0-9._~-]+$")
+    syncToken: str = Field(min_length=24, max_length=160, pattern=r"^[A-Za-z0-9._~-]+$")
+    label: str = Field(
+        default="Personal data export",
+        min_length=1,
+        max_length=80,
+        pattern=r"^[A-Za-z0-9 .:_-]+$",
+    )
+    scopes: list[Literal["sync-vault:read"]] = Field(default_factory=lambda: ["sync-vault:read"])
+    expiresAt: str | None = Field(default=None, max_length=40)
+
+    @field_validator("label")
+    @classmethod
+    def normalize_label(cls, value: str) -> str:
+        normalized = " ".join(value.split())
+        if not normalized:
+            raise ValueError("Personal data token label is required.")
+        return normalized
+
+    @field_validator("scopes")
+    @classmethod
+    def require_read_scope(cls, value: list[str]) -> list[str]:
+        if value != ["sync-vault:read"]:
+            raise ValueError("Personal data API currently supports only sync-vault:read.")
+        return value
+
+    @field_validator("expiresAt")
+    @classmethod
+    def require_isoish_expiry(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        try:
+            datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("Personal data token expiry must be an ISO-8601 string.") from error
+        return value
+
+
+class PersonalDataTokenCreateResponse(PersonalDataTokenRecord):
+    accessToken: str
+
+
+class PersonalDataTokenRevokeResponse(BaseModel):
+    status: str = "revoked"
+    revoked: bool = True
+
+
 class ShareDashboardSnapshot(BaseModel):
     id: str
     label: str = ""

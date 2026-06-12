@@ -547,9 +547,14 @@ land. No social features, no marketplace.
         account-scoped goals, protocols, check-ins, workouts, procedures,
         labs, photos, and face metric logs. True client-side encrypted
         cross-device profile stores remain part of encrypted sync above.
-- [ ] Personal data API **(new)**: token-scoped read access to one's own data
-      once accounts exist; cheap to build, disproportionately loved by the
-      quantified-self crowd.
+- [x] Personal data API **(new)**: token-scoped read access to one's own data
+      for the encrypted sync-vault prototype. FastAPI now issues read-only
+      bearer tokens after sync-token proof-of-control, stores only access-token
+      hashes, returns the opaque encrypted sync vault through
+      `/api/personal-data/sync-vault`, and revokes tokens without exposing
+      plaintext measurements. The account panel can issue, test, copy, and
+      revoke tokens. Production email-account identity remains covered by the
+      accounts item above.
 - [x] JSON export stays forever, account or not (standing decision): account
       panel now offers a readable local JSON export before sign-in and after
       sign-in, with snapshots and local diet data always included and

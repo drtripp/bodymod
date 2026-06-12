@@ -590,7 +590,8 @@ textarea {
   padding: 12px;
 }
 
-.encrypted-sync-section {
+.encrypted-sync-section,
+.personal-data-api-section {
   border: 1px solid var(--color-border);
   background: var(--color-page);
   display: grid;
@@ -608,7 +609,8 @@ textarea {
 }
 
 .encrypted-backup-section h3,
-.encrypted-sync-section h3 {
+.encrypted-sync-section h3,
+.personal-data-api-section h3 {
   margin: 0 0 4px;
   font-size: 1rem;
 }
@@ -624,7 +626,10 @@ textarea {
 .encrypted-backup-status,
 .encrypted-sync-section p,
 .encrypted-sync-status,
-.encrypted-sync-meta {
+.encrypted-sync-meta,
+.personal-data-api-section p,
+.personal-data-api-status,
+.personal-data-api-meta {
   color: var(--color-muted);
 }
 
@@ -650,7 +655,9 @@ textarea {
 
 .encrypted-backup-status,
 .encrypted-sync-status,
-.encrypted-sync-meta {
+.encrypted-sync-meta,
+.personal-data-api-status,
+.personal-data-api-meta {
   grid-column: 1 / -1;
 }
 
@@ -4945,6 +4952,7 @@ textarea {
   .local-json-export-section,
   .encrypted-backup-section,
   .encrypted-sync-section,
+  .personal-data-api-section,
   .entitlement-grid,
   .referral-code-row,
   .persona-loader,

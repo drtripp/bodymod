@@ -794,6 +794,8 @@ async function mockApi(page) {
   let shareCounter = 0;
   const syncVaults = new Map();
   let syncCounter = 0;
+  const personalDataTokens = new Map();
+  let personalDataTokenCounter = 0;
 
   await page.route("**/api/health", async (route) => {
     await route.fulfill({ json: { status: "ok" } });
@@ -1042,6 +1044,91 @@ async function mockApi(page) {
       record.revoked = true;
       syncVaults.set(record.vaultId, record);
       await route.fulfill({ json: { status: "revoked" } });
+      return;
+    }
+
+    await route.fulfill({ status: 405, json: { detail: "Method not allowed." } });
+  });
+
+  await page.route(/\/api\/personal-data(?:\/tokens(?:\/revoke)?|\/sync-vault)$/, async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const marker = "/api/personal-data";
+    const suffix = url.pathname.slice(url.pathname.indexOf(marker) + marker.length);
+    const timestamp = "2026-06-10T12:00:00Z";
+
+    function publicRecord(record) {
+      return {
+        vaultId: record.vaultId,
+        revision: record.revision,
+        deviceId: record.deviceId,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
+        blob: record.blob
+      };
+    }
+
+    function authorizedTokenRecord() {
+      const authorization = request.headers().authorization || "";
+      const accessToken = authorization.replace(/^Bearer\s+/i, "");
+      return personalDataTokens.get(accessToken);
+    }
+
+    if (request.method() === "POST" && suffix === "/tokens") {
+      const rawBody = request.postData() || "";
+      expect(rawBody).not.toMatch(/backup-source@example\.com|Sync baseline|measurements|waistCircumference|note/);
+      const body = request.postDataJSON();
+      const vault = syncVaults.get(body.vaultId);
+      if (!vault || vault.revoked) {
+        await route.fulfill({ status: 404, json: { detail: "Sync vault not found." } });
+        return;
+      }
+      if (body.syncToken !== vault.syncToken) {
+        await route.fulfill({ status: 403, json: { detail: "Invalid sync token." } });
+        return;
+      }
+
+      personalDataTokenCounter += 1;
+      const accessToken = `bmd_pat_mock_${personalDataTokenCounter}`.padEnd(24, "x");
+      const tokenRecord = {
+        tokenId: `pdt_mock_${personalDataTokenCounter}`,
+        accessToken,
+        vaultId: vault.vaultId,
+        label: body.label || "Personal data export",
+        scopes: body.scopes || ["sync-vault:read"],
+        createdAt: timestamp,
+        expiresAt: null,
+        revokedAt: null,
+        revoked: false
+      };
+      personalDataTokens.set(accessToken, tokenRecord);
+      await route.fulfill({ status: 201, json: tokenRecord });
+      return;
+    }
+
+    if (request.method() === "GET" && suffix === "/sync-vault") {
+      const tokenRecord = authorizedTokenRecord();
+      if (!tokenRecord || tokenRecord.revoked) {
+        await route.fulfill({ status: 403, json: { detail: "Invalid or expired personal data token." } });
+        return;
+      }
+      const vault = syncVaults.get(tokenRecord.vaultId);
+      if (!vault || vault.revoked) {
+        await route.fulfill({ status: 404, json: { detail: "Sync vault not found." } });
+        return;
+      }
+      await route.fulfill({ json: publicRecord(vault) });
+      return;
+    }
+
+    if (request.method() === "POST" && suffix === "/tokens/revoke") {
+      const tokenRecord = authorizedTokenRecord();
+      if (tokenRecord) {
+        tokenRecord.revoked = true;
+        tokenRecord.revokedAt = timestamp;
+        personalDataTokens.set(tokenRecord.accessToken, tokenRecord);
+      }
+      await route.fulfill({ json: { status: "revoked", revoked: Boolean(tokenRecord) } });
       return;
     }
 
@@ -2048,11 +2135,21 @@ test("syncs encrypted backup vaults through the account UI", async ({ page }) =>
   await page.getByLabel("Backup passphrase").fill("correct horse battery staple");
   await page.getByRole("button", { name: "Create sync vault" }).click();
   const syncSection = page.getByLabel("Encrypted sync vault");
+  const personalApiSection = page.getByRole("region", { name: "Personal data API" });
   await expect(syncSection).toContainText("Encrypted sync vault created at revision 1");
   const vaultId = await page.getByLabel("Sync vault ID").inputValue();
   const syncToken = await page.getByLabel("Sync token").inputValue();
   expect(vaultId).toMatch(/^mock-sync-/);
   expect(syncToken).toHaveLength(24);
+  await page.getByLabel("Personal data API token label", { exact: true }).fill("QS script");
+  await page.getByRole("button", { name: "Issue API token" }).click();
+  await expect(personalApiSection).toContainText("Personal data API token issued");
+  const personalApiToken = await page.getByLabel("Personal data API token", { exact: true }).inputValue();
+  expect(personalApiToken).toMatch(/^bmd_pat_mock_/);
+  await page.getByRole("button", { name: "Test API read" }).click();
+  await expect(personalApiSection).toContainText(
+    "Personal data API read encrypted sync vault revision 1"
+  );
 
   await page.getByLabel("Daily weight").fill("83.7");
   await page.getByLabel("Daily calories").fill("2360");
@@ -2089,6 +2186,13 @@ test("syncs encrypted backup vaults through the account UI", async ({ page }) =>
   await expect(syncSection).toContainText("Encrypted sync conflict at server revision 2");
   await page.getByRole("button", { name: "Merge + push" }).click();
   await expect(syncSection).toContainText("Merged encrypted sync vault at revision 3");
+  await page.getByLabel("Personal data API token", { exact: true }).fill(personalApiToken);
+  await page.getByRole("button", { name: "Test API read" }).click();
+  await expect(personalApiSection).toContainText(
+    "Personal data API read encrypted sync vault revision 3"
+  );
+  await page.getByRole("button", { name: "Revoke API token" }).click();
+  await expect(personalApiSection).toContainText("Personal data API token revoked.");
   await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 83.7 kg / 2360 kcal");
   await expect(page.getByLabel("Check-in history")).toContainText("Daily weight: 84.2 kg / 2450 kcal");
   await expect(accountDialog.locator(".snapshot-row").filter({ hasText: "Sync local-only" })).toBeVisible();
