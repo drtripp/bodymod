@@ -2,6 +2,7 @@ import sqlite3
 
 from app.models import EncryptedSyncBlob, TargetProfile, WebPushSubscriptionPayload
 from app.repositories import (
+    AccountIdentityRepository,
     NativePushTokenRepository,
     PersonalDataTokenRepository,
     SyncConflictError,
@@ -43,6 +44,73 @@ def test_target_repository_seeds_sqlite_database(tmp_path) -> None:
 
     assert row["value"] == str(seed["version"])
     assert target_count == len(seed["targets"])
+
+
+def test_account_identity_repository_hashes_email_and_auth_tokens(tmp_path) -> None:
+    db_path = tmp_path / "bodymod.sqlite3"
+    repository = AccountIdentityRepository(db_path=db_path)
+
+    request = repository.request_magic_link(
+        "Mason@Example.com",
+        display_name="Mason",
+        user_agent_family="chromium",
+        delivery_status="dev-token-returned",
+        include_dev_token=True,
+    )
+    session = repository.verify_magic_link(request["devLoginToken"])
+
+    assert session["sessionToken"].startswith("bmd_sess_")
+    assert repository.get_session(session["sessionToken"])["accountId"] == session["accountId"]
+
+    try:
+        repository.verify_magic_link(request["devLoginToken"])
+    except PermissionError:
+        pass
+    else:
+        raise AssertionError("Expected consumed magic link token to be rejected.")
+
+    with sqlite3.connect(db_path) as connection:
+        connection.row_factory = sqlite3.Row
+        identity = connection.execute(
+            """
+            SELECT email_hash, masked_email, email_domain
+            FROM account_identities
+            WHERE account_id = ?
+            """,
+            (session["accountId"],),
+        ).fetchone()
+        magic_link = connection.execute(
+            """
+            SELECT token_hash, consumed_at
+            FROM account_magic_link_requests
+            WHERE request_id = ?
+            """,
+            (request["requestId"],),
+        ).fetchone()
+        account_session = connection.execute(
+            """
+            SELECT session_token_hash, revoked_at
+            FROM account_sessions
+            WHERE session_id = ?
+            """,
+            (session["sessionId"],),
+        ).fetchone()
+
+    assert identity["masked_email"] == "m***@example.com"
+    assert identity["email_domain"] == "example.com"
+    assert identity["email_hash"] != "mason@example.com"
+    assert request["devLoginToken"] not in magic_link["token_hash"]
+    assert session["sessionToken"] not in account_session["session_token_hash"]
+    assert magic_link["consumed_at"]
+
+    raw_rows = f"{dict(identity)} {dict(magic_link)} {dict(account_session)}"
+    assert "mason@example.com" not in raw_rows
+    assert request["devLoginToken"] not in raw_rows
+    assert session["sessionToken"] not in raw_rows
+
+    revoked = repository.revoke_session(session["sessionToken"])
+    assert revoked["revoked"] is True
+    assert repository.get_session(session["sessionToken"]) is None
 
 
 def test_web_push_subscription_repository_upserts_and_revokes(tmp_path) -> None:

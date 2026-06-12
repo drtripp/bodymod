@@ -52,6 +52,7 @@ try {
     Invoke-Checked { npm run test:i18n }
     Invoke-Checked { npm run test:data-explainer }
     Invoke-Checked { npm run test:tone }
+    Invoke-Checked { npm run test:magic-account }
     Invoke-Checked { npm run test:snapshot-trends }
     Invoke-Checked { npm run test:history-import }
     Invoke-Checked { npm run test:local-backup }

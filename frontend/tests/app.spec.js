@@ -796,6 +796,9 @@ async function mockApi(page) {
   let syncCounter = 0;
   const personalDataTokens = new Map();
   let personalDataTokenCounter = 0;
+  const accountMagicLinks = new Map();
+  const accountIdentitySessions = new Map();
+  let accountIdentityCounter = 0;
 
   await page.route("**/api/health", async (route) => {
     await route.fulfill({ json: { status: "ok" } });
@@ -1129,6 +1132,100 @@ async function mockApi(page) {
         personalDataTokens.set(tokenRecord.accessToken, tokenRecord);
       }
       await route.fulfill({ json: { status: "revoked", revoked: Boolean(tokenRecord) } });
+      return;
+    }
+
+    await route.fulfill({ status: 405, json: { detail: "Method not allowed." } });
+  });
+
+  await page.route(/\/api\/accounts(?:\/magic-links(?:\/verify)?|\/session|\/logout)$/, async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const marker = "/api/accounts";
+    const suffix = url.pathname.slice(url.pathname.indexOf(marker) + marker.length);
+    const timestamp = "2026-06-10T12:00:00Z";
+
+    function authorizedSession() {
+      const authorization = request.headers().authorization || "";
+      const sessionToken = authorization.replace(/^Bearer\s+/i, "");
+      return accountIdentitySessions.get(sessionToken);
+    }
+
+    if (request.method() === "POST" && suffix === "/magic-links") {
+      const rawBody = request.postData() || "";
+      expect(rawBody).not.toMatch(/measurements|waistCircumference|syncToken|Mason baseline/);
+      const body = request.postDataJSON();
+      accountIdentityCounter += 1;
+      const token = `bmd_ml_mock_${accountIdentityCounter}`.padEnd(24, "x");
+      const requestId = `mlr_mock_${accountIdentityCounter}`;
+      const maskedEmail = String(body.email || "").replace(/^(.).*@/, "$1***@").toLowerCase();
+      accountMagicLinks.set(token, {
+        requestId,
+        accountId: `acct_mock_${accountIdentityCounter}`,
+        displayName: body.displayName || "",
+        maskedEmail,
+        consumed: false
+      });
+      await route.fulfill({
+        status: 202,
+        json: {
+          status: "accepted",
+          requestId,
+          maskedEmail,
+          emailDomain: "example.com",
+          expiresAt: "2026-06-10T12:15:00Z",
+          deliveryStatus: "dev-token-returned",
+          devLoginToken: token
+        }
+      });
+      return;
+    }
+
+    if (request.method() === "POST" && suffix === "/magic-links/verify") {
+      const body = request.postDataJSON();
+      const magicLink = accountMagicLinks.get(body.token);
+      if (!magicLink || magicLink.consumed) {
+        await route.fulfill({ status: 403, json: { detail: "Magic link token is invalid or expired." } });
+        return;
+      }
+      magicLink.consumed = true;
+      const sessionToken = `bmd_sess_mock_${accountIdentityCounter}`.padEnd(24, "x");
+      const session = {
+        accountId: magicLink.accountId,
+        sessionId: `sess_mock_${accountIdentityCounter}`,
+        sessionToken,
+        displayName: magicLink.displayName,
+        maskedEmail: magicLink.maskedEmail,
+        emailDomain: "example.com",
+        scopes: ["identity:read", "sync-vault:link"],
+        createdAt: timestamp,
+        authenticatedAt: timestamp,
+        expiresAt: "2026-07-10T12:00:00Z",
+        revoked: false
+      };
+      accountIdentitySessions.set(sessionToken, session);
+      await route.fulfill({ status: 201, json: session });
+      return;
+    }
+
+    if (request.method() === "GET" && suffix === "/session") {
+      const session = authorizedSession();
+      if (!session || session.revoked) {
+        await route.fulfill({ status: 403, json: { detail: "Account session is invalid or expired." } });
+        return;
+      }
+      const { sessionToken, revoked, ...publicSession } = session;
+      await route.fulfill({ json: publicSession });
+      return;
+    }
+
+    if (request.method() === "POST" && suffix === "/logout") {
+      const session = authorizedSession();
+      if (session) {
+        session.revoked = true;
+        accountIdentitySessions.set(session.sessionToken, session);
+      }
+      await route.fulfill({ json: { status: "revoked", revoked: Boolean(session) } });
       return;
     }
 
@@ -1701,6 +1798,22 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Account email")).not.toBeVisible();
   await expect(page.getByLabel("Face measurement logger")).toContainText("No saved face measurements yet.");
   await expect(page.getByLabel("Side profile research notes")).toContainText("Nose projection");
+  await expect(page.getByLabel("Email magic-link identity")).toContainText("Local measurements");
+  await page.getByRole("button", { name: "Request magic link" }).click();
+  await expect(page.getByLabel("Email magic-link identity")).toContainText("Dev magic-link token returned");
+  await page.getByRole("button", { name: "Verify" }).click();
+  await expect(page.getByLabel("Email magic-link identity")).toContainText(
+    "Email identity verified for m***@example.com"
+  );
+  const storedIdentitySession = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("bodymod:account-identity-session:v1"))
+  );
+  expect(storedIdentitySession.sessionToken).toContain("bmd_sess_mock");
+  expect(storedIdentitySession.maskedEmail).toBe("m***@example.com");
+  await page.getByRole("button", { name: "Clear identity" }).click();
+  await expect(page.getByLabel("Email magic-link identity")).toContainText(
+    "Email identity session cleared from this browser."
+  );
   await expect(page.getByLabel("Plan and access")).toContainText("Free plan");
   await expect(page.getByLabel("Free included features")).toContainText("Measurement tracking");
   await expect(page.getByLabel("Free included features")).toContainText("Local data export");

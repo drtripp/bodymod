@@ -3,9 +3,9 @@
 This document captures decisions that must be made before treating the current
 prototype as a public product.
 
-The current app is local-first and measurement-first. It does not include
-accounts, photo uploads, external analytics, production corpus content, or
-default server-side sync.
+The current app is local-first and measurement-first. It does not include an
+approved production account system, photo uploads, external analytics,
+production corpus content, or default server-side sync.
 
 ## Current Decisions
 
@@ -16,8 +16,19 @@ Status: not approved for current build.
 Rationale:
 
 - local snapshots satisfy the current private-use loop
-- accounts would add sensitive data custody before there is a clear user need
+- production accounts would add sensitive data custody before there is a clear
+  user need
 - cross-device sync can be revisited after local retention proves useful
+
+Current scaffold:
+
+- backend magic-link identity endpoints can request/verify one-time links, read
+  a bearer session, and revoke the session
+- the scaffold stores email/link/session secrets as hashes and exposes a local
+  dev-token mode for verification
+- the account-panel preview sends only email/display-name/user-agent metadata;
+  measurements and logs remain local unless the separate encrypted sync tools
+  are used
 
 ### Photo Or Vision Uploads
 

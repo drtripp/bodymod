@@ -34,3 +34,7 @@ export const SYNC_VAULTS_ENDPOINT =
 export const PERSONAL_DATA_API_ENDPOINT =
   import.meta.env?.VITE_PERSONAL_DATA_API_ENDPOINT ||
   `${API_BASE_URL}/api/personal-data`;
+
+export const ACCOUNT_IDENTITY_ENDPOINT =
+  import.meta.env?.VITE_ACCOUNT_IDENTITY_ENDPOINT ||
+  `${API_BASE_URL}/api/accounts`;

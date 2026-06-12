@@ -15,6 +15,12 @@ from app.data.procedures import PROCEDURE_LIBRARY
 from app.data.reference import REFERENCE_DATA
 from app.data.strategy_corpus import STRATEGY_CORPUS
 from app.models import AttractivenessEvidenceLibrary
+from app.models import AccountMagicLinkRequest
+from app.models import AccountMagicLinkResponse
+from app.models import AccountMagicLinkVerifyRequest
+from app.models import AccountSessionRecord
+from app.models import AccountSessionResponse
+from app.models import AccountSessionRevokeResponse
 from app.models import BloodworkLibrary
 from app.models import ClothingSizeTables
 from app.models import ClientErrorReportRequest
@@ -55,6 +61,7 @@ from app.models import WebPushUnsubscribeResponse
 from app.native_push import native_push_delivery_configured
 from app.rate_limit import enforce_match_rate_limit
 from app.repositories import (
+    AccountIdentityRepository,
     ClientErrorRepository,
     NativePushTokenRepository,
     PersonalDataTokenRepository,
@@ -98,6 +105,12 @@ def web_push_config_payload() -> dict[str, str | bool]:
         if enabled
         else "Remote web push is disabled until VAPID public key, private key, and subject are configured.",
     }
+
+
+def account_magic_link_delivery_status() -> str:
+    if os.getenv("BODYMOD_AUTH_DEV_TOKENS", "").lower() == "true":
+        return "dev-token-returned"
+    return "provider-not-configured"
 
 
 def bearer_access_token(authorization: str) -> str:
@@ -229,6 +242,56 @@ def report_client_error(request: ClientErrorReportRequest) -> dict:
 )
 def report_product_analytics(request: ProductAnalyticsReportRequest) -> dict:
     return ProductAnalyticsRepository().record_event(request.event)
+
+
+@app.post(
+    "/api/accounts/magic-links",
+    response_model=AccountMagicLinkResponse,
+    response_model_exclude_none=True,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def request_account_magic_link(request: AccountMagicLinkRequest) -> dict:
+    delivery_status = account_magic_link_delivery_status()
+    return AccountIdentityRepository().request_magic_link(
+        request.email,
+        request.displayName,
+        request.userAgentFamily,
+        delivery_status,
+        delivery_status == "dev-token-returned",
+    )
+
+
+@app.post(
+    "/api/accounts/magic-links/verify",
+    response_model=AccountSessionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def verify_account_magic_link(request: AccountMagicLinkVerifyRequest) -> dict:
+    try:
+        return AccountIdentityRepository().verify_magic_link(request.token)
+    except PermissionError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+
+
+@app.get(
+    "/api/accounts/session",
+    response_model=AccountSessionRecord,
+)
+def read_account_session(authorization: str = Header(default="")) -> dict:
+    session_token = bearer_access_token(authorization)
+    session = AccountIdentityRepository().get_session(session_token)
+    if not session:
+        raise HTTPException(status_code=403, detail="Account session is invalid or expired.")
+    return session
+
+
+@app.post(
+    "/api/accounts/logout",
+    response_model=AccountSessionRevokeResponse,
+)
+def revoke_account_session(authorization: str = Header(default="")) -> dict:
+    session_token = bearer_access_token(authorization)
+    return AccountIdentityRepository().revoke_session(session_token)
 
 
 @app.get("/api/web-push/config", response_model=WebPushConfigResponse)

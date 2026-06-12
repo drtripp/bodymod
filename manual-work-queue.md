@@ -122,9 +122,11 @@ Required input:
     `/api/product-analytics` path; the remaining decision is provider/hosting
     approval and whether to enable upload in production
 - account/sync decision
-  - current code has a token-scoped encrypted sync-vault scaffold and manual
-    account-panel create/push/pull/merge/revoke UI, but no production email
-    identity, account recovery, or automatic background cross-device sync
+  - current code has an email magic-link identity scaffold with dev-token
+    verification for local testing, plus a token-scoped encrypted sync-vault
+    scaffold and manual account-panel create/push/pull/merge/revoke UI, but no
+    production email provider, account recovery, or automatic background
+    cross-device sync
 - photo/vision upload decision
 - legal owner/contact details
 - approval of privacy policy, terms, and medical disclaimer drafts

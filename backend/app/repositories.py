@@ -200,6 +200,30 @@ def hash_personal_data_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
+def hash_account_email(email: str) -> str:
+    pepper = os.getenv("BODYMOD_AUTH_EMAIL_HASH_PEPPER", "bodymod-local-auth-pepper")
+    return hashlib.sha256(f"{pepper}:{email}".encode("utf-8")).hexdigest()
+
+
+def hash_magic_link_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def hash_account_session_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def mask_account_email(email: str) -> str:
+    local, _, domain = email.partition("@")
+    if not domain:
+        return ""
+    if len(local) <= 1:
+        masked_local = "*"
+    else:
+        masked_local = f"{local[0]}***"
+    return f"{masked_local}@{domain}"
+
+
 class SyncConflictError(Exception):
     def __init__(self, current_revision: int, updated_at: str) -> None:
         self.current_revision = current_revision
@@ -367,6 +391,377 @@ class ShareDashboardRepository:
             "createdAt": row["created_at"],
             "updatedAt": row["updated_at"],
             "dashboard": json.loads(row["payload_json"]),
+        }
+
+
+class AccountIdentityRepository:
+    SESSION_SCOPES = ["identity:read", "sync-vault:link"]
+
+    def __init__(self, db_path: Path | str | None = None) -> None:
+        self.db_path = Path(db_path) if db_path is not None else configured_database_path()
+
+    def request_magic_link(
+        self,
+        email: str,
+        display_name: str | None = None,
+        user_agent_family: str = "unknown",
+        delivery_status: str = "provider-not-configured",
+        include_dev_token: bool = False,
+    ) -> dict[str, Any]:
+        normalized_email = email.strip().lower()
+        email_hash = hash_account_email(normalized_email)
+        _, _, email_domain = normalized_email.partition("@")
+        masked_email = mask_account_email(normalized_email)
+        timestamp = utc_timestamp()
+        expires_at = (
+            datetime.now(timezone.utc).replace(microsecond=0) + timedelta(minutes=15)
+        ).isoformat()
+        request_id = f"mlr_{secrets.token_urlsafe(12)}"
+        login_token = f"bmd_ml_{secrets.token_urlsafe(32)}"
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            with connection:
+                account_id = self._account_id_for_email_hash(
+                    connection,
+                    email_hash,
+                    display_name,
+                    masked_email,
+                    email_domain,
+                    timestamp,
+                )
+                connection.execute(
+                    """
+                    INSERT INTO account_magic_link_requests (
+                        request_id,
+                        account_id,
+                        token_hash,
+                        delivery_status,
+                        user_agent_family,
+                        created_at,
+                        expires_at,
+                        consumed_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
+                    """,
+                    (
+                        request_id,
+                        account_id,
+                        hash_magic_link_token(login_token),
+                        delivery_status,
+                        user_agent_family,
+                        timestamp,
+                        expires_at,
+                    ),
+                )
+
+        response = {
+            "status": "accepted",
+            "requestId": request_id,
+            "maskedEmail": masked_email,
+            "emailDomain": email_domain,
+            "expiresAt": expires_at,
+            "deliveryStatus": delivery_status,
+        }
+        if include_dev_token:
+            response["devLoginToken"] = login_token
+        return response
+
+    def verify_magic_link(self, token: str) -> dict[str, Any]:
+        token_hash = hash_magic_link_token(token)
+        timestamp = utc_timestamp()
+        now = parse_iso_timestamp(timestamp)
+        session_id = f"sess_{secrets.token_urlsafe(12)}"
+        session_token = f"bmd_sess_{secrets.token_urlsafe(32)}"
+        expires_at = (
+            datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=30)
+        ).isoformat()
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            row = connection.execute(
+                """
+                SELECT requests.request_id,
+                       requests.account_id,
+                       requests.expires_at,
+                       identities.display_name,
+                       identities.masked_email,
+                       identities.email_domain,
+                       identities.created_at AS account_created_at
+                FROM account_magic_link_requests AS requests
+                JOIN account_identities AS identities
+                  ON identities.account_id = requests.account_id
+                WHERE requests.token_hash = ?
+                  AND requests.consumed_at IS NULL
+                  AND identities.revoked_at IS NULL
+                """,
+                (token_hash,),
+            ).fetchone()
+
+            if not row:
+                raise PermissionError("Magic link token is invalid or expired.")
+            token_expires_at = parse_iso_timestamp(row["expires_at"])
+            if token_expires_at is None or (now and token_expires_at <= now):
+                raise PermissionError("Magic link token is invalid or expired.")
+
+            with connection:
+                cursor = connection.execute(
+                    """
+                    UPDATE account_magic_link_requests
+                    SET consumed_at = ?
+                    WHERE request_id = ? AND consumed_at IS NULL
+                    """,
+                    (timestamp, row["request_id"]),
+                )
+                if cursor.rowcount != 1:
+                    raise PermissionError("Magic link token is invalid or expired.")
+                connection.execute(
+                    """
+                    UPDATE account_identities
+                    SET last_login_at = ?
+                    WHERE account_id = ?
+                    """,
+                    (timestamp, row["account_id"]),
+                )
+                connection.execute(
+                    """
+                    INSERT INTO account_sessions (
+                        session_id,
+                        account_id,
+                        session_token_hash,
+                        scopes_json,
+                        created_at,
+                        authenticated_at,
+                        expires_at,
+                        revoked_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
+                    """,
+                    (
+                        session_id,
+                        row["account_id"],
+                        hash_account_session_token(session_token),
+                        json.dumps(self.SESSION_SCOPES, separators=(",", ":")),
+                        timestamp,
+                        timestamp,
+                        expires_at,
+                    ),
+                )
+
+        return {
+            "accountId": row["account_id"],
+            "sessionId": session_id,
+            "sessionToken": session_token,
+            "displayName": row["display_name"] or "",
+            "maskedEmail": row["masked_email"],
+            "emailDomain": row["email_domain"],
+            "scopes": self.SESSION_SCOPES,
+            "createdAt": row["account_created_at"],
+            "authenticatedAt": timestamp,
+            "expiresAt": expires_at,
+        }
+
+    def get_session(self, session_token: str) -> dict[str, Any] | None:
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            row = self._active_session_row(connection, session_token)
+
+        return self._session_record(row) if row else None
+
+    def revoke_session(self, session_token: str) -> dict[str, Any]:
+        timestamp = utc_timestamp()
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            with connection:
+                cursor = connection.execute(
+                    """
+                    UPDATE account_sessions
+                    SET revoked_at = ?
+                    WHERE session_token_hash = ? AND revoked_at IS NULL
+                    """,
+                    (timestamp, hash_account_session_token(session_token)),
+                )
+
+        return {"status": "revoked", "revoked": cursor.rowcount > 0}
+
+    def list_identity_dicts(self) -> list[dict[str, Any]]:
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            rows = connection.execute(
+                """
+                SELECT account_id, email_hash, masked_email, email_domain,
+                       display_name, created_at, last_login_at, revoked_at
+                FROM account_identities
+                ORDER BY created_at ASC, account_id ASC
+                """
+            ).fetchall()
+        return [
+            {
+                "accountId": row["account_id"],
+                "emailHash": row["email_hash"],
+                "maskedEmail": row["masked_email"],
+                "emailDomain": row["email_domain"],
+                "displayName": row["display_name"],
+                "createdAt": row["created_at"],
+                "lastLoginAt": row["last_login_at"],
+                "revokedAt": row["revoked_at"],
+            }
+            for row in rows
+        ]
+
+    def _connect(self) -> sqlite3.Connection:
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        connection = sqlite3.connect(self.db_path)
+        connection.row_factory = sqlite3.Row
+        return connection
+
+    def _ensure_schema(self, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS account_identities (
+                account_id TEXT PRIMARY KEY,
+                email_hash TEXT NOT NULL UNIQUE,
+                masked_email TEXT NOT NULL,
+                email_domain TEXT NOT NULL,
+                display_name TEXT,
+                created_at TEXT NOT NULL,
+                last_login_at TEXT,
+                revoked_at TEXT
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS account_magic_link_requests (
+                request_id TEXT PRIMARY KEY,
+                account_id TEXT NOT NULL,
+                token_hash TEXT NOT NULL UNIQUE,
+                delivery_status TEXT NOT NULL,
+                user_agent_family TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                consumed_at TEXT,
+                FOREIGN KEY(account_id) REFERENCES account_identities(account_id)
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS account_sessions (
+                session_id TEXT PRIMARY KEY,
+                account_id TEXT NOT NULL,
+                session_token_hash TEXT NOT NULL UNIQUE,
+                scopes_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                authenticated_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                revoked_at TEXT,
+                FOREIGN KEY(account_id) REFERENCES account_identities(account_id)
+            )
+            """
+        )
+
+    def _account_id_for_email_hash(
+        self,
+        connection: sqlite3.Connection,
+        email_hash: str,
+        display_name: str | None,
+        masked_email: str,
+        email_domain: str,
+        timestamp: str,
+    ) -> str:
+        row = connection.execute(
+            """
+            SELECT account_id, display_name
+            FROM account_identities
+            WHERE email_hash = ? AND revoked_at IS NULL
+            """,
+            (email_hash,),
+        ).fetchone()
+        if row:
+            if display_name and display_name != row["display_name"]:
+                connection.execute(
+                    """
+                    UPDATE account_identities
+                    SET display_name = ?
+                    WHERE account_id = ?
+                    """,
+                    (display_name, row["account_id"]),
+                )
+            return row["account_id"]
+
+        account_id = f"acct_{secrets.token_urlsafe(12)}"
+        connection.execute(
+            """
+            INSERT INTO account_identities (
+                account_id,
+                email_hash,
+                masked_email,
+                email_domain,
+                display_name,
+                created_at,
+                last_login_at,
+                revoked_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, NULL, NULL)
+            """,
+            (
+                account_id,
+                email_hash,
+                masked_email,
+                email_domain,
+                display_name or "",
+                timestamp,
+            ),
+        )
+        return account_id
+
+    def _active_session_row(
+        self,
+        connection: sqlite3.Connection,
+        session_token: str,
+    ) -> sqlite3.Row | None:
+        row = connection.execute(
+            """
+            SELECT sessions.session_id,
+                   sessions.account_id,
+                   sessions.scopes_json,
+                   sessions.created_at,
+                   sessions.authenticated_at,
+                   sessions.expires_at,
+                   identities.display_name,
+                   identities.masked_email,
+                   identities.email_domain
+            FROM account_sessions AS sessions
+            JOIN account_identities AS identities
+              ON identities.account_id = sessions.account_id
+            WHERE sessions.session_token_hash = ?
+              AND sessions.revoked_at IS NULL
+              AND identities.revoked_at IS NULL
+            """,
+            (hash_account_session_token(session_token),),
+        ).fetchone()
+        if not row:
+            return None
+
+        expires_at = parse_iso_timestamp(row["expires_at"])
+        now = parse_iso_timestamp(utc_timestamp())
+        if expires_at and now and expires_at <= now:
+            return None
+        return row
+
+    def _session_record(self, row: sqlite3.Row) -> dict[str, Any]:
+        return {
+            "accountId": row["account_id"],
+            "sessionId": row["session_id"],
+            "displayName": row["display_name"] or "",
+            "maskedEmail": row["masked_email"],
+            "emailDomain": row["email_domain"],
+            "scopes": json.loads(row["scopes_json"]),
+            "createdAt": row["created_at"],
+            "authenticatedAt": row["authenticated_at"],
+            "expiresAt": row["expires_at"],
         }
 
 

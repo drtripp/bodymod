@@ -573,6 +573,100 @@ def test_product_analytics_endpoint_rejects_unsanitized_routes() -> None:
     assert response.status_code == 422
 
 
+def test_account_magic_link_lifecycle_uses_one_time_session(monkeypatch) -> None:
+    monkeypatch.setenv("BODYMOD_AUTH_DEV_TOKENS", "true")
+
+    requested = client.post(
+        "/api/accounts/magic-links",
+        json={
+            "email": "Mason@Example.com",
+            "displayName": "Mason",
+            "userAgentFamily": "chromium",
+        },
+    )
+
+    assert requested.status_code == 202
+    requested_payload = requested.json()
+    assert requested_payload["deliveryStatus"] == "dev-token-returned"
+    assert requested_payload["maskedEmail"] == "m***@example.com"
+    assert requested_payload["emailDomain"] == "example.com"
+    assert requested_payload["devLoginToken"].startswith("bmd_ml_")
+    assert "Mason@Example.com" not in requested.text
+    assert "mason@example.com" not in requested.text
+
+    verified = client.post(
+        "/api/accounts/magic-links/verify",
+        json={"token": requested_payload["devLoginToken"]},
+    )
+
+    assert verified.status_code == 201
+    session = verified.json()
+    assert session["accountId"].startswith("acct_")
+    assert session["sessionToken"].startswith("bmd_sess_")
+    assert session["scopes"] == ["identity:read", "sync-vault:link"]
+    assert "measurements" not in verified.text
+
+    read_back = client.get(
+        "/api/accounts/session",
+        headers={"Authorization": f"Bearer {session['sessionToken']}"},
+    )
+
+    assert read_back.status_code == 200
+    assert read_back.json()["accountId"] == session["accountId"]
+    assert "sessionToken" not in read_back.json()
+
+    reused = client.post(
+        "/api/accounts/magic-links/verify",
+        json={"token": requested_payload["devLoginToken"]},
+    )
+    assert reused.status_code == 403
+
+    revoked = client.post(
+        "/api/accounts/logout",
+        headers={"Authorization": f"Bearer {session['sessionToken']}"},
+    )
+
+    assert revoked.status_code == 200
+    assert revoked.json()["revoked"] is True
+    assert (
+        client.get(
+            "/api/accounts/session",
+            headers={"Authorization": f"Bearer {session['sessionToken']}"},
+        ).status_code
+        == 403
+    )
+
+
+def test_account_magic_link_rejects_measurement_payloads_and_bad_tokens(monkeypatch) -> None:
+    monkeypatch.delenv("BODYMOD_AUTH_DEV_TOKENS", raising=False)
+    monkeypatch.delenv("BODYMOD_AUTH_EMAIL_PROVIDER", raising=False)
+
+    accepted = client.post(
+        "/api/accounts/magic-links",
+        json={"email": "identity@example.com", "displayName": "Identity"},
+    )
+
+    assert accepted.status_code == 202
+    assert accepted.json()["deliveryStatus"] == "provider-not-configured"
+    assert "devLoginToken" not in accepted.json()
+
+    unsafe = client.post(
+        "/api/accounts/magic-links",
+        json={
+            "email": "leaky@example.com",
+            "displayName": "Leaky",
+            "measurements": {"waistCircumference": 80},
+        },
+    )
+    assert unsafe.status_code == 422
+
+    bad_token = client.post(
+        "/api/accounts/magic-links/verify",
+        json={"token": "bmd_ml_wrong-token-but-long-enough-0123456789"},
+    )
+    assert bad_token.status_code == 403
+
+
 def web_push_subscription_payload(endpoint: str = "https://push.example.test/subscriptions/abc") -> dict:
     return {
         "subscription": {

@@ -40,6 +40,7 @@
     "test:i18n": "node --test tests/i18n.node.mjs",
     "test:data-explainer": "node --test tests/dataExplainer.node.mjs",
     "test:tone": "node --test tests/toneGuard.node.mjs",
+    "test:magic-account": "node --test tests/magicLinkAccount.node.mjs",
     "test:snapshot-trends": "node --test tests/snapshotTrends.node.mjs",
     "test:history-import": "node --test tests/historyImport.node.mjs",
     "test:local-backup": "node --test tests/localBackup.node.mjs",

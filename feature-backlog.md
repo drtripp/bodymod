@@ -536,6 +536,14 @@ land. No social features, no marketplace.
 
 - [ ] Accounts (email magic-link; no passwords, no social login requirement);
       local-first remains the default — accounts are opt-in for sync.
+      First backend identity scaffold is in: `/api/accounts/magic-links`
+      creates one-time magic-link requests, `/api/accounts/magic-links/verify`
+      issues hash-stored sessions, `/api/accounts/session` reads the bearer
+      session, and `/api/accounts/logout` revokes it. The account panel exposes
+      a magic-link identity preview that sends only email/display-name/user-agent
+      metadata and keeps measurements/logs local unless encrypted sync is used.
+      Production email delivery, account recovery, and identity-linked automatic
+      sync remain open.
 - [x] Encrypted sync prototype: client-side-encrypted blob sync so the server cannot
       read measurements (the data-custody story the trans audience and
       cycle-tracking feature demand). **First backend scaffold:** FastAPI now

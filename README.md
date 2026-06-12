@@ -107,6 +107,9 @@ Implemented now:
 - per-metric snapshot history charts with range filters and note annotations
 - local account workspace for persona walkthroughs, goals, protocols, check-ins, workouts, photos, and reports
 - local multi-profile switcher for browser-local accounts, with separate account-scoped logs and per-profile counts
+- backend email magic-link identity scaffold with one-time link requests,
+  hash-stored tokens/sessions, dev-token mode for local verification, and an
+  account-panel preview that does not send measurements or logs
 - backend-served planning seed file with 10 validation personas, goal presets, protocol templates, and reference checks
 - backend-served attractiveness evidence seed scaffold mapping reviewed/contested claims to goal presets for validation
 - daily weight trend smoothing with raw-dot vs smoothed-line display
@@ -219,7 +222,9 @@ Not implemented yet:
 - full production percentile replacement across all supported fields
 - vetted ANSUR or equivalent breadth data behind the population charts; NHANES now covers adult height, weight, waist, and hip only
 - production-quality target dataset
-- production server-side email accounts, account recovery, automatic background sync/merge, or cross-device history beyond the manual encrypted sync-vault and personal data API prototypes
+- production email delivery/provider setup, account recovery, automatic
+  background sync/merge, or cross-device history beyond the manual encrypted
+  sync-vault, personal data API, and magic-link identity scaffolds
 - hosted photo/body inference work; current face scans are browser-local only
 - production FoodData Central import/API ownership; Diet currently has dummy backend USDA-style seed rows plus Open Food Facts lookup
 - source-reviewed procedure taxonomy and clinical/body-mod validation; current procedure data is a dummy review scaffold

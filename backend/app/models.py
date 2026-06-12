@@ -730,6 +730,83 @@ class NativePushUnsubscribeResponse(BaseModel):
     revoked: bool = True
 
 
+class AccountMagicLinkRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: str = Field(min_length=3, max_length=254)
+    displayName: str | None = Field(default=None, max_length=80)
+    userAgentFamily: str = Field(default="unknown", min_length=1, max_length=60)
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", normalized):
+            raise ValueError("A valid email address is required.")
+        return normalized
+
+    @field_validator("displayName")
+    @classmethod
+    def normalize_display_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        normalized = " ".join(value.split())
+        if not normalized:
+            return None
+        if "@" in normalized:
+            raise ValueError("Display name cannot contain an email address.")
+        return normalized
+
+    @field_validator("userAgentFamily")
+    @classmethod
+    def normalize_user_agent_family(cls, value: str) -> str:
+        normalized = " ".join(value.split()) or "unknown"
+        if not re.match(r"^[A-Za-z0-9 .:_/-]+$", normalized):
+            raise ValueError("User agent family contains unsupported characters.")
+        return normalized
+
+
+class AccountMagicLinkResponse(BaseModel):
+    status: Literal["accepted"] = "accepted"
+    requestId: str
+    maskedEmail: str
+    emailDomain: str
+    expiresAt: str
+    deliveryStatus: Literal[
+        "dev-token-returned",
+        "provider-configured",
+        "provider-not-configured",
+    ]
+    devLoginToken: str | None = None
+
+
+class AccountMagicLinkVerifyRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    token: str = Field(min_length=24, max_length=180, pattern=r"^[A-Za-z0-9._~-]+$")
+
+
+class AccountSessionRecord(BaseModel):
+    accountId: str
+    sessionId: str
+    displayName: str = ""
+    maskedEmail: str
+    emailDomain: str
+    scopes: list[Literal["identity:read", "sync-vault:link"]]
+    createdAt: str
+    authenticatedAt: str
+    expiresAt: str
+
+
+class AccountSessionResponse(AccountSessionRecord):
+    sessionToken: str
+
+
+class AccountSessionRevokeResponse(BaseModel):
+    status: str = "revoked"
+    revoked: bool = True
+
+
 class EncryptedSyncBlob(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
