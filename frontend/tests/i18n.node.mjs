@@ -51,6 +51,20 @@ test("translates known keys, falls back to English, and interpolates values", ()
     translate("es", "diet.status.foundFoods", { count: 1 }),
     "1 alimento(s) encontrado(s)."
   );
+  assert.equal(translate("es", "strategy.title"), "Explorador de estrategias");
+  assert.equal(
+    translate("es", "strategy.loadedSummary", { outcomes: 8, sources: 0, caseLogs: 4 }),
+    "8 resultado(s) cargado(s) con 0 enlace(s) de fuente revisada(s) y 4 caso(s)."
+  );
+  assert.equal(
+    translate("es", "strategy.point.aria", {
+      name: "Entrada",
+      efficacy: 51,
+      risk: 22,
+      confidence: "confianza mixta"
+    }),
+    "Entrada: eficacia 51, riesgo 22, confianza mixta"
+  );
   assert.equal(translate("bad-locale", "nav.buildPlan"), "Build Plan");
   assert.equal(translate("es", "missing.key"), "missing.key");
   assert.equal(

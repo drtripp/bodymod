@@ -609,7 +609,7 @@ export default function App() {
             >
               x
             </button>
-            <StrategyCorpus />
+            <StrategyCorpus locale={locale} />
           </div>
         </div>
       ) : null}

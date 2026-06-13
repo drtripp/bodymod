@@ -1372,6 +1372,19 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.getByRole("textbox", { name: "Busqueda de comida" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Buscar comida" })).toBeVisible();
   await expect(page.getByLabel("Objetivos macro de dieta")).toContainText("Calorias");
+  const spanishStrategyResponse = page.waitForResponse(/\/api\/strategy-corpus/);
+  await page.getByRole("button", { name: "Crear plan" }).click();
+  expect((await spanishStrategyResponse).ok()).toBeTruthy();
+  await expect(page.getByRole("dialog", { name: "Explorador de estrategias" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Explorador de estrategias" })).toBeVisible();
+  await expect(page.getByLabel("Filtro de edad del corpus de estrategias")).toContainText(
+    "Filtro de contenido 18+"
+  );
+  await page.getByRole("button", { name: "Tengo 18 o mas" }).click();
+  await expect(page.getByRole("heading", { name: "Quiero..." })).toBeVisible();
+  await expect(page.getByText("Esto no es consejo")).toBeVisible();
+  await expect(page.getByLabel("Filtrar confianza del resultado seleccionado")).toBeVisible();
+  await page.getByRole("button", { name: "Cerrar explorador de estrategias" }).click();
   await page.getByRole("tab", { name: "Cuerpo" }).click();
   expect(await page.evaluate(() => window.localStorage.getItem("bodymod:locale:v1"))).toBe(
     JSON.stringify("es")

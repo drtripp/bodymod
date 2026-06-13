@@ -15,25 +15,38 @@ import {
   strategyEvidenceLevels,
   strategyOutcomes
 } from "../lib/strategyCorpus";
+import { createTranslator } from "../lib/i18n";
 
-function riskLabel(value) {
+function riskKey(value) {
   if (value >= 75) {
-    return "high risk";
+    return "high";
   }
   if (value >= 45) {
-    return "moderate risk";
+    return "moderate";
   }
-  return "lower risk";
+  return "lower";
 }
 
-function confidenceLabel(evidence) {
+function riskLabel(value, t) {
+  return t(`strategy.risk.${riskKey(value)}`);
+}
+
+function confidenceKey(evidence) {
   if (["strong", "clinical"].includes(evidence)) {
-    return "higher confidence";
+    return "higher";
   }
   if (["moderate", "situational"].includes(evidence)) {
-    return "mixed confidence";
+    return "mixed";
   }
-  return "low confidence";
+  return "low";
+}
+
+function confidenceClass(evidence) {
+  return `${confidenceKey(evidence)}-confidence`;
+}
+
+function confidenceLabel(evidence, t) {
+  return t(`strategy.confidence.${confidenceKey(evidence)}`);
 }
 
 function strategySlug(strategy) {
@@ -59,7 +72,8 @@ function caseLogsForStrategy(strategy, caseLogs) {
   );
 }
 
-export default function StrategyCorpus() {
+export default function StrategyCorpus({ locale = "en" }) {
+  const t = createTranslator(locale);
   const [corpusOutcomes, setCorpusOutcomes] = useState(() => loadStrategyCorpusBundle().outcomes);
   const [corpusCaseLogs, setCorpusCaseLogs] = useState(() => loadStrategyCorpusBundle().caseLogs);
   const [seedOutcomes, setSeedOutcomes] = useState(strategyOutcomes);
@@ -95,19 +109,19 @@ export default function StrategyCorpus() {
               ? current
               : backendCorpus.outcomes[0]?.id || ""
           );
-          setCorpusStatus("Backend seed corpus loaded for this browser.");
+          setCorpusStatus(t("strategy.status.backendLoaded"));
         }
       })
       .catch(() => {
         if (isMounted && !hasStrategyCorpusOverride()) {
-          setCorpusStatus("Using bundled seed corpus while backend is unavailable.");
+          setCorpusStatus(t("strategy.status.backendUnavailable"));
         }
       });
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     if (!detailStrategySlug) {
@@ -203,10 +217,13 @@ export default function StrategyCorpus() {
         setQuery("");
         setEvidenceFilter("all");
         setCorpusStatus(
-          `Imported ${importedCorpus.outcomes.length} outcome(s) and ${importedCorpus.caseLogs.length} case log(s).`
+          t("strategy.status.imported", {
+            outcomes: importedCorpus.outcomes.length,
+            caseLogs: importedCorpus.caseLogs.length
+          })
         );
       } catch (error) {
-        setCorpusStatus("Import failed. Choose a valid bodymod strategy corpus JSON file.");
+        setCorpusStatus(t("strategy.status.importFailed"));
       } finally {
         event.target.value = "";
       }
@@ -223,7 +240,7 @@ export default function StrategyCorpus() {
     setDetailStrategySlug("");
     setQuery("");
     setEvidenceFilter("all");
-    setCorpusStatus("Seed corpus restored for this browser.");
+    setCorpusStatus(t("strategy.status.seedRestored"));
   }
 
   function openStrategy(strategy) {
@@ -240,7 +257,7 @@ export default function StrategyCorpus() {
   function handleAcceptAgeGate() {
     acceptStrategyCorpusAgeGate();
     setAgeGateAccepted(true);
-    setCorpusStatus("Strategy corpus age gate accepted on this browser.");
+    setCorpusStatus(t("strategy.status.ageAccepted"));
   }
 
   function handleAcknowledgeHighRisk() {
@@ -250,24 +267,20 @@ export default function StrategyCorpus() {
 
   if (!ageGateAccepted) {
     return (
-      <section className="panel anchor-panel corpus-age-gate" id="strategy-corpus" aria-label="Strategy corpus age gate">
+      <section className="panel anchor-panel corpus-age-gate" id="strategy-corpus" aria-label={t("strategy.ageGate.aria")}>
         <div className="panel-header">
-          <h2>Strategy explorer</h2>
+          <h2>{t("strategy.title")}</h2>
           <p>
-            This corpus can include medical-adjacent, surgical, and pharmaceutical
-            topics. It is informational only and not advice, coaching, dosing, or
-            a protocol generator.
+            {t("strategy.ageGate.intro")}
           </p>
         </div>
         <div className="age-gate-card">
-          <strong>18+ content gate</strong>
+          <strong>{t("strategy.ageGate.title")}</strong>
           <p>
-            Continue only if you are at least 18 and understand that high-risk
-            entries require professional review. The app does not personalize
-            surgical, pharmaceutical, or clinical entries.
+            {t("strategy.ageGate.body")}
           </p>
           <button className="button" type="button" onClick={handleAcceptAgeGate}>
-            I am 18 or older
+            {t("strategy.ageGate.accept")}
           </button>
         </div>
       </section>
@@ -286,76 +299,82 @@ export default function StrategyCorpus() {
             type="button"
             onClick={() => setDetailStrategySlug("")}
           >
-            Back to outcome map
+            {t("strategy.detail.back")}
           </button>
           <h2>{strategy.name}</h2>
           <p>
-            {outcome.label} / {strategy.interventionType}. Informational only,
-            not advice or a protocol.
+            {t("strategy.detail.context", {
+              outcome: outcome.label,
+              type: strategy.interventionType
+            })}
           </p>
         </div>
 
         <div className="strategy-detail-grid">
           <dl className="strategy-detail-facts">
             <div>
-              <dt>Efficacy</dt>
+              <dt>{t("strategy.metric.efficacy")}</dt>
               <dd>{strategy.efficacy}/100</dd>
             </div>
             <div>
-              <dt>Risk</dt>
-              <dd>{strategy.risk}/100 ({riskLabel(strategy.risk)})</dd>
+              <dt>{t("strategy.metric.risk")}</dt>
+              <dd>{strategy.risk}/100 ({riskLabel(strategy.risk, t)})</dd>
             </div>
             <div>
-              <dt>Confidence</dt>
-              <dd>{confidenceLabel(strategy.evidence)}</dd>
+              <dt>{t("strategy.metric.confidence")}</dt>
+              <dd>{confidenceLabel(strategy.evidence, t)}</dd>
             </div>
             <div>
-              <dt>Evidence</dt>
+              <dt>{t("strategy.metric.evidence")}</dt>
               <dd>{strategy.evidence}</dd>
             </div>
             <div>
-              <dt>Review</dt>
+              <dt>{t("strategy.metric.review")}</dt>
               <dd>{strategy.reviewStatus}</dd>
             </div>
             <div>
-              <dt>Personalized</dt>
-              <dd>{strategy.excludedFromPersonalization ? "excluded" : "eligible after review"}</dd>
+              <dt>{t("strategy.metric.personalized")}</dt>
+              <dd>
+                {strategy.excludedFromPersonalization
+                  ? t("strategy.personalized.excluded")
+                  : t("strategy.personalized.eligible")}
+              </dd>
             </div>
           </dl>
 
           <div className="strategy-detail-copy">
             <p>
-              <strong>Claimed mechanism:</strong> {strategy.claimedMechanism}
+              <strong>{t("strategy.detail.claimedMechanism")}:</strong> {strategy.claimedMechanism}
             </p>
             <p>
-              <strong>Expected magnitude:</strong> {strategy.expectedMagnitude}
+              <strong>{t("strategy.detail.expectedMagnitude")}:</strong> {strategy.expectedMagnitude}
             </p>
             <p>
-              <strong>Time horizon:</strong> {strategy.timeHorizon}
+              <strong>{t("strategy.detail.timeHorizon")}:</strong> {strategy.timeHorizon}
             </p>
             <p>
-              <strong>Reversibility:</strong> {strategy.reversibility}
+              <strong>{t("strategy.detail.reversibility")}:</strong> {strategy.reversibility}
             </p>
             <p>
-              <strong>Cost:</strong> {strategy.cost}
+              <strong>{t("strategy.detail.cost")}:</strong> {strategy.cost}
             </p>
             <p>
-              <strong>Uncertainty:</strong> {strategy.uncertaintyNotes}
+              <strong>{t("strategy.detail.uncertainty")}:</strong> {strategy.uncertaintyNotes}
             </p>
             {strategy.contraindicationFlags.length ? (
               <p>
-                <strong>Flags:</strong> {strategy.contraindicationFlags.join(", ")}
+                <strong>{t("strategy.detail.flags")}:</strong> {strategy.contraindicationFlags.join(", ")}
               </p>
             ) : null}
             <p>
-              <strong>Legal/regulatory:</strong> {strategy.legalNotes}
+              <strong>{t("strategy.detail.legal")}:</strong> {strategy.legalNotes}
             </p>
             <p>{strategy.notes}</p>
           </div>
         </div>
 
         {strategy.sourceLinks.length ? (
-          <ul className="source-list" aria-label={`${strategy.name} sources`}>
+          <ul className="source-list" aria-label={t("strategy.sources.aria", { name: strategy.name })}>
             {strategy.sourceLinks.map((source) => (
               <li key={source.url}>
                 <a href={source.url} target="_blank" rel="noreferrer">
@@ -363,20 +382,22 @@ export default function StrategyCorpus() {
                 </a>
                 <span>
                   {source.sourceType}
-                  {source.reviewedAt ? ` / reviewed ${source.reviewedAt}` : ""}
+                  {source.reviewedAt
+                    ? t("strategy.sources.reviewed", { date: source.reviewedAt })
+                    : ""}
                 </span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="muted-text">No reviewed source links yet.</p>
+          <p className="muted-text">{t("strategy.sources.empty")}</p>
         )}
 
         {linkedCaseLogs.length ? (
-          <div className="case-log-section" aria-label={`${strategy.name} linked case logs`}>
+          <div className="case-log-section" aria-label={t("strategy.caseLogs.aria", { name: strategy.name })}>
             <div className="fit-panel-header">
-              <h3>Linked case logs</h3>
-              <span>n=1 reports, not recommendations</span>
+              <h3>{t("strategy.caseLogs.title")}</h3>
+              <span>{t("strategy.caseLogs.note")}</span>
             </div>
             <div className="case-log-grid">
               {linkedCaseLogs.map((caseLog) => (
@@ -387,31 +408,34 @@ export default function StrategyCorpus() {
                   </div>
                   <dl>
                     <div>
-                      <dt>Window</dt>
+                      <dt>{t("strategy.caseLogs.window")}</dt>
                       <dd>{caseLog.window}</dd>
                     </div>
                     <div>
-                      <dt>Adherence</dt>
+                      <dt>{t("strategy.caseLogs.adherence")}</dt>
                       <dd>
                         {caseLog.averageScore === null
-                          ? `${caseLog.adherenceCount} check-ins`
-                          : `${caseLog.averageScore.toFixed(1)}/5 over ${caseLog.adherenceCount} check-ins`}
+                          ? t("strategy.caseLogs.checkIns", { count: caseLog.adherenceCount })
+                          : t("strategy.caseLogs.average", {
+                              score: caseLog.averageScore.toFixed(1),
+                              count: caseLog.adherenceCount
+                            })}
                       </dd>
                     </div>
                     <div>
-                      <dt>Snapshots</dt>
+                      <dt>{t("strategy.caseLogs.snapshots")}</dt>
                       <dd>{caseLog.snapshotCount}</dd>
                     </div>
                     <div>
-                      <dt>Review</dt>
+                      <dt>{t("strategy.metric.review")}</dt>
                       <dd>{caseLog.reviewStatus}</dd>
                     </div>
                   </dl>
                   <p>
-                    <strong>Outcome:</strong> {caseLog.outcomeSummary}
+                    <strong>{t("strategy.caseLogs.outcome")}:</strong> {caseLog.outcomeSummary}
                   </p>
                   <p>
-                    <strong>Projection:</strong> {caseLog.projectionSummary}
+                    <strong>{t("strategy.caseLogs.projection")}:</strong> {caseLog.projectionSummary}
                   </p>
                   <p>{caseLog.notes}</p>
                   {caseLog.limitations.length ? (
@@ -426,7 +450,7 @@ export default function StrategyCorpus() {
             </div>
           </div>
         ) : (
-          <p className="muted-text">No linked case logs yet.</p>
+          <p className="muted-text">{t("strategy.caseLogs.empty")}</p>
         )}
       </section>
     );
@@ -435,16 +459,15 @@ export default function StrategyCorpus() {
   return (
     <section className="panel anchor-panel" id="strategy-corpus">
       <div className="panel-header">
-        <h2>Strategy explorer</h2>
+        <h2>{t("strategy.title")}</h2>
         <p>
-          Start with an outcome, then inspect one efficacy/risk map. This is not
-          advice, coaching, dosing, or a protocol generator.
+          {t("strategy.intro")}
         </p>
       </div>
 
       <div className="intent-layout">
-        <aside className="intent-list" aria-label="Desired body changes">
-          <h3>I want to...</h3>
+        <aside className="intent-list" aria-label={t("strategy.intent.aria")}>
+          <h3>{t("strategy.intent.title")}</h3>
           {corpusOutcomes.map((outcome) => (
             <button
               key={outcome.id}
@@ -464,21 +487,21 @@ export default function StrategyCorpus() {
         <div className="intent-main">
           <div className="corpus-controls outcome-controls">
             <label className="field compact-field">
-              <span className="field-label">Search this outcome</span>
+              <span className="field-label">{t("strategy.search.label")}</span>
               <input
-                aria-label="Search selected outcome strategies"
+                aria-label={t("strategy.search.aria")}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
               />
             </label>
             <label className="field compact-field">
-              <span className="field-label">Confidence</span>
+              <span className="field-label">{t("strategy.confidence.label")}</span>
               <select
-                aria-label="Filter selected outcome confidence"
+                aria-label={t("strategy.confidence.filterAria")}
                 value={evidenceFilter}
                 onChange={(event) => setEvidenceFilter(event.target.value)}
               >
-                <option value="all">All confidence</option>
+                <option value="all">{t("strategy.confidence.all")}</option>
                 {strategyEvidenceLevels.map((level) => (
                   <option key={level} value={level}>
                     {level}
@@ -497,20 +520,25 @@ export default function StrategyCorpus() {
 
               <div
                 className="risk-map outcome-risk-map"
-                aria-label={`${selectedOutcome.label} efficacy and risk plot`}
+                aria-label={t("strategy.plot.aria", { outcome: selectedOutcome.label })}
               >
-                <span className="axis-label axis-label-y">Risk</span>
-                <span className="axis-label axis-label-x">Efficacy</span>
+                <span className="axis-label axis-label-y">{t("strategy.metric.risk")}</span>
+                <span className="axis-label axis-label-x">{t("strategy.metric.efficacy")}</span>
                 {visibleStrategies.map((strategy) => (
                   <button
                     key={strategy.name}
-                    className={`strategy-point labeled-point confidence-${confidenceLabel(strategy.evidence).replaceAll(" ", "-")}`}
+                    className={`strategy-point labeled-point confidence-${confidenceClass(strategy.evidence)}`}
                     style={{
                       left: `${strategy.efficacy}%`,
                       bottom: `${strategy.risk}%`
                     }}
                     type="button"
-                    aria-label={`${strategy.name}: efficacy ${strategy.efficacy}, risk ${strategy.risk}, ${confidenceLabel(strategy.evidence)}`}
+                    aria-label={t("strategy.point.aria", {
+                      name: strategy.name,
+                      efficacy: strategy.efficacy,
+                      risk: strategy.risk,
+                      confidence: confidenceLabel(strategy.evidence, t)
+                    })}
                     onClick={() => openStrategy(strategy)}
                   >
                     <span>{strategy.name}</span>
@@ -518,37 +546,37 @@ export default function StrategyCorpus() {
                 ))}
               </div>
 
-              <div className="confidence-legend" aria-label="Confidence legend">
-                <span><i className="confidence-higher-confidence" /> Higher confidence</span>
-                <span><i className="confidence-mixed-confidence" /> Mixed confidence</span>
-                <span><i className="confidence-low-confidence" /> Low confidence</span>
+              <div className="confidence-legend" aria-label={t("strategy.confidence.legendAria")}>
+                <span><i className="confidence-higher-confidence" /> {t("strategy.confidence.higher")}</span>
+                <span><i className="confidence-mixed-confidence" /> {t("strategy.confidence.mixed")}</span>
+                <span><i className="confidence-low-confidence" /> {t("strategy.confidence.low")}</span>
               </div>
 
               {!visibleStrategies.length ? (
-                <p className="muted-text">No strategies match this outcome filter.</p>
+                <p className="muted-text">{t("strategy.filter.empty")}</p>
               ) : null}
             </>
           ) : (
-            <p className="muted-text">No strategy outcomes loaded.</p>
+            <p className="muted-text">{t("strategy.outcomes.empty")}</p>
           )}
         </div>
       </div>
 
       <div className="corpus-actions">
         <button type="button" onClick={handleExportCorpus}>
-          Export corpus JSON
+          {t("strategy.actions.export")}
         </button>
         <label className="file-button">
-          Import corpus JSON
+          {t("strategy.actions.import")}
           <input
-            aria-label="Import strategy corpus"
+            aria-label={t("strategy.actions.importAria")}
             type="file"
             accept="application/json"
             onChange={handleImportCorpus}
           />
         </label>
         <button type="button" onClick={handleResetCorpus}>
-          Reset seed corpus
+          {t("strategy.actions.reset")}
         </button>
       </div>
 
@@ -559,17 +587,20 @@ export default function StrategyCorpus() {
       ) : null}
 
       <p className="muted-text">
-        Loaded {corpusOutcomes.length} outcome(s) with {sourceCount} reviewed
-        source link(s) and {corpusCaseLogs.length} case log(s).
+        {t("strategy.loadedSummary", {
+          outcomes: corpusOutcomes.length,
+          sources: sourceCount,
+          caseLogs: corpusCaseLogs.length
+        })}
       </p>
 
       {selectedStrategyResult ? (
         <div className="strategy-modal-backdrop" role="presentation">
-          <dialog className="strategy-modal" open aria-label="Strategy synopsis">
+          <dialog className="strategy-modal" open aria-label={t("strategy.synopsis.aria")}>
             <button
               className="modal-close"
               type="button"
-              aria-label="Close strategy synopsis"
+              aria-label={t("strategy.synopsis.close")}
               onClick={() => setSelectedStrategySlug("")}
             >
               x
@@ -581,22 +612,24 @@ export default function StrategyCorpus() {
             </p>
             <dl>
               <div>
-                <dt>Efficacy</dt>
+                <dt>{t("strategy.metric.efficacy")}</dt>
                 <dd>{selectedStrategyResult.strategy.efficacy}/100</dd>
               </div>
               <div>
-                <dt>Risk</dt>
+                <dt>{t("strategy.metric.risk")}</dt>
                 <dd>{selectedStrategyResult.strategy.risk}/100</dd>
               </div>
               <div>
-                <dt>Confidence</dt>
-                <dd>{confidenceLabel(selectedStrategyResult.strategy.evidence)}</dd>
+                <dt>{t("strategy.metric.confidence")}</dt>
+                <dd>{confidenceLabel(selectedStrategyResult.strategy.evidence, t)}</dd>
               </div>
             </dl>
             <p>{selectedStrategyResult.strategy.notes}</p>
             {caseLogsForStrategy(selectedStrategyResult.strategy, corpusCaseLogs).length ? (
               <p className="muted-text">
-                {caseLogsForStrategy(selectedStrategyResult.strategy, corpusCaseLogs).length} linked case log(s).
+                {t("strategy.synopsis.caseLogs", {
+                  count: caseLogsForStrategy(selectedStrategyResult.strategy, corpusCaseLogs).length
+                })}
               </p>
             ) : null}
             <button
@@ -607,7 +640,7 @@ export default function StrategyCorpus() {
                 setSelectedStrategySlug("");
               }}
             >
-              Open strategy page
+              {t("strategy.synopsis.open")}
             </button>
           </dialog>
         </div>
@@ -615,27 +648,25 @@ export default function StrategyCorpus() {
 
       {pendingHighRiskSlug ? (
         <div className="strategy-modal-backdrop" role="presentation">
-          <dialog className="strategy-modal high-risk-ack" open aria-label="High-risk strategy acknowledgment">
+          <dialog className="strategy-modal high-risk-ack" open aria-label={t("strategy.highRisk.aria")}>
             <button
               className="modal-close"
               type="button"
-              aria-label="Cancel high-risk strategy"
+              aria-label={t("strategy.highRisk.cancelAria")}
               onClick={() => setPendingHighRiskSlug("")}
             >
               x
             </button>
-            <h3>High-risk information</h3>
+            <h3>{t("strategy.highRisk.title")}</h3>
             <p>
-              This entry is surgical, pharmaceutical, clinical, or otherwise
-              high risk. It is excluded from personalization and is not a
-              recommendation, protocol, or dosing guide.
+              {t("strategy.highRisk.body")}
             </p>
             <div className="button-row">
               <button className="button" type="button" onClick={handleAcknowledgeHighRisk}>
-                Show informational entry
+                {t("strategy.highRisk.show")}
               </button>
               <button className="button" type="button" onClick={() => setPendingHighRiskSlug("")}>
-                Keep closed
+                {t("strategy.highRisk.keepClosed")}
               </button>
             </div>
           </dialog>
