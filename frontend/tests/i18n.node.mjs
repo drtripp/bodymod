@@ -41,6 +41,16 @@ test("translates known keys, falls back to English, and interpolates values", ()
   assert.equal(translate("es", "onboarding.title"), "Primer uso");
   assert.equal(translate("es", "measurement.title"), "Medidas");
   assert.equal(translate("es", "measurement.field.waistCircumference.label"), "Cintura");
+  assert.equal(translate("es", "diet.title"), "Dieta");
+  assert.equal(translate("es", "diet.search.button"), "Buscar comida");
+  assert.equal(
+    translate("es", "diet.target.line", { target: 3400, unit: "mg", percent: 14 }),
+    "Objetivo 3400 mg / 14%"
+  );
+  assert.equal(
+    translate("es", "diet.status.foundFoods", { count: 1 }),
+    "1 alimento(s) encontrado(s)."
+  );
   assert.equal(translate("bad-locale", "nav.buildPlan"), "Build Plan");
   assert.equal(translate("es", "missing.key"), "missing.key");
   assert.equal(

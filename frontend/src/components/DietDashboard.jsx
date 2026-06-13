@@ -42,27 +42,70 @@ import {
   persistFluidLog
 } from "../lib/storage";
 import { defaultBarcodeScannerAdapter } from "../lib/barcodeScanner";
+import { createTranslator } from "../lib/i18n";
 
 function formatNumber(value, digits = 0) {
   return Number(value || 0).toFixed(digits);
 }
 
-function macroLine(food) {
-  return `${formatNumber(food.macros.calories)} kcal / P ${formatNumber(food.macros.protein)}g / C ${formatNumber(food.macros.carbs)}g / F ${formatNumber(food.macros.fat)}g`;
+function macroLine(food, t) {
+  return t("diet.macro.line", {
+    calories: formatNumber(food.macros.calories),
+    protein: formatNumber(food.macros.protein),
+    carbs: formatNumber(food.macros.carbs),
+    fat: formatNumber(food.macros.fat)
+  });
 }
 
-function mealLine(meal) {
+function mealLine(meal, t) {
   const summary = mealSummary(meal);
-  return `${summary.itemCount} item(s) / ${formatNumber(summary.macros.calories)} kcal / P ${formatNumber(summary.macros.protein)}g / C ${formatNumber(summary.macros.carbs)}g / F ${formatNumber(summary.macros.fat)}g`;
+  return t("diet.meal.line", {
+    count: summary.itemCount,
+    calories: formatNumber(summary.macros.calories),
+    protein: formatNumber(summary.macros.protein),
+    carbs: formatNumber(summary.macros.carbs),
+    fat: formatNumber(summary.macros.fat)
+  });
 }
 
-function targetLine(row) {
-  return `Target ${formatNumber(row.target)} ${row.unit} / ${row.percent}%`;
+function targetLine(row, t) {
+  return t("diet.target.line", {
+    target: formatNumber(row.target),
+    unit: row.unit,
+    percent: row.percent
+  });
 }
 
-function micronutrientLine(row) {
-  const prefix = row.targetType === "limit" ? "Limit" : "Target";
-  return `${prefix} ${formatNumber(row.target, row.digits)} ${row.unit} / ${row.percent}%`;
+function micronutrientLine(row, t) {
+  const key = row.targetType === "limit" ? "diet.limit.line" : "diet.target.line";
+  return t(key, {
+    target: formatNumber(row.target, row.digits),
+    unit: row.unit,
+    percent: row.percent
+  });
+}
+
+function localizedMacroLabel(id, label, t) {
+  return t(`diet.macro.${id}`, {}, label);
+}
+
+function localizedMicronutrientLabel(id, label, t) {
+  return t(`diet.micro.${id}`, {}, label);
+}
+
+function localizedDietGoal(goal, t) {
+  return {
+    ...goal,
+    label: t(`diet.goal.${goal.id}`, {}, goal.label),
+    rateLabel: t(`diet.goal.${goal.id}.rate`, {}, goal.rateLabel)
+  };
+}
+
+function localizedActivity(activity, t) {
+  return {
+    ...activity,
+    label: t(`diet.activity.${activity.id}`, {}, activity.label)
+  };
 }
 
 function createCustomFoodForm() {
@@ -88,7 +131,11 @@ function createLogEntry(food, servings) {
   };
 }
 
-export default function DietDashboard({ currentMeasurements = defaultMeasurements }) {
+export default function DietDashboard({
+  currentMeasurements = defaultMeasurements,
+  locale = "en"
+}) {
+  const t = createTranslator(locale);
   const [query, setQuery] = useState("");
   const [barcode, setBarcode] = useState("");
   const [servings, setServings] = useState(1);
@@ -115,18 +162,41 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
   const [activityLevelId, setActivityLevelId] = useState("moderate");
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const localizedDietGoals = useMemo(
+    () => dietGoalOptions.map((goal) => localizedDietGoal(goal, t)),
+    [locale]
+  );
+  const localizedActivities = useMemo(
+    () => activityLevelOptions.map((activity) => localizedActivity(activity, t)),
+    [locale]
+  );
   const totals = useMemo(() => sumNutrition(entries), [entries]);
   const macroTargets = useMemo(
-    () => calculateMacroTargets(currentMeasurements, dietGoalId, activityLevelId),
-    [activityLevelId, currentMeasurements, dietGoalId]
+    () => {
+      const targets = calculateMacroTargets(currentMeasurements, dietGoalId, activityLevelId);
+      return {
+        ...targets,
+        goal: localizedDietGoal(targets.goal, t),
+        activity: localizedActivity(targets.activity, t)
+      };
+    },
+    [activityLevelId, currentMeasurements, dietGoalId, locale]
   );
   const macroRows = useMemo(
-    () => macroTargetRows(totals.macros, macroTargets),
-    [macroTargets, totals.macros]
+    () =>
+      macroTargetRows(totals.macros, macroTargets).map((row) => ({
+        ...row,
+        label: localizedMacroLabel(row.id, row.label, t)
+      })),
+    [macroTargets, totals.macros, locale]
   );
   const micronutrientRows = useMemo(
-    () => micronutrientTargetRows(totals.micros),
-    [totals.micros]
+    () =>
+      micronutrientTargetRows(totals.micros).map((row) => ({
+        ...row,
+        label: localizedMicronutrientLabel(row.id, row.label, t)
+      })),
+    [totals.micros, locale]
   );
   const fluidTarget = useMemo(
     () => calculateFluidTarget(currentMeasurements),
@@ -177,7 +247,7 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
   async function handleSearch(event) {
     event.preventDefault();
     setIsSearching(true);
-    setStatus("Searching food database...");
+    setStatus(t("diet.status.searching"));
 
     try {
       const foods = await searchFoods(query);
@@ -185,7 +255,11 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
       const mergedFoods = mergeFoodLists(localFoods, foods);
       setResults(mergedFoods);
       setSelectedFood(mergedFoods[0] || null);
-      setStatus(mergedFoods.length ? `Found ${mergedFoods.length} food(s).` : "No foods found.");
+      setStatus(
+        mergedFoods.length
+          ? t("diet.status.foundFoods", { count: mergedFoods.length })
+          : t("diet.status.noFoods")
+      );
     } catch (error) {
       const fallbackFoods = mergeFoodLists(
         foodLibrary.customFoods.filter((food) => foodMatchesQuery(food, query)),
@@ -193,7 +267,7 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
       );
       setResults(fallbackFoods);
       setSelectedFood(fallbackFoods[0] || null);
-      setStatus("Food database unavailable. Showing sample foods.");
+      setStatus(t("diet.status.databaseUnavailable"));
     } finally {
       setIsSearching(false);
     }
@@ -202,15 +276,15 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
   async function handleBarcodeLookup(event) {
     event.preventDefault();
     setIsSearching(true);
-    setStatus("Looking up barcode...");
+    setStatus(t("diet.status.barcodeLooking"));
 
     try {
       const food = await lookupBarcode(barcode);
       setResults([food, ...results.filter((item) => item.id !== food.id)]);
       setSelectedFood(food);
-      setStatus(`Barcode matched ${food.name}.`);
+      setStatus(t("diet.status.barcodeMatched", { name: food.name }));
     } catch (error) {
-      setStatus(error.message || "Barcode lookup failed.");
+      setStatus(error.message || t("diet.status.barcodeFailed"));
     } finally {
       setIsSearching(false);
     }
@@ -226,7 +300,7 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
       ...current,
       recentFoods: upsertFood(current.recentFoods, food, 8)
     }));
-    setStatus(`Logged ${food.name}.`);
+    setStatus(t("diet.status.loggedFood", { name: food.name }));
   }
 
   function handleDeleteEntry(entryId) {
@@ -236,12 +310,15 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
   function handleLogFluid(amount = fluidAmount, label = fluidLabel) {
     const fluidEntry = createFluidEntry(amount, label);
     if (!fluidEntry.amountMl) {
-      setStatus("Enter a fluid amount before logging it.");
+      setStatus(t("diet.status.fluidAmountRequired"));
       return;
     }
 
     updateFluidEntries((current) => [fluidEntry, ...current]);
-    setStatus(`Logged ${fluidEntry.amountMl} ml ${fluidEntry.label}.`);
+    setStatus(t("diet.status.loggedFluid", {
+      amount: fluidEntry.amountMl,
+      label: fluidEntry.label
+    }));
   }
 
   function handleDeleteFluid(entryId) {
@@ -252,7 +329,7 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
     event.preventDefault();
 
     if (!entries.length) {
-      setStatus("Log foods before saving a meal.");
+      setStatus(t("diet.status.mealFoodsRequired"));
       return;
     }
 
@@ -262,7 +339,7 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
     });
 
     if (!mealName.trim()) {
-      setStatus("Name the meal before saving it.");
+      setStatus(t("diet.status.mealNameRequired"));
       return;
     }
 
@@ -271,18 +348,21 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
       mealTemplates: upsertMeal(current.mealTemplates, meal, 12)
     }));
     setMealName("");
-    setStatus(`Saved meal ${meal.name}.`);
+    setStatus(t("diet.status.mealSaved", { name: meal.name }));
   }
 
   function handleAddMeal(meal) {
     const mealEntries = createMealLogEntries(meal);
     if (!mealEntries.length) {
-      setStatus("That meal has no foods saved.");
+      setStatus(t("diet.status.mealEmpty"));
       return;
     }
 
     updateEntries((current) => [...mealEntries, ...current]);
-    setStatus(`Logged meal ${meal.name} (${mealEntries.length} item(s)).`);
+    setStatus(t("diet.status.mealLogged", {
+      name: meal.name,
+      count: mealEntries.length
+    }));
   }
 
   function handleDeleteMeal(mealId) {
@@ -290,19 +370,19 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
       ...current,
       mealTemplates: removeMeal(current.mealTemplates, mealId)
     }));
-    setStatus("Meal template deleted.");
+    setStatus(t("diet.status.mealDeleted"));
   }
 
   function handleCopyLatestDay() {
     const latestEntries = latestLoggedDayEntries(entries);
     if (!latestEntries.length) {
-      setStatus("No logged day to copy yet.");
+      setStatus(t("diet.status.noDayToCopy"));
       return;
     }
 
     const copiedEntries = cloneDietEntries(latestEntries);
     updateEntries((current) => [...copiedEntries, ...current]);
-    setStatus(`Copied latest logged day (${copiedEntries.length} item(s)).`);
+    setStatus(t("diet.status.dayCopied", { count: copiedEntries.length }));
   }
 
   function importDietCsv(rawValue) {
@@ -311,9 +391,11 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
     if (!result.entries.length) {
       const reason =
         result.invalidRows[0]?.reason ||
-        (result.duplicateRows ? "All imported foods were already logged." : "No food rows found.");
+        (result.duplicateRows
+          ? t("diet.status.importAllDuplicates")
+          : t("diet.status.importNoRows"));
       setDietImportStatus(reason);
-      setStatus(`Diet import skipped: ${reason}`);
+      setStatus(t("diet.status.importSkipped", { reason }));
       return;
     }
 
@@ -342,8 +424,8 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
     const reader = new FileReader();
     reader.onload = () => importDietCsv(String(reader.result || ""));
     reader.onerror = () => {
-      setDietImportStatus("CSV file import failed.");
-      setStatus("Diet import failed.");
+      setDietImportStatus(t("diet.status.csvFileFailed"));
+      setStatus(t("diet.status.importFailed"));
     };
     reader.readAsText(file);
     event.target.value = "";
@@ -362,7 +444,7 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
     const customFood = normalizeCustomFood(customFoodForm);
 
     if (!customFood.name || customFood.name === "Custom food") {
-      setStatus("Name the custom food before saving it.");
+      setStatus(t("diet.status.customFoodNameRequired"));
       return;
     }
 
@@ -374,7 +456,7 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
     setResults((current) => mergeFoodLists([customFood], current));
     setSelectedFood(customFood);
     setCustomFoodForm(createCustomFoodForm());
-    setStatus(`Saved custom food ${customFood.name}.`);
+    setStatus(t("diet.status.customFoodSaved", { name: customFood.name }));
   }
 
   function isFavorite(foodId) {
@@ -395,7 +477,11 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
           : upsertFood(current.favoriteFoods, food, 12)
       };
     });
-    setStatus(isFavorite(food.id) ? `Removed ${food.name} from favorites.` : `Saved ${food.name} as a favorite.`);
+    setStatus(
+      isFavorite(food.id)
+        ? t("diet.status.favoriteRemoved", { name: food.name })
+        : t("diet.status.favoriteSaved", { name: food.name })
+    );
   }
 
   function stopScanner() {
@@ -406,7 +492,7 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
 
   async function requestCameraStream() {
     if (!navigator.mediaDevices?.getUserMedia) {
-      throw new Error("Camera access is not available in this browser.");
+      throw new Error(t("diet.status.cameraUnavailable"));
     }
 
     const coarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches;
@@ -421,13 +507,13 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
 
   async function handleScanBarcode() {
     if (defaultBarcodeScannerAdapter.isNativeScannerAvailable()) {
-      setStatus("Opening native barcode scanner...");
+      setStatus(t("diet.status.nativeScannerOpening"));
       try {
         const scannedBarcode = await defaultBarcodeScannerAdapter.scanBarcode();
         setBarcode(scannedBarcode.value);
-        setStatus(`Scanned barcode ${scannedBarcode.value}.`);
+        setStatus(t("diet.status.barcodeScanned", { barcode: scannedBarcode.value }));
       } catch (error) {
-        setStatus(error.message || "Native barcode scan failed. Enter the barcode manually.");
+        setStatus(error.message || t("diet.status.nativeScannerFailed"));
       }
       return;
     }
@@ -440,14 +526,14 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
       setIsScanning(true);
 
       if (!("BarcodeDetector" in window)) {
-        setStatus("Camera access granted. This browser cannot decode barcodes natively, so enter the barcode manually.");
+        setStatus(t("diet.status.cameraManualEntry"));
         return;
       }
 
       const detector = new window.BarcodeDetector({
         formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"]
       });
-      setStatus("Point the camera at a barcode.");
+      setStatus(t("diet.status.cameraPoint"));
 
       const scan = async () => {
         if (!streamRef.current || !videoRef.current) {
@@ -458,7 +544,7 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
         if (codes.length) {
           setBarcode(codes[0].rawValue);
           stopScanner();
-          setStatus(`Scanned barcode ${codes[0].rawValue}.`);
+          setStatus(t("diet.status.barcodeScanned", { barcode: codes[0].rawValue }));
           return;
         }
 
@@ -468,7 +554,7 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
       void scan();
     } catch (error) {
       stopScanner();
-      setStatus("Camera barcode scan failed. Enter the barcode manually.");
+      setStatus(t("diet.status.cameraFailed"));
     }
   }
 
@@ -476,57 +562,57 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
     <main className="diet-workspace">
       <section className="panel diet-hero">
         <div>
-          <h2>Diet</h2>
+          <h2>{t("diet.title")}</h2>
           <p>
-            Search USDA-style generic foods and Open Food Facts, save custom foods, scan or enter barcodes, and build a local macro and micronutrient log.
+            {t("diet.intro")}
           </p>
         </div>
         <div className="diet-source-note">
-          <strong>Database</strong>
-          <span>Backend USDA-style samples, Open Food Facts lookup, and custom foods stored locally.</span>
+          <strong>{t("diet.database.title")}</strong>
+          <span>{t("diet.database.body")}</span>
         </div>
       </section>
 
       <section className="panel diet-search-panel">
         <form className="diet-search-grid" onSubmit={handleSearch}>
           <label className="field">
-            <span className="field-label">Food search</span>
+            <span className="field-label">{t("diet.search.label")}</span>
             <input
-              aria-label="Food search"
+              aria-label={t("diet.search.label")}
               value={query}
-              placeholder="Greek yogurt, oats, protein bar..."
+              placeholder={t("diet.search.placeholder")}
               onChange={(event) => setQuery(event.target.value)}
             />
           </label>
           <button className="button" type="submit" disabled={isSearching}>
-            Search foods
+            {t("diet.search.button")}
           </button>
         </form>
 
         <form className="diet-search-grid" onSubmit={handleBarcodeLookup}>
           <label className="field">
-            <span className="field-label">Barcode</span>
+            <span className="field-label">{t("diet.barcode.label")}</span>
             <input
-              aria-label="Barcode"
+              aria-label={t("diet.barcode.label")}
               inputMode="numeric"
               value={barcode}
-              placeholder="Enter UPC/EAN"
+              placeholder={t("diet.barcode.placeholder")}
               onChange={(event) => setBarcode(event.target.value)}
             />
           </label>
           <button className="button" type="submit" disabled={isSearching}>
-            Lookup barcode
+            {t("diet.barcode.lookup")}
           </button>
           <button className="button" type="button" onClick={handleScanBarcode}>
-            Scan
+            {t("diet.barcode.scan")}
           </button>
         </form>
 
         <div className={`barcode-scanner ${isScanning ? "is-active" : ""}`}>
-          <video ref={videoRef} aria-label="Barcode scanner camera preview" muted playsInline />
+          <video ref={videoRef} aria-label={t("diet.barcode.preview")} muted playsInline />
           {isScanning ? (
             <button className="button" type="button" onClick={stopScanner}>
-              Stop scanner
+              {t("diet.barcode.stop")}
             </button>
           ) : null}
         </div>
@@ -537,24 +623,24 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
           </p>
         ) : null}
 
-        <form className="diet-import-card" aria-label="Diet CSV import" onSubmit={handleDietCsvImport}>
+        <form className="diet-import-card" aria-label={t("diet.import.aria")} onSubmit={handleDietCsvImport}>
           <label className="field">
-            <span className="field-label">Diet CSV</span>
+            <span className="field-label">{t("diet.import.label")}</span>
             <textarea
-              aria-label="Diet CSV"
+              aria-label={t("diet.import.label")}
               value={dietImportText}
-              placeholder="Date,Meal,Food,Calories,Protein,Carbs,Fat..."
+              placeholder={t("diet.import.placeholder")}
               onChange={(event) => setDietImportText(event.target.value)}
             />
           </label>
           <div className="button-row">
             <button className="button" type="submit">
-              Import diet CSV
+              {t("diet.import.button")}
             </button>
             <label className="button file-button">
-              Import file
+              {t("diet.import.file")}
               <input
-                aria-label="Import diet CSV file"
+                aria-label={t("diet.import.fileAria")}
                 type="file"
                 accept=".csv,text/csv"
                 onChange={handleDietCsvFile}
@@ -568,67 +654,74 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
       <section className="diet-grid">
         <div className="panel">
           <div className="panel-header">
-            <h2>Food Database</h2>
-            <p>Select a food, adjust servings, then log it. Custom foods stay in this browser.</p>
+            <h2>{t("diet.foodDatabase.title")}</h2>
+            <p>{t("diet.foodDatabase.body")}</p>
           </div>
-          <form className="custom-food-form" aria-label="Custom food form" onSubmit={handleSaveCustomFood}>
+          <form className="custom-food-form" aria-label={t("diet.customFood.formAria")} onSubmit={handleSaveCustomFood}>
             <label className="field">
-              <span className="field-label">Custom food name</span>
+              <span className="field-label">{t("diet.customFood.name")}</span>
               <input
-                aria-label="Custom food name"
+                aria-label={t("diet.customFood.name")}
                 name="name"
                 value={customFoodForm.name}
-                placeholder="Tofu bowl"
+                placeholder={t("diet.customFood.namePlaceholder")}
                 onChange={handleCustomFoodFieldChange}
               />
             </label>
             <label className="field">
-              <span className="field-label">Brand / note</span>
+              <span className="field-label">{t("diet.customFood.brand")}</span>
               <input
-                aria-label="Custom food brand"
+                aria-label={t("diet.customFood.brandAria")}
                 name="brand"
                 value={customFoodForm.brand}
-                placeholder="Home recipe"
+                placeholder={t("diet.customFood.brandPlaceholder")}
                 onChange={handleCustomFoodFieldChange}
               />
             </label>
             <label className="field">
-              <span className="field-label">Serving</span>
+              <span className="field-label">{t("diet.customFood.serving")}</span>
               <input
-                aria-label="Custom food serving"
+                aria-label={t("diet.customFood.servingAria")}
                 name="serving"
                 value={customFoodForm.serving}
-                placeholder="1 bowl"
+                placeholder={t("diet.customFood.servingPlaceholder")}
                 onChange={handleCustomFoodFieldChange}
               />
             </label>
             {[
-              ["calories", "Calories"],
-              ["protein", "Protein"],
-              ["carbs", "Carbs"],
-              ["fat", "Fat"]
-            ].map(([name, label]) => (
-              <label key={name} className="field compact-field">
-                <span className="field-label">{label}</span>
-                <input
-                  aria-label={`Custom food ${label.toLowerCase()}`}
-                  name={name}
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={customFoodForm[name]}
-                  onChange={handleCustomFoodFieldChange}
-                />
-              </label>
-            ))}
-            <div className="custom-micro-grid" aria-label="Custom food micronutrients">
+              ["calories", t("diet.macro.calories")],
+              ["protein", t("diet.macro.protein")],
+              ["carbs", t("diet.macro.carbs")],
+              ["fat", t("diet.macro.fat")]
+            ].map(([name, label]) => {
+              const fieldLabel = t("diet.customFood.macroAria", {
+                label: String(label).toLowerCase()
+              });
+              return (
+                <label key={name} className="field compact-field">
+                  <span className="field-label">{label}</span>
+                  <input
+                    aria-label={fieldLabel}
+                    name={name}
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={customFoodForm[name]}
+                    onChange={handleCustomFoodFieldChange}
+                  />
+                </label>
+              );
+            })}
+            <div className="custom-micro-grid" aria-label={t("diet.customFood.microAria")}>
               {micronutrientTargets.map((target) => (
                 <label key={target.id} className="field compact-field">
                   <span className="field-label">
-                    {target.label} ({target.unit})
+                    {localizedMicronutrientLabel(target.id, target.label, t)} ({target.unit})
                   </span>
                   <input
-                    aria-label={`Custom food ${target.label.toLowerCase()}`}
+                    aria-label={t("diet.customFood.macroAria", {
+                      label: localizedMicronutrientLabel(target.id, target.label, t).toLowerCase()
+                    })}
                     name={target.id}
                     type="number"
                     min="0"
@@ -640,57 +733,57 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
               ))}
             </div>
             <button className="button" type="submit">
-              Save custom food
+              {t("diet.customFood.save")}
             </button>
           </form>
 
-          <form className="meal-template-form" aria-label="Meal template form" onSubmit={handleSaveMealTemplate}>
+          <form className="meal-template-form" aria-label={t("diet.meal.formAria")} onSubmit={handleSaveMealTemplate}>
             <label className="field">
-              <span className="field-label">Meal name</span>
+              <span className="field-label">{t("diet.meal.name")}</span>
               <input
-                aria-label="Meal name"
+                aria-label={t("diet.meal.name")}
                 value={mealName}
-                placeholder="Training breakfast"
+                placeholder={t("diet.meal.namePlaceholder")}
                 onChange={(event) => setMealName(event.target.value)}
               />
             </label>
             <button className="button" type="submit">
-              Save current log as meal
+              {t("diet.meal.save")}
             </button>
             <button className="button" type="button" onClick={handleCopyLatestDay}>
-              Copy latest day
+              {t("diet.meal.copyLatest")}
             </button>
           </form>
 
-          <div className="meal-template-list" aria-label="Saved meals">
-            <h3>Saved meals</h3>
+          <div className="meal-template-list" aria-label={t("diet.meal.savedAria")}>
+            <h3>{t("diet.meal.savedTitle")}</h3>
             {foodLibrary.mealTemplates.length ? (
               <ul>
                 {foodLibrary.mealTemplates.map((meal) => (
                   <li key={meal.id}>
                     <div>
                       <strong>{meal.name}</strong>
-                      <span>{mealLine(meal)}</span>
+                      <span>{mealLine(meal, t)}</span>
                     </div>
                     <div className="food-row-actions">
                       <button className="button" type="button" onClick={() => handleAddMeal(meal)}>
-                        Add meal
+                        {t("diet.meal.add")}
                       </button>
                       <button className="button" type="button" onClick={() => handleDeleteMeal(meal.id)}>
-                        Delete meal
+                        {t("diet.meal.delete")}
                       </button>
                     </div>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="muted-text">No saved meals yet.</p>
+              <p className="muted-text">{t("diet.meal.empty")}</p>
             )}
           </div>
 
-          <div className="quick-foods" aria-label="Quick diet foods">
+          <div className="quick-foods" aria-label={t("diet.quick.aria")}>
             <div>
-              <h3>Favorites</h3>
+              <h3>{t("diet.quick.favorites")}</h3>
               {foodLibrary.favoriteFoods.length ? (
                 <ul className="quick-food-list">
                   {foodLibrary.favoriteFoods.map((food) => (
@@ -699,17 +792,17 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
                         {food.name}
                       </button>
                       <button className="button" type="button" onClick={() => handleAddFood(food)}>
-                        Add
+                        {t("diet.add")}
                       </button>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="muted-text">No favorites yet.</p>
+                <p className="muted-text">{t("diet.quick.noFavorites")}</p>
               )}
             </div>
             <div>
-              <h3>Recents</h3>
+              <h3>{t("diet.quick.recents")}</h3>
               {foodLibrary.recentFoods.length ? (
                 <ul className="quick-food-list">
                   {foodLibrary.recentFoods.map((food) => (
@@ -718,22 +811,22 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
                         {food.name}
                       </button>
                       <button className="button" type="button" onClick={() => handleAddFood(food)}>
-                        Add
+                        {t("diet.add")}
                       </button>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="muted-text">No recent foods yet.</p>
+                <p className="muted-text">{t("diet.quick.noRecents")}</p>
               )}
             </div>
           </div>
 
           <div className="serving-row">
             <label className="field compact-field">
-              <span className="field-label">Servings</span>
+              <span className="field-label">{t("diet.servings")}</span>
               <input
-                aria-label="Servings"
+                aria-label={t("diet.servings")}
                 type="number"
                 min="0"
                 step="0.25"
@@ -742,17 +835,17 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
               />
             </label>
             <button className="button" type="button" onClick={() => handleAddFood()}>
-              Add selected
+              {t("diet.addSelected")}
             </button>
           </div>
 
-          <ul className="food-result-list" aria-label="Food search results">
+          <ul className="food-result-list" aria-label={t("diet.results.aria")}>
             {results.map((food) => (
               <li key={food.id} className={selectedFood?.id === food.id ? "is-selected" : ""}>
                 <button type="button" onClick={() => setSelectedFood(food)}>
                   <strong>{food.name}</strong>
-                  <span>{food.brand} / {food.serving} / {food.source || "Local"}</span>
-                  <small>{macroLine(food)}</small>
+                  <span>{food.brand} / {food.serving} / {food.source || t("diet.localSource")}</span>
+                  <small>{macroLine(food, t)}</small>
                 </button>
                 <div className="food-row-actions">
                   <button
@@ -760,10 +853,10 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
                     type="button"
                     onClick={() => handleToggleFavorite(food)}
                   >
-                    {isFavorite(food.id) ? "Unfavorite" : "Favorite"}
+                    {isFavorite(food.id) ? t("diet.unfavorite") : t("diet.favorite")}
                   </button>
                   <button className="button" type="button" onClick={() => handleAddFood(food)}>
-                    Add
+                    {t("diet.add")}
                   </button>
                 </div>
               </li>
@@ -773,19 +866,19 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
 
         <div className="panel">
           <div className="panel-header">
-            <h2>Daily Totals</h2>
-            <p>Stored locally in this browser.</p>
+            <h2>{t("diet.dailyTotals.title")}</h2>
+            <p>{t("diet.dailyTotals.body")}</p>
           </div>
-          <div className="macro-target-panel" aria-label="Diet macro targets">
+          <div className="macro-target-panel" aria-label={t("diet.macroTargets.aria")}>
             <div className="macro-target-controls">
               <label className="field compact-field">
-                <span className="field-label">Diet goal</span>
+                <span className="field-label">{t("diet.goal.label")}</span>
                 <select
-                  aria-label="Diet goal"
+                  aria-label={t("diet.goal.label")}
                   value={dietGoalId}
                   onChange={(event) => setDietGoalId(event.target.value)}
                 >
-                  {dietGoalOptions.map((goal) => (
+                  {localizedDietGoals.map((goal) => (
                     <option key={goal.id} value={goal.id}>
                       {goal.label}
                     </option>
@@ -793,13 +886,13 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
                 </select>
               </label>
               <label className="field compact-field">
-                <span className="field-label">Activity</span>
+                <span className="field-label">{t("diet.activity.label")}</span>
                 <select
-                  aria-label="Activity"
+                  aria-label={t("diet.activity.label")}
                   value={activityLevelId}
                   onChange={(event) => setActivityLevelId(event.target.value)}
                 >
-                  {activityLevelOptions.map((activity) => (
+                  {localizedActivities.map((activity) => (
                     <option key={activity.id} value={activity.id}>
                       {activity.label}
                     </option>
@@ -809,12 +902,12 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
             </div>
             <div className="macro-target-summary">
               <article>
-                <span>Calories</span>
+                <span>{t("diet.macro.calories")}</span>
                 <strong>{formatNumber(macroTargets.calories)}</strong>
                 <small>{macroTargets.goal.rateLabel}</small>
               </article>
               <article>
-                <span>Protein</span>
+                <span>{t("diet.macro.protein")}</span>
                 <strong>{formatNumber(macroTargets.protein)}g</strong>
                 <small>{macroTargets.goal.proteinPerKg}g/kg</small>
               </article>
@@ -825,15 +918,15 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
               </article>
             </div>
             <p className="muted-text">
-              Formula estimate only: Mifflin-St Jeor with age {macroTargets.ageAssumption} placeholder. Adaptive TDEE appears in account check-ins after enough reliable weight and calorie logs.
+              {t("diet.macroTargets.note", { age: macroTargets.ageAssumption })}
             </p>
           </div>
-          <div className="macro-total-grid" aria-label="Diet macro totals">
+          <div className="macro-total-grid" aria-label={t("diet.macroTotals.aria")}>
             {macroRows.map((row) => (
               <article key={row.id}>
                 <span>{row.label}</span>
                 <strong>{formatNumber(row.actual)}</strong>
-                <small>{targetLine(row)}</small>
+                <small>{targetLine(row, t)}</small>
                 <div className="macro-progress-track" aria-hidden="true">
                   <i style={{ width: `${Math.min(100, row.percent)}%` }} />
                 </div>
@@ -841,12 +934,12 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
             ))}
           </div>
 
-          <div className="micro-total-grid" aria-label="Diet micronutrient totals">
+          <div className="micro-total-grid" aria-label={t("diet.microTotals.aria")}>
             {micronutrientRows.map((row) => (
               <article key={row.id}>
                 <span>{row.label}</span>
                 <strong>{formatNumber(row.actual, row.digits)} {row.unit}</strong>
-                <small>{micronutrientLine(row)}</small>
+                <small>{micronutrientLine(row, t)}</small>
                 <div className="macro-progress-track" aria-hidden="true">
                   <i style={{ width: `${Math.min(100, row.percent)}%` }} />
                 </div>
@@ -854,12 +947,12 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
             ))}
           </div>
 
-          <div className="fluid-panel" aria-label="Fluid log">
+          <div className="fluid-panel" aria-label={t("diet.fluid.aria")}>
             <div className="fluid-summary">
               <article>
-                <span>Fluids</span>
+                <span>{t("diet.fluid.title")}</span>
                 <strong>{formatNumber(fluidTotals.totalMl)} ml</strong>
-                <small>Target {formatNumber(fluidTotals.targetMl)} ml / {fluidTotals.percent}%</small>
+                <small>{targetLine({ target: fluidTotals.targetMl, unit: "ml", percent: fluidTotals.percent }, t)}</small>
                 <div className="macro-progress-track" aria-hidden="true">
                   <i style={{ width: `${Math.min(100, fluidTotals.percent)}%` }} />
                 </div>
@@ -867,9 +960,9 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
             </div>
             <div className="fluid-controls">
               <label className="field compact-field">
-                <span className="field-label">Fluid amount</span>
+                <span className="field-label">{t("diet.fluid.amount")}</span>
                 <input
-                  aria-label="Fluid amount"
+                  aria-label={t("diet.fluid.amount")}
                   type="number"
                   min="0"
                   step="50"
@@ -878,18 +971,18 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
                 />
               </label>
               <label className="field compact-field">
-                <span className="field-label">Fluid label</span>
+                <span className="field-label">{t("diet.fluid.label")}</span>
                 <input
-                  aria-label="Fluid label"
+                  aria-label={t("diet.fluid.label")}
                   value={fluidLabel}
                   onChange={(event) => setFluidLabel(event.target.value)}
                 />
               </label>
               <button className="button" type="button" onClick={() => handleLogFluid()}>
-                Log fluid
+                {t("diet.fluid.log")}
               </button>
             </div>
-            <div className="fluid-preset-row" aria-label="Fluid presets">
+            <div className="fluid-preset-row" aria-label={t("diet.fluid.presetsAria")}>
               {fluidPresetOptions.map((preset) => (
                 <button
                   key={preset.id}
@@ -901,37 +994,40 @@ export default function DietDashboard({ currentMeasurements = defaultMeasurement
                 </button>
               ))}
             </div>
-          <ul className="fluid-log-list" aria-label="Recent fluid entries">
+            <ul className="fluid-log-list" aria-label={t("diet.fluid.recentAria")}>
               {fluidEntries.length ? (
                 fluidEntries.slice(0, 5).map((entry) => (
                   <li key={entry.id}>
                     <span>{entry.label}: {formatNumber(entry.amountMl)} ml</span>
                     <button className="button" type="button" onClick={() => handleDeleteFluid(entry.id)}>
-                      Delete fluid
+                      {t("diet.fluid.delete")}
                     </button>
                   </li>
                 ))
               ) : (
-                <li className="empty-row">No fluids logged yet.</li>
+                <li className="empty-row">{t("diet.fluid.empty")}</li>
               )}
             </ul>
           </div>
 
-          <ul className="diet-log-list" aria-label="Diet log entries">
+          <ul className="diet-log-list" aria-label={t("diet.log.aria")}>
             {entries.length ? (
               entries.map((entry) => (
                 <li key={entry.id}>
                   <div>
                     <strong>{entry.name}</strong>
-                    <span>{entry.servings} serving(s) / {macroLine(entry)}</span>
+                    <span>{t("diet.log.servingLine", {
+                      servings: entry.servings,
+                      macros: macroLine(entry, t)
+                    })}</span>
                   </div>
                   <button className="button" type="button" onClick={() => handleDeleteEntry(entry.id)}>
-                    Delete
+                    {t("diet.delete")}
                   </button>
                 </li>
               ))
             ) : (
-              <li className="empty-row">No foods logged yet.</li>
+              <li className="empty-row">{t("diet.log.empty")}</li>
             )}
           </ul>
         </div>

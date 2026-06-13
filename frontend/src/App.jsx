@@ -589,7 +589,7 @@ export default function App() {
         </>
       ) : (
         <main id="main-content" tabIndex="-1">
-          <DietDashboard currentMeasurements={currentMeasurements} />
+          <DietDashboard currentMeasurements={currentMeasurements} locale={locale} />
         </main>
       )}
 

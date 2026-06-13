@@ -1367,6 +1367,12 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.getByLabel("Sistema de unidades de medida")).toContainText("Metrico");
   await expect(page.getByLabel("Guias de medidas")).toBeVisible();
   await expect(page.locator("legend").filter({ hasText: "Perfil" })).toBeVisible();
+  await page.getByRole("tab", { name: "Dieta" }).click();
+  await expect(page.getByRole("heading", { name: "Dieta", exact: true })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Busqueda de comida" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Buscar comida" })).toBeVisible();
+  await expect(page.getByLabel("Objetivos macro de dieta")).toContainText("Calorias");
+  await page.getByRole("tab", { name: "Cuerpo" }).click();
   expect(await page.evaluate(() => window.localStorage.getItem("bodymod:locale:v1"))).toBe(
     JSON.stringify("es")
   );
