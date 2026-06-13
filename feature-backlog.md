@@ -74,6 +74,12 @@ Protocol Tracker → Diet upgrades → Native app.
       conversion, build sex-specific empirical percentile tables; replace
       `backend/app/data/reference.py` scaffold; follow
       `reference-data-curation.md`; document source/license/methodology.
+      First importer scaffold is in:
+      `backend/scripts/build_ansur_reference.py` plus
+      `backend/app/data/reference.ansur.mapping.json`; it can convert a locally
+      reviewed ANSUR-style CSV into review-gated reference overlay JSON with
+      sex-specific means, SDs, and percentiles. Real source download,
+      license/codebook review, and production wiring remain pending.
 - [x] NHANES supplement for general-US height/weight/waist (ANSUR is a
       military population; show both labels honestly). Implemented with
       official NHANES August 2021-August 2023 adult height, weight, waist, and
@@ -84,6 +90,8 @@ Protocol Tracker → Diet upgrades → Native app.
       now feeds the panel through `GET /api/reference-data`, with NHANES-backed
       adult height/weight/waist/hip rows and field-level provenance, but ANSUR
       or equivalent replacement data remains open for unsupported fields.
+      The ANSUR importer scaffold does not mark generated output vetted unless
+      run after manual source review.
 - [x] Sex-specific percentile output for every schema field the data supports
       (currently dummy scaffold data): `backend/app/data/reference.seed.json`
       covers every numeric measurement schema field, `/api/match` returns a

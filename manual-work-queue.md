@@ -67,6 +67,11 @@ Current implemented baseline:
   `backend/app/data/reference.nhanes.seed.json`.
 - Unsupported schema fields still use the labeled scaffold in
   `backend/app/data/reference.seed.json`.
+- ANSUR-style importer scaffolding exists in
+  `backend/scripts/build_ansur_reference.py` and
+  `backend/app/data/reference.ansur.mapping.json`, but the real source file,
+  license approval, codebook confirmation, and production wiring are still
+  manual gates.
 
 Use:
 

@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "datasetId": "ansur-ii-candidate-import-v1",
+  "label": "ANSUR II candidate anthropometry import",
+  "reference": "ANSUR II candidate import; source/license review required before production use",
+  "source": "ANSUR II raw anthropometry CSV, not bundled in this repository.",
+  "sourceUrl": "",
+  "includedPopulation": "U.S. Army personnel represented in the provided ANSUR II source CSV.",
+  "excludedPopulation": "Not representative of the general adult population; source sex categories are normalized to male/female only for the current measurement schema.",
+  "reviewStatus": "needs source, license, mapping, and population-fit review",
+  "sexColumnCandidates": ["Sex", "Gender"],
+  "sexValues": {
+    "male": ["male", "m", "1"],
+    "female": ["female", "f", "0"]
+  },
+  "notes": [
+    "Review-only mapping scaffold. Do not mark generated output as vetted until source licensing and field protocols are approved.",
+    "ANSUR-style source columns are commonly millimeters for linear anthropometry and kilograms for weight; confirm against the downloaded codebook before use.",
+    "Some app fields intentionally remain unmapped because no direct source column is configured yet."
+  ],
+  "fields": {
+    "height": {
+      "targetUnit": "cm",
+      "sourceColumns": [{ "name": "Stature", "unit": "mm" }],
+      "reviewStatus": "needs codebook review"
+    },
+    "weight": {
+      "targetUnit": "kg",
+      "sourceColumns": [
+        { "name": "WeightKg", "unit": "kg" },
+        { "name": "Weight", "unit": "kg" }
+      ],
+      "reviewStatus": "needs codebook review"
+    },
+    "headCircumference": {
+      "targetUnit": "cm",
+      "sourceColumns": [{ "name": "HeadCircumference", "unit": "mm" }],
+      "reviewStatus": "needs codebook review"
+    },
+    "neckCircumference": {
+      "targetUnit": "cm",
+      "sourceColumns": [
+        { "name": "NeckCircumferenceBase", "unit": "mm" },
+        { "name": "NeckCircumference", "unit": "mm" }
+      ],
+      "reviewStatus": "needs codebook review"
+    },
+    "biacromialWidth": {
+      "targetUnit": "cm",
+      "sourceColumns": [{ "name": "BiacromialBreadth", "unit": "mm" }],
+      "reviewStatus": "needs codebook review"
+    },
+    "bideltoidWidth": {
+      "targetUnit": "cm",
+      "sourceColumns": [{ "name": "BideltoidBreadth", "unit": "mm" }],
+      "reviewStatus": "needs codebook review"
+    },
+    "nippleCircumference": {
+      "targetUnit": "cm",
+      "sourceColumns": [{ "name": "ChestCircumference", "unit": "mm" }],
+      "reviewStatus": "needs protocol fit review"
+    },
+    "waistCircumference": {
+      "targetUnit": "cm",
+      "sourceColumns": [{ "name": "WaistCircumference", "unit": "mm" }],
+      "reviewStatus": "needs codebook review"
+    },
+    "hipCircumference": {
+      "targetUnit": "cm",
+      "sourceColumns": [
+        { "name": "ButtockCircumference", "unit": "mm" },
+        { "name": "HipCircumference", "unit": "mm" }
+      ],
+      "reviewStatus": "needs protocol fit review"
+    },
+    "upperThighCircumference": {
+      "targetUnit": "cm",
+      "sourceColumns": [{ "name": "ThighCircumference", "unit": "mm" }],
+      "reviewStatus": "needs protocol fit review"
+    },
+    "calfCircumference": {
+      "targetUnit": "cm",
+      "sourceColumns": [
+        { "name": "CalfCircumference", "unit": "mm" },
+        { "name": "CalfMaxCircumference", "unit": "mm" }
+      ],
+      "reviewStatus": "needs codebook review"
+    },
+    "ankleCircumference": {
+      "targetUnit": "cm",
+      "sourceColumns": [{ "name": "AnkleCircumference", "unit": "mm" }],
+      "reviewStatus": "needs codebook review"
+    },
+    "bicepCircumference": {
+      "targetUnit": "cm",
+      "sourceColumns": [
+        { "name": "BicepsCircumferenceFlexed", "unit": "mm" },
+        { "name": "BicepsCircumference", "unit": "mm" }
+      ],
+      "reviewStatus": "needs protocol fit review"
+    },
+    "upperForearmCircumference": {
+      "targetUnit": "cm",
+      "sourceColumns": [
+        { "name": "ForearmCircumferenceFlexed", "unit": "mm" },
+        { "name": "ForearmCircumference", "unit": "mm" }
+      ],
+      "reviewStatus": "needs protocol fit review"
+    },
+    "wristCircumference": {
+      "targetUnit": "cm",
+      "sourceColumns": [{ "name": "WristCircumference", "unit": "mm" }],
+      "reviewStatus": "needs codebook review"
+    }
+  }
+}

@@ -42,6 +42,7 @@ User request:
 | Workout library scaffold | `backend/app/data/exercises.seed.json`, `backend/app/data/exercises.py`, `backend/app/models.py`, `frontend/src/lib/workouts.js`, `frontend/src/components/AccountGoalPanel.jsx`, backend API tests, and Playwright account coverage provide a validation-only exercise/program seed file with dangling-reference checks, risk/source notes, selected-exercise instructions, local logging, PR summaries, and history charts. | Seed scaffold done; open-licensed production import pending |
 | Hall linearized calorie-target projections | `frontend/src/lib/protocolPlanning.js`, `frontend/src/components/AccountGoalPanel.jsx`, `frontend/tests/protocolPlanning.node.mjs`, and `protocol-planning-notes.md` implement the documented Hall 2011 long-term linearized body-weight equation for calorie-target protocols, expose adult age/PAL/fat-mass assumptions, keep uncertainty bands, and state that the app is not the full NIH Body Weight Planner early-phase model. | Done |
 | Mixed NHANES/scaffold percentile output | `backend/app/data/reference.seed.json`, `backend/app/data/reference.nhanes.seed.json`, `backend/app/data/reference.py`, `backend/app/percentiles.py`, `backend/app/main.py`, `frontend/src/lib/populationCharts.js`, and `reference-data-curation.md` implement a field-level reference model: official NHANES August 2021-August 2023 adult height, weight, waist, and hip overlays, labeled scaffold fallbacks for unsupported numeric schema fields, `/api/reference-data` provenance metadata, and `/api/match` `percentiles.fields` plus per-field source maps. | Partial vetted overlay done; ANSUR/full-field replacement still pending |
+| ANSUR reference import scaffold | `backend/app/data/reference.ansur.mapping.json`, `backend/scripts/build_ansur_reference.py`, `backend/tests/test_ansur_import.py`, and `reference-data-curation.md` add a review-gated path for converting a locally reviewed ANSUR-style CSV into sex-specific means, sample SDs, and selected percentile overlay JSON while keeping generated fields unvetted by default. | Import scaffold done; real source download, license/codebook review, and production wiring pending |
 | Strategy corpus scaffold | `backend/app/data/strategy_corpus.py`, `backend/app/data/strategy_corpus.seed.json`, `frontend/src/components/StrategyCorpus.jsx`, `frontend/src/lib/strategyCorpus.js`, `frontend/tests/strategyCorpus.node.mjs`, `strategy-corpus-template.json`, and `strategy-corpus-curation.md` provide a backend API seed source, overlay-based outcome-first browsing, one efficacy/risk plot per selected outcome, clickable dot labels, synopsis modals, high-risk acknowledgments, strategy detail views, linked completed-protocol case logs with n=1 limitations, metadata, local 18+ age-gate storage, local import/export/persistence overrides, validation tests, a curation template, and a manual review rubric. | Scaffold done |
 | Browser-local multi-profile scaffold | `frontend/src/lib/account.js`, `frontend/src/components/AccountGoalPanel.jsx`, `frontend/tests/accountTracking.node.mjs`, and `frontend/tests/app.spec.js` summarize separate account-scoped local stores and exercise one-click switching between two real local profiles through the account UI. | Local scaffold done; encrypted cross-device stores pending |
 | Magic-link account identity scaffold | `backend/app/models.py`, `backend/app/repositories.py`, `backend/app/main.py`, `frontend/src/lib/magicLinkAccount.js`, `frontend/src/components/AccountGoalPanel.jsx`, `backend/tests/test_api.py`, `backend/tests/test_repositories.py`, `frontend/tests/magicLinkAccount.node.mjs`, `frontend/tests/app.spec.js`, and `verify.ps1` add opt-in email identity endpoints for one-time magic-link request/verify, bearer session read/logout, hash-stored email/link/session secrets, dev-token mode for local verification, and account-panel controls that send only email/display-name/user-agent metadata. | First identity scaffold done; production email provider, account recovery, and identity-linked production automatic sync pending |
@@ -97,8 +98,8 @@ npm run capture:screenshots
 Observed result:
 
 - frontend build passed
-- backend pytest passed `76` tests
-- curation JSON validation passed for target/corpus seeds and templates
+- backend pytest passed `79` tests
+- curation JSON validation passed for target/corpus seeds, templates, and the ANSUR mapping file
 - Node corpus validation passed `8` tests
 - Node diet validation passed `13` tests
 - Node diet CSV import validation passed `4` tests
@@ -157,7 +158,7 @@ cd backend
 
 Observed result:
 
-- backend pytest passed `76` tests
+- backend pytest passed `79` tests
 
 ## Current Decision
 

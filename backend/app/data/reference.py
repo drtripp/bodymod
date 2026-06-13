@@ -158,8 +158,8 @@ def apply_reference_overlay(base_seed: dict[str, Any], overlay: dict[str, Any]) 
         field["sourceUrl"] = overlay.get("sourceUrl")
         field["sourceTable"] = overlay_distribution.get("sourceTable")
         field["sdMethod"] = overlay.get("sdMethod")
-        field["isVetted"] = True
-        field["notes"] = overlay.get("notes", [])
+        field["isVetted"] = bool(overlay_distribution.get("isVetted", True))
+        field["notes"] = overlay_distribution.get("notes", overlay.get("notes", []))
 
     for field_name, field in reference["fields"].items():
         field.setdefault("datasetId", base_seed["datasetId"])

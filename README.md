@@ -95,6 +95,7 @@ Implemented now:
 - height-normalized and ratio-aware match scoring with explanation bullets
 - configurable match-priority presets for balanced, shoulders, and waist/hip scoring
 - backend-served mixed reference distributions: NHANES August 2021-August 2023 adult height, weight, waist, and hip overlays plus dummy scaffold fields for unsupported measurements
+- ANSUR-style reference importer scaffold that maps a locally reviewed CSV into review-gated sex-specific percentile overlay JSON
 - schema-wide approximate percentile output with field-level source labels and legacy height/waist/shoulder keys preserved
 - simplified result pane with large top-match name and bounded similarity score
 - runner-up match shown directly under the top match

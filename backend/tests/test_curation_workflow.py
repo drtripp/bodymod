@@ -4,6 +4,7 @@ import pytest
 
 from scripts.validate_curation import (
     DEFAULT_CORPUS_FILES,
+    DEFAULT_ANSUR_MAPPING_FILES,
     DEFAULT_EVIDENCE_FILES,
     DEFAULT_FOOD_FILES,
     DEFAULT_GUIDE_FILES,
@@ -11,6 +12,7 @@ from scripts.validate_curation import (
     DEFAULT_PLANNING_FILES,
     DEFAULT_TARGET_FILES,
     validate_attractiveness_evidence_file,
+    validate_ansur_mapping_file,
     validate_food_file,
     validate_live_update_file,
     validate_measurement_guide_file,
@@ -23,6 +25,9 @@ from scripts.validate_curation import (
 def test_default_curation_files_validate() -> None:
     target_summaries = [validate_target_file(path) for path in DEFAULT_TARGET_FILES]
     guide_summaries = [validate_measurement_guide_file(path) for path in DEFAULT_GUIDE_FILES]
+    ansur_mapping_summaries = [
+        validate_ansur_mapping_file(path) for path in DEFAULT_ANSUR_MAPPING_FILES
+    ]
     food_summaries = [validate_food_file(path) for path in DEFAULT_FOOD_FILES]
     planning_summaries = [validate_planning_file(path) for path in DEFAULT_PLANNING_FILES]
     live_update_summaries = [
@@ -35,6 +40,7 @@ def test_default_curation_files_validate() -> None:
 
     assert any("target profile" in summary for summary in target_summaries)
     assert any("measurement guide" in summary for summary in guide_summaries)
+    assert any("ANSUR mapping" in summary for summary in ansur_mapping_summaries)
     assert any("USDA-style food" in summary for summary in food_summaries)
     assert any("10 persona" in summary for summary in planning_summaries)
     assert any("live-update" in summary for summary in live_update_summaries)

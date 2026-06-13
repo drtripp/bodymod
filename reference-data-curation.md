@@ -90,8 +90,11 @@ Current files:
 - `backend/app/data/reference.py`
 - `backend/app/data/reference.seed.json`
 - `backend/app/data/reference.nhanes.seed.json`
+- `backend/app/data/reference.ansur.mapping.json`
 - `backend/app/percentiles.py`
+- `backend/scripts/build_ansur_reference.py`
 - `backend/tests/test_services.py`
+- `backend/tests/test_ansur_import.py`
 - `backend/tests/test_schema_alignment.py`
 
 Current source-backed overlay:
@@ -113,3 +116,27 @@ NHANES August 2021-August 2023 adults for height, weight, waist, and hip; approx
 
 That mixed-source caveat must remain until unsupported fields are either backed
 by vetted sources such as ANSUR or removed from production percentile output.
+
+## ANSUR Import Scaffold
+
+`backend/scripts/build_ansur_reference.py` can build a partial reference
+overlay from a locally reviewed ANSUR-style CSV using
+`backend/app/data/reference.ansur.mapping.json`.
+
+Example:
+
+```bash
+cd backend
+.\.venv\Scripts\python.exe scripts\build_ansur_reference.py ^
+  path\to\ansur.csv app\data\reference.ansur.generated.json ^
+  --source-url https://example.com/ansur-source ^
+  --retrieved-at 2026-06-13
+```
+
+The script normalizes male/female rows, converts millimeters to centimeters,
+computes sex-specific means, sample standard deviations, and selected
+percentiles, and validates the generated payload against the backend reference
+model. Generated fields stay `isVetted: false` unless the script is run with
+`--mark-vetted` after source, license, codebook, and population-fit review.
+Do not wire generated ANSUR output into production reference data until those
+manual checks are complete.

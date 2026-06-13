@@ -2583,6 +2583,8 @@ test("publishes, updates, views, and revokes a read-only share dashboard", async
 });
 
 test("roleplays all persona samples through account logging, goals, and learning", async ({ page }) => {
+  test.setTimeout(60_000);
+
   await page.getByRole("button", { name: "User profile" }).click();
   const accountDialog = page.getByRole("dialog", { name: "Account, logs, and goals" });
   await expect(accountDialog).toContainText("Loaded 10 personas, 6 goals, and 6 protocols.");

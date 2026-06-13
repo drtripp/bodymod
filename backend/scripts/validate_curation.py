@@ -9,6 +9,7 @@ Pass explicit files to validate a draft before replacing a seed:
     .\\.venv\\Scripts\\python.exe scripts\\validate_curation.py \\
         --target-file ..\\target-profiles-template.json \\
         --guide-file app\\data\\measurement_guides.seed.json \\
+        --ansur-mapping-file app\\data\\reference.ansur.mapping.json \\
         --food-file app\\data\\food_usda.seed.json \\
         --planning-file app\\data\\planning.seed.json \\
         --live-update-file app\\data\\live_updates.seed.json \\
@@ -53,6 +54,9 @@ DEFAULT_LIVE_UPDATE_FILES = [
 DEFAULT_GUIDE_FILES = [
     BACKEND_ROOT / "app" / "data" / "measurement_guides.seed.json",
 ]
+DEFAULT_ANSUR_MAPPING_FILES = [
+    BACKEND_ROOT / "app" / "data" / "reference.ansur.mapping.json",
+]
 DEFAULT_FOOD_FILES = [
     BACKEND_ROOT / "app" / "data" / "food_usda.seed.json",
 ]
@@ -83,6 +87,7 @@ REQUIRED_FOOD_MICRO_KEYS = {
     "vitaminD",
     "vitaminB12",
 }
+SUPPORTED_REFERENCE_IMPORT_UNITS = {"mm", "cm", "kg"}
 
 
 def read_json(path: Path) -> Any:
@@ -218,6 +223,48 @@ def validate_measurement_guide_file(path: Path) -> str:
         raise ValueError(f"{path}: missing measurement guide fields: {', '.join(missing_fields)}.")
 
     return f"{path}: {len(library.guides)} measurement guide(s)"
+
+
+def validate_ansur_mapping_file(path: Path) -> str:
+    payload = read_json(path)
+    schema_fields = {
+        field["name"]: field
+        for field in load_measurement_schema()["fields"]
+        if field.get("type") != "select"
+    }
+    fields = payload.get("fields")
+
+    if not isinstance(fields, dict) or not fields:
+        raise ValueError(f"{path}: expected ANSUR mapping fields.")
+    if not payload.get("sexColumnCandidates"):
+        raise ValueError(f"{path}: ANSUR mapping needs sexColumnCandidates.")
+
+    unknown_fields = sorted(set(fields) - set(schema_fields))
+    if unknown_fields:
+        raise ValueError(f"{path}: unknown ANSUR mapping fields: {', '.join(unknown_fields)}.")
+
+    for field_name, config in fields.items():
+        target_unit = config.get("targetUnit")
+        if target_unit != schema_fields[field_name]["unit"]:
+            raise ValueError(f"{path}: ANSUR mapping {field_name!r} targetUnit must match schema.")
+
+        source_columns = config.get("sourceColumns")
+        if not isinstance(source_columns, list) or not source_columns:
+            raise ValueError(f"{path}: ANSUR mapping {field_name!r} needs sourceColumns.")
+
+        for column in source_columns:
+            if not column.get("name"):
+                raise ValueError(f"{path}: ANSUR mapping {field_name!r} has an empty source column.")
+            if column.get("unit") not in SUPPORTED_REFERENCE_IMPORT_UNITS:
+                raise ValueError(
+                    f"{path}: ANSUR mapping {field_name!r} has unsupported unit "
+                    f"{column.get('unit')!r}."
+                )
+
+        if "review" not in str(config.get("reviewStatus", "")).lower():
+            raise ValueError(f"{path}: ANSUR mapping {field_name!r} must stay review-gated.")
+
+    return f"{path}: {len(fields)} ANSUR mapping field(s)"
 
 
 def validate_food_file(path: Path) -> str:
@@ -421,6 +468,13 @@ def parse_args() -> argparse.Namespace:
         help="Measurement guide JSON file to validate. Repeatable.",
     )
     parser.add_argument(
+        "--ansur-mapping-file",
+        action="append",
+        type=Path,
+        dest="ansur_mapping_files",
+        help="ANSUR reference mapping JSON file to validate. Repeatable.",
+    )
+    parser.add_argument(
         "--food-file",
         action="append",
         type=Path,
@@ -441,6 +495,7 @@ def main() -> int:
     args = parse_args()
     target_files = args.target_files or DEFAULT_TARGET_FILES
     guide_files = args.guide_files or DEFAULT_GUIDE_FILES
+    ansur_mapping_files = args.ansur_mapping_files or DEFAULT_ANSUR_MAPPING_FILES
     food_files = args.food_files or DEFAULT_FOOD_FILES
     planning_files = args.planning_files or DEFAULT_PLANNING_FILES
     live_update_files = args.live_update_files or DEFAULT_LIVE_UPDATE_FILES
@@ -449,6 +504,7 @@ def main() -> int:
     summaries = [
         *(validate_target_file(path) for path in target_files),
         *(validate_measurement_guide_file(path) for path in guide_files),
+        *(validate_ansur_mapping_file(path) for path in ansur_mapping_files),
         *(validate_food_file(path) for path in food_files),
         *(validate_planning_file(path) for path in planning_files),
         *(validate_live_update_file(path) for path in live_update_files),
