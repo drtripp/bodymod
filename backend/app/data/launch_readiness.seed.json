@@ -163,6 +163,7 @@
       ],
       "verification": [
         ".\\verify.ps1",
+        "cd backend && python scripts/launch_preflight.py --fail-on-blockers",
         "cd backend && python -m pytest tests/test_api.py tests/test_repositories.py",
         "cd frontend && npm run test:share-snapshots"
       ],

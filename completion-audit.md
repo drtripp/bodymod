@@ -30,6 +30,7 @@ User request:
 | Native home-screen widget payload scaffold | `frontend/src/lib/widgetSnapshot.js`, `frontend/src/components/AccountGoalPanel.jsx`, `frontend/src/styles.css`, `frontend/native-readme.md`, `frontend/tests/widgetSnapshot.node.mjs`, `frontend/tests/app.spec.js`, and `verify.ps1` compute a measurement-free streak/next-check-in payload, persist it through the storage adapter for native Preferences/web localStorage, expose a refreshable account-panel preview, and test that raw measurement keys, notes, and contact fields are absent. | Payload/preview scaffold done; native iOS/Android widget extensions pending generated native project folders |
 | Live-update manifest scaffold | `backend/app/data/live_updates.seed.json`, `backend/app/data/live_updates.py`, `backend/app/main.py`, `backend/app/models.py`, `backend/scripts/validate_curation.py`, `frontend/src/lib/liveUpdates.js`, `frontend/src/components/AccountGoalPanel.jsx`, `frontend/tests/liveUpdates.node.mjs`, `frontend/tests/app.spec.js`, and `verify.ps1` add a review-gated live-update channel manifest, `/api/live-updates/manifest`, account-panel version drift checks, and metadata-only local check state. | Manifest/status scaffold done; production provider, signing, rollout, rollback, and store-policy review pending |
 | Launch-readiness gate scaffold | `backend/app/data/launch_readiness.seed.json`, `backend/app/data/launch_readiness.py`, `backend/app/main.py`, `backend/app/models.py`, `backend/scripts/validate_curation.py`, `frontend/src/lib/launchReadiness.js`, `frontend/src/components/AccountGoalPanel.jsx`, `frontend/tests/launchReadiness.node.mjs`, `frontend/tests/app.spec.js`, `manual-work-queue.md`, and `verify.ps1` mirror the manual work queue into machine-readable launch blockers, expose `/api/launch-readiness`, show the checklist in the account panel, validate gate IDs/docs/verification commands, and keep the metadata free of account or measurement payloads. | Gate scaffold done; human decisions and source reviews remain blocking |
+| Launch preflight report scaffold | `backend/scripts/launch_preflight.py`, `backend/tests/test_launch_preflight.py`, `backend/app/data/launch_readiness.seed.json`, `feature-backlog.md`, `manual-work-queue.md`, `README.md`, and `verify.ps1` build a machine-readable launch preflight report from readiness gates, required docs, legal drafts, review screenshots, and browser share/persona flow coverage. Normal verifier mode passes with unresolved human gates reported as `blocked`; `--fail-on-blockers` is available for the final launch go/no-go. | Preflight scaffold done; blocking human launch gates remain |
 | Flesh out measurement-first app features | `frontend/src/App.jsx`, components, and libs implement expanded measurement entry, validation, persisted cafe/graphite themes, skip-to-main navigation, visible focus rings, live status regions, form error associations, chart descriptions, front/side silhouette projections with themed line-art styling, a 10-profile silhouette QA fixture set, configurable match-priority presets, top match plus runner-up display, simplified result metrics, snapshots, local trend charting, per-metric snapshot history charts, historical weight CSV import, optional left/right limb-symmetry check-ins, optional local cycle phase logs, first-snapshot browser notification permission plus service-worker/fallback stale-trend reminder helpers, readable local JSON export with or without an account, encrypted local backup/restore, local free/pro entitlement display, Pro waitlist capture, opt-in read-only share dashboards, goal progress with target-relative distance copy, life-event goal pausing, browser-local frontal face landmark logs plus manual side-profile logs without image storage, first-class local procedure logs with healing windows/case logs/photo stream hints, maintenance drift alerts, current-vs-prior snapshot silhouette comparison, target metadata/explanation display, target difference tables, tabbed result / vs Target / vs US Population panes, Body/Diet top-level navigation, Diet backend USDA-style food search, Open Food Facts lookup/barcode/logging/import, expanded micronutrient target rows, header share action, method/privacy footnote, public landing page, public methodology page, public measurement-guide pages for every measurable schema field, draft legal pages, local events, and corpus UI. | Implemented as prototype |
 | Backend target, match, entitlement, food, procedure, corpus, sharing, and hardening support | `backend/app/main.py`, `backend/app/rate_limit.py`, `backend/app/services.py`, `backend/app/repositories.py`, `backend/app/data/targets.seed.json`, `backend/app/data/match_priorities.py`, `backend/app/data/entitlements.py`, `backend/app/data/food_usda.py`, `backend/app/data/procedures.seed.json`, `backend/app/data/strategy_corpus.py`, `backend/app/data/strategy_corpus.seed.json`, `backend/app/models.py`, `backend/scripts/validate_curation.py`, `target-profiles-template.json`, and `target-profile-curation.md` expose health, targets, rate-limited match endpoints, configurable scoring-priority presets, free/pro entitlement config, dummy USDA-style food search data, a backend-served procedure taxonomy seed, a backend-served strategy corpus seed with linked case logs, a SQLite-backed target repository, an opaque-token share-dashboard repository/API, a target data template, and a structured curation validator. | Done |
 | Measurement-guide seed scaffold | `backend/app/data/measurement_guides.seed.json`, `backend/app/data/measurement_guides.py`, `backend/scripts/validate_curation.py`, backend API/curation tests, and frontend measurement-guide tests provide dummy reviewable guide copy for every non-select measurement schema field with duplicate, missing-field, unknown-field, step, and illustration checks. | Seed scaffold done; reviewed public copy/art pending |
@@ -103,11 +104,18 @@ npm run test:e2e
 npm run capture:screenshots
 ```
 
+```powershell
+cd backend
+.\.venv\Scripts\python.exe scripts\launch_preflight.py
+```
+
 Observed result:
 
 - frontend build passed
-- backend pytest passed `98` tests
+- backend pytest passed `100` tests
 - curation JSON validation passed for target/corpus seeds, templates, the ANSUR mapping file, and launch-readiness gates
+- launch preflight passed structural checks with status `blocked`, `8`
+  blocking human gates, and `0` failed structural checks
 - Node corpus validation passed `8` tests
 - Node diet validation passed `13` tests
 - Node diet CSV import validation passed `4` tests
@@ -175,7 +183,7 @@ cd backend
 
 Observed result:
 
-- backend pytest passed `98` tests
+- backend pytest passed `100` tests
 
 ## Current Decision
 

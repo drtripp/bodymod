@@ -774,8 +774,10 @@ land. No social features, no marketplace.
       with every open gate in that file resolved. **[human]** for the gate
       decisions. First machine-readable gate scaffold is in
       `backend/app/data/launch_readiness.seed.json`, `/api/launch-readiness`,
-      and the account-panel launch-readiness checklist; validation keeps those
-      gates tied to `manual-work-queue.md` and verification commands.
+      the account-panel launch-readiness checklist, and
+      `backend/scripts/launch_preflight.py`; validation keeps those gates tied
+      to `manual-work-queue.md`, required docs, screenshot artifacts, browser
+      share/persona flow coverage, and verification commands.
 
 ## Open Decisions Queue (human, blocking the marked items)
 

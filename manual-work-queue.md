@@ -206,6 +206,8 @@ Verification:
 
 ```powershell
 .\verify.ps1
+cd backend
+.\.venv\Scripts\python.exe scripts\launch_preflight.py --fail-on-blockers
 ```
 
 ## 7. Procedure Taxonomy Review

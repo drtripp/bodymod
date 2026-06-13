@@ -28,8 +28,9 @@ Run the full local verification suite from the repo root:
 .\verify.ps1
 ```
 
-This runs backend pytest, corpus validation tests, frontend build, Playwright
-user-flow tests, screenshot capture, and Playwright output cleanup.
+This runs backend pytest, corpus validation tests, the launch preflight report,
+frontend build, Playwright user-flow tests, screenshot capture, and Playwright
+output cleanup.
 GitHub Actions runs the same verifier on push and pull requests via
 `.github/workflows/verify.yml`.
 

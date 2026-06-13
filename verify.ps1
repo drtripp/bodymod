@@ -18,6 +18,7 @@ try {
   try {
     Invoke-Checked { .\.venv\Scripts\python.exe -m pytest }
     Invoke-Checked { .\.venv\Scripts\python.exe scripts\validate_curation.py }
+    Invoke-Checked { .\.venv\Scripts\python.exe scripts\launch_preflight.py }
   }
   finally {
     Pop-Location
