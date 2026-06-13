@@ -1331,6 +1331,20 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
 
+test("opens account identity panel from a magic-link URL token", async ({ page }) => {
+  const token = "bmd_ml_url-token-abcdefghijklmnopqrstuvwxyz";
+
+  await page.goto(`/?magicLinkToken=${encodeURIComponent(token)}`);
+
+  const accountDialog = page.getByRole("dialog", { name: "Account, logs, and goals" });
+  await expect(accountDialog).toBeVisible();
+  await expect(page.getByLabel("Magic-link token")).toHaveValue(token);
+  await expect(page.getByLabel("Email magic-link identity")).toContainText(
+    "Magic-link token loaded from the email link."
+  );
+  await expect.poll(() => page.url()).not.toContain("magicLinkToken");
+});
+
 test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "bodymod" })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "cafe");

@@ -50,6 +50,9 @@ import {
   translatedLocaleOptions
 } from "./lib/i18n";
 import {
+  extractMagicLinkTokenFromSearch
+} from "./lib/magicLinkAccount";
+import {
   fallbackEntitlementConfig,
   normalizeEntitlementConfig
 } from "./lib/entitlements";
@@ -80,6 +83,9 @@ export default function App() {
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("share") || ""
       : "";
+  const [magicLinkTokenFromUrl] = useState(() =>
+    typeof window !== "undefined" ? extractMagicLinkTokenFromSearch(window.location.search) : ""
+  );
   const [apiStatus, setApiStatus] = useState("checking");
   const [targets, setTargets] = useState([]);
   const [result, setResult] = useState({
@@ -197,6 +203,17 @@ export default function App() {
   useEffect(() => {
     persistLocalePreference(locale);
   }, [locale]);
+
+  useEffect(() => {
+    if (!magicLinkTokenFromUrl || typeof window === "undefined") {
+      return;
+    }
+    setIsAccountPanelOpen(true);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("magicLinkToken");
+    url.searchParams.delete("accountMagicToken");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [magicLinkTokenFromUrl]);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -604,6 +621,7 @@ export default function App() {
           locale={locale}
           onApplyMeasurements={applyMeasurementSet}
           targetProfiles={rankedMatches}
+          initialMagicLinkToken={magicLinkTokenFromUrl}
           onOpenStrategies={() => {
             setIsAccountPanelOpen(false);
             setIsStrategyExplorerOpen(true);

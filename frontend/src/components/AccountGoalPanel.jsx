@@ -446,6 +446,7 @@ export default function AccountGoalPanel({
   onApplyMeasurements,
   snapshotProps,
   targetProfiles = [],
+  initialMagicLinkToken = "",
   onOpenStrategies,
   onClose,
   silhouetteView = "front"
@@ -504,8 +505,10 @@ export default function AccountGoalPanel({
     loadAccountIdentitySession()
   );
   const [magicLinkEmail, setMagicLinkEmail] = useState("");
-  const [magicLinkToken, setMagicLinkToken] = useState("");
-  const [magicLinkStatus, setMagicLinkStatus] = useState("");
+  const [magicLinkToken, setMagicLinkToken] = useState(() => initialMagicLinkToken);
+  const [magicLinkStatus, setMagicLinkStatus] = useState(() =>
+    initialMagicLinkToken ? "Magic-link token loaded from the email link. Verify it below." : ""
+  );
   const [personalDataApiLabel, setPersonalDataApiLabel] = useState("Personal data export");
   const [personalDataApiToken, setPersonalDataApiToken] = useState("");
   const [personalDataApiTokenMeta, setPersonalDataApiTokenMeta] = useState(null);
@@ -641,6 +644,14 @@ export default function AccountGoalPanel({
       faceMeasurements.length
     ]
   );
+
+  useEffect(() => {
+    if (!initialMagicLinkToken) {
+      return;
+    }
+    setMagicLinkToken(initialMagicLinkToken);
+    setMagicLinkStatus("Magic-link token loaded from the email link. Verify it below.");
+  }, [initialMagicLinkToken]);
 
   useEffect(() => {
     let isMounted = true;

@@ -26,6 +26,8 @@ Current scaffold:
   a bearer session, and revoke the session
 - the scaffold stores email/link/session secrets as hashes and exposes a local
   dev-token mode for verification
+- a generic SMTP sender can deliver clickable `magicLinkToken` URLs without
+  returning raw login tokens in JSON responses
 - the account-panel preview sends only email/display-name/user-agent metadata;
   measurements and logs remain local unless the separate encrypted sync tools
   are used

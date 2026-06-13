@@ -110,7 +110,9 @@ Implemented now:
 - local multi-profile switcher for browser-local accounts, with separate account-scoped logs and per-profile counts
 - backend email magic-link identity scaffold with one-time link requests,
   hash-stored tokens/sessions, dev-token mode for local verification, and an
-  account-panel preview that does not send measurements or logs
+  optional SMTP delivery path that emails clickable `magicLinkToken` URLs
+  without returning the login token in JSON; the account-panel preview does
+  not send measurements or logs
 - backend-served planning seed file with 10 validation personas, goal presets, protocol templates, and reference checks
 - backend-served attractiveness evidence seed scaffold mapping reviewed/contested claims to goal presets for validation
 - daily weight trend smoothing with raw-dot vs smoothed-line display

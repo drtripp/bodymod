@@ -407,6 +407,7 @@ class AccountIdentityRepository:
         user_agent_family: str = "unknown",
         delivery_status: str = "provider-not-configured",
         include_dev_token: bool = False,
+        include_delivery_token: bool = False,
     ) -> dict[str, Any]:
         normalized_email = email.strip().lower()
         email_hash = hash_account_email(normalized_email)
@@ -465,6 +466,8 @@ class AccountIdentityRepository:
         }
         if include_dev_token:
             response["devLoginToken"] = login_token
+        if include_delivery_token:
+            response["_deliveryToken"] = login_token
         return response
 
     def verify_magic_link(self, token: str) -> dict[str, Any]:

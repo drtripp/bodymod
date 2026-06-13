@@ -700,6 +700,52 @@ def test_account_magic_link_rejects_measurement_payloads_and_bad_tokens(monkeypa
     assert bad_token.status_code == 403
 
 
+def test_account_magic_link_smtp_delivery_keeps_token_out_of_response(monkeypatch) -> None:
+    sent = {}
+
+    def fake_send_account_magic_link_email(*, to_email, token, expires_at):
+        sent["to_email"] = to_email
+        sent["token"] = token
+        sent["expires_at"] = expires_at
+
+    monkeypatch.delenv("BODYMOD_AUTH_DEV_TOKENS", raising=False)
+    monkeypatch.setenv("BODYMOD_AUTH_EMAIL_PROVIDER", "smtp")
+    monkeypatch.setenv("BODYMOD_AUTH_SMTP_HOST", "smtp.example.test")
+    monkeypatch.setenv("BODYMOD_AUTH_SMTP_FROM", "Bodymod <login@example.test>")
+    monkeypatch.setenv("BODYMOD_AUTH_MAGIC_LINK_BASE_URL", "https://bodymod.example.test")
+    monkeypatch.setattr(
+        "app.main.send_account_magic_link_email",
+        fake_send_account_magic_link_email,
+    )
+
+    requested = client.post(
+        "/api/accounts/magic-links",
+        json={
+            "email": "Riley@Example.com",
+            "displayName": "Riley",
+            "userAgentFamily": "chromium",
+        },
+    )
+
+    assert requested.status_code == 202
+    payload = requested.json()
+    assert payload["deliveryStatus"] == "provider-configured"
+    assert payload["maskedEmail"] == "r***@example.com"
+    assert payload["emailDomain"] == "example.com"
+    assert "devLoginToken" not in payload
+    assert "bmd_ml_" not in requested.text
+    assert sent["to_email"] == "riley@example.com"
+    assert sent["token"].startswith("bmd_ml_")
+    assert sent["expires_at"] == payload["expiresAt"]
+
+    verified = client.post(
+        "/api/accounts/magic-links/verify",
+        json={"token": sent["token"]},
+    )
+    assert verified.status_code == 201
+    assert verified.json()["maskedEmail"] == "r***@example.com"
+
+
 def web_push_subscription_payload(endpoint: str = "https://push.example.test/subscriptions/abc") -> dict:
     return {
         "subscription": {

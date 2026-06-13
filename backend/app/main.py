@@ -3,6 +3,8 @@ import os
 from fastapi import Depends, FastAPI, Header, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.account_email import account_magic_link_email_configured
+from app.account_email import send_account_magic_link_email
 from app.data.attractiveness_evidence import ATTRACTIVENESS_EVIDENCE
 from app.data.bloodwork import BLOODWORK_LIBRARY
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
@@ -113,6 +115,8 @@ def web_push_config_payload() -> dict[str, str | bool]:
 def account_magic_link_delivery_status() -> str:
     if os.getenv("BODYMOD_AUTH_DEV_TOKENS", "").lower() == "true":
         return "dev-token-returned"
+    if account_magic_link_email_configured():
+        return "provider-configured"
     return "provider-not-configured"
 
 
@@ -275,13 +279,28 @@ def report_product_analytics(request: ProductAnalyticsReportRequest) -> dict:
 )
 def request_account_magic_link(request: AccountMagicLinkRequest) -> dict:
     delivery_status = account_magic_link_delivery_status()
-    return AccountIdentityRepository().request_magic_link(
+    response = AccountIdentityRepository().request_magic_link(
         request.email,
         request.displayName,
         request.userAgentFamily,
         delivery_status,
         delivery_status == "dev-token-returned",
+        delivery_status == "provider-configured",
     )
+    delivery_token = response.pop("_deliveryToken", "")
+    if delivery_status == "provider-configured":
+        try:
+            send_account_magic_link_email(
+                to_email=request.email,
+                token=delivery_token,
+                expires_at=response["expiresAt"],
+            )
+        except Exception as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Magic link email delivery failed.",
+            ) from error
+    return response
 
 
 @app.post(

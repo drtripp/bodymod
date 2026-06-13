@@ -94,6 +94,34 @@ Do not serve the public API over plain HTTP. The TLS boundary should also set
 security headers, redirect HTTP to HTTPS, and strip untrusted forwarding
 headers before passing requests to Uvicorn.
 
+## Account Magic-Link Email
+
+Local development can expose one-time account tokens in API responses:
+
+```bash
+set BODYMOD_AUTH_DEV_TOKENS=true
+```
+
+For SMTP delivery, leave dev tokens off and configure the generic sender:
+
+```bash
+set BODYMOD_AUTH_EMAIL_PROVIDER=smtp
+set BODYMOD_AUTH_SMTP_HOST=smtp.example.com
+set BODYMOD_AUTH_SMTP_PORT=587
+set BODYMOD_AUTH_SMTP_USERNAME=<smtp-user>
+set BODYMOD_AUTH_SMTP_PASSWORD=<smtp-password>
+set BODYMOD_AUTH_SMTP_FROM=Bodymod <login@example.com>
+set BODYMOD_AUTH_SMTP_STARTTLS=true
+set BODYMOD_AUTH_MAGIC_LINK_BASE_URL=https://bodymod.example.com/
+```
+
+When SMTP is configured, `/api/accounts/magic-links` stores only the hashed
+one-time token, sends the raw token by email, and returns no token in JSON.
+The email link uses a `magicLinkToken` query parameter; the frontend opens the
+account panel with that token prefilled and removes the token from the address
+bar. Production still needs provider approval, deliverability setup, and
+account-recovery policy before accounts are public.
+
 ## Match Rate Limiting
 
 `/api/match` has a process-local fixed-window rate limit. Defaults:
@@ -154,7 +182,8 @@ emails, notes, or photos.
 Create/read/update/revoke requests use the browser-held sync token as a bearer
 secret. Treat that token like a password. Stale writes return `409` with the
 current revision so a future client can read, decrypt locally, merge, and write
-again. There is no email magic-link recovery or production sync UI yet.
+again. There is no account recovery, identity-linked production sync, or
+provider-backed background sync yet.
 
 ## Dependency Updates
 

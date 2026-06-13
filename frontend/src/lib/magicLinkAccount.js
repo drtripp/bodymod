@@ -87,6 +87,16 @@ export function normalizeMagicLinkRequest(record = {}) {
   };
 }
 
+export function extractMagicLinkTokenFromSearch(search = "") {
+  const trimmed = String(search || "").trim();
+  if (!trimmed) {
+    return "";
+  }
+  const params = new URLSearchParams(trimmed.startsWith("?") ? trimmed : `?${trimmed}`);
+  const token = (params.get("magicLinkToken") || params.get("accountMagicToken") || "").trim();
+  return /^[A-Za-z0-9._~-]{24,180}$/.test(token) ? token : "";
+}
+
 export function loadAccountIdentitySession(adapter) {
   return normalizeAccountIdentitySession(
     readJsonSync(ACCOUNT_IDENTITY_SESSION_KEY, defaultAccountIdentitySession(), adapter)

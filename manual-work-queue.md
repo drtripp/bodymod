@@ -128,11 +128,12 @@ Required input:
     approval and whether to enable upload in production
 - account/sync decision
   - current code has an email magic-link identity scaffold with dev-token
-    verification for local testing, plus a token-scoped encrypted sync-vault
-    scaffold, manual account-panel create/push/pull/merge/revoke UI, and an
-    opt-in browser auto-sync preview that reuses the encrypted vault path, but
-    no production email provider, account recovery, or provider-backed
-    background cross-device sync
+    verification for local testing, a generic SMTP sender that emails
+    clickable `magicLinkToken` URLs without returning login tokens in JSON,
+    plus a token-scoped encrypted sync-vault scaffold, manual account-panel
+    create/push/pull/merge/revoke UI, and an opt-in browser auto-sync preview
+    that reuses the encrypted vault path, but no approved production email
+    provider, account recovery, or provider-backed background cross-device sync
 - live-update provider/signing decision
   - current code has a review-only backend live-update manifest and
     account-panel drift check, but no production Capgo/self-hosted provider,

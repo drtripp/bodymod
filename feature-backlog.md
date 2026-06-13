@@ -556,8 +556,11 @@ land. No social features, no marketplace.
       session, and `/api/accounts/logout` revokes it. The account panel exposes
       a magic-link identity preview that sends only email/display-name/user-agent
       metadata and keeps measurements/logs local unless encrypted sync is used.
-      Production email delivery, account recovery, and identity-linked
-      production automatic sync remain open.
+      A generic SMTP delivery scaffold can email a clickable
+      `magicLinkToken` URL while keeping the login token out of the JSON
+      response, and the frontend opens/scrubs those email-link URLs. Production
+      email provider approval, account recovery, and identity-linked production
+      automatic sync remain open.
 - [x] Encrypted sync prototype: client-side-encrypted blob sync so the server cannot
       read measurements (the data-custody story the trans audience and
       cycle-tracking feature demand). **First backend scaffold:** FastAPI now

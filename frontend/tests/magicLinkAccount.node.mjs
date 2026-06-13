@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   clearAccountIdentitySession,
+  extractMagicLinkTokenFromSearch,
   loadAccountIdentitySession,
   persistAccountIdentitySession,
   readAccountIdentitySession,
@@ -58,6 +59,21 @@ test("requests magic links without sending local measurement data", async () => 
   assert.equal(JSON.stringify(body).includes("measurements"), false);
   assert.equal(JSON.stringify(body).includes("weight"), false);
   assert.equal(JSON.stringify(body).includes("syncToken"), false);
+});
+
+test("extracts supported magic-link tokens from URL searches", () => {
+  const token = "bmd_ml_url-token-abcdefghijklmnopqrstuvwxyz";
+
+  assert.equal(
+    extractMagicLinkTokenFromSearch(`?magicLinkToken=${token}&foo=bar`),
+    token
+  );
+  assert.equal(
+    extractMagicLinkTokenFromSearch(`accountMagicToken=${token}`),
+    token
+  );
+  assert.equal(extractMagicLinkTokenFromSearch("?magicLinkToken=short"), "");
+  assert.equal(extractMagicLinkTokenFromSearch("?magicLinkToken=<script>"), "");
 });
 
 test("verifies, reads, persists, and revokes an account identity session", async () => {
