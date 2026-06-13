@@ -57,7 +57,6 @@ import {
 } from "../lib/measurementCadence";
 import {
   buildLimbSymmetryCheckIn,
-  formatLimbSymmetryItem,
   latestLimbSymmetryCheckIn,
   limbSplitFields,
   summarizeLimbSymmetrySplits
@@ -67,12 +66,10 @@ import {
   buildCycleTrendContext,
   cycleFlowOptions,
   cyclePhaseOptions,
-  formatCycleCheckIn,
   latestCycleCheckIn
 } from "../lib/cycleTracking";
 import {
-  parseHistoricalWeightCsv,
-  summarizeHistoricalWeightImport
+  parseHistoricalWeightCsv
 } from "../lib/historyImport";
 import {
   buildLocalBackupBundle,
@@ -304,24 +301,24 @@ function formatSignedDelta(value) {
   return `${sign}${value.toFixed(1)}`;
 }
 
-function remotePushStatusLabel(status) {
+function remotePushStatusLabel(status, t) {
   switch (status) {
     case "subscribed":
-      return "Remote stale-trend reminders are subscribed for this device.";
+      return t("account.tracking.remotePush.subscribed");
     case "permission-required":
-      return "Save Snapshot #1 and allow notifications before remote reminders can subscribe.";
+      return t("account.tracking.remotePush.permissionRequired");
     case "not-configured":
-      return "Remote push delivery is not configured on this backend yet.";
+      return t("account.tracking.remotePush.notConfigured");
     case "unsupported":
-      return "Remote push is not supported in this environment.";
+      return t("account.tracking.remotePush.unsupported");
     case "unsubscribed":
-      return "Remote stale-trend reminders are unsubscribed for this device.";
+      return t("account.tracking.remotePush.unsubscribed");
     case "failed":
-      return "Remote reminder setup failed. Local reminders still work when this app is open.";
+      return t("account.tracking.remotePush.failed");
     case "checking":
-      return "Checking remote reminder support...";
+      return t("account.tracking.remotePush.checking");
     default:
-      return "Local reminders work in this app; remote push is optional.";
+      return t("account.tracking.remotePush.local");
   }
 }
 
@@ -338,7 +335,209 @@ function protocolDelta(protocol, currentMeasurements) {
   return `Since start: weight ${formatSignedDelta(weightDelta)} kg, waist ${formatSignedDelta(waistDelta)} cm`;
 }
 
-function formatCheckIn(checkIn) {
+function formatLimbSplitFieldLabel(field, t) {
+  return t(`account.tracking.limb.field.${field.id}`, {}, field.label);
+}
+
+function formatSideLabel(side, t) {
+  return t(`account.tracking.side.${side}`, {}, side);
+}
+
+function formatLimbSymmetryDisplayItem(item, t) {
+  if (!item) {
+    return "";
+  }
+
+  const label = t(`account.tracking.limb.field.${item.field}`, {}, item.label);
+  if (item.dominantSide === "even") {
+    return t("account.tracking.limb.itemEven", {
+      label,
+      delta: item.absoluteDelta.toFixed(1)
+    });
+  }
+
+  return t("account.tracking.limb.itemDominant", {
+    label,
+    side: formatSideLabel(item.dominantSide, t),
+    delta: item.absoluteDelta.toFixed(1),
+    percent: item.percentDelta.toFixed(1)
+  });
+}
+
+function formatLifeEventMode(mode, t) {
+  return t(`account.tracking.lifeEventMode.${mode}`, {}, mode);
+}
+
+function formatCyclePhaseLabel(phase, t) {
+  const option = cyclePhaseOptions.find((item) => item.id === phase) || cyclePhaseOptions[4];
+  return t(`account.tracking.cycle.phase.${option.id}`, {}, option.label);
+}
+
+function formatCyclePhaseValue(phase, t) {
+  return t(`account.tracking.cycle.phaseValue.${phase}`, {}, String(phase || "").toLowerCase());
+}
+
+function formatCycleFlowLabel(flow, t) {
+  const option = cycleFlowOptions.find((item) => item.id === flow) || cycleFlowOptions[0];
+  return t(`account.tracking.cycle.flow.${option.id}`, {}, option.label);
+}
+
+function formatCycleFlowValue(flow, t) {
+  return t(`account.tracking.cycle.flowValue.${flow}`, {}, String(flow || "").toLowerCase());
+}
+
+function formatCycleCheckInSummary(checkIn, t) {
+  if (!checkIn) {
+    return "";
+  }
+
+  const phase = formatCyclePhaseLabel(checkIn.phase, t);
+  const base = Number.isFinite(Number(checkIn.cycleDay))
+    ? t("account.tracking.cycle.summaryWithDay", {
+        phase,
+        day: Number(checkIn.cycleDay)
+      })
+    : phase;
+  return checkIn.flow && checkIn.flow !== "not-tracked"
+    ? t("account.tracking.cycle.summaryWithFlow", {
+        base,
+        flow: formatCycleFlowValue(checkIn.flow, t)
+      })
+    : base;
+}
+
+function formatCycleTrendContext(context, t) {
+  if (!context?.latest || context.status === "off") {
+    return {
+      label: t("account.tracking.cycle.offLabel"),
+      insight: t("account.tracking.cycle.offInsight")
+    };
+  }
+
+  const phase = formatCyclePhaseLabel(context.latest.phase, t);
+  const phaseValue = formatCyclePhaseValue(context.latest.phase, t);
+  const label = Number.isFinite(Number(context.latest.cycleDay))
+    ? t("account.tracking.cycle.summaryWithDay", {
+        phase,
+        day: Number(context.latest.cycleDay)
+      })
+    : phase;
+
+  if (context.status === "stale") {
+    return {
+      label,
+      insight: t("account.tracking.cycle.staleInsight", {
+        ageDays: context.ageDays
+      })
+    };
+  }
+
+  return {
+    label,
+    insight:
+      context.status === "noisy"
+        ? t("account.tracking.cycle.noisyInsight", { phase: phaseValue })
+        : t("account.tracking.cycle.baselineInsight", { phase: phaseValue })
+  };
+}
+
+function formatLimbSymmetryError(message, t) {
+  if (!message) {
+    return "";
+  }
+
+  if (message === "Enter a number") {
+    return t("account.tracking.error.enterNumber");
+  }
+  if (message === "Enter at least one left/right pair.") {
+    return t("account.tracking.error.leftRightPair");
+  }
+
+  const rangeMatch = String(message).match(/^Expected (.+)$/);
+  return rangeMatch
+    ? t("account.tracking.error.expectedRange", { range: rangeMatch[1] })
+    : message;
+}
+
+function formatCycleError(message, t) {
+  switch (message) {
+    case "Choose a cycle phase.":
+      return t("account.tracking.error.chooseCyclePhase");
+    case "Expected day 1-60.":
+      return t("account.tracking.error.cycleDayRange");
+    default:
+      return message || "";
+  }
+}
+
+function formatHistoricalImportReason(reason, t) {
+  if (!reason) {
+    return "";
+  }
+
+  switch (reason) {
+    case "Empty CSV.":
+      return t("account.tracking.historyImport.emptyCsv");
+    case "CSV needs a header and at least one data row.":
+      return t("account.tracking.historyImport.needsRows");
+    case "Invalid date.":
+      return t("account.tracking.historyImport.invalidDate");
+    case "Invalid weight.":
+      return t("account.tracking.historyImport.invalidWeight");
+    case "All dated rows were already logged.":
+      return t("account.tracking.historyImport.allDuplicates");
+    case "No weight rows found.":
+      return t("account.tracking.historyImport.noWeightRows");
+    default: {
+      const missingMatch = String(reason).match(/^Missing required (.+) column\.$/);
+      return missingMatch
+        ? t("account.tracking.historyImport.missingColumn", {
+            columns: missingMatch[1]
+          })
+        : reason;
+    }
+  }
+}
+
+function formatHistoricalWeightImportSummary(result, t) {
+  const imported = result?.importedCount || 0;
+  const duplicate = result?.duplicateRows || 0;
+  const invalid = result?.invalidRows?.length || 0;
+  const details = [];
+
+  if (duplicate) {
+    details.push(t("account.tracking.historyImport.duplicateDetail", { count: duplicate }));
+  }
+  if (invalid) {
+    details.push(t("account.tracking.historyImport.invalidDetail", { count: invalid }));
+  }
+
+  return details.length
+    ? t("account.tracking.historyImport.importedWithDetails", {
+        count: imported,
+        details: details.join(", ")
+      })
+    : t("account.tracking.historyImport.imported", { count: imported });
+}
+
+function formatWeeklyStreakLabel(weeklyStreak, t) {
+  switch (weeklyStreak.status) {
+    case "current":
+      return t("account.tracking.streak.current", { count: weeklyStreak.current });
+    case "grace":
+      return t("account.tracking.streak.grace", { count: weeklyStreak.current });
+    case "needs-check-in":
+      return t("account.tracking.streak.due");
+    default:
+      return t("account.tracking.streak.empty");
+  }
+}
+
+function formatMilestoneLabel(milestone, t) {
+  return t(`account.tracking.milestone.${milestone.id}`, {}, milestone.label);
+}
+
+function formatCheckIn(checkIn, t) {
   if (checkIn.type === "daily-weight") {
     const hasCalories =
       checkIn.calories !== null &&
@@ -346,31 +545,52 @@ function formatCheckIn(checkIn) {
       checkIn.calories !== "" &&
       Number.isFinite(Number(checkIn.calories));
     const calories = hasCalories
-      ? ` / ${Number(checkIn.calories)} kcal`
+      ? t("account.tracking.history.caloriesSegment", {
+          calories: Number(checkIn.calories)
+        })
       : "";
-    return `Daily weight: ${Number(checkIn.weight).toFixed(1)} kg${calories}`;
+    return t("account.tracking.history.dailyWeight", {
+      weight: Number(checkIn.weight).toFixed(1),
+      calories
+    });
   }
 
   if (checkIn.type === "streak-freeze") {
-    return "Weekly streak freeze";
+    return t("account.tracking.history.streakFreeze");
   }
 
   if (checkIn.type === "life-event") {
-    return `Reliability event: ${checkIn.eventMode} / ${Number(checkIn.durationDays || 0)} day window`;
+    return t("account.tracking.history.lifeEvent", {
+      mode: formatLifeEventMode(checkIn.eventMode, t),
+      days: Number(checkIn.durationDays || 0)
+    });
   }
 
   if (checkIn.type === "limb-symmetry") {
     const summary = summarizeLimbSymmetrySplits(checkIn.splits);
-    const summaryText = summary.items.slice(0, 2).map(formatLimbSymmetryItem).join("; ");
-    return `Limb symmetry: ${summaryText || "split log"}`;
+    const summaryText = summary.items
+      .slice(0, 2)
+      .map((item) => formatLimbSymmetryDisplayItem(item, t))
+      .join("; ");
+    return t("account.tracking.history.limbSymmetry", {
+      summary: summaryText || t("account.tracking.history.limbSplitLog")
+    });
   }
 
   if (checkIn.type === "cycle-phase") {
-    return `Cycle context: ${formatCycleCheckIn(checkIn)}`;
+    return t("account.tracking.history.cycleContext", {
+      summary: formatCycleCheckInSummary(checkIn, t)
+    });
   }
 
-  const prefix = checkIn.source === "guided" ? "Guided weekly measurements" : "Weekly measurements";
-  return `${prefix}: waist ${Number(checkIn.measurements?.waistCircumference).toFixed(1)} cm`;
+  return t(
+    checkIn.source === "guided"
+      ? "account.tracking.history.guidedWeekly"
+      : "account.tracking.history.weekly",
+    {
+      waist: Number(checkIn.measurements?.waistCircumference).toFixed(1)
+    }
+  );
 }
 
 function formatLoad(value) {
@@ -409,8 +629,10 @@ function PhotoImage({ photo, alt, className = "", loadingLabel = "Photo loading"
   return <img src={photo.dataUrl} alt={alt} className={className || undefined} {...props} />;
 }
 
-function formatCadenceFields(fields) {
-  return fields.map((field) => field.label).join(", ");
+function formatCadenceFields(fields, t) {
+  return fields
+    .map((field) => t(`measurement.field.${field.name}.label`, {}, field.label))
+    .join(", ");
 }
 
 function buildTrendWeightChart(series) {
@@ -1462,6 +1684,10 @@ export default function AccountGoalPanel({
     () => buildCycleTrendContext(checkIns),
     [checkIns]
   );
+  const localizedCycleTrendContext = useMemo(
+    () => formatCycleTrendContext(cycleTrendContext, t),
+    [cycleTrendContext, t]
+  );
   const weeklyStreak = useMemo(() => buildWeeklyStreak(checkIns), [checkIns]);
   const homeWidgetPreview = useMemo(
     () =>
@@ -2041,7 +2267,7 @@ export default function AccountGoalPanel({
 
     const weight = Number(dailyWeight || currentMeasurements.weight);
     if (!Number.isFinite(weight)) {
-      setStatus("Enter a valid daily weight.");
+      setStatus(t("account.tracking.status.validDailyWeight"));
       return;
     }
 
@@ -2060,7 +2286,7 @@ export default function AccountGoalPanel({
     setDailyWeight("");
     setDailyCalories("");
     triggerCheckInHaptic();
-    setStatus("Daily check-in logged.");
+    setStatus(t("account.tracking.status.dailyLogged"));
   }
 
   function handleLimbSplitChange(name, value) {
@@ -2091,7 +2317,11 @@ export default function AccountGoalPanel({
     setLimbSplitErrors(result.errors);
 
     if (!result.checkIn) {
-      setStatus(result.errors.form || "Fix the highlighted limb split values.");
+      setStatus(
+        result.errors.form
+          ? formatLimbSymmetryError(result.errors.form, t)
+          : t("account.tracking.status.fixLimbSplits")
+      );
       return;
     }
 
@@ -2100,7 +2330,7 @@ export default function AccountGoalPanel({
     setLimbSplitValues({});
     setLimbSplitNote("");
     triggerCheckInHaptic();
-    setStatus("Limb symmetry split logged.");
+    setStatus(t("account.tracking.status.limbLogged"));
   }
 
   function handleCycleCheckIn(event) {
@@ -2119,7 +2349,10 @@ export default function AccountGoalPanel({
     setCycleErrors(result.errors);
 
     if (!result.checkIn) {
-      setStatus(result.errors.phase || result.errors.cycleDay || "Fix the cycle context values.");
+      setStatus(
+        formatCycleError(result.errors.phase || result.errors.cycleDay, t) ||
+          t("account.tracking.status.fixCycle")
+      );
       return;
     }
 
@@ -2131,7 +2364,7 @@ export default function AccountGoalPanel({
     setCycleSymptoms("");
     setCycleNote("");
     triggerCheckInHaptic();
-    setStatus("Cycle context logged locally.");
+    setStatus(t("account.tracking.status.cycleLogged"));
   }
 
   function handleDeleteCycleLogs() {
@@ -2142,7 +2375,7 @@ export default function AccountGoalPanel({
     const nextCheckIns = deleteUserCheckInsByType(account.id, "cycle-phase");
     setCheckIns(nextCheckIns);
     setCycleErrors({});
-    setStatus("Cycle logs deleted from this browser account.");
+    setStatus(t("account.tracking.status.cycleDeleted"));
   }
 
   function importHistoricalWeightCsv(rawValue) {
@@ -2155,18 +2388,20 @@ export default function AccountGoalPanel({
     });
 
     if (!result.entries.length) {
-      const reason =
+      const reason = formatHistoricalImportReason(
         result.invalidRows[0]?.reason ||
-        (result.duplicateRows ? "All dated rows were already logged." : "No weight rows found.");
+          (result.duplicateRows ? "All dated rows were already logged." : "No weight rows found."),
+        t
+      );
       setHistoryImportStatus(reason);
-      setStatus(`Historical import skipped: ${reason}`);
+      setStatus(t("account.tracking.status.historyImportSkipped", { reason }));
       return;
     }
 
     const nextCheckIns = persistUserCheckIns(account.id, result.entries);
     setCheckIns(nextCheckIns);
     setHistoryImportText("");
-    const summary = summarizeHistoricalWeightImport(result);
+    const summary = formatHistoricalWeightImportSummary(result, t);
     setHistoryImportStatus(summary);
     setStatus(summary);
   }
@@ -2187,8 +2422,8 @@ export default function AccountGoalPanel({
       importHistoricalWeightCsv(String(reader.result || ""));
     };
     reader.onerror = () => {
-      setHistoryImportStatus("CSV file import failed.");
-      setStatus("Historical import failed.");
+      setHistoryImportStatus(t("account.tracking.status.csvFileFailed"));
+      setStatus(t("account.tracking.status.historyImportFailed"));
     };
     reader.readAsText(file);
     event.target.value = "";
@@ -2236,13 +2471,13 @@ export default function AccountGoalPanel({
       });
       setStatus(
         saved === false
-          ? "Weekly measurements logged. Fix measurement errors before saving the snapshot."
+          ? t("account.tracking.status.weeklySnapshotFix")
           : activeProtocols.length
-            ? "Guided weekly check-in saved with snapshot and protocol review."
-            : "Guided weekly check-in saved with snapshot."
+            ? t("account.tracking.status.guidedSavedWithProtocol")
+            : t("account.tracking.status.guidedSaved")
       );
     } else {
-      setStatus("Weekly measurements logged.");
+      setStatus(t("account.tracking.status.weeklyLogged"));
     }
   }
 
@@ -2266,7 +2501,7 @@ export default function AccountGoalPanel({
 
     setCheckIns([nextCheckIn, ...checkIns]);
     triggerCheckInHaptic();
-    setStatus("Weekly streak freeze used.");
+    setStatus(t("account.tracking.status.freezeUsed"));
   }
 
   async function handleEnableRemoteTrendPush() {
@@ -2276,9 +2511,9 @@ export default function AccountGoalPanel({
     setStatus(
       result.subscribed
         ? result.deliveryConfigured
-          ? "Remote stale-trend reminders subscribed for this device."
-          : "Remote reminder subscription saved; server delivery still needs push provider configuration."
-        : remotePushStatusLabel(trendPushStatusFromPreference(result.preference))
+          ? t("account.tracking.status.remoteSubscribed")
+          : t("account.tracking.status.remoteSavedNeedsProvider")
+        : remotePushStatusLabel(trendPushStatusFromPreference(result.preference), t)
     );
   }
 
@@ -2288,8 +2523,8 @@ export default function AccountGoalPanel({
     setRemotePushStatus(trendPushStatusFromPreference(result.preference));
     setStatus(
       result.unsubscribed
-        ? "Remote stale-trend reminders unsubscribed for this device."
-        : remotePushStatusLabel(trendPushStatusFromPreference(result.preference))
+        ? t("account.tracking.status.remoteUnsubscribed")
+        : remotePushStatusLabel(trendPushStatusFromPreference(result.preference), t)
     );
   }
 
@@ -2397,7 +2632,7 @@ export default function AccountGoalPanel({
     setCheckIns([nextCheckIn, ...checkIns]);
     setLifeEventNote("");
     triggerCheckInHaptic();
-    setStatus("Reliability event logged.");
+    setStatus(t("account.tracking.status.reliabilityLogged"));
   }
 
   function handleProcedureTypeChange(procedureId) {
@@ -4296,45 +4531,67 @@ export default function AccountGoalPanel({
               </button>
             </section>
 
-            <section className="checkin-loop" aria-label="Check-in loop">
+            <section className="checkin-loop" aria-label={t("account.tracking.aria")}>
               <div className="panel-header">
-                <h3>Check-in loop</h3>
-                <p>Daily weight is quick; tape measurements stay weekly unless a protocol needs closer notes.</p>
+                <h3>{t("account.tracking.title")}</h3>
+                <p>{t("account.tracking.body")}</p>
               </div>
-              <div className="cadence-grid" aria-label="Measurement cadence">
+              <div className="cadence-grid" aria-label={t("account.tracking.cadenceAria")}>
                 <div>
-                  <strong>{cadenceDueState.daily.isDue ? "Due today" : "Logged today"}</strong>
-                  <span>Daily: {formatCadenceFields(cadenceDueState.daily.fields)}</span>
+                  <strong>
+                    {cadenceDueState.daily.isDue
+                      ? t("account.tracking.cadence.dueToday")
+                      : t("account.tracking.cadence.loggedToday")}
+                  </strong>
+                  <span>
+                    {t("account.tracking.cadence.dailyLine", {
+                      fields: formatCadenceFields(cadenceDueState.daily.fields, t)
+                    })}
+                  </span>
                   <small>
                     {cadenceDueState.daily.latestAt
-                      ? `Last ${formatDate(cadenceDueState.daily.latestAt)}`
-                      : "No daily log yet"}
+                      ? t("account.tracking.cadence.last", {
+                          date: formatDate(cadenceDueState.daily.latestAt, locale)
+                        })
+                      : t("account.tracking.cadence.noDaily")}
                   </small>
                 </div>
                 <div>
-                  <strong>{cadenceDueState.weekly.isDue ? "Weekly due" : "Weekly current"}</strong>
-                  <span>{formatCadenceFields(cadenceDueState.weekly.fields)}</span>
+                  <strong>
+                    {cadenceDueState.weekly.isDue
+                      ? t("account.tracking.cadence.weeklyDue")
+                      : t("account.tracking.cadence.weeklyCurrent")}
+                  </strong>
+                  <span>{formatCadenceFields(cadenceDueState.weekly.fields, t)}</span>
                   <small>
                     {cadenceDueState.weekly.latestAt
-                      ? `Last ${formatDate(cadenceDueState.weekly.latestAt)}`
-                      : "No weekly log yet"}
+                      ? t("account.tracking.cadence.last", {
+                          date: formatDate(cadenceDueState.weekly.latestAt, locale)
+                        })
+                      : t("account.tracking.cadence.noWeekly")}
                   </small>
                 </div>
                 <div>
-                  <strong>{cadenceDueState.monthly.isDue ? "Monthly due" : "Monthly current"}</strong>
-                  <span>{formatCadenceFields(cadenceDueState.monthly.fields)}</span>
+                  <strong>
+                    {cadenceDueState.monthly.isDue
+                      ? t("account.tracking.cadence.monthlyDue")
+                      : t("account.tracking.cadence.monthlyCurrent")}
+                  </strong>
+                  <span>{formatCadenceFields(cadenceDueState.monthly.fields, t)}</span>
                   <small>
                     {cadenceDueState.monthly.latestAt
-                      ? `Last ${formatDate(cadenceDueState.monthly.latestAt)}`
-                      : "No monthly proxy yet"}
+                      ? t("account.tracking.cadence.last", {
+                          date: formatDate(cadenceDueState.monthly.latestAt, locale)
+                        })
+                      : t("account.tracking.cadence.noMonthly")}
                   </small>
                 </div>
               </div>
               <form className="checkin-form" onSubmit={handleDailyCheckIn}>
                 <label className="field">
-                  <span className="field-label">Daily weight</span>
+                  <span className="field-label">{t("account.tracking.dailyWeight")}</span>
                   <input
-                    aria-label="Daily weight"
+                    aria-label={t("account.tracking.dailyWeight")}
                     inputMode="decimal"
                     value={dailyWeight}
                     onChange={(event) => setDailyWeight(event.target.value)}
@@ -4342,9 +4599,9 @@ export default function AccountGoalPanel({
                   />
                 </label>
                 <label className="field">
-                  <span className="field-label">Calories optional</span>
+                  <span className="field-label">{t("account.tracking.caloriesOptional")}</span>
                   <input
-                    aria-label="Daily calories"
+                    aria-label={t("account.tracking.dailyCaloriesAria")}
                     inputMode="decimal"
                     value={dailyCalories}
                     onChange={(event) => setDailyCalories(event.target.value)}
@@ -4352,52 +4609,55 @@ export default function AccountGoalPanel({
                   />
                 </label>
                 <label className="field checkin-note">
-                  <span className="field-label">Check-in note</span>
+                  <span className="field-label">{t("account.tracking.checkInNote")}</span>
                   <textarea
-                    aria-label="Check-in note"
+                    aria-label={t("account.tracking.checkInNote")}
                     value={checkInNote}
                     onChange={(event) => setCheckInNote(event.target.value)}
                   />
                 </label>
                 <button className="button" type="submit">
-                  Log daily check-in
+                  {t("account.tracking.logDaily")}
                 </button>
                 <button className="button" type="button" onClick={handleWeeklyCheckIn}>
-                  Save weekly check-in
+                  {t("account.tracking.saveWeekly")}
                 </button>
                 <button className="button" type="button" onClick={handleGuidedWeeklyCheckIn}>
-                  Finish guided weekly check-in
+                  {t("account.tracking.finishGuided")}
                 </button>
               </form>
               <form
                 className="limb-symmetry-card"
-                aria-label="Limb symmetry tracker"
+                aria-label={t("account.tracking.limb.aria")}
                 onSubmit={handleLimbSymmetryCheckIn}
               >
                 <div className="limb-symmetry-copy">
-                  <strong>Optional left/right limb splits</strong>
-                  <p>
-                    Keep the single body measurement as the default, or log dated
-                    side-to-side values for symmetry tracking.
-                  </p>
+                  <strong>{t("account.tracking.limb.title")}</strong>
+                  <p>{t("account.tracking.limb.body")}</p>
                 </div>
                 <div className="limb-split-grid">
                   {limbSplitFields.map((field) => {
                     const singleValue = Number(currentMeasurements[field.id]);
+                    const fieldLabel = formatLimbSplitFieldLabel(field, t);
                     const singleLabel = Number.isFinite(singleValue)
-                      ? `${singleValue.toFixed(1)} cm single value`
-                      : "single value unchanged";
+                      ? t("account.tracking.limb.singleValue", {
+                          value: singleValue.toFixed(1)
+                        })
+                      : t("account.tracking.limb.singleUnchanged");
 
                     return (
                       <div key={field.id} className="limb-split-row">
                         <div className="limb-split-label">
-                          <strong>{field.label}</strong>
+                          <strong>{fieldLabel}</strong>
                           <span>{singleLabel}</span>
                         </div>
                         <label className="field compact-field">
-                          <span className="field-label">Left</span>
+                          <span className="field-label">{t("account.tracking.limb.left")}</span>
                           <input
-                            aria-label={`${field.label} left`}
+                            aria-label={t("account.tracking.limb.sideAria", {
+                              field: fieldLabel,
+                              side: t("account.tracking.limb.leftAriaSuffix")
+                            })}
                             inputMode="decimal"
                             value={limbSplitValues[field.leftKey] || ""}
                             onChange={(event) =>
@@ -4406,13 +4666,18 @@ export default function AccountGoalPanel({
                             placeholder={Number.isFinite(singleValue) ? singleValue.toFixed(1) : ""}
                           />
                           {limbSplitErrors[field.leftKey] ? (
-                            <span className="field-error">{limbSplitErrors[field.leftKey]}</span>
+                            <span className="field-error">
+                              {formatLimbSymmetryError(limbSplitErrors[field.leftKey], t)}
+                            </span>
                           ) : null}
                         </label>
                         <label className="field compact-field">
-                          <span className="field-label">Right</span>
+                          <span className="field-label">{t("account.tracking.limb.right")}</span>
                           <input
-                            aria-label={`${field.label} right`}
+                            aria-label={t("account.tracking.limb.sideAria", {
+                              field: fieldLabel,
+                              side: t("account.tracking.limb.rightAriaSuffix")
+                            })}
                             inputMode="decimal"
                             value={limbSplitValues[field.rightKey] || ""}
                             onChange={(event) =>
@@ -4421,7 +4686,9 @@ export default function AccountGoalPanel({
                             placeholder={Number.isFinite(singleValue) ? singleValue.toFixed(1) : ""}
                           />
                           {limbSplitErrors[field.rightKey] ? (
-                            <span className="field-error">{limbSplitErrors[field.rightKey]}</span>
+                            <span className="field-error">
+                              {formatLimbSymmetryError(limbSplitErrors[field.rightKey], t)}
+                            </span>
                           ) : null}
                         </label>
                       </div>
@@ -4429,58 +4696,60 @@ export default function AccountGoalPanel({
                   })}
                 </div>
                 <label className="field limb-split-note">
-                  <span className="field-label">Limb split note</span>
+                  <span className="field-label">{t("account.tracking.limb.note")}</span>
                   <textarea
-                    aria-label="Limb split note"
+                    aria-label={t("account.tracking.limb.note")}
                     value={limbSplitNote}
                     onChange={(event) => setLimbSplitNote(event.target.value)}
-                    placeholder="Right arm usually pumped after tennis."
+                    placeholder={t("account.tracking.limb.notePlaceholder")}
                   />
                 </label>
                 <button className="button" type="submit">
-                  Log limb symmetry
+                  {t("account.tracking.limb.log")}
                 </button>
                 {limbSplitErrors.form ? (
                   <small className="history-import-status" role="alert">
-                    {limbSplitErrors.form}
+                    {formatLimbSymmetryError(limbSplitErrors.form, t)}
                   </small>
                 ) : null}
                 {latestLimbSymmetry ? (
-                  <div className="limb-symmetry-summary" aria-label="Latest limb symmetry">
+                  <div
+                    className="limb-symmetry-summary"
+                    aria-label={t("account.tracking.limb.latestAria")}
+                  >
                     <strong>
-                      Latest symmetry: {latestLimbSymmetrySummary.status === "watch" ? "watch" : "balanced"}
+                      {t("account.tracking.limb.latestStatus", {
+                        status:
+                          latestLimbSymmetrySummary.status === "watch"
+                            ? t("account.tracking.limb.status.watch")
+                            : t("account.tracking.limb.status.balanced")
+                      })}
                     </strong>
-                    <span>{formatDate(latestLimbSymmetry.createdAt)}</span>
+                    <span>{formatDate(latestLimbSymmetry.createdAt, locale)}</span>
                     <ul>
                       {latestLimbSymmetrySummary.items.map((item) => (
-                        <li key={item.field}>{formatLimbSymmetryItem(item)}</li>
+                        <li key={item.field}>{formatLimbSymmetryDisplayItem(item, t)}</li>
                       ))}
                     </ul>
                     {latestLimbSymmetry.note ? <p>{latestLimbSymmetry.note}</p> : null}
                   </div>
                 ) : (
-                  <p className="muted-text">
-                    No limb split logs yet. Leave this blank unless side-to-side
-                    tracking matters for your current goal.
-                  </p>
+                  <p className="muted-text">{t("account.tracking.limb.empty")}</p>
                 )}
               </form>
               <form
                 className="cycle-context-card"
-                aria-label="Cycle-aware tracking"
+                aria-label={t("account.tracking.cycle.aria")}
                 onSubmit={handleCycleCheckIn}
               >
                 <div className="cycle-context-copy">
-                  <strong>Optional cycle context</strong>
-                  <p>
-                    Strictly local phase labels for interpreting short-term
-                    weight or waist noise. Leave it off if it is not relevant.
-                  </p>
+                  <strong>{t("account.tracking.cycle.title")}</strong>
+                  <p>{t("account.tracking.cycle.body")}</p>
                 </div>
                 <label className="field">
-                  <span className="field-label">Cycle phase</span>
+                  <span className="field-label">{t("account.tracking.cycle.phaseLabel")}</span>
                   <select
-                    aria-label="Cycle phase"
+                    aria-label={t("account.tracking.cycle.phaseAria")}
                     value={cyclePhase}
                     onChange={(event) => {
                       setCyclePhase(event.target.value);
@@ -4491,21 +4760,21 @@ export default function AccountGoalPanel({
                       });
                     }}
                   >
-                    <option value="">Off / not logging</option>
+                    <option value="">{t("account.tracking.cycle.offOption")}</option>
                     {cyclePhaseOptions.map((option) => (
                       <option key={option.id} value={option.id}>
-                        {option.label}
+                        {formatCyclePhaseLabel(option.id, t)}
                       </option>
                     ))}
                   </select>
                   {cycleErrors.phase ? (
-                    <span className="field-error">{cycleErrors.phase}</span>
+                    <span className="field-error">{formatCycleError(cycleErrors.phase, t)}</span>
                   ) : null}
                 </label>
                 <label className="field">
-                  <span className="field-label">Cycle day optional</span>
+                  <span className="field-label">{t("account.tracking.cycle.dayOptional")}</span>
                   <input
-                    aria-label="Cycle day"
+                    aria-label={t("account.tracking.cycle.dayAria")}
                     inputMode="numeric"
                     value={cycleDay}
                     onChange={(event) => {
@@ -4519,44 +4788,44 @@ export default function AccountGoalPanel({
                     placeholder="21"
                   />
                   {cycleErrors.cycleDay ? (
-                    <span className="field-error">{cycleErrors.cycleDay}</span>
+                    <span className="field-error">{formatCycleError(cycleErrors.cycleDay, t)}</span>
                   ) : null}
                 </label>
                 <label className="field">
-                  <span className="field-label">Flow optional</span>
+                  <span className="field-label">{t("account.tracking.cycle.flowOptional")}</span>
                   <select
-                    aria-label="Cycle flow"
+                    aria-label={t("account.tracking.cycle.flowAria")}
                     value={cycleFlow}
                     onChange={(event) => setCycleFlow(event.target.value)}
                   >
                     {cycleFlowOptions.map((option) => (
                       <option key={option.id} value={option.id}>
-                        {option.label}
+                        {formatCycleFlowLabel(option.id, t)}
                       </option>
                     ))}
                   </select>
                 </label>
                 <label className="field cycle-symptoms-field">
-                  <span className="field-label">Symptoms optional</span>
+                  <span className="field-label">{t("account.tracking.cycle.symptomsOptional")}</span>
                   <input
-                    aria-label="Cycle symptoms"
+                    aria-label={t("account.tracking.cycle.symptomsAria")}
                     value={cycleSymptoms}
                     onChange={(event) => setCycleSymptoms(event.target.value)}
-                    placeholder="bloating, cramps"
+                    placeholder={t("account.tracking.cycle.symptomsPlaceholder")}
                   />
                 </label>
                 <label className="field cycle-note-field">
-                  <span className="field-label">Cycle note</span>
+                  <span className="field-label">{t("account.tracking.cycle.note")}</span>
                   <textarea
-                    aria-label="Cycle note"
+                    aria-label={t("account.tracking.cycle.note")}
                     value={cycleNote}
                     onChange={(event) => setCycleNote(event.target.value)}
-                    placeholder="Expect water retention this week."
+                    placeholder={t("account.tracking.cycle.notePlaceholder")}
                   />
                 </label>
                 <div className="cycle-actions">
                   <button className="button" type="submit">
-                    Log cycle context
+                    {t("account.tracking.cycle.log")}
                   </button>
                   <button
                     className="button"
@@ -4564,47 +4833,49 @@ export default function AccountGoalPanel({
                     onClick={handleDeleteCycleLogs}
                     disabled={!latestCycleContext}
                   >
-                    Delete cycle logs
+                    {t("account.tracking.cycle.delete")}
                   </button>
                 </div>
-                <div className="cycle-context-summary" aria-label="Latest cycle context">
-                  <strong>{cycleTrendContext.label}</strong>
-                  <span>{cycleTrendContext.insight}</span>
+                <div
+                  className="cycle-context-summary"
+                  aria-label={t("account.tracking.cycle.latestAria")}
+                >
+                  <strong>{localizedCycleTrendContext.label}</strong>
+                  <span>{localizedCycleTrendContext.insight}</span>
                   {latestCycleContext ? (
                     <>
                       <small>
-                        Latest saved {formatDate(latestCycleContext.createdAt)}; included
-                        in encrypted backup check-ins until deleted.
+                        {t("account.tracking.cycle.latestSaved", {
+                          date: formatDate(latestCycleContext.createdAt, locale)
+                        })}
                       </small>
                       {latestCycleContext.symptoms ? (
-                        <small>Symptoms: {latestCycleContext.symptoms}</small>
+                        <small>
+                          {t("account.tracking.cycle.symptomsLine", {
+                            symptoms: latestCycleContext.symptoms
+                          })}
+                        </small>
                       ) : null}
                       {latestCycleContext.note ? <p>{latestCycleContext.note}</p> : null}
                     </>
                   ) : (
-                    <small>
-                      No cycle logs saved. This feature is off by default and
-                      never leaves this browser unless you export a backup.
-                    </small>
+                    <small>{t("account.tracking.cycle.empty")}</small>
                   )}
                 </div>
               </form>
               <form
                 className="history-import-card"
-                aria-label="Historical weight CSV import"
+                aria-label={t("account.tracking.historyImport.aria")}
                 onSubmit={handleHistoricalWeightImport}
               >
                 <div className="history-import-copy">
-                  <strong>Import weight history</strong>
-                  <p>
-                    Paste a CSV with date and weight columns. Weight in pounds is converted when the header
-                    or unit column says lb/lbs; calories or kcal are optional.
-                  </p>
+                  <strong>{t("account.tracking.historyImport.title")}</strong>
+                  <p>{t("account.tracking.historyImport.body")}</p>
                 </div>
                 <label className="field history-import-input">
-                  <span className="field-label">Historical CSV</span>
+                  <span className="field-label">{t("account.tracking.historyImport.label")}</span>
                   <textarea
-                    aria-label="Historical weight CSV"
+                    aria-label={t("account.tracking.historyImport.textareaAria")}
                     value={historyImportText}
                     onChange={(event) => setHistoryImportText(event.target.value)}
                     placeholder={"date,weight_lbs,calories,note\n2026-06-01,190.2,2400,scale import"}
@@ -4612,12 +4883,12 @@ export default function AccountGoalPanel({
                 </label>
                 <div className="history-import-actions">
                   <button className="button" type="submit">
-                    Import pasted CSV
+                    {t("account.tracking.historyImport.importPasted")}
                   </button>
                   <label className="button file-button">
-                    Import CSV file
+                    {t("account.tracking.historyImport.importFile")}
                     <input
-                      aria-label="Import historical weight CSV file"
+                      aria-label={t("account.tracking.historyImport.fileAria")}
                       type="file"
                       accept=".csv,text/csv,text/plain"
                       onChange={handleHistoricalWeightFile}
@@ -4630,70 +4901,92 @@ export default function AccountGoalPanel({
                   </small>
                 ) : null}
               </form>
-              <div className="guided-checkin-card" aria-label="Guided weekly check-in">
+              <div className="guided-checkin-card" aria-label={t("account.tracking.guidedAria")}>
                 <div>
-                  <strong>Due in guided check-in</strong>
+                  <strong>{t("account.tracking.guidedDue")}</strong>
                   <span>
                     {formatCadenceFields([
                       ...cadenceDueState.weekly.fields,
                       ...(cadenceDueState.monthly.isDue ? cadenceDueState.monthly.fields : [])
-                    ])}
+                    ], t)}
                   </span>
                 </div>
-                <p>
-                  Guided weekly check-in logs the due fields and saves a snapshot so
-                  comparisons, reports, and trends have a dated anchor.
-                </p>
+                <p>{t("account.tracking.guidedBody")}</p>
               </div>
-              <div className="checkin-summary" aria-label="Check-in summary">
+              <div className="checkin-summary" aria-label={t("account.tracking.summaryAria")}>
                 <strong>
-                  Trend weight: {trendWeight ? `${trendWeight.value.toFixed(1)} kg` : "--"}
+                  {t("account.tracking.trendWeight", {
+                    value: trendWeight ? `${trendWeight.value.toFixed(1)} kg` : "--"
+                  })}
                 </strong>
                 <span>
                   {trendWeight
-                    ? `${trendWeight.count} log(s), ${formatSignedDelta(trendWeight.delta)} kg last trend step`
-                    : "No daily logs yet."}
+                    ? t("account.tracking.trendWeightDetail", {
+                        count: trendWeight.count,
+                        delta: formatSignedDelta(trendWeight.delta)
+                      })
+                    : t("account.tracking.noDailyLogs")}
                 </span>
                 {weightReliabilityPause.pausedEntryCount ? (
                   <small>
-                    {weightReliabilityPause.pausedEntryCount} weight log(s) excluded by reliability pause.
+                    {t("account.tracking.weightLogsPaused", {
+                      count: weightReliabilityPause.pausedEntryCount
+                    })}
                   </small>
                 ) : null}
                 {weightReliabilityPause.isPaused && weightReliabilityPause.latestWindow ? (
                   <small>
-                    Weight trend paused until {formatDate(weightReliabilityPause.latestWindow.endAt)}.
+                    {t("account.tracking.weightTrendPaused", {
+                      date: formatDate(weightReliabilityPause.latestWindow.endAt, locale)
+                    })}
                   </small>
                 ) : null}
                 <strong>
-                  Adaptive TDEE: {adaptiveTdee.status === "ready" ? `${adaptiveTdee.estimatedTdee} kcal` : "--"}
+                  {t("account.tracking.adaptiveTdee", {
+                    value: adaptiveTdee.status === "ready" ? `${adaptiveTdee.estimatedTdee} kcal` : "--"
+                  })}
                 </strong>
                 <span>
                   {adaptiveTdee.status === "ready"
-                    ? `${adaptiveTdee.confidenceLabel}; ${adaptiveTdee.rangeLow}-${adaptiveTdee.rangeHigh} kcal/day band`
+                    ? t("account.tracking.adaptiveTdeeDetail", {
+                        confidence: adaptiveTdee.confidenceLabel,
+                        low: adaptiveTdee.rangeLow,
+                        high: adaptiveTdee.rangeHigh
+                      })
                     : adaptiveTdee.reason}
                 </span>
                 {adaptiveTdee.excludedEntries ? (
                   <small>
-                    {adaptiveTdee.excludedEntries} calorie log(s) excluded by reliability pause.
+                    {t("account.tracking.calorieLogsPaused", {
+                      count: adaptiveTdee.excludedEntries
+                    })}
                   </small>
                 ) : null}
               </div>
-              <div className="streak-panel" aria-label="Check-in streak">
+              <div className="streak-panel" aria-label={t("account.tracking.streakAria")}>
                 <div>
-                  <strong>{weeklyStreak.label}</strong>
+                  <strong>{formatWeeklyStreakLabel(weeklyStreak, t)}</strong>
                   <span>
                     {weeklyStreak.latestAt
-                      ? `Last weekly check-in ${formatDate(weeklyStreak.latestAt)}`
-                      : "Start with a weekly check-in."}
+                      ? t("account.tracking.streak.lastWeekly", {
+                          date: formatDate(weeklyStreak.latestAt, locale)
+                        })
+                      : t("account.tracking.streak.start")}
                   </span>
                 </div>
                 <div>
                   <small>
                     {weeklyStreak.graceEndsAt
-                      ? `Grace ends ${formatDate(weeklyStreak.graceEndsAt)}`
-                      : "Grace window begins after each weekly check-in."}
+                      ? t("account.tracking.streak.graceEnds", {
+                          date: formatDate(weeklyStreak.graceEndsAt, locale)
+                        })
+                      : t("account.tracking.streak.graceStart")}
                   </small>
-                  <small>{weeklyStreak.freezeCount} freeze(s) used</small>
+                  <small>
+                    {t("account.tracking.streak.freezeCount", {
+                      count: weeklyStreak.freezeCount
+                    })}
+                  </small>
                 </div>
                 <div className="streak-actions">
                   <button
@@ -4702,7 +4995,7 @@ export default function AccountGoalPanel({
                     onClick={handleUseStreakFreeze}
                     disabled={!weeklyStreak.freezeAvailable}
                   >
-                    Use freeze
+                    {t("account.tracking.streak.useFreeze")}
                   </button>
                   <button
                     className="button"
@@ -4714,42 +5007,54 @@ export default function AccountGoalPanel({
                     }
                     disabled={remotePushStatus === "checking"}
                   >
-                    {remotePushStatus === "subscribed" ? "Disable reminders" : "Enable reminders"}
+                    {remotePushStatus === "subscribed"
+                      ? t("account.tracking.streak.disableReminders")
+                      : t("account.tracking.streak.enableReminders")}
                   </button>
                 </div>
                 <small className="remote-push-status" role="status" aria-live="polite">
-                  {remotePushStatusLabel(remotePushStatus)}
+                  {remotePushStatusLabel(remotePushStatus, t)}
                 </small>
               </div>
-              <div className="body-tea-panel" aria-label="Weekly body tea digest">
-                <h4>Your body tea</h4>
+              <div className="body-tea-panel" aria-label={t("account.tracking.digestAria")}>
+                <h4>{t("account.tracking.digestTitle")}</h4>
                 <ul>
                   {weeklyDigest.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
               </div>
-              <div className="checkin-heatmap" aria-label="Check-in calendar heatmap">
+              <div className="checkin-heatmap" aria-label={t("account.tracking.heatmapAria")}>
                 {checkInHeatmap.map((day) => (
                   <span
                     key={day.key}
                     className={`heatmap-cell heatmap-cell--${day.intensity}`}
-                    title={`${day.date}: ${day.count} check-in(s)`}
-                    aria-label={`${day.date}: ${day.count} check-in(s)`}
+                    title={t("account.tracking.heatmapDay", {
+                      date: day.date,
+                      count: day.count
+                    })}
+                    aria-label={t("account.tracking.heatmapDay", {
+                      date: day.date,
+                      count: day.count
+                    })}
                   />
                 ))}
               </div>
-              <div className="milestone-grid" aria-label="Check-in milestones">
+              <div className="milestone-grid" aria-label={t("account.tracking.milestonesAria")}>
                 {milestones.map((milestone) => (
                   <div
                     key={milestone.id}
                     className={`milestone-chip ${milestone.achieved ? "is-achieved" : ""}`}
                   >
-                    <strong>{milestone.label}</strong>
+                    <strong>{formatMilestoneLabel(milestone, t)}</strong>
                     {Number.isFinite(milestone.progress) && milestone.target ? (
                       <span>{milestone.progress}/{milestone.target}</span>
                     ) : (
-                      <span>{milestone.achieved ? "done" : "open"}</span>
+                      <span>
+                        {milestone.achieved
+                          ? t("account.tracking.milestone.done")
+                          : t("account.tracking.milestone.open")}
+                      </span>
                     )}
                   </div>
                 ))}
@@ -4757,12 +5062,12 @@ export default function AccountGoalPanel({
               {trendWeightChart ? (
                 <div
                   className="trend-weight-panel"
-                  aria-label="Trend weight line vs raw daily weight dots"
+                  aria-label={t("account.tracking.trendChartAria")}
                 >
                   <svg
                     className="trend-weight-chart"
                     role="img"
-                    aria-label="Trend weight chart"
+                    aria-label={t("account.tracking.trendChartTitle")}
                     viewBox="0 0 100 36"
                     preserveAspectRatio="none"
                   >
@@ -4776,33 +5081,38 @@ export default function AccountGoalPanel({
                         cy={point.y}
                         r="1.8"
                       >
-                        <title>{`${point.value.toFixed(1)} kg on ${formatDate(point.createdAt)}`}</title>
+                        <title>
+                          {t("account.tracking.trendPoint", {
+                            value: point.value.toFixed(1),
+                            date: formatDate(point.createdAt, locale)
+                          })}
+                        </title>
                       </circle>
                     ))}
                   </svg>
                   <div className="trend-weight-legend">
-                    <span>Raw daily dots</span>
-                    <span>Smoothed trend line</span>
+                    <span>{t("account.tracking.rawDots")}</span>
+                    <span>{t("account.tracking.smoothedLine")}</span>
                   </div>
                 </div>
               ) : null}
-              <div aria-label="Check-in history">
+              <div aria-label={t("account.tracking.historyAria")}>
                 {checkIns.length ? (
                   <ul className="checkin-list">
                     {checkIns.slice(0, 5).map((checkIn) => (
                       <li key={checkIn.id}>
-                        <strong>{formatCheckIn(checkIn)}</strong>
-                        <span>{formatDate(checkIn.createdAt)}</span>
+                        <strong>{formatCheckIn(checkIn, t)}</strong>
+                        <span>{formatDate(checkIn.createdAt, locale)}</span>
                         {checkIn.note ? <p>{checkIn.note}</p> : null}
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="muted-text">No check-ins logged yet.</p>
+                  <p className="muted-text">{t("account.tracking.emptyHistory")}</p>
                 )}
               </div>
-              <div className="insight-drop-list" aria-label="Insight drops">
-                <h4>Insight drops</h4>
+              <div className="insight-drop-list" aria-label={t("account.tracking.insightsAria")}>
+                <h4>{t("account.tracking.insightsTitle")}</h4>
                 {insightDrops.length ? (
                   <ul>
                     {insightDrops.map((insight) => (
@@ -4810,7 +5120,7 @@ export default function AccountGoalPanel({
                     ))}
                   </ul>
                 ) : (
-                  <p className="muted-text">Log a check-in to generate insights.</p>
+                  <p className="muted-text">{t("account.tracking.insightsEmpty")}</p>
                 )}
               </div>
             </section>
@@ -5146,57 +5456,66 @@ export default function AccountGoalPanel({
                 ) : null}
               </form>
 
-              <form className="life-event-form" aria-label="Reliability event form" onSubmit={handleLifeEvent}>
+              <form
+                className="life-event-form"
+                aria-label={t("account.tracking.reliability.formAria")}
+                onSubmit={handleLifeEvent}
+              >
                 <label className="field">
-                  <span className="field-label">Event mode</span>
+                  <span className="field-label">{t("account.tracking.reliability.eventMode")}</span>
                   <select
-                    aria-label="Life event mode"
+                    aria-label={t("account.tracking.reliability.eventModeAria")}
                     value={lifeEventMode}
                     onChange={(event) => setLifeEventMode(event.target.value)}
                   >
-                    <option value="procedure">Procedure / healing</option>
-                    <option value="postpartum">Pregnancy / postpartum</option>
-                    <option value="injury">Injury</option>
-                    <option value="illness">Illness</option>
+                    <option value="procedure">{t("account.tracking.lifeEventOption.procedure")}</option>
+                    <option value="postpartum">{t("account.tracking.lifeEventOption.postpartum")}</option>
+                    <option value="injury">{t("account.tracking.lifeEventOption.injury")}</option>
+                    <option value="illness">{t("account.tracking.lifeEventOption.illness")}</option>
                   </select>
                 </label>
                 <label className="field">
-                  <span className="field-label">Affected fields</span>
+                  <span className="field-label">{t("account.tracking.reliability.affectedFields")}</span>
                   <input
-                    aria-label="Reliability affected fields"
+                    aria-label={t("account.tracking.reliability.affectedFieldsAria")}
                     value={lifeEventFields}
                     onChange={(event) => setLifeEventFields(event.target.value)}
                     placeholder="waistCircumference, hipCircumference"
                   />
                 </label>
                 <label className="field">
-                  <span className="field-label">Pause days</span>
+                  <span className="field-label">{t("account.tracking.reliability.pauseDays")}</span>
                   <input
-                    aria-label="Reliability pause days"
+                    aria-label={t("account.tracking.reliability.pauseDaysAria")}
                     inputMode="numeric"
                     value={lifeEventDurationDays}
                     onChange={(event) => setLifeEventDurationDays(event.target.value)}
                   />
                 </label>
                 <label className="field life-event-note">
-                  <span className="field-label">Event note</span>
+                  <span className="field-label">{t("account.tracking.reliability.note")}</span>
                   <textarea
-                    aria-label="Reliability event note"
+                    aria-label={t("account.tracking.reliability.noteAria")}
                     value={lifeEventNote}
                     onChange={(event) => setLifeEventNote(event.target.value)}
                   />
                 </label>
                 <button className="button" type="submit">
-                  Log reliability event
+                  {t("account.tracking.reliability.log")}
                 </button>
               </form>
               {lifeEvents.length ? (
-                <div className="life-event-list" aria-label="Reliability events">
+                <div className="life-event-list" aria-label={t("account.tracking.reliability.eventsAria")}>
                   {lifeEvents.slice(0, 3).map((event) => (
                     <div key={event.id}>
-                      <strong>{event.eventMode}</strong>
+                      <strong>{formatLifeEventMode(event.eventMode, t)}</strong>
                       <span>
-                        {event.affectedFields?.join(", ") || "affected fields not set"} / {event.durationDays} day pause
+                        {t("account.tracking.reliability.eventLine", {
+                          fields:
+                            event.affectedFields?.join(", ") ||
+                            t("account.tracking.reliability.noAffectedFields"),
+                          days: event.durationDays
+                        })}
                       </span>
                       {event.note ? <p>{event.note}</p> : null}
                     </div>

@@ -192,6 +192,26 @@ test("translates known keys, falls back to English, and interpolates values", ()
     "Procedimiento: waistCircumference pausado(s) por 28 dia(s); 1 snapshot(s), 2 foto(s) de body."
   );
   assert.equal(
+    translate("es", "account.tracking.history.dailyWeight", {
+      weight: "82.4",
+      calories: translate("es", "account.tracking.history.caloriesSegment", {
+        calories: 2400
+      })
+    }),
+    "Peso diario: 82.4 kg / 2400 kcal"
+  );
+  assert.equal(
+    translate("es", "account.tracking.historyImport.imported", { count: 2 }),
+    "2 registro(s) historico(s) importado(s)."
+  );
+  assert.equal(
+    translate("es", "account.tracking.reliability.eventLine", {
+      fields: "waistCircumference",
+      days: 21
+    }),
+    "waistCircumference / pausa de 21 dia(s)"
+  );
+  assert.equal(
     translate("es", "account.bloodwork.status.loaded", { count: 4 }),
     "4 seed(s) de marcadores de laboratorio cargados."
   );

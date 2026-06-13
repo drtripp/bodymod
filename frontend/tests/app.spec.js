@@ -2337,6 +2337,22 @@ test("downloads a localized progress report from the account UI", async ({ page 
   await page.getByLabel("Email de cuenta").fill("lucia@example.com");
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await expect(accountDialog).toContainText("Signed in as Lucia.");
+  const trackingSection = accountDialog.getByLabel("Registro de check-ins");
+  await expect(trackingSection).toContainText("Peso diario");
+  await expect(page.getByLabel("Peso diario")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Registrar check-in diario" })).toBeVisible();
+  await expect(accountDialog.getByLabel("Tracker de simetria de extremidades")).toContainText(
+    "Splits izquierdo/derecho opcionales"
+  );
+  await expect(accountDialog.getByLabel("Seguimiento con contexto de ciclo")).toContainText(
+    "Contexto de ciclo opcional"
+  );
+  await expect(accountDialog.getByLabel("Importacion CSV historica de peso")).toContainText(
+    "Importar historial de peso"
+  );
+  await expect(accountDialog.getByLabel("Formulario de evento de fiabilidad")).toContainText(
+    "Modo de evento"
+  );
   const entitlementSection = accountDialog.getByLabel("Plan y acceso");
   await expect(entitlementSection).toContainText("Incluido ahora");
   await expect(entitlementSection).toContainText("Vista previa Pro");

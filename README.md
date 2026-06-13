@@ -212,7 +212,7 @@ Implemented now:
   chrome/status strings, Strategy explorer chrome/safety copy, account
   shell/magic-link identity/share/widget/health-sync/live-update/backup/
   native-backup/encrypted-sync/auto-sync/personal-data-api/entitlement/
-  referral/data-explainer/face-measurement/export/report controls, and printable progress
+  referral/data-explainer/face-measurement/check-in-tracking/export/report controls, and printable progress
   report headings, empty states, and generated body rows
 - Capacitor native-shell bootstrap with package scripts, app metadata, Vite `dist/` sync target, and backend `capacitor://localhost` CORS origin
 - Capacitor Preferences-backed storage adapter that hydrates before first render,
@@ -249,7 +249,7 @@ Not implemented yet:
   strings, Strategy explorer chrome/safety copy, account shell/magic-link
   identity/share/widget/health-sync/live-update/backup/native-backup/
   encrypted-sync/auto-sync/personal-data-api/entitlement/referral/
-  data-explainer/face-measurement/procedure/bloodwork/workout/photo-log/export/report controls, and generated progress report copy,
+  data-explainer/face-measurement/check-in-tracking/procedure/bloodwork/workout/photo-log/export/report controls, and generated progress report copy,
   while remaining account feature panes plus source, seed, and user-authored
   content remain English-first
 - generated Android/iOS native project folders, store signing, APNs/FCM production credentials/device validation, real HealthKit/Health Connect plugin reads/writes, native home-screen widget extensions, iCloud/Google Drive backup policy wiring, native store icon generation, signed live-update provider/rollback policy, and native release workflows
