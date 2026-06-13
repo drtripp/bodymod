@@ -1754,6 +1754,21 @@ textarea {
   color: var(--color-muted);
 }
 
+.case-log-submission-panel {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.case-log-submission-panel .button {
+  justify-self: start;
+}
+
+.case-log-submission-status {
+  color: var(--color-muted);
+  margin: 8px 0 0;
+}
+
 .projection-silhouette-card {
   border-top: 1px solid var(--color-border);
   display: grid;

@@ -733,8 +733,14 @@ land. No social features, no marketplace.
 - [x] High-risk display friction: corpus entries flagged
       surgical/pharma/medical-adjacent get an extra acknowledgment step and
       are excluded from any personalization.
-- [ ] User-submitted case logs with moderation queue — explicitly last, after
-      corpus v1 proves the content model. **[human]** moderation policy.
+- [x] User-submitted case logs with moderation queue — explicitly last, after
+      corpus v1 proves the content model. Backend now accepts review-only
+      `POST /api/case-log-submissions` payloads into a SQLite moderation queue,
+      the account panel can submit generated protocol case logs without account
+      IDs, notes, photos, or raw measurement fields, and backend/Node/
+      Playwright tests cover the privacy envelope. **[human]** moderation
+      policy, reviewer tooling, and publication decisions remain before any
+      public corpus inclusion.
 
 ## 18. Compliance, Trust & Launch
 

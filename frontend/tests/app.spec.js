@@ -878,6 +878,7 @@ async function mockApi(page) {
   const accountMagicLinks = new Map();
   const accountIdentitySessions = new Map();
   let accountIdentityCounter = 0;
+  let caseLogSubmissionCounter = 0;
 
   await page.route("**/api/health", async (route) => {
     await route.fulfill({ json: { status: "ok" } });
@@ -928,6 +929,30 @@ async function mockApi(page) {
         notes: ["Mocked Playwright strategy corpus source."],
         outcomes: strategyOutcomes,
         caseLogs: strategyCaseLogs
+      }
+    });
+  });
+
+  await page.route("**/api/case-log-submissions", async (route) => {
+    const requestBody = route.request().postData() || "";
+    expect(requestBody).not.toMatch(
+      /measurements|waistCircumference|mason@example\.com|syncToken|accountId|Travel week noted|private note/i
+    );
+    const body = route.request().postDataJSON();
+    expect(body.consent).toBe(true);
+    expect(body.submitterContext).toBe("local-browser-account");
+    expect(body.caseLog.reviewStatus).toBe("queued-for-moderation");
+    expect(body.caseLog.sourceType).toBe("user-submitted local protocol");
+    expect(body.caseLog.outcomeSummary).toContain("Weight");
+    caseLogSubmissionCounter += 1;
+    await route.fulfill({
+      status: 202,
+      json: {
+        status: "queued",
+        stored: true,
+        submissionId: `mock-case-log-${caseLogSubmissionCounter}`,
+        reviewStatus: "queued-for-moderation",
+        createdAt: "2026-06-13T12:00:00Z"
       }
     });
   });
@@ -2185,6 +2210,8 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
     "adjusts only calorie-linked weight and waist"
   );
   await expect(page.getByLabel("Progressive resistance training case log")).toContainText("Weight");
+  await page.getByRole("button", { name: "Submit for review" }).click();
+  await expect(page.getByText("Case log queued for moderation review: mock-case-log-1 / queued-for-moderation.")).toBeVisible();
   await page.getByLabel("Protocol adherence score").selectOption("5");
   await page.getByRole("button", { name: "Finish guided weekly check-in" }).click();
   await expect(page.getByLabel("Active protocols")).toContainText("1 adherence check-in(s)");

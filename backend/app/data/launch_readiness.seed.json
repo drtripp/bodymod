@@ -156,7 +156,8 @@
         "launch-decision-record.md",
         "frontend/public/legal/",
         "Disabled-by-default first-party analytics upload",
-        "Encrypted sync vault and magic-link account scaffolds"
+        "Encrypted sync vault and magic-link account scaffolds",
+        "Review-only case-log submission queue at /api/case-log-submissions"
       ],
       "verification": [
         ".\\verify.ps1"

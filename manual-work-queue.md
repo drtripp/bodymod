@@ -183,6 +183,10 @@ Required input:
 - legal owner/contact details
 - approval of privacy policy, terms, and medical disclaimer drafts
 - corpus moderation and exclusion policy
+  - agent wiring now exists as a review-only `POST /api/case-log-submissions`
+    queue backed by SQLite; account-panel submissions send summarized protocol
+    case logs without account IDs, private notes, photos, or raw measurement
+    fields, and nothing is published into the strategy corpus automatically
 
 Use:
 

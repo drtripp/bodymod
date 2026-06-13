@@ -26,6 +26,8 @@ from app.models import AccountSessionRecord
 from app.models import AccountSessionResponse
 from app.models import AccountSessionRevokeResponse
 from app.models import BloodworkLibrary
+from app.models import CaseLogSubmissionRequest
+from app.models import CaseLogSubmissionResponse
 from app.models import ClothingSizeTables
 from app.models import ClientErrorReportRequest
 from app.models import ClientErrorReportResponse
@@ -69,6 +71,7 @@ from app.native_push import native_push_delivery_configured
 from app.rate_limit import enforce_match_rate_limit
 from app.repositories import (
     AccountIdentityRepository,
+    CaseLogSubmissionRepository,
     ClientErrorRepository,
     NativePushTokenRepository,
     PersonalDataTokenRepository,
@@ -276,6 +279,15 @@ def report_client_error(request: ClientErrorReportRequest) -> dict:
 )
 def report_product_analytics(request: ProductAnalyticsReportRequest) -> dict:
     return ProductAnalyticsRepository().record_event(request.event)
+
+
+@app.post(
+    "/api/case-log-submissions",
+    response_model=CaseLogSubmissionResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def submit_case_log_for_moderation(request: CaseLogSubmissionRequest) -> dict:
+    return CaseLogSubmissionRepository().create_submission(request)
 
 
 @app.post(

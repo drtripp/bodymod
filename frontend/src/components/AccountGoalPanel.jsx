@@ -12,6 +12,7 @@ import {
   fetchPlanningData,
   fetchProcedureLibrary,
   revokeShareDashboard,
+  submitCaseLogSubmission,
   updateShareDashboard
 } from "../lib/api";
 import {
@@ -236,6 +237,10 @@ import {
   normalizeLaunchReadiness
 } from "../lib/launchReadiness";
 import { loadStrategyCorpusBundle } from "../lib/strategyCorpus";
+import {
+  buildCaseLogSubmission,
+  caseLogSubmissionStatusLine
+} from "../lib/caseLogSubmissions";
 import {
   loadNotificationPreference,
   sendTrendReminderNotificationIfDue,
@@ -1351,6 +1356,8 @@ export default function AccountGoalPanel({
   const [protocolCalorieDelta, setProtocolCalorieDelta] = useState("");
   const [protocolEditId, setProtocolEditId] = useState("");
   const [protocolAdherenceScore, setProtocolAdherenceScore] = useState("4");
+  const [caseLogSubmissionStatus, setCaseLogSubmissionStatus] = useState("");
+  const [caseLogSubmittingId, setCaseLogSubmittingId] = useState("");
   const [lifeEventMode, setLifeEventMode] = useState("procedure");
   const [lifeEventFields, setLifeEventFields] = useState("waistCircumference");
   const [lifeEventDurationDays, setLifeEventDurationDays] = useState("42");
@@ -2791,6 +2798,34 @@ export default function AccountGoalPanel({
   function handleArchiveProtocol(protocolId) {
     setProtocols(archiveUserProtocol(account.id, protocolId));
     setStatus(t("account.planning.protocol.status.archivedMessage"));
+  }
+
+  async function handleSubmitCaseLog(protocol, caseLog) {
+    if (!account) {
+      return;
+    }
+
+    setCaseLogSubmittingId(protocol.id);
+    setCaseLogSubmissionStatus(
+      t("account.caseLogSubmission.status.submitting", { label: protocol.label })
+    );
+
+    try {
+      const submission = buildCaseLogSubmission({
+        ...caseLog,
+        strategyName: protocol.label
+      });
+      const response = await submitCaseLogSubmission(submission);
+      setCaseLogSubmissionStatus(
+        t("account.caseLogSubmission.status.queued", {
+          id: caseLogSubmissionStatusLine(response)
+        })
+      );
+    } catch (error) {
+      setCaseLogSubmissionStatus(t("account.caseLogSubmission.status.failed"));
+    } finally {
+      setCaseLogSubmittingId("");
+    }
   }
 
   function handleLifeEvent(event) {
@@ -6145,6 +6180,7 @@ export default function AccountGoalPanel({
                               </div>
                             ) : null}
                             <div
+                              className="case-log-submission-panel"
                               aria-label={t("account.planning.protocol.caseLogAria", {
                                 label: protocol.label
                               })}
@@ -6152,6 +6188,17 @@ export default function AccountGoalPanel({
                               <h4>{t("account.planning.protocol.caseLogTitle")}</h4>
                               <p>{caseLog.outcomeSummary}</p>
                               <small>{formatProtocolProjectionSummary(caseLog, t)}</small>
+                              <small>{t("account.caseLogSubmission.body")}</small>
+                              <button
+                                className="button"
+                                type="button"
+                                onClick={() => handleSubmitCaseLog(protocol, caseLog)}
+                                disabled={caseLogSubmittingId === protocol.id}
+                              >
+                                {caseLogSubmittingId === protocol.id
+                                  ? t("account.caseLogSubmission.submitting")
+                                  : t("account.caseLogSubmission.submit")}
+                              </button>
                             </div>
                           </div>
                         </li>
@@ -6161,6 +6208,11 @@ export default function AccountGoalPanel({
                 ) : (
                   <p className="muted-text">{t("account.planning.protocol.empty")}</p>
                 )}
+                {caseLogSubmissionStatus ? (
+                  <p className="case-log-submission-status" role="status" aria-live="polite">
+                    {caseLogSubmissionStatus}
+                  </p>
+                ) : null}
               </div>
             </section>
 

@@ -28,6 +28,7 @@ from app.data.strategy_corpus import STRATEGY_CORPUS
 from app.main import allowed_cors_origins, app, native_push_delivery_configured, web_push_config_payload
 from app.measurement_schema import measurement_field_names
 from app.repositories import (
+    CaseLogSubmissionRepository,
     ClientErrorRepository,
     NativePushTokenRepository,
     ProductAnalyticsRepository,
@@ -387,6 +388,72 @@ def test_strategy_corpus_endpoint_returns_backend_seed() -> None:
         for strategy in all_strategies
         if strategy["sensitivity"] in {"clinical", "surgical", "pharmaceutical", "medical-adjacent"}
     )
+
+
+def case_log_submission_payload() -> dict:
+    return {
+        "caseLog": {
+            "protocolId": "protocol-review-1",
+            "label": "Progressive resistance training",
+            "strategyName": "Calorie surplus with resistance training",
+            "category": "training",
+            "status": "archived",
+            "dose": "Four lifting sessions weekly",
+            "frequency": "12 weeks",
+            "window": "2026-01-01 - 2026-03-26",
+            "adherenceCount": 11,
+            "averageScore": 4.2,
+            "snapshotCount": 4,
+            "outcomeSummary": "Weight +3.0 kg, Waist +1.0 cm",
+            "projectionSummary": "NIDDK/Hall 2011 linearized planning band: +2.4 kg",
+            "sourceType": "user-submitted local protocol",
+            "reviewStatus": "queued-for-moderation",
+            "limitations": [
+                "Self-logged n=1 report, not evidence of a general effect.",
+                "No account ID, photos, or raw measurement fields included.",
+            ],
+        },
+        "consent": True,
+        "submitterContext": "local-browser-account",
+        "createdAt": "2026-06-13T12:00:00Z",
+    }
+
+
+def test_case_log_submission_endpoint_queues_review_safe_payload() -> None:
+    response = client.post("/api/case-log-submissions", json=case_log_submission_payload())
+
+    assert response.status_code == 202
+    payload = response.json()
+    stored = CaseLogSubmissionRepository().list_submission_dicts()
+
+    assert payload["status"] == "queued"
+    assert payload["reviewStatus"] == "queued-for-moderation"
+    assert payload["submissionId"].startswith("cls_")
+    assert len(stored) == 1
+    assert stored[0]["caseLog"]["label"] == "Progressive resistance training"
+    assert stored[0]["caseLog"]["reviewStatus"] == "queued-for-moderation"
+    assert "mason@example.com" not in response.text
+    assert "accountId" not in response.text
+    assert "waistCircumference" not in response.text
+    assert "syncToken" not in response.text
+
+
+def test_case_log_submission_endpoint_rejects_private_or_unconsented_payloads() -> None:
+    with_measurements = case_log_submission_payload()
+    with_measurements["caseLog"]["measurements"] = {"waistCircumference": 84}
+    with_email = case_log_submission_payload()
+    with_email["caseLog"]["outcomeSummary"] = "Contact mason@example.com for details."
+    without_consent = case_log_submission_payload()
+    without_consent["consent"] = False
+
+    measurement_response = client.post("/api/case-log-submissions", json=with_measurements)
+    email_response = client.post("/api/case-log-submissions", json=with_email)
+    consent_response = client.post("/api/case-log-submissions", json=without_consent)
+
+    assert measurement_response.status_code == 422
+    assert email_response.status_code == 422
+    assert consent_response.status_code == 422
+    assert CaseLogSubmissionRepository().list_submission_dicts() == []
 
 
 def test_attractiveness_evidence_endpoint_returns_review_seed() -> None:

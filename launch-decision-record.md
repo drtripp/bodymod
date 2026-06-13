@@ -133,6 +133,9 @@ Current behavior:
 
 - seed entries are illustrative and not source-reviewed
 - imported entries can be reviewed locally
+- generated local protocol case logs can be submitted to a review-only backend
+  queue, but queued submissions are not public and are not merged into the
+  corpus automatically
 - clinical, surgical, pharmaceutical, and medical-adjacent entries are excluded from personalization by default
 
 Before public launch, decide:
@@ -141,6 +144,8 @@ Before public launch, decide:
 - whether high-risk/high-efficacy entries need extra display friction
 - who can approve clinical or surgical entries
 - whether user-submitted entries are allowed
+- what reviewer tooling, consent language, and publication policy apply to
+  queued case-log submissions
 
 ### Legal Pages
 

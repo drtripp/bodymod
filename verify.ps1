@@ -46,6 +46,7 @@ try {
     Invoke-Checked { npm run test:health-sync }
     Invoke-Checked { npm run test:live-updates }
     Invoke-Checked { npm run test:launch-readiness }
+    Invoke-Checked { npm run test:case-log-submissions }
     Invoke-Checked { npm run test:widget-snapshot }
     Invoke-Checked { npm run test:native-backup }
     Invoke-Checked { npm run test:share-dashboard }

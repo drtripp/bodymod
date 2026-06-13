@@ -139,6 +139,10 @@ Implemented now:
 - maintenance drift alerts for saved goals once an at-target snapshot exists
 - optional local cycle phase logs that add weight/waist fluctuation context, remain off by default, and can be deleted separately
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
+- review-only user case-log submission queue: generated protocol case logs can
+  be submitted to `/api/case-log-submissions` for future moderation without
+  account IDs, private notes, photos, or raw measurement fields; nothing is
+  published into the corpus until policy/reviewer decisions exist
 - procedure tracker with backend dummy procedure taxonomy, local surgery/filler/piercing/tattoo/body-mod logs, healing windows, photo stream hints, generated reliability events, and case-log output
 - local-only bloodwork log with backend dummy marker/range seed, manual lab-result entry, trend sparklines, protocol links, readable export/backup/report inclusion, and share-dashboard exclusion
 - reliability events pause affected weight and tape trend inference during healing or disruption windows, and pause saved goals whose target metrics are affected

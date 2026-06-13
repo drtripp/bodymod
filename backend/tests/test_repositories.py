@@ -1,8 +1,14 @@
 import sqlite3
 
-from app.models import EncryptedSyncBlob, TargetProfile, WebPushSubscriptionPayload
+from app.models import (
+    CaseLogSubmissionRequest,
+    EncryptedSyncBlob,
+    TargetProfile,
+    WebPushSubscriptionPayload,
+)
 from app.repositories import (
     AccountIdentityRepository,
+    CaseLogSubmissionRepository,
     NativePushTokenRepository,
     PersonalDataTokenRepository,
     SyncConflictError,
@@ -44,6 +50,60 @@ def test_target_repository_seeds_sqlite_database(tmp_path) -> None:
 
     assert row["value"] == str(seed["version"])
     assert target_count == len(seed["targets"])
+
+
+def test_case_log_submission_repository_stores_moderation_queue_records(tmp_path) -> None:
+    db_path = tmp_path / "bodymod.sqlite3"
+    repository = CaseLogSubmissionRepository(db_path=db_path)
+    request = CaseLogSubmissionRequest.model_validate(
+        {
+            "caseLog": {
+                "protocolId": "protocol-review-1",
+                "label": "Progressive resistance training",
+                "strategyName": "Calorie surplus with resistance training",
+                "category": "training",
+                "status": "archived",
+                "dose": "Four lifting sessions weekly",
+                "frequency": "12 weeks",
+                "window": "2026-01-01 - 2026-03-26",
+                "adherenceCount": 11,
+                "averageScore": 4.2,
+                "snapshotCount": 4,
+                "outcomeSummary": "Weight +3.0 kg, Waist +1.0 cm",
+                "projectionSummary": "NIDDK/Hall 2011 linearized planning band: +2.4 kg",
+                "sourceType": "user-submitted local protocol",
+                "reviewStatus": "queued-for-moderation",
+                "limitations": [
+                    "Self-logged n=1 report, not evidence of a general effect.",
+                    "No account ID, photos, or raw measurement fields included.",
+                ],
+            },
+            "consent": True,
+            "submitterContext": "local-browser-account",
+            "createdAt": "2026-06-13T12:00:00Z",
+        }
+    )
+
+    created = repository.create_submission(request)
+    stored = repository.list_submission_dicts()
+
+    assert created["submissionId"].startswith("cls_")
+    assert created["status"] == "queued"
+    assert len(stored) == 1
+    assert stored[0]["status"] == "queued"
+    assert stored[0]["caseLog"]["reviewStatus"] == "queued-for-moderation"
+
+    with sqlite3.connect(db_path) as connection:
+        connection.row_factory = sqlite3.Row
+        row = connection.execute(
+            "SELECT payload_json FROM case_log_submissions WHERE submission_id = ?",
+            (created["submissionId"],),
+        ).fetchone()
+
+    assert "mason@example.com" not in row["payload_json"]
+    assert "accountId" not in row["payload_json"]
+    assert "syncToken" not in row["payload_json"]
+    assert "waistCircumference" not in row["payload_json"]
 
 
 def test_account_identity_repository_hashes_email_and_auth_tokens(tmp_path) -> None:

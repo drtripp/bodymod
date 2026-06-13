@@ -34,6 +34,7 @@
     "test:health-sync": "node --test tests/healthSync.node.mjs",
     "test:live-updates": "node --test tests/liveUpdates.node.mjs",
     "test:launch-readiness": "node --test tests/launchReadiness.node.mjs",
+    "test:case-log-submissions": "node --test tests/caseLogSubmissions.node.mjs",
     "test:widget-snapshot": "node --test tests/widgetSnapshot.node.mjs",
     "test:native-backup": "node --test tests/nativeBackup.node.mjs",
     "test:share-dashboard": "node --test tests/shareDashboard.node.mjs",

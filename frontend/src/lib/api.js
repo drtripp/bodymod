@@ -79,6 +79,13 @@ export function fetchStrategyCorpus() {
   return request("/api/strategy-corpus");
 }
 
+export function submitCaseLogSubmission(submission) {
+  return request("/api/case-log-submissions", {
+    method: "POST",
+    body: JSON.stringify(submission)
+  });
+}
+
 export function fetchAttractivenessEvidence() {
   return request("/api/attractiveness-evidence");
 }

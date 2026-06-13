@@ -256,6 +256,12 @@ test("translates known keys, falls back to English, and interpolates values", ()
     "Dosis: 4 dias; frecuencia: 4 sesiones/semana"
   );
   assert.equal(
+    translate("es", "account.caseLogSubmission.status.queued", {
+      id: "mock-case-log-1 / queued-for-moderation"
+    }),
+    "Caso en cola para revision de moderacion: mock-case-log-1 / queued-for-moderation."
+  );
+  assert.equal(
     translate("es", "account.bloodwork.status.loaded", { count: 4 }),
     "4 seed(s) de marcadores de laboratorio cargados."
   );

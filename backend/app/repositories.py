@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from app.models import (
+    CaseLogSubmissionRequest,
     ClientErrorEvent,
     EncryptedSyncBlob,
     ProductAnalyticsEvent,
@@ -1267,6 +1268,92 @@ class ProductAnalyticsRepository:
             )
             """
         )
+
+
+class CaseLogSubmissionRepository:
+    def __init__(self, db_path: Path | str | None = None) -> None:
+        self.db_path = Path(db_path) if db_path is not None else configured_database_path()
+
+    def create_submission(self, request: CaseLogSubmissionRequest) -> dict[str, Any]:
+        submission_id = f"cls_{secrets.token_urlsafe(12)}"
+        timestamp = utc_timestamp()
+        payload_json = json.dumps(
+            request.model_dump(mode="json"),
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            with connection:
+                connection.execute(
+                    """
+                    INSERT INTO case_log_submissions (
+                        submission_id,
+                        status,
+                        payload_json,
+                        moderation_note,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES (?, 'queued', ?, '', ?, ?)
+                    """,
+                    (submission_id, payload_json, timestamp, timestamp),
+                )
+
+        return {
+            "status": "queued",
+            "stored": True,
+            "submissionId": submission_id,
+            "reviewStatus": "queued-for-moderation",
+            "createdAt": timestamp,
+        }
+
+    def list_submission_dicts(self, include_removed: bool = False) -> list[dict[str, Any]]:
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            where_clause = "" if include_removed else "WHERE status != 'removed'"
+            rows = connection.execute(
+                f"""
+                SELECT submission_id, status, payload_json, moderation_note, created_at, updated_at
+                FROM case_log_submissions
+                {where_clause}
+                ORDER BY created_at ASC, submission_id ASC
+                """
+            ).fetchall()
+
+        return [self._record(row) for row in rows]
+
+    def _connect(self) -> sqlite3.Connection:
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        connection = sqlite3.connect(self.db_path)
+        connection.row_factory = sqlite3.Row
+        return connection
+
+    def _ensure_schema(self, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS case_log_submissions (
+                submission_id TEXT PRIMARY KEY,
+                status TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                moderation_note TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+
+    def _record(self, row: sqlite3.Row) -> dict[str, Any]:
+        payload = json.loads(row["payload_json"])
+        return {
+            "submissionId": row["submission_id"],
+            "status": row["status"],
+            "createdAt": row["created_at"],
+            "updatedAt": row["updated_at"],
+            "moderationNote": row["moderation_note"],
+            "caseLog": payload["caseLog"],
+        }
 
 
 class WebPushSubscriptionRepository:

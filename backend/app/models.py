@@ -415,6 +415,106 @@ class StrategyCaseLog(BaseModel):
     limitations: list[str] = Field(default_factory=list)
 
 
+PRIVATE_CASE_LOG_TEXT_PATTERNS = [
+    re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
+    re.compile(
+        r"\b(accountId|sessionToken|syncToken|accessToken|measurements|waistCircumference|hipCircumference|private note)\b",
+        re.IGNORECASE,
+    ),
+]
+
+
+def reject_private_case_log_text(value: str) -> str:
+    for pattern in PRIVATE_CASE_LOG_TEXT_PATTERNS:
+        if pattern.search(value):
+            raise ValueError("Case-log submissions must not include private account data.")
+    return value
+
+
+class CaseLogSubmissionPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    protocolId: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9._:-]+$")
+    label: str = Field(min_length=1, max_length=120)
+    strategyName: str = Field(min_length=1, max_length=120)
+    category: str = Field(min_length=1, max_length=80)
+    status: str = Field(min_length=1, max_length=40)
+    dose: str = Field(min_length=1, max_length=240)
+    frequency: str = Field(min_length=1, max_length=160)
+    window: str = Field(min_length=1, max_length=120)
+    adherenceCount: int = Field(ge=0, le=1000)
+    averageScore: float | None = Field(default=None, ge=0, le=5)
+    snapshotCount: int = Field(ge=0, le=1000)
+    outcomeSummary: str = Field(min_length=1, max_length=500)
+    projectionSummary: str = Field(min_length=1, max_length=500)
+    sourceType: Literal["user-submitted local protocol"] = "user-submitted local protocol"
+    reviewStatus: Literal["queued-for-moderation"] = "queued-for-moderation"
+    limitations: list[str] = Field(default_factory=list, max_length=6)
+
+    @field_validator(
+        "protocolId",
+        "label",
+        "strategyName",
+        "category",
+        "status",
+        "dose",
+        "frequency",
+        "window",
+        "outcomeSummary",
+        "projectionSummary",
+    )
+    @classmethod
+    def reject_private_text_fields(cls, value: str) -> str:
+        return reject_private_case_log_text(value)
+
+    @field_validator("limitations")
+    @classmethod
+    def reject_private_limitations(cls, value: list[str]) -> list[str]:
+        return [reject_private_case_log_text(item) for item in value]
+
+
+class CaseLogSubmissionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    caseLog: CaseLogSubmissionPayload
+    consent: bool
+    submitterContext: Literal["local-browser-account"] = "local-browser-account"
+    createdAt: str = Field(min_length=1, max_length=40)
+
+    @field_validator("consent")
+    @classmethod
+    def require_submission_consent(cls, value: bool) -> bool:
+        if value is not True:
+            raise ValueError("Case-log submissions require explicit review consent.")
+        return value
+
+    @field_validator("createdAt")
+    @classmethod
+    def require_isoish_timestamp(cls, value: str) -> str:
+        try:
+            datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("Case-log submission timestamps must be ISO-8601 strings.") from error
+        return value
+
+
+class CaseLogSubmissionRecord(BaseModel):
+    submissionId: str
+    status: Literal["queued", "approved", "rejected", "removed"] = "queued"
+    createdAt: str
+    updatedAt: str
+    moderationNote: str = ""
+    caseLog: CaseLogSubmissionPayload
+
+
+class CaseLogSubmissionResponse(BaseModel):
+    status: Literal["queued"] = "queued"
+    stored: bool = True
+    submissionId: str
+    reviewStatus: Literal["queued-for-moderation"] = "queued-for-moderation"
+    createdAt: str
+
+
 class StrategySeed(BaseModel):
     name: str
     outcome: str
