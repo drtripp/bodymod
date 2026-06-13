@@ -177,6 +177,14 @@ test("translates known keys, falls back to English, and interpolates values", ()
     "confianza media"
   );
   assert.equal(
+    translate("es", "account.bloodwork.status.loaded", { count: 4 }),
+    "4 seed(s) de marcadores de laboratorio cargados."
+  );
+  assert.equal(
+    translate("es", "account.workout.status.loaded", { exercises: 6, programs: 2 }),
+    "6 seed(s) de ejercicios y 2 programa(s) cargados."
+  );
+  assert.equal(
     translate("es", "account.photo.status.saved", { category: "body" }),
     "Foto body guardada localmente."
   );

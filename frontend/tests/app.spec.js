@@ -2362,6 +2362,14 @@ test("downloads a localized progress report from the account UI", async ({ page 
   await expect(photoSection).toContainText("Fotos locales de progreso");
   await expect(photoSection).toContainText("Agrega una foto dia 0");
   await expect(page.getByLabel("Importar foto de progreso")).toBeVisible();
+  const bloodworkSection = accountDialog.getByLabel("Registro de laboratorios");
+  await expect(bloodworkSection).toContainText("Notas locales de laboratorio");
+  await expect(page.getByLabel("Marcador de laboratorio")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Registrar laboratorio" })).toBeVisible();
+  const workoutSection = accountDialog.getByLabel("Biblioteca de entrenamiento");
+  await expect(workoutSection).toContainText("Plantilla de programa");
+  await expect(page.getByLabel("Series de entrenamiento")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Registrar entrenamiento" })).toBeVisible();
   await page.getByRole("button", { name: "Solicitar magic link" }).click();
   await expect(identityCard).toContainText("Token dev de magic link devuelto para l***@example.com");
   await page.getByRole("button", { name: "Verificar" }).click();

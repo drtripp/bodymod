@@ -844,6 +844,37 @@ function formatMagicLinkRequestStatus(request, t) {
   });
 }
 
+function formatBloodworkError(error, t) {
+  const message = error?.message || "";
+  const errorKeyByMessage = new Map([
+    ["Choose a bloodwork marker.", "account.bloodwork.status.chooseMarker"],
+    ["Enter a numeric lab value.", "account.bloodwork.status.numericValue"]
+  ]);
+
+  return errorKeyByMessage.has(message)
+    ? t(errorKeyByMessage.get(message))
+    : message || t("account.bloodwork.status.failed");
+}
+
+function formatWorkoutError(error, t) {
+  const message = error?.message || "";
+  const errorKeyByMessage = new Map([
+    ["Choose an exercise.", "account.workout.status.chooseExercise"],
+    ["Enter a valid set count.", "account.workout.status.validSets"],
+    ["Enter valid reps.", "account.workout.status.validReps"],
+    ["Enter a valid load.", "account.workout.status.validLoad"],
+    ["RPE must be between 1 and 10.", "account.workout.status.validRpe"]
+  ]);
+
+  return errorKeyByMessage.has(message)
+    ? t(errorKeyByMessage.get(message))
+    : message || t("account.workout.status.failed");
+}
+
+function formatRangeStatus(status, t) {
+  return t(`report.rangeStatus.${status}`, {}, status);
+}
+
 export default function AccountGoalPanel({
   currentMeasurements,
   entitlements = fallbackEntitlementConfig,
@@ -856,11 +887,13 @@ export default function AccountGoalPanel({
   onClose,
   silhouetteView = "front"
 }) {
-  const t = createTranslator(locale);
+  const t = useMemo(() => createTranslator(locale), [locale]);
   const [planningData, setPlanningData] = useState(emptyPlanningData);
   const [planningStatus, setPlanningStatus] = useState("Loading planning data...");
   const [exerciseLibrary, setExerciseLibrary] = useState(emptyExerciseLibrary);
-  const [exerciseStatus, setExerciseStatus] = useState("Loading workout library...");
+  const [exerciseStatus, setExerciseStatus] = useState(() =>
+    t("account.workout.status.loading")
+  );
   const [procedureLibrary, setProcedureLibrary] = useState(() =>
     normalizeProcedureLibrary(fallbackProcedureLibrary)
   );
@@ -868,7 +901,9 @@ export default function AccountGoalPanel({
   const [bloodworkLibrary, setBloodworkLibrary] = useState(() =>
     normalizeBloodworkLibrary(fallbackBloodworkLibrary)
   );
-  const [bloodworkStatus, setBloodworkStatus] = useState("Loading bloodwork library...");
+  const [bloodworkStatus, setBloodworkStatus] = useState(() =>
+    t("account.bloodwork.status.loading")
+  );
   const [attractivenessEvidence, setAttractivenessEvidence] = useState(() =>
     normalizeAttractivenessEvidence(fallbackAttractivenessEvidence)
   );
@@ -1157,21 +1192,24 @@ export default function AccountGoalPanel({
         const normalized = normalizeExerciseLibrary(data);
         setExerciseLibrary(normalized);
         setExerciseStatus(
-          `Loaded ${normalized.exercises.length} exercise seeds and ${normalized.programTemplates.length} programs.`
+          t("account.workout.status.loaded", {
+            exercises: normalized.exercises.length,
+            programs: normalized.programTemplates.length
+          })
         );
         setSelectedExerciseId((current) => current || normalized.exercises[0]?.id || "");
         setSelectedProgramId((current) => current || normalized.programTemplates[0]?.id || "");
       })
       .catch(() => {
         if (isMounted) {
-          setExerciseStatus("Workout library unavailable. Local protocol logs still work.");
+          setExerciseStatus(t("account.workout.status.unavailable"));
         }
       });
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1226,14 +1264,18 @@ export default function AccountGoalPanel({
 
         const normalized = normalizeBloodworkLibrary(data);
         setBloodworkLibrary(normalized);
-        setBloodworkStatus(`Loaded ${normalized.markers.length} bloodwork marker seed(s).`);
+        setBloodworkStatus(
+          t("account.bloodwork.status.loaded", {
+            count: normalized.markers.length
+          })
+        );
         setSelectedBloodworkMarkerId((current) => current || normalized.markers[0]?.id || "");
       })
       .catch(() => {
         if (isMounted) {
           const fallback = normalizeBloodworkLibrary(fallbackBloodworkLibrary);
           setBloodworkLibrary(fallback);
-          setBloodworkStatus("Bloodwork library unavailable. Local fallback seed loaded.");
+          setBloodworkStatus(t("account.bloodwork.status.unavailable"));
           setSelectedBloodworkMarkerId((current) => current || fallback.markers[0]?.id || "");
         }
       });
@@ -1241,7 +1283,7 @@ export default function AccountGoalPanel({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     let isMounted = true;
@@ -2392,9 +2434,13 @@ export default function AccountGoalPanel({
       setBloodworkResults([nextResult, ...bloodworkResults]);
       setBloodworkValue("");
       setBloodworkNote("");
-      setStatus(`Bloodwork logged locally: ${formatBloodworkResult(nextResult)}.`);
+      setStatus(
+        t("account.bloodwork.status.logged", {
+          result: formatBloodworkResult(nextResult)
+        })
+      );
     } catch (error) {
-      setStatus(error.message);
+      setStatus(formatBloodworkError(error, t));
     }
   }
 
@@ -2417,9 +2463,13 @@ export default function AccountGoalPanel({
       const nextWorkout = persistUserWorkoutSession(account.id, workout);
       setWorkoutSessions([nextWorkout, ...workoutSessions]);
       setWorkoutNote("");
-      setStatus(`Workout logged: ${formatWorkoutSession(nextWorkout)}.`);
+      setStatus(
+        t("account.workout.status.logged", {
+          workout: formatWorkoutSession(nextWorkout)
+        })
+      );
     } catch (error) {
-      setStatus(error.message);
+      setStatus(formatWorkoutError(error, t));
     }
   }
 
@@ -2445,7 +2495,11 @@ export default function AccountGoalPanel({
     });
     const nextWorkout = persistUserWorkoutSession(account.id, workout);
     setWorkoutSessions([nextWorkout, ...workoutSessions]);
-    setStatus(`Repeated workout: ${formatWorkoutSession(nextWorkout)}.`);
+    setStatus(
+      t("account.workout.status.repeated", {
+        workout: formatWorkoutSession(nextWorkout)
+      })
+    );
   }
 
   function handlePhotoImport(event) {
@@ -5395,21 +5449,20 @@ export default function AccountGoalPanel({
               </div>
             </section>
 
-            <section className="bloodwork-log-section" aria-label="Bloodwork log">
+            <section className="bloodwork-log-section" aria-label={t("account.bloodwork.aria")}>
               <div className="panel-header">
-                <h3>Bloodwork log</h3>
+                <h3>{t("account.bloodwork.title")}</h3>
                 <p>{bloodworkStatus}</p>
               </div>
               <p className="muted-text">
-                Local-only lab notes for review conversations. These records are included in
-                local export/backup, not server share dashboards.
+                {t("account.bloodwork.body")}
               </p>
 
               <form className="bloodwork-form" onSubmit={handleLogBloodwork}>
                 <label className="field">
-                  <span className="field-label">Marker</span>
+                  <span className="field-label">{t("account.bloodwork.marker")}</span>
                   <select
-                    aria-label="Bloodwork marker"
+                    aria-label={t("account.bloodwork.markerAria")}
                     value={selectedBloodworkMarkerId}
                     onChange={(event) => handleBloodworkMarkerChange(event.target.value)}
                   >
@@ -5421,9 +5474,9 @@ export default function AccountGoalPanel({
                   </select>
                 </label>
                 <label className="field">
-                  <span className="field-label">Collection date</span>
+                  <span className="field-label">{t("account.bloodwork.collectionDate")}</span>
                   <input
-                    aria-label="Bloodwork collection date"
+                    aria-label={t("account.bloodwork.collectionDateAria")}
                     type="date"
                     value={bloodworkCollectedAt}
                     onChange={(event) => setBloodworkCollectedAt(event.target.value)}
@@ -5431,10 +5484,11 @@ export default function AccountGoalPanel({
                 </label>
                 <label className="field">
                   <span className="field-label">
-                    Value {selectedBloodworkMarker?.unit ? `(${selectedBloodworkMarker.unit})` : ""}
+                    {t("account.bloodwork.value")}{" "}
+                    {selectedBloodworkMarker?.unit ? `(${selectedBloodworkMarker.unit})` : ""}
                   </span>
                   <input
-                    aria-label="Bloodwork value"
+                    aria-label={t("account.bloodwork.valueAria")}
                     inputMode="decimal"
                     value={bloodworkValue}
                     onChange={(event) => setBloodworkValue(event.target.value)}
@@ -5442,13 +5496,13 @@ export default function AccountGoalPanel({
                   />
                 </label>
                 <label className="field">
-                  <span className="field-label">Linked protocol</span>
+                  <span className="field-label">{t("account.bloodwork.linkedProtocol")}</span>
                   <select
-                    aria-label="Bloodwork linked protocol"
+                    aria-label={t("account.bloodwork.linkedProtocolAria")}
                     value={bloodworkProtocolId}
                     onChange={(event) => setBloodworkProtocolId(event.target.value)}
                   >
-                    <option value="">No protocol link</option>
+                    <option value="">{t("account.bloodwork.noProtocolLink")}</option>
                     {protocols.map((protocol) => (
                       <option key={protocol.id} value={protocol.id}>
                         {protocol.label}
@@ -5457,31 +5511,31 @@ export default function AccountGoalPanel({
                   </select>
                 </label>
                 <label className="field bloodwork-note">
-                  <span className="field-label">Lab note</span>
+                  <span className="field-label">{t("account.bloodwork.note")}</span>
                   <textarea
-                    aria-label="Bloodwork note"
+                    aria-label={t("account.bloodwork.noteAria")}
                     value={bloodworkNote}
                     onChange={(event) => setBloodworkNote(event.target.value)}
-                    placeholder="Fasting status, lab name, protocol context, or clinician notes."
+                    placeholder={t("account.bloodwork.notePlaceholder")}
                   />
                 </label>
                 {selectedBloodworkMarker ? (
-                  <div className="bloodwork-marker-summary" aria-label="Lab reference details">
+                  <div className="bloodwork-marker-summary" aria-label={t("account.bloodwork.referenceAria")}>
                     <p>
-                      {selectedBloodworkMarker.summary} Reference range:{" "}
+                      {selectedBloodworkMarker.summary} {t("account.bloodwork.referenceRange")}{" "}
                       {formatReferenceRange(selectedBloodworkRange)}.
                     </p>
                     <small>{bloodworkLibrary.reference}</small>
                   </div>
                 ) : null}
                 <button className="button" type="submit">
-                  Log bloodwork
+                  {t("account.bloodwork.log")}
                 </button>
               </form>
 
               <div className="bloodwork-grid">
-                <div aria-label="Bloodwork trends">
-                  <h4>Marker trends</h4>
+                <div aria-label={t("account.bloodwork.trendsAria")}>
+                  <h4>{t("account.bloodwork.trendsTitle")}</h4>
                   {bloodworkTrends.length ? (
                     <ul className="bloodwork-trend-list">
                       {bloodworkTrends.slice(0, 6).map((trend) => (
@@ -5489,21 +5543,36 @@ export default function AccountGoalPanel({
                           <div>
                             <strong>{trend.markerLabel}</strong>
                             <span>
-                              Latest {trend.latestValue} {trend.unit} / {trend.latestStatus}
+                              {t("account.bloodwork.latestLine", {
+                                value: trend.latestValue,
+                                unit: trend.unit,
+                                status: formatRangeStatus(trend.latestStatus, t)
+                              })}
                             </span>
                             <small>
-                              {trend.count} result(s)
-                              {trend.delta === null ? "" : ` / delta ${trend.delta} ${trend.unit}`}
+                              {t("account.bloodwork.resultCount", { count: trend.count })}
+                              {trend.delta === null
+                                ? ""
+                                : t("account.bloodwork.delta", {
+                                  delta: trend.delta,
+                                  unit: trend.unit
+                                })}
                             </small>
                           </div>
                           <svg
                             className="bloodwork-sparkline"
                             role="img"
-                            aria-label={`${trend.markerLabel} bloodwork trend`}
+                            aria-label={t("account.bloodwork.trendChartAria", {
+                              marker: trend.markerLabel
+                            })}
                             viewBox="0 0 100 36"
                           >
-                            <title>{trend.markerLabel} bloodwork trend</title>
-                            <desc>Local lab result trend for this marker.</desc>
+                            <title>
+                              {t("account.bloodwork.trendChartTitle", {
+                                marker: trend.markerLabel
+                              })}
+                            </title>
+                            <desc>{t("account.bloodwork.trendChartDesc")}</desc>
                             <line x1="4" y1="32" x2="96" y2="32" />
                             {trend.points ? <polyline points={trend.points} /> : null}
                           </svg>
@@ -5511,12 +5580,12 @@ export default function AccountGoalPanel({
                       ))}
                     </ul>
                   ) : (
-                    <p className="muted-text">No repeated markers yet.</p>
+                    <p className="muted-text">{t("account.bloodwork.emptyTrends")}</p>
                   )}
                 </div>
 
-                <div aria-label="Recent bloodwork results">
-                  <h4>Recent lab results</h4>
+                <div aria-label={t("account.bloodwork.recentAria")}>
+                  <h4>{t("account.bloodwork.recentTitle")}</h4>
                   {bloodworkResults.length ? (
                     <ul className="bloodwork-result-list">
                       {bloodworkResults.slice(0, 6).map((result) => {
@@ -5528,11 +5597,15 @@ export default function AccountGoalPanel({
                           <li key={result.id}>
                             <strong>{formatBloodworkResult(result)}</strong>
                             <span>
-                              {result.collectedAt} / {result.rangeStatus}
+                              {result.collectedAt} / {formatRangeStatus(result.rangeStatus, t)}
                               {linkedProtocol ? ` / ${linkedProtocol.label}` : ""}
                             </span>
                             {result.referenceRange ? (
-                              <small>Range: {formatReferenceRange(result.referenceRange)}</small>
+                              <small>
+                                {t("account.bloodwork.range", {
+                                  range: formatReferenceRange(result.referenceRange)
+                                })}
+                              </small>
                             ) : null}
                             {result.note ? <p>{result.note}</p> : null}
                           </li>
@@ -5540,20 +5613,20 @@ export default function AccountGoalPanel({
                       })}
                     </ul>
                   ) : (
-                    <p className="muted-text">No bloodwork logged yet.</p>
+                    <p className="muted-text">{t("account.bloodwork.emptyRecent")}</p>
                   )}
                 </div>
               </div>
             </section>
 
-            <section className="workout-library-section" aria-label="Workout library">
+            <section className="workout-library-section" aria-label={t("account.workout.aria")}>
               <div className="panel-header">
-                <h3>Workout library</h3>
+                <h3>{t("account.workout.title")}</h3>
                 <p>{exerciseStatus}</p>
               </div>
 
               {exerciseTargets.length ? (
-                <div className="exercise-map-grid" aria-label="Aesthetic movement mapping">
+                <div className="exercise-map-grid" aria-label={t("account.workout.mappingAria")}>
                   {exerciseTargets.map((target) => (
                     <article key={target.id} className="exercise-map-card">
                       <strong>{target.label}</strong>
@@ -5569,11 +5642,11 @@ export default function AccountGoalPanel({
                 </div>
               ) : null}
 
-              <div className="program-template-grid" aria-label="Program templates">
+              <div className="program-template-grid" aria-label={t("account.workout.programsAria")}>
                 <label className="field">
-                  <span className="field-label">Program template</span>
+                  <span className="field-label">{t("account.workout.programTemplate")}</span>
                   <select
-                    aria-label="Workout program template"
+                    aria-label={t("account.workout.programTemplateAria")}
                     value={selectedProgramId}
                     onChange={(event) => setSelectedProgramId(event.target.value)}
                   >
@@ -5603,15 +5676,15 @@ export default function AccountGoalPanel({
                     </ul>
                   </div>
                 ) : (
-                  <p className="muted-text">No seeded program matches this goal yet.</p>
+                  <p className="muted-text">{t("account.workout.noProgram")}</p>
                 )}
               </div>
 
               <form className="workout-log-form" onSubmit={persistWorkoutFromInput}>
                 <label className="field">
-                  <span className="field-label">Exercise</span>
+                  <span className="field-label">{t("account.workout.exercise")}</span>
                   <select
-                    aria-label="Exercise"
+                    aria-label={t("account.workout.exerciseAria")}
                     value={selectedExerciseId}
                     onChange={(event) => setSelectedExerciseId(event.target.value)}
                   >
@@ -5623,7 +5696,7 @@ export default function AccountGoalPanel({
                   </select>
                 </label>
                 {selectedExercise ? (
-                  <div className="exercise-detail-card" aria-label="Selected workout movement details">
+                  <div className="exercise-detail-card" aria-label={t("account.workout.detailAria")}>
                     <div>
                       <strong>{selectedExercise.label}</strong>
                       <span>
@@ -5646,33 +5719,33 @@ export default function AccountGoalPanel({
                     ) : null}
                     <p>{selectedExercise.riskNotes}</p>
                     <small>
-                      {selectedExercise.reviewStatus || "Needs source review"} /{" "}
-                      {selectedExercise.sourceLicense || selectedExercise.source || "dummy seed"}
+                      {selectedExercise.reviewStatus || t("account.workout.needsSourceReview")} /{" "}
+                      {selectedExercise.sourceLicense || selectedExercise.source || t("account.workout.dummySeed")}
                     </small>
                   </div>
                 ) : null}
                 <label className="field">
-                  <span className="field-label">Sets</span>
+                  <span className="field-label">{t("account.workout.sets")}</span>
                   <input
-                    aria-label="Workout sets"
+                    aria-label={t("account.workout.setsAria")}
                     inputMode="numeric"
                     value={workoutSets}
                     onChange={(event) => setWorkoutSets(event.target.value)}
                   />
                 </label>
                 <label className="field">
-                  <span className="field-label">Reps</span>
+                  <span className="field-label">{t("account.workout.reps")}</span>
                   <input
-                    aria-label="Workout reps"
+                    aria-label={t("account.workout.repsAria")}
                     inputMode="numeric"
                     value={workoutReps}
                     onChange={(event) => setWorkoutReps(event.target.value)}
                   />
                 </label>
                 <label className="field">
-                  <span className="field-label">Load kg</span>
+                  <span className="field-label">{t("account.workout.load")}</span>
                   <input
-                    aria-label="Workout load"
+                    aria-label={t("account.workout.loadAria")}
                     inputMode="decimal"
                     value={workoutLoad}
                     onChange={(event) => setWorkoutLoad(event.target.value)}
@@ -5680,9 +5753,9 @@ export default function AccountGoalPanel({
                   />
                 </label>
                 <label className="field">
-                  <span className="field-label">RPE</span>
+                  <span className="field-label">{t("account.workout.rpe")}</span>
                   <input
-                    aria-label="Workout RPE"
+                    aria-label={t("account.workout.rpeAria")}
                     inputMode="decimal"
                     value={workoutRpe}
                     onChange={(event) => setWorkoutRpe(event.target.value)}
@@ -5690,21 +5763,21 @@ export default function AccountGoalPanel({
                   />
                 </label>
                 <label className="field workout-note">
-                  <span className="field-label">Workout note</span>
+                  <span className="field-label">{t("account.workout.note")}</span>
                   <textarea
-                    aria-label="Workout note"
+                    aria-label={t("account.workout.noteAria")}
                     value={workoutNote}
                     onChange={(event) => setWorkoutNote(event.target.value)}
                   />
                 </label>
                 <button className="button" type="submit" disabled={!exerciseLibrary.exercises.length}>
-                  Log workout
+                  {t("account.workout.log")}
                 </button>
               </form>
 
               <div className="workout-history-grid">
-                <div aria-label="Recent workout sessions">
-                  <h4>Workout sessions</h4>
+                <div aria-label={t("account.workout.recentAria")}>
+                  <h4>{t("account.workout.recentTitle")}</h4>
                   {workoutSessions.length ? (
                     <ul className="workout-session-list">
                       {workoutSessions.slice(0, 5).map((session, index) => (
@@ -5712,7 +5785,10 @@ export default function AccountGoalPanel({
                           <div>
                             <strong>{formatWorkoutSession(session)}</strong>
                             <span>
-                              Volume {formatLoad(session.volumeKg)} kg / {formatDate(session.createdAt)}
+                              {t("account.workout.volumeLine", {
+                                volume: formatLoad(session.volumeKg),
+                                date: formatDate(session.createdAt, locale)
+                              })}
                             </span>
                             {session.rpe ? <span>RPE {session.rpe}</span> : null}
                             {session.note ? <p>{session.note}</p> : null}
@@ -5723,38 +5799,41 @@ export default function AccountGoalPanel({
                               type="button"
                               onClick={() => handleRepeatWorkout(session)}
                             >
-                              Repeat latest workout
+                              {t("account.workout.repeatLatest")}
                             </button>
                           ) : null}
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="muted-text">No workout sessions logged yet.</p>
+                    <p className="muted-text">{t("account.workout.emptyRecent")}</p>
                   )}
                 </div>
 
-                <div aria-label="Lift PRs">
-                  <h4>Lift PRs</h4>
+                <div aria-label={t("account.workout.prsAria")}>
+                  <h4>{t("account.workout.prsTitle")}</h4>
                   {workoutPrs.length ? (
                     <ul className="workout-pr-list">
                       {workoutPrs.map((record) => (
                         <li key={record.exerciseId}>
                           <strong>{record.exerciseLabel}</strong>
                           <span>
-                            {formatLoad(record.maxLoadKg)} kg best / {formatLoad(record.maxVolumeKg)} kg volume
+                            {t("account.workout.prLine", {
+                              load: formatLoad(record.maxLoadKg),
+                              volume: formatLoad(record.maxVolumeKg)
+                            })}
                           </span>
-                          <small>{record.sessionCount} session(s)</small>
+                          <small>{t("account.workout.sessionCount", { count: record.sessionCount })}</small>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="muted-text">Log a session to build lift history.</p>
+                    <p className="muted-text">{t("account.workout.emptyPrs")}</p>
                   )}
                 </div>
 
-                <div className="workout-chart-panel" aria-label="Lift history charts">
-                  <h4>Lift history</h4>
+                <div className="workout-chart-panel" aria-label={t("account.workout.historyAria")}>
+                  <h4>{t("account.workout.historyTitle")}</h4>
                   {workoutHistories.length ? (
                     <ul className="workout-chart-list">
                       {workoutHistories.map((history) => (
@@ -5762,13 +5841,18 @@ export default function AccountGoalPanel({
                           <div className="workout-chart-header">
                             <strong>{history.exerciseLabel}</strong>
                             <span>
-                              {history.sessionCount} session(s), latest {formatDate(history.latestAt)}
+                              {t("account.workout.historyMeta", {
+                                count: history.sessionCount,
+                                date: formatDate(history.latestAt, locale)
+                              })}
                             </span>
                           </div>
                           <svg
                             className="workout-chart"
                             role="img"
-                            aria-label={`${history.exerciseLabel} load and volume progression`}
+                            aria-label={t("account.workout.chartAria", {
+                              exercise: history.exerciseLabel
+                            })}
                             viewBox="0 0 100 36"
                             preserveAspectRatio="none"
                           >
@@ -5777,14 +5861,14 @@ export default function AccountGoalPanel({
                             <polyline className="workout-chart-load" points={history.loadSparkline} />
                           </svg>
                           <div className="workout-chart-legend">
-                            <span>Load PR {formatLoad(history.maxLoadKg)} kg</span>
-                            <span>Volume PR {formatLoad(history.maxVolumeKg)} kg</span>
+                            <span>{t("account.workout.loadPr", { load: formatLoad(history.maxLoadKg) })}</span>
+                            <span>{t("account.workout.volumePr", { volume: formatLoad(history.maxVolumeKg) })}</span>
                           </div>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="muted-text">Log multiple sessions to see per-lift charts.</p>
+                    <p className="muted-text">{t("account.workout.emptyHistory")}</p>
                   )}
                 </div>
               </div>
