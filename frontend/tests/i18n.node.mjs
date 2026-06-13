@@ -65,6 +65,33 @@ test("translates known keys, falls back to English, and interpolates values", ()
     }),
     "Entrada: eficacia 51, riesgo 22, confianza mixta"
   );
+  assert.equal(translate("es", "account.title"), "Cuenta, registros y objetivos");
+  assert.equal(translate("es", "account.create.button"), "Crear cuenta");
+  assert.equal(
+    translate("es", "account.report.counts", {
+      snapshots: 1,
+      protocols: 2,
+      procedures: 3,
+      labs: 4,
+      workouts: 5,
+      photos: 6,
+      faces: 7
+    }),
+    "1 snapshot(s) / 2 protocolo(s) / 3 procedimiento(s) / 4 resultado(s) lab / 5 entrenamiento(s) / 6 foto(s) / 7 escaneo(s) facial(es)"
+  );
+  assert.equal(
+    translate("es", "account.export.jsonStatus", {
+      snapshots: 1,
+      checkIns: 2,
+      procedures: 3,
+      labs: 4,
+      referrals: 5,
+      diet: 6,
+      fluids: 7,
+      photos: 8
+    }),
+    "Exportacion JSON descargada: 1 snapshot(s), 2 check-in(s), 3 procedimiento(s), 4 resultado(s) de laboratorio, 5 credito(s) de referido, 6 registro(s) de dieta, 7 registro(s) de fluidos y 8 item(s) de manifiesto de fotos."
+  );
   assert.equal(translate("bad-locale", "nav.buildPlan"), "Build Plan");
   assert.equal(translate("es", "missing.key"), "missing.key");
   assert.equal(

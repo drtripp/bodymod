@@ -2324,15 +2324,22 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
 test("downloads a localized progress report from the account UI", async ({ page }) => {
   await page.getByLabel("Language").selectOption("es");
   await page.getByRole("button", { name: "Perfil de usuario" }).click();
-  const accountDialog = page.getByRole("dialog", { name: "Account, logs, and goals" });
+  const accountDialog = page.getByRole("dialog", { name: "Cuenta, registros y objetivos" });
+  await expect(accountDialog).toContainText("Crear cuenta local");
+  await expect(accountDialog.getByLabel("Exportacion JSON local")).toContainText(
+    "Descarga datos locales legibles"
+  );
 
-  await page.getByLabel("Display name").fill("Lucia");
-  await page.getByLabel("Account email").fill("lucia@example.com");
-  await page.getByRole("button", { name: "Create account" }).click();
+  await page.getByLabel("Nombre visible").fill("Lucia");
+  await page.getByLabel("Email de cuenta").fill("lucia@example.com");
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
   await expect(accountDialog).toContainText("Signed in as Lucia.");
+  await expect(page.getByLabel("Informe de progreso")).toContainText(
+    "Resumen local imprimible"
+  );
 
   const reportPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download progress report" }).click();
+  await page.getByRole("button", { name: "Descargar informe de progreso" }).click();
   const reportDownload = await reportPromise;
   const reportHtml = await readFile(await reportDownload.path(), "utf8");
 

@@ -252,6 +252,7 @@ import {
   persistShareDashboardState,
   publicShareDashboardUrl
 } from "../lib/shareDashboard";
+import { createTranslator } from "../lib/i18n";
 
 const emptyPlanningData = {
   personas: [],
@@ -439,6 +440,51 @@ function buildTrendWeightChart(series) {
   };
 }
 
+function formatLocalAccountCount(count, t) {
+  return count
+    ? t("account.login.localCount", { count })
+    : t("account.login.noLocalAccounts");
+}
+
+function formatProfileRecordCount(profile, t) {
+  return t("account.profiles.records", {
+    count: profile.totalRecords
+  });
+}
+
+function formatProfileCounts(profile, t) {
+  return t("account.profiles.counts", {
+    checkIns: profile.counts.checkIns,
+    goals: profile.counts.goals,
+    protocols: profile.counts.protocols
+  });
+}
+
+function formatJsonExportStatus(summary, t) {
+  return t("account.export.jsonStatus", {
+    snapshots: summary.snapshots,
+    checkIns: summary.checkIns,
+    procedures: summary.procedures,
+    labs: summary.bloodworkResults,
+    referrals: summary.referralCredits,
+    diet: summary.dietEntries,
+    fluids: summary.fluidEntries,
+    photos: summary.photoManifest
+  });
+}
+
+function formatProgressReportCounts(model, t) {
+  return t("account.report.counts", {
+    snapshots: model.snapshots,
+    protocols: model.protocols,
+    procedures: model.procedures,
+    labs: model.labs,
+    workouts: model.workouts,
+    photos: model.photos,
+    faces: model.faces
+  });
+}
+
 export default function AccountGoalPanel({
   currentMeasurements,
   entitlements = fallbackEntitlementConfig,
@@ -451,6 +497,7 @@ export default function AccountGoalPanel({
   onClose,
   silhouetteView = "front"
 }) {
+  const t = createTranslator(locale);
   const [planningData, setPlanningData] = useState(emptyPlanningData);
   const [planningStatus, setPlanningStatus] = useState("Loading planning data...");
   const [exerciseLibrary, setExerciseLibrary] = useState(emptyExerciseLibrary);
@@ -2340,9 +2387,7 @@ export default function AccountGoalPanel({
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
-    setJsonExportStatus(
-      `JSON export downloaded: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.procedures} procedure(s), ${summary.bloodworkResults} lab result(s), ${summary.referralCredits} referral credit(s), ${summary.dietEntries} diet log(s), ${summary.fluidEntries} fluid log(s), and ${summary.photoManifest} photo manifest item(s).`
-    );
+    setJsonExportStatus(formatJsonExportStatus(summary, t));
   }
 
   async function handleDownloadEncryptedBackup() {
@@ -2869,7 +2914,7 @@ export default function AccountGoalPanel({
       photos,
       faceMeasurements
     });
-    setStatus("Progress report downloaded.");
+    setStatus(t("account.report.downloaded"));
   }
 
   function handleProWaitlistSubmit(event) {
@@ -3014,14 +3059,14 @@ export default function AccountGoalPanel({
         aria-modal="true"
         aria-labelledby="account-panel-heading"
       >
-        <button className="modal-close account-close" type="button" aria-label="Close account panel" onClick={onClose}>
+        <button className="modal-close account-close" type="button" aria-label={t("account.close.aria")} onClick={onClose}>
           x
         </button>
 
         <div className="panel-header account-header">
           <div>
-            <h2 id="account-panel-heading">Account, logs, and goals</h2>
-            <p>Local-first profile tools for persona walkthroughs, snapshots, and build plans.</p>
+            <h2 id="account-panel-heading">{t("account.title")}</h2>
+            <p>{t("account.intro")}</p>
           </div>
           <span className="account-status" role="status" aria-live="polite">
             {planningStatus}
@@ -3031,20 +3076,20 @@ export default function AccountGoalPanel({
         {!account ? (
           <div className="account-auth-grid">
             <form className="auth-card" onSubmit={handleCreateAccount}>
-              <h3>Create local account</h3>
+              <h3>{t("account.create.title")}</h3>
               <label className="field">
-                <span className="field-label">Display name</span>
+                <span className="field-label">{t("account.create.displayName")}</span>
                 <input
-                  aria-label="Display name"
+                  aria-label={t("account.create.displayName")}
                   value={displayName}
                   onChange={(event) => setDisplayName(event.target.value)}
                   placeholder="Mason"
                 />
               </label>
               <label className="field">
-                <span className="field-label">Email</span>
+                <span className="field-label">{t("account.email")}</span>
                 <input
-                  aria-label="Account email"
+                  aria-label={t("account.create.emailAria")}
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
@@ -3053,9 +3098,9 @@ export default function AccountGoalPanel({
                 />
               </label>
               <label className="field">
-                <span className="field-label">Persona sample</span>
+                <span className="field-label">{t("account.create.persona")}</span>
                 <select
-                  aria-label="Persona sample"
+                  aria-label={t("account.create.persona")}
                   value={selectedPersonaId}
                   onChange={(event) => setSelectedPersonaId(event.target.value)}
                 >
@@ -3070,16 +3115,16 @@ export default function AccountGoalPanel({
                 <p className="muted-text">{selectedPersona.motivation}</p>
               ) : null}
               <button className="button" type="submit">
-                Create account
+                {t("account.create.button")}
               </button>
             </form>
 
             <form className="auth-card" onSubmit={handleLogin}>
-              <h3>Log in on this device</h3>
+              <h3>{t("account.login.title")}</h3>
               <label className="field">
-                <span className="field-label">Email</span>
+                <span className="field-label">{t("account.email")}</span>
                 <input
-                  aria-label="Login email"
+                  aria-label={t("account.login.emailAria")}
                   type="email"
                   value={loginEmail}
                   onChange={(event) => setLoginEmail(event.target.value)}
@@ -3087,24 +3132,21 @@ export default function AccountGoalPanel({
                 />
               </label>
               <button className="button" type="submit" disabled={!accounts.length}>
-                Log in
+                {t("account.login.button")}
               </button>
               <p className="muted-text">
-                {accounts.length
-                  ? `${accounts.length} local account(s) on this browser.`
-                  : "No local accounts on this browser yet."}
+                {formatLocalAccountCount(accounts.length, t)}
               </p>
             </form>
 
             {emailIdentityCard}
 
             {localProfileSummaries.length ? (
-              <section className="profile-switcher" aria-label="Local profiles on this browser">
+              <section className="profile-switcher" aria-label={t("account.profiles.localAria")}>
                 <div>
-                  <h3>Local profiles</h3>
+                  <h3>{t("account.profiles.localTitle")}</h3>
                   <p>
-                    Switch between separate browser-local profile stores for
-                    household, coach, or personal experiments.
+                    {t("account.profiles.localBody")}
                   </p>
                 </div>
                 <ul className="profile-switcher-list">
@@ -3113,14 +3155,14 @@ export default function AccountGoalPanel({
                       <div>
                         <strong>{profile.displayName}</strong>
                         <span>{profile.email}</span>
-                        <small>{profile.totalRecords} local record(s)</small>
+                        <small>{formatProfileRecordCount(profile, t)}</small>
                       </div>
                       <button
                         className="button"
                         type="button"
                         onClick={() => handleSwitchProfile(profile.id)}
                       >
-                        Switch
+                        {t("account.profiles.switch")}
                       </button>
                     </li>
                   ))}
@@ -3128,17 +3170,15 @@ export default function AccountGoalPanel({
               </section>
             ) : null}
 
-            <section className="local-json-export-section" aria-label="Local JSON export">
+            <section className="local-json-export-section" aria-label={t("account.export.aria")}>
               <div>
-                <h3>Local JSON export</h3>
+                <h3>{t("account.export.title")}</h3>
                 <p>
-                  Download readable local data anytime. Without an account,
-                  this includes snapshots, diet logs, food library rows, fluid
-                  logs, and local waitlist records on this browser.
+                  {t("account.export.signedOutBody")}
                 </p>
               </div>
               <button className="button" type="button" onClick={handleDownloadJsonExport}>
-                Download JSON export
+                {t("account.export.download")}
               </button>
               {jsonExportStatus ? (
                 <small className="local-json-export-status" role="status" aria-live="polite">
@@ -3155,19 +3195,18 @@ export default function AccountGoalPanel({
                 <p>{account.email}</p>
               </div>
               <button className="button" type="button" onClick={handleLogout}>
-                Log out
+                {t("account.logout")}
               </button>
             </section>
 
             {emailIdentityCard}
 
             {localProfileSummaries.length > 1 ? (
-              <section className="profile-switcher" aria-label="Profile switcher">
+              <section className="profile-switcher" aria-label={t("account.profiles.switcherAria")}>
                 <div>
-                  <h3>Profile switcher</h3>
+                  <h3>{t("account.profiles.switcherTitle")}</h3>
                   <p>
-                    Each local profile has separate goals, protocols, check-ins,
-                    procedures, workouts, photos, labs, and face metric logs.
+                    {t("account.profiles.switcherBody")}
                   </p>
                 </div>
                 <ul className="profile-switcher-list">
@@ -3177,8 +3216,7 @@ export default function AccountGoalPanel({
                         <strong>{profile.displayName}</strong>
                         <span>{profile.email}</span>
                         <small>
-                          {profile.counts.checkIns} check-in(s), {profile.counts.goals} goal(s),{" "}
-                          {profile.counts.protocols} protocol(s)
+                          {formatProfileCounts(profile, t)}
                         </small>
                       </div>
                       <button
@@ -3187,7 +3225,9 @@ export default function AccountGoalPanel({
                         onClick={() => handleSwitchProfile(profile.id)}
                         disabled={profile.id === account.id}
                       >
-                        {profile.id === account.id ? "Current" : "Switch"}
+                        {profile.id === account.id
+                          ? t("account.profiles.current")
+                          : t("account.profiles.switch")}
                       </button>
                     </li>
                   ))}
@@ -3497,20 +3537,29 @@ export default function AccountGoalPanel({
               ) : null}
             </section>
 
-            <section className="progress-report-section" aria-label="Progress report">
+            <section className="progress-report-section" aria-label={t("account.report.aria")}>
               <div>
-                <h3>Progress report</h3>
+                <h3>{t("account.report.title")}</h3>
                 <p>
-                  Printable local summary of measurements, snapshots, goals,
-                  protocol adherence, procedures, bloodwork, workout PRs, and
-                  the photo manifest.
+                  {t("account.report.body")}
                 </p>
                 <span>
-                  {snapshotProps.snapshots.length} snapshot(s) / {protocols.length} protocol(s) / {procedures.length} procedure(s) / {bloodworkResults.length} lab result(s) / {workoutSessions.length} workout(s) / {photos.length} photo(s) / {faceMeasurements.length} face scan(s)
+                  {formatProgressReportCounts(
+                    {
+                      snapshots: snapshotProps.snapshots.length,
+                      protocols: protocols.length,
+                      procedures: procedures.length,
+                      labs: bloodworkResults.length,
+                      workouts: workoutSessions.length,
+                      photos: photos.length,
+                      faces: faceMeasurements.length
+                    },
+                    t
+                  )}
                 </span>
               </div>
               <button className="button" type="button" onClick={handleDownloadProgressReport}>
-                Download progress report
+                {t("account.report.download")}
               </button>
             </section>
 
@@ -3565,18 +3614,15 @@ export default function AccountGoalPanel({
               ) : null}
             </section>
 
-            <section className="local-json-export-section" aria-label="Local JSON export">
+            <section className="local-json-export-section" aria-label={t("account.export.aria")}>
               <div>
-                <h3>Local JSON export</h3>
+                <h3>{t("account.export.title")}</h3>
                 <p>
-                  Download a readable JSON copy of snapshots, account logs,
-                  goals, protocols, procedures, local-only bloodwork, workouts,
-                  face metric logs, diet data, and photo manifests. This is
-                  portable, not encrypted.
+                  {t("account.export.signedInBody")}
                 </p>
               </div>
               <button className="button" type="button" onClick={handleDownloadJsonExport}>
-                Download JSON export
+                {t("account.export.download")}
               </button>
               {jsonExportStatus ? (
                 <small className="local-json-export-status" role="status" aria-live="polite">
