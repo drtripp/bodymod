@@ -55,6 +55,10 @@ export function fetchLiveUpdateManifest({
   return request(`/api/live-updates/manifest?${query}`);
 }
 
+export function fetchLaunchReadiness() {
+  return request("/api/launch-readiness");
+}
+
 export function fetchClothingSizeTables() {
   return request("/api/clothing-sizes");
 }

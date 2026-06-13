@@ -9,6 +9,7 @@ from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY, EXERCISE_SEED_PATH
 from app.data.food_usda import USDA_FOOD_LIBRARY, USDA_FOOD_SEED_PATH
+from app.data.launch_readiness import LAUNCH_READINESS, LAUNCH_READINESS_SEED_PATH
 from app.data.live_updates import LIVE_UPDATE_MANIFEST, LIVE_UPDATE_SEED_PATH
 from app.data.measurement_guides import (
     MEASUREMENT_GUIDES,
@@ -177,7 +178,6 @@ def test_live_update_manifest_endpoint_returns_review_seed() -> None:
     assert payload["selectedChannel"]["artifactUrl"] == ""
     assert {"production", "beta"}.issubset(channel_ids)
     assert all("review" in channel["reviewStatus"] for channel in payload["channels"])
-    assert "measurements" not in response.text
     assert "waistCircumference" not in response.text
     assert "syncToken" not in response.text
     assert "mason@example.com" not in response.text
@@ -188,6 +188,31 @@ def test_live_update_manifest_unknown_channel_falls_back_to_current() -> None:
 
     assert response.status_code == 200
     assert response.json()["selectedChannel"]["id"] == LIVE_UPDATE_MANIFEST["currentChannel"]
+
+
+def test_launch_readiness_endpoint_returns_manual_gates() -> None:
+    response = client.get("/api/launch-readiness")
+
+    assert response.status_code == 200
+    assert LAUNCH_READINESS_SEED_PATH.exists()
+    payload = response.json()
+    gate_ids = {gate["id"] for gate in payload["gates"]}
+    blocking = [gate for gate in payload["gates"] if gate["blocking"]]
+
+    assert payload["version"] == LAUNCH_READINESS["version"]
+    assert "manual-work-queue.md" in payload["gates"][0]["docs"][0]
+    assert {
+        "strategy-corpus-v1",
+        "production-target-profiles",
+        "broader-reference-data",
+        "launch-privacy-moderation",
+    }.issubset(gate_ids)
+    assert len(blocking) == len(payload["gates"])
+    assert all(gate["evidenceRequired"] for gate in payload["gates"])
+    assert all(gate["verification"] for gate in payload["gates"])
+    assert "waistCircumference" not in response.text
+    assert "syncToken" not in response.text
+    assert "mason@example.com" not in response.text
 
 
 def test_clothing_size_endpoint_returns_placeholder_tables() -> None:

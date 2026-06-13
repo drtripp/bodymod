@@ -190,6 +190,34 @@ class LiveUpdateManifestResponse(LiveUpdateManifest):
     selectedChannel: LiveUpdateChannel
 
 
+class LaunchReadinessGate(BaseModel):
+    id: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9._:-]+$")
+    label: str = Field(min_length=1)
+    category: str = Field(min_length=1)
+    status: Literal[
+        "human-review-required",
+        "source-review-required",
+        "provider-decision-required",
+        "legal-review-required",
+        "native-project-required",
+        "completed",
+        "removed-from-scope",
+    ]
+    blocking: bool = True
+    owner: str = Field(min_length=1)
+    evidenceRequired: list[str] = Field(min_length=1)
+    currentScaffold: list[str] = Field(default_factory=list)
+    verification: list[str] = Field(min_length=1)
+    docs: list[str] = Field(min_length=1)
+
+
+class LaunchReadiness(BaseModel):
+    version: int = Field(ge=1)
+    source: str = Field(min_length=1)
+    notes: list[str] = Field(default_factory=list)
+    gates: list[LaunchReadinessGate] = Field(min_length=1)
+
+
 class AttractivenessEvidenceSource(BaseModel):
     id: str
     title: str

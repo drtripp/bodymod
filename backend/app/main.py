@@ -11,6 +11,7 @@ from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY
 from app.data.food_usda import USDA_FOOD_LIBRARY, search_usda_foods
+from app.data.launch_readiness import LAUNCH_READINESS
 from app.data.live_updates import LIVE_UPDATE_MANIFEST
 from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TAXONOMY, PROTOCOL_TEMPLATES
@@ -31,6 +32,7 @@ from app.models import ClientErrorReportResponse
 from app.models import EntitlementConfig
 from app.models import ExerciseLibrary
 from app.models import FoodSearchResponse
+from app.models import LaunchReadiness
 from app.models import LiveUpdateManifest
 from app.models import LiveUpdateManifestResponse
 from app.models import MeasurementGuideLibrary
@@ -194,6 +196,11 @@ def live_update_manifest(
     payload = manifest.model_dump()
     payload["selectedChannel"] = selected_channel.model_dump()
     return LiveUpdateManifestResponse.model_validate(payload).model_dump()
+
+
+@app.get("/api/launch-readiness")
+def launch_readiness() -> dict:
+    return LaunchReadiness.model_validate(LAUNCH_READINESS).model_dump()
 
 
 @app.get("/api/clothing-sizes")

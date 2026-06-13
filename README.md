@@ -133,6 +133,9 @@ Implemented now:
 - native home-screen widget payload scaffold that keeps a measurement-free streak and next-check-in snapshot ready in local/native storage
 - native HealthKit/Health Connect write-batch preview that prepares local weights, measurements, workouts, nutrition days, and fluid days while persisting only metadata
 - backend live-update manifest seed and account-panel update status check for web/native version drift, with metadata-only local storage
+- backend launch-readiness gate seed and account-panel checklist that mirrors
+  the manual work queue into machine-validated blockers before completion or
+  production launch
 - maintenance drift alerts for saved goals once an at-target snapshot exists
 - optional local cycle phase logs that add weight/waist fluctuation context, remain off by default, and can be deleted separately
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
@@ -264,6 +267,9 @@ Not implemented yet:
 - final human copy/voice approval; automated tone guardrails exist, but they do
   not replace editorial review
 - human/legal review of draft privacy, terms, and medical disclaimer pages
+- manual launch-readiness gates must be resolved or removed from scope; the
+  current checklist is exposed at `/api/launch-readiness` and in the account
+  panel
 
 ## Current Measurement Schema
 

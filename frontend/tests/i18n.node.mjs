@@ -123,6 +123,10 @@ test("translates known keys, falls back to English, and interpolates values", ()
     "Ejecutando 0.1.0 / ultima 0.1.1"
   );
   assert.equal(
+    translate("es", "account.launch.status.loaded", { gates: 8, blocking: 8 }),
+    "8 gate(s) de lanzamiento cargado(s); 8 aun bloquean completar."
+  );
+  assert.equal(
     translate("es", "account.backup.downloadStatus", {
       snapshots: 1,
       checkIns: 2,

@@ -473,6 +473,41 @@ textarea {
   grid-column: 1 / -1;
 }
 
+.launch-readiness-section {
+  border: 1px solid var(--color-border);
+  background: var(--color-page);
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(170px, 0.34fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+}
+
+.launch-readiness-summary,
+.launch-gate-list {
+  display: grid;
+  gap: 8px;
+}
+
+.launch-gate-list {
+  grid-column: 1 / -1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.launch-gate-list li {
+  border: 1px solid var(--color-border);
+  background: var(--color-panel);
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+}
+
+.launch-readiness-status {
+  grid-column: 1 / -1;
+}
+
 .share-dashboard-section {
   border: 1px solid var(--color-border);
   background: var(--color-page);
@@ -732,6 +767,7 @@ textarea {
 .health-sync-section h3,
 .health-sync-section h4,
 .live-update-section h3,
+.launch-readiness-section h3,
 .share-dashboard-section h3,
 .data-explainer-section h3,
 .data-explainer-section h4,
@@ -757,6 +793,10 @@ textarea {
 .live-update-section span,
 .live-update-section small,
 .live-update-status,
+.launch-readiness-section p,
+.launch-readiness-section span,
+.launch-readiness-section small,
+.launch-readiness-status,
 .share-dashboard-section p,
 .share-dashboard-section span,
 .share-dashboard-status,
@@ -5171,6 +5211,7 @@ textarea {
   .home-widget-section,
   .health-sync-section,
   .live-update-section,
+  .launch-readiness-section,
   .data-explainer-section,
   .share-dashboard-section,
   .local-json-export-section,

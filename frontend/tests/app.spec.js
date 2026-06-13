@@ -413,6 +413,38 @@ const liveUpdateManifest = {
   ]
 };
 
+const launchReadiness = {
+  version: 1,
+  source: "Mock launch-readiness seed mirrored from manual-work-queue.md.",
+  notes: ["Metadata only."],
+  gates: [
+    {
+      id: "strategy-corpus-v1",
+      label: "Source-reviewed strategy corpus",
+      category: "content",
+      status: "human-review-required",
+      blocking: true,
+      owner: "Dawson",
+      evidenceRequired: ["Prioritized outcome list"],
+      currentScaffold: ["backend/app/data/strategy_corpus.seed.json"],
+      verification: ["npm run test:corpus"],
+      docs: ["manual-work-queue.md#1-source-reviewed-strategy-corpus"]
+    },
+    {
+      id: "reference-data",
+      label: "Broader vetted percentile reference data",
+      category: "reference-data",
+      status: "source-review-required",
+      blocking: true,
+      owner: "Dawson",
+      evidenceRequired: ["Selected reference population for unsupported fields"],
+      currentScaffold: ["backend/app/data/reference.seed.json"],
+      verification: ["python -m pytest"],
+      docs: ["manual-work-queue.md#3-broader-vetted-percentile-reference-data"]
+    }
+  ]
+};
+
 const exerciseLibrary = {
   version: 1,
   reference: "Dummy workout seed data for tests.",
@@ -864,6 +896,12 @@ async function mockApi(page) {
         selectedChannel: liveUpdateManifest.channels[0]
       }
     });
+  });
+
+  await page.route("**/api/launch-readiness", async (route) => {
+    const requestBody = route.request().postData() || "";
+    expect(requestBody).not.toMatch(/measurements|waistCircumference|mason@example\.com|syncToken|note/);
+    await route.fulfill({ json: launchReadiness });
   });
 
   await page.route("**/api/clothing-sizes", async (route) => {
@@ -2255,6 +2293,13 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   );
   expect(JSON.stringify(liveUpdateState)).not.toMatch(
     /mason@example\.com|waistCircumference|Low sodium|Strict reps|First persona/
+  );
+  await expect(page.getByLabel("Launch readiness gates")).toContainText("2 blocking gate(s)");
+  await expect(page.getByLabel("Launch readiness gates")).toContainText(
+    "Source-reviewed strategy corpus"
+  );
+  await expect(page.getByLabel("Launch readiness gates")).toContainText(
+    "Prioritized outcome list"
   );
 
   await page.getByLabel("Photo category").selectOption("body");

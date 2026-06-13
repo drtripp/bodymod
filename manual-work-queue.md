@@ -3,6 +3,12 @@
 This queue lists the remaining work that cannot be completed truthfully from the
 current codebase alone.
 
+The same blockers are mirrored in
+`backend/app/data/launch_readiness.seed.json`, exposed through
+`/api/launch-readiness`, and shown in the account-panel launch-readiness
+checklist. `backend/scripts/validate_curation.py` validates that each gate
+links back to this queue and names a verification command.
+
 ## 1. Source-Reviewed Strategy Corpus
 
 Required input:

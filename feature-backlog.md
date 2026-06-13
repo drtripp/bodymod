@@ -760,7 +760,10 @@ land. No social features, no marketplace.
 - [ ] Launch checklist run: `verify.ps1`, screenshot review, fresh-profile
       share-link behavior, privacy copy — per `launch-decision-record.md`,
       with every open gate in that file resolved. **[human]** for the gate
-      decisions.
+      decisions. First machine-readable gate scaffold is in
+      `backend/app/data/launch_readiness.seed.json`, `/api/launch-readiness`,
+      and the account-panel launch-readiness checklist; validation keeps those
+      gates tied to `manual-work-queue.md` and verification commands.
 
 ## Open Decisions Queue (human, blocking the marked items)
 

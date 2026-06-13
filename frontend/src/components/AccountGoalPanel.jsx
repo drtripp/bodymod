@@ -7,6 +7,7 @@ import {
   fetchAttractivenessEvidence,
   fetchBloodworkLibrary,
   fetchExerciseLibrary,
+  fetchLaunchReadiness,
   fetchLiveUpdateManifest,
   fetchPlanningData,
   fetchProcedureLibrary,
@@ -229,6 +230,11 @@ import {
   loadLiveUpdateCheck,
   persistLiveUpdateCheck
 } from "../lib/liveUpdates";
+import {
+  fallbackLaunchReadiness,
+  launchReadinessSummary,
+  normalizeLaunchReadiness
+} from "../lib/launchReadiness";
 import { loadStrategyCorpusBundle } from "../lib/strategyCorpus";
 import {
   loadNotificationPreference,
@@ -942,6 +948,22 @@ function formatLiveUpdateDetail(liveUpdateState, t) {
   });
 }
 
+function formatLaunchGateStatus(status, t) {
+  return t(`account.launch.statusLabel.${status}`, {}, status);
+}
+
+function formatLaunchGateLine(gate, t) {
+  return t("account.launch.gateLine", {
+    status: formatLaunchGateStatus(gate.status, t),
+    category: gate.category,
+    owner: gate.owner
+  });
+}
+
+function formatLaunchGateEvidence(gate, t) {
+  return gate.evidenceRequired?.[0] || t("account.launch.noEvidence");
+}
+
 function formatSyncVaultCreatedStatus(record, summary, t) {
   return t("account.sync.status.created", {
     revision: record.revision,
@@ -1411,6 +1433,12 @@ export default function AccountGoalPanel({
   const [healthSyncStatus, setHealthSyncStatus] = useState("");
   const [liveUpdateState, setLiveUpdateState] = useState(() => loadLiveUpdateCheck());
   const [liveUpdateStatus, setLiveUpdateStatus] = useState("");
+  const [launchReadiness, setLaunchReadiness] = useState(() =>
+    normalizeLaunchReadiness(fallbackLaunchReadiness)
+  );
+  const [launchReadinessStatus, setLaunchReadinessStatus] = useState(() =>
+    t("account.launch.status.loading")
+  );
   const [selectedProtocolIds, setSelectedProtocolIds] = useState([]);
   const [status, setStatus] = useState("");
 
@@ -1424,6 +1452,7 @@ export default function AccountGoalPanel({
   );
   const accountReferralCode = account ? referralCodeForAccount(account) : "";
   const referralSummary = summarizeReferralCredits(referralCredits, entitlementConfig);
+  const launchSummary = launchReadinessSummary(launchReadiness);
   const strategyCorpusBundle = useMemo(
     () => loadStrategyCorpusBundle(),
     [account?.id]
@@ -1538,6 +1567,45 @@ export default function AccountGoalPanel({
     );
     setShareDashboardStatus("");
   }, [account?.id]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchLaunchReadiness()
+      .then((data) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const normalized = normalizeLaunchReadiness(data);
+        const summary = launchReadinessSummary(normalized);
+        setLaunchReadiness(normalized);
+        setLaunchReadinessStatus(
+          t("account.launch.status.loaded", {
+            gates: summary.totalCount,
+            blocking: summary.blockingCount
+          })
+        );
+      })
+      .catch(() => {
+        if (!isMounted) {
+          return;
+        }
+
+        const fallback = normalizeLaunchReadiness(fallbackLaunchReadiness);
+        const summary = launchReadinessSummary(fallback);
+        setLaunchReadiness(fallback);
+        setLaunchReadinessStatus(
+          t("account.launch.status.unavailable", {
+            blocking: summary.blockingCount
+          })
+        );
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [t]);
 
   useEffect(() => {
     let isMounted = true;
@@ -4303,6 +4371,49 @@ export default function AccountGoalPanel({
               {liveUpdateStatus ? (
                 <small className="live-update-status" role="status" aria-live="polite">
                   {liveUpdateStatus}
+                </small>
+              ) : null}
+            </section>
+
+            <section className="launch-readiness-section" aria-label={t("account.launch.aria")}>
+              <div>
+                <h3>{t("account.launch.title")}</h3>
+                <p>
+                  {t("account.launch.body")}
+                </p>
+                <small>{launchReadiness.source}</small>
+              </div>
+              <div className="launch-readiness-summary" aria-label={t("account.launch.summaryAria")}>
+                <strong>
+                  {t("account.launch.blockingCount", {
+                    count: launchSummary.blockingCount
+                  })}
+                </strong>
+                <span>
+                  {t("account.launch.totalCount", {
+                    count: launchSummary.totalCount
+                  })}
+                </span>
+              </div>
+              <ul className="launch-gate-list">
+                {launchReadiness.gates.slice(0, 4).map((gate) => (
+                  <li key={gate.id}>
+                    <strong>{gate.label}</strong>
+                    <span>{formatLaunchGateLine(gate, t)}</span>
+                    <small>{formatLaunchGateEvidence(gate, t)}</small>
+                  </li>
+                ))}
+              </ul>
+              {launchReadiness.gates.length > 4 ? (
+                <small>
+                  {t("account.launch.remainingCount", {
+                    count: launchReadiness.gates.length - 4
+                  })}
+                </small>
+              ) : null}
+              {launchReadinessStatus ? (
+                <small className="launch-readiness-status" role="status" aria-live="polite">
+                  {launchReadinessStatus}
                 </small>
               ) : null}
             </section>

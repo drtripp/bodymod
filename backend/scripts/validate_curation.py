@@ -1,4 +1,4 @@
-"""Validate editable curation JSON for target, guide, food, planning, update, evidence, and strategy data.
+"""Validate editable curation JSON for target, guide, food, planning, update, launch, evidence, and strategy data.
 
 Run from the backend directory:
 
@@ -13,6 +13,7 @@ Pass explicit files to validate a draft before replacing a seed:
         --food-file app\\data\\food_usda.seed.json \\
         --planning-file app\\data\\planning.seed.json \\
         --live-update-file app\\data\\live_updates.seed.json \\
+        --launch-readiness-file app\\data\\launch_readiness.seed.json \\
         --evidence-file app\\data\\attractiveness_evidence.seed.json \\
         --corpus-file ..\\strategy-corpus-template.json
 """
@@ -31,6 +32,7 @@ from app.measurement_schema import load_measurement_schema  # noqa: E402
 from app.models import (  # noqa: E402
     AttractivenessEvidenceLibrary,
     FoodSearchResponse,
+    LaunchReadiness,
     LiveUpdateManifest,
     MeasurementGuideLibrary,
     PlanningData,
@@ -50,6 +52,9 @@ DEFAULT_PLANNING_FILES = [
 ]
 DEFAULT_LIVE_UPDATE_FILES = [
     BACKEND_ROOT / "app" / "data" / "live_updates.seed.json",
+]
+DEFAULT_LAUNCH_READINESS_FILES = [
+    BACKEND_ROOT / "app" / "data" / "launch_readiness.seed.json",
 ]
 DEFAULT_GUIDE_FILES = [
     BACKEND_ROOT / "app" / "data" / "measurement_guides.seed.json",
@@ -198,6 +203,30 @@ def validate_live_update_file(path: Path) -> str:
             raise ValueError(f"{path}: live-update channel {channel.id!r} must stay review-gated.")
 
     return f"{path}: {len(manifest.channels)} live-update channel(s)"
+
+
+def validate_launch_readiness_file(path: Path) -> str:
+    payload = read_json(path)
+    readiness = LaunchReadiness.model_validate(payload)
+    gate_ids = [gate.id for gate in readiness.gates]
+    duplicates = duplicate_values(gate_ids)
+
+    if duplicates:
+        raise ValueError(f"{path}: duplicate launch-readiness gate ids: {', '.join(duplicates)}.")
+
+    blocking_gates = [gate for gate in readiness.gates if gate.blocking]
+    if not blocking_gates:
+        raise ValueError(f"{path}: expected at least one blocking launch gate.")
+
+    for gate in readiness.gates:
+        if gate.status == "completed" and gate.blocking:
+            raise ValueError(f"{path}: completed gate {gate.id!r} cannot remain blocking.")
+        if not any(doc.startswith("manual-work-queue.md") for doc in gate.docs):
+            raise ValueError(f"{path}: gate {gate.id!r} must reference manual-work-queue.md.")
+        if not any("test" in command.lower() or "verify" in command.lower() for command in gate.verification):
+            raise ValueError(f"{path}: gate {gate.id!r} needs a test or verify command.")
+
+    return f"{path}: {len(readiness.gates)} launch-readiness gate(s)"
 
 
 def validate_measurement_guide_file(path: Path) -> str:
@@ -469,6 +498,13 @@ def parse_args() -> argparse.Namespace:
         help="Live-update manifest JSON file to validate. Repeatable.",
     )
     parser.add_argument(
+        "--launch-readiness-file",
+        action="append",
+        type=Path,
+        dest="launch_readiness_files",
+        help="Launch-readiness gate JSON file to validate. Repeatable.",
+    )
+    parser.add_argument(
         "--guide-file",
         action="append",
         type=Path,
@@ -507,6 +543,9 @@ def main() -> int:
     food_files = args.food_files or DEFAULT_FOOD_FILES
     planning_files = args.planning_files or DEFAULT_PLANNING_FILES
     live_update_files = args.live_update_files or DEFAULT_LIVE_UPDATE_FILES
+    launch_readiness_files = (
+        args.launch_readiness_files or DEFAULT_LAUNCH_READINESS_FILES
+    )
     evidence_files = args.evidence_files or DEFAULT_EVIDENCE_FILES
     corpus_files = args.corpus_files or DEFAULT_CORPUS_FILES
     summaries = [
@@ -516,6 +555,7 @@ def main() -> int:
         *(validate_food_file(path) for path in food_files),
         *(validate_planning_file(path) for path in planning_files),
         *(validate_live_update_file(path) for path in live_update_files),
+        *(validate_launch_readiness_file(path) for path in launch_readiness_files),
         *(validate_attractiveness_evidence_file(path, planning_files) for path in evidence_files),
         *(validate_strategy_corpus_file(path) for path in corpus_files),
     ]
