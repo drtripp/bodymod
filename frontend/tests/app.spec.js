@@ -2329,11 +2329,18 @@ test("downloads a localized progress report from the account UI", async ({ page 
   await expect(accountDialog.getByLabel("Exportacion JSON local")).toContainText(
     "Descarga datos locales legibles"
   );
+  const identityCard = accountDialog.getByLabel("Identidad por email con magic link");
+  await expect(identityCard).toContainText("Vista previa de identidad por email");
+  await expect(page.getByLabel("Email para magic link")).toBeVisible();
 
   await page.getByLabel("Nombre visible").fill("Lucia");
   await page.getByLabel("Email de cuenta").fill("lucia@example.com");
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await expect(accountDialog).toContainText("Signed in as Lucia.");
+  await page.getByRole("button", { name: "Solicitar magic link" }).click();
+  await expect(identityCard).toContainText("Token dev de magic link devuelto para l***@example.com");
+  await page.getByRole("button", { name: "Verificar" }).click();
+  await expect(identityCard).toContainText("Identidad de email verificada para l***@example.com");
   await expect(page.getByLabel("Informe de progreso")).toContainText(
     "Resumen local imprimible"
   );

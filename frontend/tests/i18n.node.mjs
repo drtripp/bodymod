@@ -68,6 +68,12 @@ test("translates known keys, falls back to English, and interpolates values", ()
   assert.equal(translate("es", "account.title"), "Cuenta, registros y objetivos");
   assert.equal(translate("es", "account.create.button"), "Crear cuenta");
   assert.equal(
+    translate("es", "account.identity.status.verified", {
+      email: "l***@example.com"
+    }),
+    "Identidad de email verificada para l***@example.com. Los registros locales permanecen en este dispositivo salvo que uses sync cifrado."
+  );
+  assert.equal(
     translate("es", "account.report.counts", {
       snapshots: 1,
       protocols: 2,

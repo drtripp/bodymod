@@ -485,6 +485,24 @@ function formatProgressReportCounts(model, t) {
   });
 }
 
+function formatMagicLinkRequestStatus(request, t) {
+  if (request.deliveryStatus === "dev-token-returned") {
+    return t("account.identity.status.devToken", {
+      email: request.maskedEmail
+    });
+  }
+
+  if (request.deliveryStatus === "provider-configured") {
+    return t("account.identity.status.provider", {
+      email: request.maskedEmail
+    });
+  }
+
+  return t("account.identity.status.stored", {
+    email: request.maskedEmail
+  });
+}
+
 export default function AccountGoalPanel({
   currentMeasurements,
   entitlements = fallbackEntitlementConfig,
@@ -554,7 +572,7 @@ export default function AccountGoalPanel({
   const [magicLinkEmail, setMagicLinkEmail] = useState("");
   const [magicLinkToken, setMagicLinkToken] = useState(() => initialMagicLinkToken);
   const [magicLinkStatus, setMagicLinkStatus] = useState(() =>
-    initialMagicLinkToken ? "Magic-link token loaded from the email link. Verify it below." : ""
+    initialMagicLinkToken ? t("account.identity.status.loaded") : ""
   );
   const [personalDataApiLabel, setPersonalDataApiLabel] = useState("Personal data export");
   const [personalDataApiToken, setPersonalDataApiToken] = useState("");
@@ -697,8 +715,8 @@ export default function AccountGoalPanel({
       return;
     }
     setMagicLinkToken(initialMagicLinkToken);
-    setMagicLinkStatus("Magic-link token loaded from the email link. Verify it below.");
-  }, [initialMagicLinkToken]);
+    setMagicLinkStatus(t("account.identity.status.loaded"));
+  }, [initialMagicLinkToken, locale]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1412,12 +1430,12 @@ export default function AccountGoalPanel({
   async function handleRequestMagicLink() {
     const emailForLink = (magicLinkEmail || account?.email || email || loginEmail).trim();
     if (!emailForLink) {
-      setMagicLinkStatus("Enter an email for the magic link.");
+      setMagicLinkStatus(t("account.identity.status.emailRequired"));
       return;
     }
 
     try {
-      setMagicLinkStatus("Requesting email identity link...");
+      setMagicLinkStatus(t("account.identity.status.requesting"));
       const request = await requestAccountMagicLink({
         email: emailForLink,
         displayName: account?.displayName || displayName,
@@ -1427,42 +1445,32 @@ export default function AccountGoalPanel({
         setMagicLinkToken(request.devLoginToken);
       }
 
-      if (request.deliveryStatus === "dev-token-returned") {
-        setMagicLinkStatus(
-          `Dev magic-link token returned for ${request.maskedEmail}. Verify it below. No measurements were sent.`
-        );
-      } else if (request.deliveryStatus === "provider-configured") {
-        setMagicLinkStatus(
-          `Magic link requested for ${request.maskedEmail}. Check email. No measurements were sent.`
-        );
-      } else {
-        setMagicLinkStatus(
-          `Magic link request stored for ${request.maskedEmail}, but email delivery is not configured in this environment.`
-        );
-      }
+      setMagicLinkStatus(formatMagicLinkRequestStatus(request, t));
     } catch (error) {
-      setMagicLinkStatus(error.message || "Magic link request failed.");
+      setMagicLinkStatus(error.message || t("account.identity.status.requestFailed"));
     }
   }
 
   async function handleVerifyMagicLink() {
     const token = magicLinkToken.trim();
     if (!token) {
-      setMagicLinkStatus("Paste a magic-link token first.");
+      setMagicLinkStatus(t("account.identity.status.tokenRequired"));
       return;
     }
 
     try {
-      setMagicLinkStatus("Verifying email identity...");
+      setMagicLinkStatus(t("account.identity.status.verifying"));
       const session = await verifyAccountMagicLink({ token });
       const persisted = persistAccountIdentitySession(session);
       setAccountIdentitySession(persisted);
       setMagicLinkToken("");
       setMagicLinkStatus(
-        `Email identity verified for ${persisted.maskedEmail}. Local logs stay on this device unless you use encrypted sync.`
+        t("account.identity.status.verified", {
+          email: persisted.maskedEmail
+        })
       );
     } catch (error) {
-      setMagicLinkStatus(error.message || "Magic link verification failed.");
+      setMagicLinkStatus(error.message || t("account.identity.status.verifyFailed"));
     }
   }
 
@@ -1470,7 +1478,7 @@ export default function AccountGoalPanel({
     if (!accountIdentitySession.sessionToken) {
       const cleared = clearAccountIdentitySession();
       setAccountIdentitySession(cleared);
-      setMagicLinkStatus("No email identity session is stored on this browser.");
+      setMagicLinkStatus(t("account.identity.status.noSession"));
       return;
     }
 
@@ -1480,9 +1488,9 @@ export default function AccountGoalPanel({
       });
       const cleared = clearAccountIdentitySession();
       setAccountIdentitySession(cleared);
-      setMagicLinkStatus("Email identity session cleared from this browser.");
+      setMagicLinkStatus(t("account.identity.status.cleared"));
     } catch (error) {
-      setMagicLinkStatus(error.message || "Email identity logout failed.");
+      setMagicLinkStatus(error.message || t("account.identity.status.logoutFailed"));
     }
   }
 
@@ -2999,24 +3007,23 @@ export default function AccountGoalPanel({
   }
 
   const emailIdentityCard = (
-    <section className="auth-card email-identity-card" aria-label="Email magic-link identity">
+    <section className="auth-card email-identity-card" aria-label={t("account.identity.aria")}>
       <div>
-        <h3>Email identity preview</h3>
+        <h3>{t("account.identity.title")}</h3>
         <p>
-          Optional magic-link identity for future sync. Local measurements,
-          notes, photos, and logs are not sent by this form.
+          {t("account.identity.body")}
         </p>
       </div>
       {accountIdentitySession.sessionToken ? (
         <div className="account-status-line">
-          <strong>Verified</strong>
+          <strong>{t("account.identity.verified")}</strong>
           <span>{accountIdentitySession.maskedEmail || accountIdentitySession.emailDomain}</span>
         </div>
       ) : null}
       <label className="field">
-        <span className="field-label">Magic-link email</span>
+        <span className="field-label">{t("account.identity.email")}</span>
         <input
-          aria-label="Magic-link email"
+          aria-label={t("account.identity.email")}
           type="email"
           value={magicLinkEmail}
           onChange={(event) => setMagicLinkEmail(event.target.value)}
@@ -3024,23 +3031,23 @@ export default function AccountGoalPanel({
         />
       </label>
       <label className="field">
-        <span className="field-label">Magic-link token</span>
+        <span className="field-label">{t("account.identity.token")}</span>
         <input
-          aria-label="Magic-link token"
+          aria-label={t("account.identity.token")}
           value={magicLinkToken}
           onChange={(event) => setMagicLinkToken(event.target.value)}
-          placeholder="Paste token from email or local dev response"
+          placeholder={t("account.identity.tokenPlaceholder")}
         />
       </label>
       <div className="button-row">
         <button className="button" type="button" onClick={handleRequestMagicLink}>
-          Request magic link
+          {t("account.identity.request")}
         </button>
         <button className="button" type="button" onClick={handleVerifyMagicLink}>
-          Verify
+          {t("account.identity.verify")}
         </button>
         <button className="button secondary" type="button" onClick={handleRevokeAccountIdentity}>
-          Clear identity
+          {t("account.identity.clear")}
         </button>
       </div>
       {magicLinkStatus ? (
