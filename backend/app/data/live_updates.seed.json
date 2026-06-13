@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "source": "Dummy live-update manifest seed for native/web drift checks.",
+  "currentChannel": "production",
+  "notes": [
+    "Review-only scaffold. This is not a production Capgo, Appflow, or store-update integration.",
+    "The manifest contains release metadata only and must not include account, measurement, or device identifiers."
+  ],
+  "providerCandidates": [
+    {
+      "id": "capgo",
+      "label": "Capgo",
+      "reviewStatus": "needs provider and privacy review",
+      "notes": [
+        "Candidate for Capacitor live web asset updates after legal, privacy, and store-policy review."
+      ]
+    },
+    {
+      "id": "self-hosted-manifest",
+      "label": "Self-hosted manifest",
+      "reviewStatus": "needs signing and rollback design",
+      "notes": [
+        "Lowest data exposure option, but still needs bundle signing, rollout, and rollback rules."
+      ]
+    }
+  ],
+  "channels": [
+    {
+      "id": "production",
+      "label": "Production",
+      "latestVersion": "0.1.1",
+      "minimumVersion": "0.1.0",
+      "releasedAt": "2026-06-13T00:00:00.000Z",
+      "summary": "Dummy production manifest for update-status checks in the account workspace.",
+      "provider": "provider-pending",
+      "providerStatus": "provider-review-required",
+      "reviewStatus": "needs native provider review",
+      "mandatory": false,
+      "rolloutPercent": 100,
+      "artifactUrl": "",
+      "notes": [
+        "Used to test that web and native shells can compare their running version to backend metadata."
+      ]
+    },
+    {
+      "id": "beta",
+      "label": "Beta",
+      "latestVersion": "0.2.0-beta.1",
+      "minimumVersion": "0.1.0",
+      "releasedAt": "2026-06-13T00:00:00.000Z",
+      "summary": "Dummy beta channel for future staged update checks.",
+      "provider": "provider-pending",
+      "providerStatus": "provider-review-required",
+      "reviewStatus": "needs beta distribution review",
+      "mandatory": false,
+      "rolloutPercent": 25,
+      "artifactUrl": "",
+      "notes": [
+        "Kept separate from production until signing, rollback, and app-store policy choices are made."
+      ]
+    }
+  ]
+}

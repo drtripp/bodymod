@@ -660,7 +660,12 @@ land. No social features, no marketplace.
       a refreshable widget preview. Native iOS/Android widget extensions remain
       tied to generated project folders.
 - [ ] JS live updates (e.g. Capgo) so web and app don't drift between binary
-      reviews.
+      reviews. First manifest scaffold is in: backend serves a review-gated
+      live-update channel seed at `/api/live-updates/manifest`, the account
+      panel can compare the running web/native shell version to that manifest,
+      and the stored check state contains release metadata only. Production
+      provider choice, bundle signing, staged rollout, rollback policy, and
+      store-policy review remain pending.
 - [ ] Automatic encrypted backup to iCloud/Google Drive **(new)** via native
       storage hooks; the local-first answer to "what if I lose my phone."
       First native file scaffold is in: `frontend/src/lib/nativeBackup.js`

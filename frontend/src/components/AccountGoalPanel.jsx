@@ -7,6 +7,7 @@ import {
   fetchAttractivenessEvidence,
   fetchBloodworkLibrary,
   fetchExerciseLibrary,
+  fetchLiveUpdateManifest,
   fetchPlanningData,
   fetchProcedureLibrary,
   revokeShareDashboard,
@@ -227,6 +228,12 @@ import {
   persistHealthSyncState,
   summarizeHealthWriteBatch
 } from "../lib/healthSync";
+import {
+  APP_VERSION,
+  buildLiveUpdateStatus,
+  loadLiveUpdateCheck,
+  persistLiveUpdateCheck
+} from "../lib/liveUpdates";
 import { loadStrategyCorpusBundle } from "../lib/strategyCorpus";
 import {
   loadNotificationPreference,
@@ -601,6 +608,8 @@ export default function AccountGoalPanel({
   const [healthSyncState, setHealthSyncState] = useState(() => loadHealthSyncState());
   const [healthSyncPreview, setHealthSyncPreview] = useState(null);
   const [healthSyncStatus, setHealthSyncStatus] = useState("");
+  const [liveUpdateState, setLiveUpdateState] = useState(() => loadLiveUpdateCheck());
+  const [liveUpdateStatus, setLiveUpdateStatus] = useState("");
   const [selectedProtocolIds, setSelectedProtocolIds] = useState([]);
   const [status, setStatus] = useState("");
 
@@ -2806,6 +2815,34 @@ export default function AccountGoalPanel({
     );
   }
 
+  async function handleCheckLiveUpdates() {
+    try {
+      setLiveUpdateStatus("Checking live-update manifest...");
+      const manifest = await fetchLiveUpdateManifest({
+        channel: liveUpdateState.channel || "production",
+        currentVersion: APP_VERSION,
+        platform: "web"
+      });
+      const status = buildLiveUpdateStatus({
+        manifest,
+        requestedChannel: liveUpdateState.channel || "production",
+        currentVersion: APP_VERSION
+      });
+      setLiveUpdateState(persistLiveUpdateCheck(status));
+      setLiveUpdateStatus(status.detail);
+    } catch (error) {
+      const status = persistLiveUpdateCheck({
+        ...liveUpdateState,
+        status: "unavailable",
+        statusLabel: "Manifest unavailable",
+        checkedAt: new Date().toISOString(),
+        detail: error.message || "Live-update manifest check failed."
+      });
+      setLiveUpdateState(status);
+      setLiveUpdateStatus(status.detail);
+    }
+  }
+
   function handleDownloadProgressReport() {
     downloadProgressReport({
       account,
@@ -3410,6 +3447,41 @@ export default function AccountGoalPanel({
               {healthSyncStatus ? (
                 <small className="health-sync-status" role="status" aria-live="polite">
                   {healthSyncStatus}
+                </small>
+              ) : null}
+            </section>
+
+            <section className="live-update-section" aria-label="Live update status">
+              <div>
+                <h3>Live updates</h3>
+                <p>
+                  Compare this web/native shell version with the backend
+                  channel manifest before binary-release review.
+                </p>
+                <small>
+                  Provider wiring, bundle signing, rollout, and rollback policy remain review-gated.
+                </small>
+              </div>
+              <div className="live-update-status-block">
+                <strong>{liveUpdateState.statusLabel}</strong>
+                <span>{liveUpdateState.channelLabel} channel</span>
+                <small>
+                  Running {liveUpdateState.currentVersion}
+                  {liveUpdateState.latestVersion
+                    ? ` / latest ${liveUpdateState.latestVersion}`
+                    : " / latest not checked"}
+                </small>
+                <small>{liveUpdateState.reviewStatus}</small>
+              </div>
+              <div className="live-update-actions">
+                <button className="button" type="button" onClick={handleCheckLiveUpdates}>
+                  Check update manifest
+                </button>
+                <small>{liveUpdateState.privacy}</small>
+              </div>
+              {liveUpdateStatus ? (
+                <small className="live-update-status" role="status" aria-live="polite">
+                  {liveUpdateStatus}
                 </small>
               ) : null}
             </section>

@@ -138,6 +138,58 @@ class PlanningData(BaseModel):
     protocolTaxonomy: list[ProtocolTaxonomyItem] = []
 
 
+class LiveUpdateProviderCandidate(BaseModel):
+    id: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9._:-]+$")
+    label: str
+    reviewStatus: str
+    notes: list[str] = []
+
+
+class LiveUpdateChannel(BaseModel):
+    id: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9._:-]+$")
+    label: str
+    latestVersion: str = Field(min_length=1, max_length=40, pattern=r"^[0-9A-Za-z.+-]+$")
+    minimumVersion: str = Field(min_length=1, max_length=40, pattern=r"^[0-9A-Za-z.+-]+$")
+    releasedAt: str = Field(min_length=1, max_length=40)
+    summary: str
+    provider: str
+    providerStatus: str
+    reviewStatus: str
+    mandatory: bool = False
+    rolloutPercent: int = Field(default=100, ge=0, le=100)
+    artifactUrl: str = ""
+    notes: list[str] = []
+
+    @field_validator("releasedAt")
+    @classmethod
+    def require_isoish_release(cls, value: str) -> str:
+        try:
+            datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("Live-update release timestamps must be ISO-8601 strings.") from error
+        return value
+
+    @field_validator("artifactUrl")
+    @classmethod
+    def require_https_artifact_url(cls, value: str) -> str:
+        if value and not value.startswith("https://"):
+            raise ValueError("Live-update artifact URLs must use HTTPS.")
+        return value
+
+
+class LiveUpdateManifest(BaseModel):
+    version: int
+    source: str
+    currentChannel: str
+    notes: list[str] = []
+    providerCandidates: list[LiveUpdateProviderCandidate] = []
+    channels: list[LiveUpdateChannel]
+
+
+class LiveUpdateManifestResponse(LiveUpdateManifest):
+    selectedChannel: LiveUpdateChannel
+
+
 class AttractivenessEvidenceSource(BaseModel):
     id: str
     title: str

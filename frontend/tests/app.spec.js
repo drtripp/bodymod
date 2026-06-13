@@ -366,6 +366,53 @@ const attractivenessEvidenceLibrary = {
   ]
 };
 
+const liveUpdateManifest = {
+  version: 1,
+  source: "Mock live-update manifest seed.",
+  currentChannel: "production",
+  notes: ["Playwright metadata-only update manifest."],
+  providerCandidates: [
+    {
+      id: "capgo",
+      label: "Capgo",
+      reviewStatus: "needs provider and privacy review",
+      notes: ["Mock candidate only."]
+    }
+  ],
+  channels: [
+    {
+      id: "production",
+      label: "Production",
+      latestVersion: "0.1.1",
+      minimumVersion: "0.1.0",
+      releasedAt: "2026-06-13T00:00:00.000Z",
+      summary: "Mock production manifest for account UI checks.",
+      provider: "provider-pending",
+      providerStatus: "provider-review-required",
+      reviewStatus: "needs native provider review",
+      mandatory: false,
+      rolloutPercent: 100,
+      artifactUrl: "",
+      notes: ["Metadata only."]
+    },
+    {
+      id: "beta",
+      label: "Beta",
+      latestVersion: "0.2.0-beta.1",
+      minimumVersion: "0.1.0",
+      releasedAt: "2026-06-13T00:00:00.000Z",
+      summary: "Mock beta channel.",
+      provider: "provider-pending",
+      providerStatus: "provider-review-required",
+      reviewStatus: "needs beta review",
+      mandatory: false,
+      rolloutPercent: 25,
+      artifactUrl: "",
+      notes: ["Metadata only."]
+    }
+  ]
+};
+
 const exerciseLibrary = {
   version: 1,
   reference: "Dummy workout seed data for tests.",
@@ -806,6 +853,17 @@ async function mockApi(page) {
 
   await page.route("**/api/planning", async (route) => {
     await route.fulfill({ json: planningData });
+  });
+
+  await page.route("**/api/live-updates/manifest**", async (route) => {
+    const requestBody = route.request().postData() || "";
+    expect(requestBody).not.toMatch(/measurements|waistCircumference|mason@example\.com|syncToken|note/);
+    await route.fulfill({
+      json: {
+        ...liveUpdateManifest,
+        selectedChannel: liveUpdateManifest.channels[0]
+      }
+    });
   });
 
   await page.route("**/api/clothing-sizes", async (route) => {
@@ -2137,6 +2195,17 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
     JSON.parse(window.localStorage.getItem("bodymod:health-sync:v1"))
   );
   expect(JSON.stringify(healthSyncState)).not.toMatch(
+    /mason@example\.com|waistCircumference|Low sodium|Strict reps|First persona/
+  );
+
+  await expect(page.getByLabel("Live update status")).toContainText("Not checked");
+  await page.getByRole("button", { name: "Check update manifest" }).click();
+  await expect(page.getByLabel("Live update status")).toContainText("Update available");
+  await expect(page.getByLabel("Live update status")).toContainText("latest 0.1.1");
+  const liveUpdateState = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("bodymod:live-update-check:v1"))
+  );
+  expect(JSON.stringify(liveUpdateState)).not.toMatch(
     /mason@example\.com|waistCircumference|Low sodium|Strict reps|First persona/
   );
 

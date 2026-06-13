@@ -9,6 +9,7 @@ from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY, EXERCISE_SEED_PATH
 from app.data.food_usda import USDA_FOOD_LIBRARY, USDA_FOOD_SEED_PATH
+from app.data.live_updates import LIVE_UPDATE_MANIFEST, LIVE_UPDATE_SEED_PATH
 from app.data.measurement_guides import (
     MEASUREMENT_GUIDES,
     MEASUREMENT_GUIDE_SEED_PATH,
@@ -155,6 +156,38 @@ def test_planning_data_references_are_consistent() -> None:
 
     for goal in GOAL_PRESETS:
         assert set(goal["suggestedProtocols"]).issubset(protocol_ids)
+
+
+def test_live_update_manifest_endpoint_returns_review_seed() -> None:
+    response = client.get(
+        "/api/live-updates/manifest?channel=production&currentVersion=0.1.0&platform=web"
+    )
+
+    assert response.status_code == 200
+    assert LIVE_UPDATE_SEED_PATH.exists()
+    payload = response.json()
+    channel_ids = {channel["id"] for channel in payload["channels"]}
+
+    assert payload["version"] == LIVE_UPDATE_MANIFEST["version"]
+    assert "Dummy live-update manifest seed" in payload["source"]
+    assert payload["selectedChannel"]["id"] == "production"
+    assert payload["selectedChannel"]["latestVersion"] == "0.1.1"
+    assert payload["selectedChannel"]["providerStatus"] == "provider-review-required"
+    assert payload["selectedChannel"]["mandatory"] is False
+    assert payload["selectedChannel"]["artifactUrl"] == ""
+    assert {"production", "beta"}.issubset(channel_ids)
+    assert all("review" in channel["reviewStatus"] for channel in payload["channels"])
+    assert "measurements" not in response.text
+    assert "waistCircumference" not in response.text
+    assert "syncToken" not in response.text
+    assert "mason@example.com" not in response.text
+
+
+def test_live_update_manifest_unknown_channel_falls_back_to_current() -> None:
+    response = client.get("/api/live-updates/manifest?channel=internal-preview")
+
+    assert response.status_code == 200
+    assert response.json()["selectedChannel"]["id"] == LIVE_UPDATE_MANIFEST["currentChannel"]
 
 
 def test_clothing_size_endpoint_returns_placeholder_tables() -> None:

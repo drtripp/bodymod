@@ -41,6 +41,20 @@ export function fetchPlanningData() {
   return request("/api/planning");
 }
 
+export function fetchLiveUpdateManifest({
+  channel = "production",
+  currentVersion = "",
+  platform = "web"
+} = {}) {
+  const query = new URLSearchParams({
+    channel,
+    currentVersion,
+    platform
+  }).toString();
+
+  return request(`/api/live-updates/manifest?${query}`);
+}
+
 export function fetchClothingSizeTables() {
   return request("/api/clothing-sizes");
 }

@@ -128,6 +128,10 @@ Required input:
     opt-in browser auto-sync preview that reuses the encrypted vault path, but
     no production email provider, account recovery, or provider-backed
     background cross-device sync
+- live-update provider/signing decision
+  - current code has a review-only backend live-update manifest and
+    account-panel drift check, but no production Capgo/self-hosted provider,
+    signed bundle workflow, staged rollout, or rollback policy
 - photo/vision upload decision
 - side-profile model/license decision if automatic sagittal face inference is
   in launch scope; current code only ships browser-local frontal landmarks and

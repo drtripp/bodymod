@@ -32,6 +32,7 @@
     "test:haptics": "node --test tests/haptics.node.mjs",
     "test:native-shell": "node --test tests/nativeShell.node.mjs",
     "test:health-sync": "node --test tests/healthSync.node.mjs",
+    "test:live-updates": "node --test tests/liveUpdates.node.mjs",
     "test:widget-snapshot": "node --test tests/widgetSnapshot.node.mjs",
     "test:native-backup": "node --test tests/nativeBackup.node.mjs",
     "test:share-dashboard": "node --test tests/shareDashboard.node.mjs",

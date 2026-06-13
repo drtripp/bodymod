@@ -129,6 +129,7 @@ Implemented now:
 - native shell polish with Capacitor status-bar/splash configuration, safe-area-aware app padding, and a shared web manifest/SVG app icon
 - native home-screen widget payload scaffold that keeps a measurement-free streak and next-check-in snapshot ready in local/native storage
 - native HealthKit/Health Connect write-batch preview that prepares local weights, measurements, workouts, nutrition days, and fluid days while persisting only metadata
+- backend live-update manifest seed and account-panel update status check for web/native version drift, with metadata-only local storage
 - maintenance drift alerts for saved goals once an at-target snapshot exists
 - optional local cycle phase logs that add weight/waist fluctuation context, remain off by default, and can be deleted separately
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
@@ -236,7 +237,7 @@ Not implemented yet:
   onboarding, measurement-form/guide chrome, and progress report
   headings/empty states, while deeper account, diet, strategy, and long-form
   report copy remains English-first
-- generated Android/iOS native project folders, store signing, APNs/FCM production credentials/device validation, real HealthKit/Health Connect plugin reads/writes, native home-screen widget extensions, iCloud/Google Drive backup policy wiring, native store icon generation, and native release workflows
+- generated Android/iOS native project folders, store signing, APNs/FCM production credentials/device validation, real HealthKit/Health Connect plugin reads/writes, native home-screen widget extensions, iCloud/Google Drive backup policy wiring, native store icon generation, signed live-update provider/rollback policy, and native release workflows
 - full public measurement-guide coverage with reviewed illustrations and final copy
 - production error monitoring and product analytics provider/enablement
   decisions; sanitized first-party wiring exists but upload is disabled unless

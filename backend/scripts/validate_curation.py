@@ -1,4 +1,4 @@
-"""Validate editable curation JSON for target, guide, food, planning, evidence, and strategy data.
+"""Validate editable curation JSON for target, guide, food, planning, update, evidence, and strategy data.
 
 Run from the backend directory:
 
@@ -11,6 +11,7 @@ Pass explicit files to validate a draft before replacing a seed:
         --guide-file app\\data\\measurement_guides.seed.json \\
         --food-file app\\data\\food_usda.seed.json \\
         --planning-file app\\data\\planning.seed.json \\
+        --live-update-file app\\data\\live_updates.seed.json \\
         --evidence-file app\\data\\attractiveness_evidence.seed.json \\
         --corpus-file ..\\strategy-corpus-template.json
 """
@@ -29,6 +30,7 @@ from app.measurement_schema import load_measurement_schema  # noqa: E402
 from app.models import (  # noqa: E402
     AttractivenessEvidenceLibrary,
     FoodSearchResponse,
+    LiveUpdateManifest,
     MeasurementGuideLibrary,
     PlanningData,
     StrategyCorpusSeed,
@@ -44,6 +46,9 @@ DEFAULT_TARGET_FILES = [
 ]
 DEFAULT_PLANNING_FILES = [
     BACKEND_ROOT / "app" / "data" / "planning.seed.json",
+]
+DEFAULT_LIVE_UPDATE_FILES = [
+    BACKEND_ROOT / "app" / "data" / "live_updates.seed.json",
 ]
 DEFAULT_GUIDE_FILES = [
     BACKEND_ROOT / "app" / "data" / "measurement_guides.seed.json",
@@ -166,6 +171,28 @@ def validate_planning_file(path: Path) -> str:
         f"{len(planning.goalPresets)} goal preset(s), "
         f"{len(planning.protocolTemplates)} protocol template(s)"
     )
+
+
+def validate_live_update_file(path: Path) -> str:
+    payload = read_json(path)
+    manifest = LiveUpdateManifest.model_validate(payload)
+    channel_ids = [channel.id for channel in manifest.channels]
+    duplicates = duplicate_values(channel_ids)
+
+    if duplicates:
+        raise ValueError(f"{path}: duplicate live-update channel ids: {', '.join(duplicates)}.")
+    if manifest.currentChannel not in set(channel_ids):
+        raise ValueError(f"{path}: currentChannel references an unknown channel.")
+    if not manifest.providerCandidates:
+        raise ValueError(f"{path}: expected at least one provider candidate.")
+
+    for channel in manifest.channels:
+        if channel.artifactUrl and not channel.artifactUrl.startswith("https://"):
+            raise ValueError(f"{path}: live-update channel {channel.id!r} needs HTTPS artifactUrl.")
+        if "review" not in channel.reviewStatus.lower():
+            raise ValueError(f"{path}: live-update channel {channel.id!r} must stay review-gated.")
+
+    return f"{path}: {len(manifest.channels)} live-update channel(s)"
 
 
 def validate_measurement_guide_file(path: Path) -> str:
@@ -380,6 +407,13 @@ def parse_args() -> argparse.Namespace:
         help="Planning/persona JSON file to validate. Repeatable.",
     )
     parser.add_argument(
+        "--live-update-file",
+        action="append",
+        type=Path,
+        dest="live_update_files",
+        help="Live-update manifest JSON file to validate. Repeatable.",
+    )
+    parser.add_argument(
         "--guide-file",
         action="append",
         type=Path,
@@ -409,6 +443,7 @@ def main() -> int:
     guide_files = args.guide_files or DEFAULT_GUIDE_FILES
     food_files = args.food_files or DEFAULT_FOOD_FILES
     planning_files = args.planning_files or DEFAULT_PLANNING_FILES
+    live_update_files = args.live_update_files or DEFAULT_LIVE_UPDATE_FILES
     evidence_files = args.evidence_files or DEFAULT_EVIDENCE_FILES
     corpus_files = args.corpus_files or DEFAULT_CORPUS_FILES
     summaries = [
@@ -416,6 +451,7 @@ def main() -> int:
         *(validate_measurement_guide_file(path) for path in guide_files),
         *(validate_food_file(path) for path in food_files),
         *(validate_planning_file(path) for path in planning_files),
+        *(validate_live_update_file(path) for path in live_update_files),
         *(validate_attractiveness_evidence_file(path, planning_files) for path in evidence_files),
         *(validate_strategy_corpus_file(path) for path in corpus_files),
     ]

@@ -82,6 +82,17 @@ Actual native reads/writes still require generated iOS/Android projects, plugin
 selection, platform permissions, App Store / Play policy review, and device
 validation. Browser builds use the unavailable adapter and do not write data.
 
+## Live Update Manifest
+
+`backend/app/data/live_updates.seed.json` and `/api/live-updates/manifest`
+provide a review-only channel manifest so the account panel can compare the
+running web/native shell version with backend release metadata. The local check
+state stores only version, channel, provider-review, and rollout metadata.
+
+This is not a production live-update provider. Capgo, self-hosted bundles, or
+another option still require signing, staged rollout, rollback policy,
+privacy/provider review, and app-store policy review before shipping.
+
 ## Push And Haptics
 
 Remote stale-trend reminders use `@capacitor/push-notifications` in native
