@@ -473,6 +473,58 @@ function formatJsonExportStatus(summary, t) {
   });
 }
 
+function formatBackupDownloadStatus(summary, t) {
+  return t("account.backup.downloadStatus", {
+    snapshots: summary.snapshots,
+    checkIns: summary.checkIns,
+    goals: summary.goals,
+    protocols: summary.protocols,
+    procedures: summary.procedures,
+    labs: summary.bloodworkResults,
+    referrals: summary.referralCredits,
+    photos: summary.photoManifest
+  });
+}
+
+function formatBackupRestoreStatus({
+  snapshotRestore,
+  restoreResult,
+  referralRestore,
+  summary
+}, t) {
+  return t("account.backup.restoreStatus", {
+    snapshots: snapshotRestore.importedCount,
+    checkIns: restoreResult.imported.checkIns,
+    goals: restoreResult.imported.goals,
+    protocols: restoreResult.imported.protocols,
+    workouts: restoreResult.imported.workoutSessions,
+    procedures: restoreResult.imported.procedures,
+    labs: restoreResult.imported.bloodworkResults,
+    referrals: referralRestore.importedCount,
+    faces: restoreResult.imported.faceMeasurements,
+    photos: summary.photoManifest
+  });
+}
+
+function formatNativeBackupSavedStatus(summary, t) {
+  return t("account.nativeBackup.status.saved", {
+    snapshots: summary.snapshots,
+    checkIns: summary.checkIns,
+    photos: summary.photoManifest
+  });
+}
+
+function formatNativeBackupLastSaved(nativeBackupState, t) {
+  if (nativeBackupState.lastBackupAt) {
+    return t("account.nativeBackup.lastSaved", {
+      date: formatDate(nativeBackupState.lastBackupAt),
+      bytes: nativeBackupState.byteLength
+    });
+  }
+
+  return t("account.nativeBackup.none");
+}
+
 function formatProgressReportCounts(model, t) {
   return t("account.report.counts", {
     snapshots: model.snapshots,
@@ -1280,7 +1332,11 @@ export default function AccountGoalPanel({
     let isCancelled = false;
     saveNativeBackupFile({ automatic: true }).then((record) => {
       if (!isCancelled && record) {
-        setNativeBackupStatus(`Native backup autosaved ${formatDate(record.lastBackupAt)}.`);
+        setNativeBackupStatus(
+          t("account.nativeBackup.status.autosaved", {
+            date: formatDate(record.lastBackupAt)
+          })
+        );
       }
     });
 
@@ -2291,7 +2347,12 @@ export default function AccountGoalPanel({
     setReferralCredits(referralRestore.credits);
     setFaceMeasurements(restoreResult.faceMeasurements);
 
-    return `Restored backup: ${snapshotRestore.importedCount} snapshot(s), ${restoreResult.imported.checkIns} check-in(s), ${restoreResult.imported.goals} goal(s), ${restoreResult.imported.protocols} protocol(s), ${restoreResult.imported.workoutSessions} workout(s), ${restoreResult.imported.procedures} procedure(s), ${restoreResult.imported.bloodworkResults} lab result(s), ${referralRestore.importedCount} referral credit(s), ${restoreResult.imported.faceMeasurements} face scan(s). Photo manifest: ${summary.photoManifest} item(s); image files are not included.`;
+    return formatBackupRestoreStatus({
+      snapshotRestore,
+      restoreResult,
+      referralRestore,
+      summary
+    }, t);
   }
 
   function persistAutoSyncRecord(partial = {}) {
@@ -2500,9 +2561,7 @@ export default function AccountGoalPanel({
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      setBackupStatus(
-        `Encrypted backup downloaded: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.goals} goal(s), ${summary.protocols} protocol(s), ${summary.procedures} procedure(s), ${summary.bloodworkResults} lab result(s), ${summary.referralCredits} referral credit(s), and ${summary.photoManifest} photo manifest item(s).`
-      );
+      setBackupStatus(formatBackupDownloadStatus(summary, t));
     } catch (error) {
       setBackupStatus(error.message);
     }
@@ -2526,7 +2585,7 @@ export default function AccountGoalPanel({
       }
     };
     reader.onerror = () => {
-      setBackupStatus("Encrypted backup restore failed.");
+      setBackupStatus(t("account.backup.status.restoreFailed"));
       event.target.value = "";
     };
     reader.readAsText(file);
@@ -2539,7 +2598,7 @@ export default function AccountGoalPanel({
 
     try {
       if (!automatic) {
-        setNativeBackupStatus("Saving encrypted backup to native storage...");
+        setNativeBackupStatus(t("account.nativeBackup.status.saving"));
       }
       const bundle = currentBackupBundle();
       const summary = summarizeLocalBackupBundle(bundle);
@@ -2554,13 +2613,11 @@ export default function AccountGoalPanel({
       });
       setNativeBackupState(record);
       if (!automatic) {
-        setNativeBackupStatus(
-          `Native encrypted backup saved: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), and ${summary.photoManifest} photo manifest item(s).`
-        );
+        setNativeBackupStatus(formatNativeBackupSavedStatus(summary, t));
       }
       return record;
     } catch (error) {
-      setNativeBackupStatus(error.message || "Native encrypted backup save failed.");
+      setNativeBackupStatus(error.message || t("account.nativeBackup.status.saveFailed"));
       return null;
     }
   }
@@ -2575,14 +2632,14 @@ export default function AccountGoalPanel({
     }
 
     try {
-      setNativeBackupStatus("Restoring encrypted backup from native storage...");
+      setNativeBackupStatus(t("account.nativeBackup.status.restoring"));
       const encryptedBackup = await readNativeEncryptedBackup({
         state: nativeBackupState
       });
       const bundle = await decryptLocalBackup(encryptedBackup, backupPassphrase);
       setNativeBackupStatus(restoreBackupBundle(bundle));
     } catch (error) {
-      setNativeBackupStatus(error.message || "Native encrypted backup restore failed.");
+      setNativeBackupStatus(error.message || t("account.nativeBackup.status.restoreFailed"));
     }
   }
 
@@ -2594,11 +2651,11 @@ export default function AccountGoalPanel({
       setNativeBackupState(result.state);
       setNativeBackupStatus(
         result.deleted
-          ? "Native encrypted backup file deleted."
-          : "No native encrypted backup file was available to delete."
+          ? t("account.nativeBackup.status.deleted")
+          : t("account.nativeBackup.status.noFile")
       );
     } catch (error) {
-      setNativeBackupStatus(error.message || "Native encrypted backup delete failed.");
+      setNativeBackupStatus(error.message || t("account.nativeBackup.status.deleteFailed"));
     }
   }
 
@@ -2612,8 +2669,8 @@ export default function AccountGoalPanel({
     setNativeBackupState(nextState);
     setNativeBackupStatus(
       enabled
-        ? "Native backup autosave enabled for this app session when a passphrase is present."
-        : "Native backup autosave disabled."
+        ? t("account.nativeBackup.status.autosaveEnabled")
+        : t("account.nativeBackup.status.autosaveDisabled")
     );
   }
 
@@ -3703,34 +3760,31 @@ export default function AccountGoalPanel({
               ) : null}
             </section>
 
-            <section className="encrypted-backup-section" aria-label="Encrypted local backup">
+            <section className="encrypted-backup-section" aria-label={t("account.backup.aria")}>
               <div>
-                <h3>Encrypted backup</h3>
+                <h3>{t("account.backup.title")}</h3>
                 <p>
-                  Download a passphrase-encrypted local backup for snapshots,
-                  check-ins, goals, protocols, procedures, local-only
-                  bloodwork, workouts, and face metric logs.
-                  Photos are included as a manifest only.
+                  {t("account.backup.body")}
                 </p>
               </div>
               <label className="field">
-                <span className="field-label">Backup passphrase</span>
+                <span className="field-label">{t("account.backup.passphrase")}</span>
                 <input
-                  aria-label="Backup passphrase"
+                  aria-label={t("account.backup.passphrase")}
                   type="password"
                   value={backupPassphrase}
                   onChange={(event) => setBackupPassphrase(event.target.value)}
-                  placeholder="8+ characters"
+                  placeholder={t("account.backup.passphrasePlaceholder")}
                 />
               </label>
               <div className="encrypted-backup-actions">
                 <button className="button" type="button" onClick={handleDownloadEncryptedBackup}>
-                  Download encrypted backup
+                  {t("account.backup.download")}
                 </button>
                 <label className="button file-button">
-                  Restore encrypted backup
+                  {t("account.backup.restore")}
                   <input
-                    aria-label="Restore encrypted backup file"
+                    aria-label={t("account.backup.restoreFileAria")}
                     type="file"
                     accept=".json,application/json"
                     onChange={handleRestoreEncryptedBackup}
@@ -3742,40 +3796,32 @@ export default function AccountGoalPanel({
                   {backupStatus}
                 </small>
               ) : null}
-              <div className="native-backup-panel" aria-label="Native encrypted backup">
+              <div className="native-backup-panel" aria-label={t("account.nativeBackup.aria")}>
                 <div>
-                  <h4>Native app backup</h4>
+                  <h4>{t("account.nativeBackup.title")}</h4>
                   <p>
-                    Installed apps can save the same encrypted backup into
-                    native storage. Platform cloud backup still depends on the
-                    generated iOS/Android project settings.
+                    {t("account.nativeBackup.body")}
                   </p>
-                  {nativeBackupState.lastBackupAt ? (
-                    <small>
-                      Last saved {formatDate(nativeBackupState.lastBackupAt)} / {nativeBackupState.byteLength} bytes
-                    </small>
-                  ) : (
-                    <small>No native backup file saved yet.</small>
-                  )}
+                  <small>{formatNativeBackupLastSaved(nativeBackupState, t)}</small>
                 </div>
                 <label className="native-backup-toggle">
                   <input
-                    aria-label="Native backup autosave"
+                    aria-label={t("account.nativeBackup.autosaveAria")}
                     type="checkbox"
                     checked={nativeBackupAutoEnabled}
                     onChange={handleNativeBackupAutoChange}
                   />
-                  <span>Autosave this session</span>
+                  <span>{t("account.nativeBackup.autosave")}</span>
                 </label>
                 <div className="native-backup-actions">
                   <button className="button" type="button" onClick={handleSaveNativeBackupFile}>
-                    Save native backup
+                    {t("account.nativeBackup.save")}
                   </button>
                   <button className="button" type="button" onClick={handleRestoreNativeBackupFile}>
-                    Restore native backup
+                    {t("account.nativeBackup.restore")}
                   </button>
                   <button className="button" type="button" onClick={handleDeleteNativeBackupFile}>
-                    Delete native backup
+                    {t("account.nativeBackup.delete")}
                   </button>
                 </div>
                 {nativeBackupStatus ? (

@@ -2364,6 +2364,17 @@ test("downloads a localized progress report from the account UI", async ({ page 
   await page.getByRole("button", { name: "Revisar manifiesto de actualizaciones" }).click();
   await expect(liveSection).toContainText("Actualizacion disponible");
   await expect(liveSection).toContainText("ultima 0.1.1");
+  const backupSection = accountDialog.getByLabel("Backup local cifrado");
+  await expect(backupSection).toContainText("Backup cifrado");
+  await expect(backupSection).toContainText("Las fotos se incluyen solo como manifiesto.");
+  await page.getByLabel("Frase de backup").fill("correct horse battery staple");
+  const backupPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Descargar backup cifrado" }).click();
+  await backupPromise;
+  await expect(backupSection).toContainText("Backup cifrado descargado:");
+  await expect(accountDialog.getByLabel("Backup nativo cifrado")).toContainText(
+    "Aun no hay archivo de backup nativo guardado."
+  );
   await expect(page.getByLabel("Informe de progreso")).toContainText(
     "Resumen local imprimible"
   );

@@ -107,6 +107,27 @@ test("translates known keys, falls back to English, and interpolates values", ()
     "Ejecutando 0.1.0 / ultima 0.1.1"
   );
   assert.equal(
+    translate("es", "account.backup.downloadStatus", {
+      snapshots: 1,
+      checkIns: 2,
+      goals: 3,
+      protocols: 4,
+      procedures: 5,
+      labs: 6,
+      referrals: 7,
+      photos: 8
+    }),
+    "Backup cifrado descargado: 1 snapshot(s), 2 check-in(s), 3 objetivo(s), 4 protocolo(s), 5 procedimiento(s), 6 resultado(s) de laboratorio, 7 credito(s) de referido y 8 item(s) de manifiesto de fotos."
+  );
+  assert.equal(
+    translate("es", "account.nativeBackup.status.saved", {
+      snapshots: 1,
+      checkIns: 2,
+      photos: 3
+    }),
+    "Backup nativo cifrado guardado: 1 snapshot(s), 2 check-in(s) y 3 item(s) de manifiesto de fotos."
+  );
+  assert.equal(
     translate("es", "account.export.jsonStatus", {
       snapshots: 1,
       checkIns: 2,
