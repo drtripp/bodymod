@@ -17,6 +17,7 @@ from app.data.live_updates import LIVE_UPDATE_MANIFEST
 from app.data.measurement_guides import MEASUREMENT_GUIDES
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TAXONOMY, PROTOCOL_TEMPLATES
 from app.data.procedures import PROCEDURE_LIBRARY
+from app.data.provider_decisions import PROVIDER_DECISION_LIBRARY
 from app.data.reference import REFERENCE_DATA
 from app.data.strategy_corpus import STRATEGY_CORPUS
 from app.models import AttractivenessEvidenceLibrary
@@ -53,6 +54,7 @@ from app.models import PersonalDataTokenRevokeResponse
 from app.models import PlanningData
 from app.models import PopulationReferenceData
 from app.models import ProcedureLibrary
+from app.models import ProviderDecisionLibrary
 from app.models import ProductAnalyticsReportRequest
 from app.models import ProductAnalyticsReportResponse
 from app.models import ShareDashboardCreateRequest
@@ -228,6 +230,11 @@ def live_update_manifest(
 @app.get("/api/launch-readiness")
 def launch_readiness() -> dict:
     return LaunchReadiness.model_validate(LAUNCH_READINESS).model_dump()
+
+
+@app.get("/api/provider-decisions")
+def provider_decisions() -> dict:
+    return ProviderDecisionLibrary.model_validate(PROVIDER_DECISION_LIBRARY).model_dump()
 
 
 @app.get("/api/clothing-sizes")

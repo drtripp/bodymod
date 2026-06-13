@@ -59,6 +59,10 @@ export function fetchLaunchReadiness() {
   return request("/api/launch-readiness");
 }
 
+export function fetchProviderDecisions() {
+  return request("/api/provider-decisions");
+}
+
 export function fetchClothingSizeTables() {
   return request("/api/clothing-sizes");
 }

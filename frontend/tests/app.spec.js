@@ -445,6 +445,82 @@ const launchReadiness = {
   ]
 };
 
+const providerDecisionLibrary = {
+  version: 1,
+  source: "Mock provider decision matrix seed mirrored from manual-work-queue.md.",
+  notes: ["Metadata only."],
+  decisions: [
+    {
+      id: "product-analytics",
+      label: "Product analytics provider",
+      category: "privacy",
+      status: "provider-decision-required",
+      blocking: true,
+      owner: "Dawson",
+      launchGateIds: ["launch-privacy-moderation"],
+      decisionNeeded: ["Decide whether production product analytics are acceptable."],
+      privacyRequirements: ["No measurements or account emails."],
+      currentScaffold: ["frontend/src/lib/productAnalytics.js"],
+      verification: ["npm run test:analytics"],
+      docs: ["manual-work-queue.md#6-launch-privacy-and-moderation-approvals"],
+      candidates: [
+        {
+          id: "keep-disabled",
+          label: "Keep analytics upload disabled",
+          providerType: "first-party-off",
+          reviewStatus: "review before production",
+          recommendedForPrototype: true,
+          metadataOnly: true,
+          notes: ["Mock default."]
+        },
+        {
+          id: "self-hosted-analytics",
+          label: "Self-hosted analytics provider",
+          providerType: "self-hosted",
+          reviewStatus: "needs review",
+          recommendedForPrototype: false,
+          metadataOnly: true,
+          notes: ["Mock candidate."]
+        }
+      ]
+    },
+    {
+      id: "account-email",
+      label: "Magic-link email provider",
+      category: "accounts",
+      status: "provider-decision-required",
+      blocking: true,
+      owner: "Dawson",
+      launchGateIds: ["launch-privacy-moderation"],
+      decisionNeeded: ["Approve production email delivery provider."],
+      privacyRequirements: ["Hash login secrets and keep email out of analytics."],
+      currentScaffold: ["backend/app/account_email.py"],
+      verification: ["npm run test:magic-account"],
+      docs: ["manual-work-queue.md#6-launch-privacy-and-moderation-approvals"],
+      candidates: [
+        {
+          id: "dev-token-local",
+          label: "Development token mode only",
+          providerType: "prototype",
+          reviewStatus: "review before production",
+          recommendedForPrototype: true,
+          metadataOnly: true,
+          notes: ["Mock local path."]
+        },
+        {
+          id: "smtp-transactional",
+          label: "SMTP transactional email provider",
+          providerType: "external",
+          reviewStatus: "needs review",
+          recommendedForPrototype: false,
+          metadataOnly: true,
+          notes: ["Mock provider."]
+        }
+      ]
+    }
+  ]
+};
+
 const exerciseLibrary = {
   version: 1,
   reference: "Dummy workout seed data for tests.",
@@ -905,6 +981,12 @@ async function mockApi(page) {
     const requestBody = route.request().postData() || "";
     expect(requestBody).not.toMatch(/measurements|waistCircumference|mason@example\.com|syncToken|note/);
     await route.fulfill({ json: launchReadiness });
+  });
+
+  await page.route("**/api/provider-decisions", async (route) => {
+    const requestBody = route.request().postData() || "";
+    expect(requestBody).not.toMatch(/measurements|waistCircumference|mason@example\.com|syncToken|note/);
+    await route.fulfill({ json: providerDecisionLibrary });
   });
 
   await page.route("**/api/clothing-sizes", async (route) => {
@@ -2389,6 +2471,15 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   expect(JSON.stringify(liveUpdateState)).not.toMatch(
     /mason@example\.com|waistCircumference|Low sodium|Strict reps|First persona/
   );
+  await expect(page.getByLabel("Provider decision matrix")).toContainText(
+    "2 blocking provider decision(s)"
+  );
+  await expect(page.getByLabel("Provider decision matrix")).toContainText(
+    "Product analytics provider"
+  );
+  await expect(page.getByLabel("Provider decision matrix")).toContainText(
+    "Decide whether production product analytics are acceptable."
+  );
   await expect(page.getByLabel("Launch readiness gates")).toContainText("2 blocking gate(s)");
   await expect(page.getByLabel("Launch readiness gates")).toContainText(
     "Source-reviewed strategy corpus"
@@ -2590,6 +2681,9 @@ test("downloads a localized progress report from the account UI", async ({ page 
   await page.getByRole("button", { name: "Revisar manifiesto de actualizaciones" }).click();
   await expect(liveSection).toContainText("Actualizacion disponible");
   await expect(liveSection).toContainText("ultima 0.1.1");
+  const providerSection = accountDialog.getByLabel("Matriz de decisiones de proveedor");
+  await expect(providerSection).toContainText("2 decision(es) de proveedor bloqueante(s)");
+  await expect(providerSection).toContainText("Product analytics provider");
   const backupSection = accountDialog.getByLabel("Backup local cifrado");
   await expect(backupSection).toContainText("Backup cifrado");
   await expect(backupSection).toContainText("Las fotos se incluyen solo como manifiesto.");

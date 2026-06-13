@@ -1,4 +1,4 @@
-"""Validate editable curation JSON for target, guide, food, planning, update, launch, evidence, and strategy data.
+"""Validate editable curation JSON for target, guide, food, planning, update, launch, provider, evidence, and strategy data.
 
 Run from the backend directory:
 
@@ -14,6 +14,7 @@ Pass explicit files to validate a draft before replacing a seed:
         --planning-file app\\data\\planning.seed.json \\
         --live-update-file app\\data\\live_updates.seed.json \\
         --launch-readiness-file app\\data\\launch_readiness.seed.json \\
+        --provider-decision-file app\\data\\provider_decisions.seed.json \\
         --evidence-file app\\data\\attractiveness_evidence.seed.json \\
         --corpus-file ..\\strategy-corpus-template.json
 """
@@ -36,6 +37,7 @@ from app.models import (  # noqa: E402
     LiveUpdateManifest,
     MeasurementGuideLibrary,
     PlanningData,
+    ProviderDecisionLibrary,
     StrategyCorpusSeed,
     TargetProfile,
 )
@@ -55,6 +57,9 @@ DEFAULT_LIVE_UPDATE_FILES = [
 ]
 DEFAULT_LAUNCH_READINESS_FILES = [
     BACKEND_ROOT / "app" / "data" / "launch_readiness.seed.json",
+]
+DEFAULT_PROVIDER_DECISION_FILES = [
+    BACKEND_ROOT / "app" / "data" / "provider_decisions.seed.json",
 ]
 DEFAULT_GUIDE_FILES = [
     BACKEND_ROOT / "app" / "data" / "measurement_guides.seed.json",
@@ -227,6 +232,72 @@ def validate_launch_readiness_file(path: Path) -> str:
             raise ValueError(f"{path}: gate {gate.id!r} needs a test or verify command.")
 
     return f"{path}: {len(readiness.gates)} launch-readiness gate(s)"
+
+
+def validate_provider_decision_file(path: Path) -> str:
+    payload = read_json(path)
+    library = ProviderDecisionLibrary.model_validate(payload)
+    decision_ids = [decision.id for decision in library.decisions]
+    duplicates = duplicate_values(decision_ids)
+
+    if duplicates:
+        raise ValueError(f"{path}: duplicate provider decision ids: {', '.join(duplicates)}.")
+
+    blocking_decisions = [decision for decision in library.decisions if decision.blocking]
+    if not blocking_decisions:
+        raise ValueError(f"{path}: expected at least one blocking provider decision.")
+
+    launch_gate_ids = {
+        gate.id
+        for launch_path in DEFAULT_LAUNCH_READINESS_FILES
+        for gate in LaunchReadiness.model_validate(read_json(launch_path)).gates
+    }
+
+    for decision in library.decisions:
+        if decision.status == "completed" and decision.blocking:
+            raise ValueError(
+                f"{path}: completed provider decision {decision.id!r} cannot remain blocking."
+            )
+        if not any(doc.startswith("manual-work-queue.md") for doc in decision.docs):
+            raise ValueError(
+                f"{path}: decision {decision.id!r} must reference manual-work-queue.md."
+            )
+        if not any(
+            "test" in command.lower() or "verify" in command.lower()
+            for command in decision.verification
+        ):
+            raise ValueError(f"{path}: decision {decision.id!r} needs a test or verify command.")
+
+        unknown_launch_gates = sorted(set(decision.launchGateIds) - launch_gate_ids)
+        if unknown_launch_gates:
+            raise ValueError(
+                f"{path}: decision {decision.id!r} references unknown launch gates: "
+                f"{', '.join(unknown_launch_gates)}."
+            )
+
+        candidate_ids = [candidate.id for candidate in decision.candidates]
+        candidate_duplicates = duplicate_values(candidate_ids)
+        if candidate_duplicates:
+            raise ValueError(
+                f"{path}: decision {decision.id!r} has duplicate candidate ids: "
+                f"{', '.join(candidate_duplicates)}."
+            )
+        if not any(candidate.recommendedForPrototype for candidate in decision.candidates):
+            raise ValueError(
+                f"{path}: decision {decision.id!r} needs a prototype-safe candidate."
+            )
+
+        for candidate in decision.candidates:
+            if "review" not in candidate.reviewStatus.lower():
+                raise ValueError(
+                    f"{path}: provider candidate {candidate.id!r} must stay review-gated."
+                )
+            if not candidate.metadataOnly:
+                raise ValueError(
+                    f"{path}: provider candidate {candidate.id!r} must remain metadata-only."
+                )
+
+    return f"{path}: {len(library.decisions)} provider decision(s)"
 
 
 def validate_measurement_guide_file(path: Path) -> str:
@@ -505,6 +576,13 @@ def parse_args() -> argparse.Namespace:
         help="Launch-readiness gate JSON file to validate. Repeatable.",
     )
     parser.add_argument(
+        "--provider-decision-file",
+        action="append",
+        type=Path,
+        dest="provider_decision_files",
+        help="Provider decision JSON file to validate. Repeatable.",
+    )
+    parser.add_argument(
         "--guide-file",
         action="append",
         type=Path,
@@ -546,6 +624,9 @@ def main() -> int:
     launch_readiness_files = (
         args.launch_readiness_files or DEFAULT_LAUNCH_READINESS_FILES
     )
+    provider_decision_files = (
+        args.provider_decision_files or DEFAULT_PROVIDER_DECISION_FILES
+    )
     evidence_files = args.evidence_files or DEFAULT_EVIDENCE_FILES
     corpus_files = args.corpus_files or DEFAULT_CORPUS_FILES
     summaries = [
@@ -556,6 +637,7 @@ def main() -> int:
         *(validate_planning_file(path) for path in planning_files),
         *(validate_live_update_file(path) for path in live_update_files),
         *(validate_launch_readiness_file(path) for path in launch_readiness_files),
+        *(validate_provider_decision_file(path) for path in provider_decision_files),
         *(validate_attractiveness_evidence_file(path, planning_files) for path in evidence_files),
         *(validate_strategy_corpus_file(path) for path in corpus_files),
     ]

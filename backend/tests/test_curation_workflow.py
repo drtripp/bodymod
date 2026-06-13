@@ -10,6 +10,7 @@ from scripts.validate_curation import (
     DEFAULT_GUIDE_FILES,
     DEFAULT_LIVE_UPDATE_FILES,
     DEFAULT_PLANNING_FILES,
+    DEFAULT_PROVIDER_DECISION_FILES,
     DEFAULT_TARGET_FILES,
     validate_attractiveness_evidence_file,
     validate_ansur_mapping_file,
@@ -17,6 +18,7 @@ from scripts.validate_curation import (
     validate_live_update_file,
     validate_measurement_guide_file,
     validate_planning_file,
+    validate_provider_decision_file,
     validate_strategy_corpus_file,
     validate_target_file,
 )
@@ -33,6 +35,9 @@ def test_default_curation_files_validate() -> None:
     live_update_summaries = [
         validate_live_update_file(path) for path in DEFAULT_LIVE_UPDATE_FILES
     ]
+    provider_decision_summaries = [
+        validate_provider_decision_file(path) for path in DEFAULT_PROVIDER_DECISION_FILES
+    ]
     evidence_summaries = [
         validate_attractiveness_evidence_file(path) for path in DEFAULT_EVIDENCE_FILES
     ]
@@ -44,6 +49,7 @@ def test_default_curation_files_validate() -> None:
     assert any("USDA-style food" in summary for summary in food_summaries)
     assert any("10 persona" in summary for summary in planning_summaries)
     assert any("live-update" in summary for summary in live_update_summaries)
+    assert any("provider decision" in summary for summary in provider_decision_summaries)
     assert any("attractiveness evidence" in summary for summary in evidence_summaries)
     assert any("case log" in summary for summary in corpus_summaries)
 

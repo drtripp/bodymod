@@ -11,6 +11,7 @@ import {
   fetchLiveUpdateManifest,
   fetchPlanningData,
   fetchProcedureLibrary,
+  fetchProviderDecisions,
   revokeShareDashboard,
   submitCaseLogSubmission,
   updateShareDashboard
@@ -236,6 +237,11 @@ import {
   launchReadinessSummary,
   normalizeLaunchReadiness
 } from "../lib/launchReadiness";
+import {
+  fallbackProviderDecisionLibrary,
+  normalizeProviderDecisionLibrary,
+  providerDecisionSummary
+} from "../lib/providerDecisions";
 import { loadStrategyCorpusBundle } from "../lib/strategyCorpus";
 import {
   buildCaseLogSubmission,
@@ -969,6 +975,22 @@ function formatLaunchGateEvidence(gate, t) {
   return gate.evidenceRequired?.[0] || t("account.launch.noEvidence");
 }
 
+function formatProviderDecisionStatus(status, t) {
+  return t(`account.provider.statusLabel.${status}`, {}, status);
+}
+
+function formatProviderDecisionLine(decision, t) {
+  return t("account.provider.decisionLine", {
+    status: formatProviderDecisionStatus(decision.status, t),
+    category: decision.category,
+    owner: decision.owner
+  });
+}
+
+function formatProviderDecisionNeed(decision, t) {
+  return decision.decisionNeeded?.[0] || t("account.provider.noDecision");
+}
+
 function formatSyncVaultCreatedStatus(record, summary, t) {
   return t("account.sync.status.created", {
     revision: record.revision,
@@ -1446,6 +1468,12 @@ export default function AccountGoalPanel({
   const [launchReadinessStatus, setLaunchReadinessStatus] = useState(() =>
     t("account.launch.status.loading")
   );
+  const [providerDecisionLibrary, setProviderDecisionLibrary] = useState(() =>
+    normalizeProviderDecisionLibrary(fallbackProviderDecisionLibrary)
+  );
+  const [providerDecisionStatus, setProviderDecisionStatus] = useState(() =>
+    t("account.provider.status.loading")
+  );
   const [selectedProtocolIds, setSelectedProtocolIds] = useState([]);
   const [status, setStatus] = useState("");
 
@@ -1460,6 +1488,7 @@ export default function AccountGoalPanel({
   const accountReferralCode = account ? referralCodeForAccount(account) : "";
   const referralSummary = summarizeReferralCredits(referralCredits, entitlementConfig);
   const launchSummary = launchReadinessSummary(launchReadiness);
+  const providerSummary = providerDecisionSummary(providerDecisionLibrary);
   const strategyCorpusBundle = useMemo(
     () => loadStrategyCorpusBundle(),
     [account?.id]
@@ -1604,6 +1633,45 @@ export default function AccountGoalPanel({
         setLaunchReadiness(fallback);
         setLaunchReadinessStatus(
           t("account.launch.status.unavailable", {
+            blocking: summary.blockingCount
+          })
+        );
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [t]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchProviderDecisions()
+      .then((data) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const normalized = normalizeProviderDecisionLibrary(data);
+        const summary = providerDecisionSummary(normalized);
+        setProviderDecisionLibrary(normalized);
+        setProviderDecisionStatus(
+          t("account.provider.status.loaded", {
+            decisions: summary.totalCount,
+            blocking: summary.blockingCount
+          })
+        );
+      })
+      .catch(() => {
+        if (!isMounted) {
+          return;
+        }
+
+        const fallback = normalizeProviderDecisionLibrary(fallbackProviderDecisionLibrary);
+        const summary = providerDecisionSummary(fallback);
+        setProviderDecisionLibrary(fallback);
+        setProviderDecisionStatus(
+          t("account.provider.status.unavailable", {
             blocking: summary.blockingCount
           })
         );
@@ -4406,6 +4474,54 @@ export default function AccountGoalPanel({
               {liveUpdateStatus ? (
                 <small className="live-update-status" role="status" aria-live="polite">
                   {liveUpdateStatus}
+                </small>
+              ) : null}
+            </section>
+
+            <section className="provider-decision-section" aria-label={t("account.provider.aria")}>
+              <div>
+                <h3>{t("account.provider.title")}</h3>
+                <p>
+                  {t("account.provider.body")}
+                </p>
+                <small>{providerDecisionLibrary.source}</small>
+              </div>
+              <div className="provider-decision-summary" aria-label={t("account.provider.summaryAria")}>
+                <strong>
+                  {t("account.provider.blockingCount", {
+                    count: providerSummary.blockingCount
+                  })}
+                </strong>
+                <span>
+                  {t("account.provider.candidateCount", {
+                    count: providerSummary.candidateCount
+                  })}
+                </span>
+                <small>
+                  {t("account.provider.prototypeCount", {
+                    count: providerSummary.prototypeCandidateCount
+                  })}
+                </small>
+              </div>
+              <ul className="provider-decision-list">
+                {providerDecisionLibrary.decisions.slice(0, 4).map((decision) => (
+                  <li key={decision.id}>
+                    <strong>{decision.label}</strong>
+                    <span>{formatProviderDecisionLine(decision, t)}</span>
+                    <small>{formatProviderDecisionNeed(decision, t)}</small>
+                  </li>
+                ))}
+              </ul>
+              {providerDecisionLibrary.decisions.length > 4 ? (
+                <small>
+                  {t("account.provider.remainingCount", {
+                    count: providerDecisionLibrary.decisions.length - 4
+                  })}
+                </small>
+              ) : null}
+              {providerDecisionStatus ? (
+                <small className="provider-decision-status" role="status" aria-live="polite">
+                  {providerDecisionStatus}
                 </small>
               ) : null}
             </section>

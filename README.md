@@ -270,7 +270,9 @@ Not implemented yet:
 - full public measurement-guide coverage with reviewed illustrations and final copy
 - production error monitoring and product analytics provider/enablement
   decisions; sanitized first-party wiring exists but upload is disabled unless
-  configured at build time
+  configured at build time. A review-only provider decision matrix is exposed
+  at `/api/provider-decisions` and in the account panel so these choices are
+  tracked as structured launch blockers.
 - production AI explain-my-data provider/model selection, account-tier gating,
   prompt-boundary review, and launch policy approval; current explainer is a
   local deterministic scaffold only

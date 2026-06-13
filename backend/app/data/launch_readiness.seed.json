@@ -159,7 +159,8 @@
         "Encrypted sync vault and magic-link account scaffolds",
         "Review-only case-log submission queue at /api/case-log-submissions",
         "Token-guarded case-log reviewer endpoints at /api/case-log-submissions/review",
-        "Expiring opaque measurement share snapshots at /api/share-snapshots"
+        "Expiring opaque measurement share snapshots at /api/share-snapshots",
+        "Review-only provider decision matrix at /api/provider-decisions"
       ],
       "verification": [
         ".\\verify.ps1",

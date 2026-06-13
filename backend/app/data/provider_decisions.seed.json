@@ -1,0 +1,613 @@
+{
+  "version": 1,
+  "source": "Dummy provider decision matrix seed mirrored from manual-work-queue.md. Candidates are placeholders for Dawson validation; no production vendor is approved by this file.",
+  "notes": [
+    "This seed is intentionally metadata-only: no account data, measurements, credentials, tokens, raw errors, analytics events, device identifiers, or private notes.",
+    "Every row remains review-gated until Dawson approves a provider, keeps the feature disabled, or removes the feature from launch scope."
+  ],
+  "decisions": [
+    {
+      "id": "product-analytics",
+      "label": "Product analytics provider",
+      "category": "privacy",
+      "status": "provider-decision-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["launch-privacy-moderation"],
+      "decisionNeeded": [
+        "Decide whether production product analytics are acceptable at all.",
+        "Approve self-hosted or first-party hosting if analytics are enabled.",
+        "Confirm retention, access, and deletion policy before launch."
+      ],
+      "privacyRequirements": [
+        "Disabled by default unless the launch decision record explicitly enables upload.",
+        "No measurements, account emails, names, goals, notes, photos, sync tokens, or free-form properties.",
+        "Only allowlisted event names, anonymous session IDs, sanitized routes, and browser metadata."
+      ],
+      "currentScaffold": [
+        "frontend/src/lib/productAnalytics.js",
+        "backend repositories and POST /api/product-analytics first-party sink",
+        "frontend/tests/productAnalytics.node.mjs"
+      ],
+      "verification": [
+        "cd frontend && npm run test:analytics",
+        "cd backend && python -m pytest tests/test_api.py tests/test_repositories.py"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "launch-decision-record.md",
+        "deployment.md"
+      ],
+      "candidates": [
+        {
+          "id": "keep-disabled",
+          "label": "Keep analytics upload disabled",
+          "providerType": "first-party-off",
+          "reviewStatus": "review before production; current prototype default",
+          "recommendedForPrototype": true,
+          "metadataOnly": true,
+          "notes": [
+            "Keeps local usage events only and avoids external analytics review for launch.",
+            "Still requires a clear launch decision so copy and privacy terms match behavior."
+          ]
+        },
+        {
+          "id": "self-hosted-analytics",
+          "label": "Self-hosted analytics provider",
+          "providerType": "self-hosted",
+          "reviewStatus": "needs privacy, hosting, and retention review",
+          "recommendedForPrototype": false,
+          "metadataOnly": true,
+          "notes": [
+            "Candidate slot for a self-hosted product analytics tool.",
+            "Must accept only the minimized first-party envelope."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "client-error-monitoring",
+      "label": "Client error monitoring provider",
+      "category": "privacy",
+      "status": "provider-decision-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["launch-privacy-moderation"],
+      "decisionNeeded": [
+        "Decide whether browser error uploads should be enabled in production.",
+        "Approve first-party-only storage or a self-hosted error tracker.",
+        "Set retention and human-access policy for sanitized error records."
+      ],
+      "privacyRequirements": [
+        "Raw error messages, stacks, measurements, form payloads, account emails, and notes must not leave the browser.",
+        "Upload must stay opt-in or environment-gated until provider review is complete.",
+        "Local ring buffer must remain clearable by the user."
+      ],
+      "currentScaffold": [
+        "frontend/src/lib/errorMonitoring.js",
+        "frontend/src/main.jsx sanitized browser error capture",
+        "POST /api/client-errors first-party sink"
+      ],
+      "verification": [
+        "cd frontend && npm run test:error-monitoring",
+        "cd backend && python -m pytest tests/test_api.py tests/test_repositories.py"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "launch-decision-record.md",
+        "deployment.md"
+      ],
+      "candidates": [
+        {
+          "id": "first-party-sink",
+          "label": "First-party sanitized error sink",
+          "providerType": "first-party",
+          "reviewStatus": "needs retention and access review",
+          "recommendedForPrototype": true,
+          "metadataOnly": true,
+          "notes": [
+            "Uses the existing API without sending raw stacks or user payload fields.",
+            "Still needs production storage, deletion, and access rules."
+          ]
+        },
+        {
+          "id": "self-hosted-error-tracker",
+          "label": "Self-hosted error tracker",
+          "providerType": "self-hosted",
+          "reviewStatus": "needs privacy and deployment review",
+          "recommendedForPrototype": false,
+          "metadataOnly": true,
+          "notes": [
+            "Candidate slot for a Sentry-compatible or similar tracker.",
+            "Must be configured to receive only the sanitized client-error envelope."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "account-email",
+      "label": "Magic-link email provider",
+      "category": "accounts",
+      "status": "provider-decision-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["launch-privacy-moderation"],
+      "decisionNeeded": [
+        "Approve production email delivery provider for magic links.",
+        "Decide account recovery and support flow.",
+        "Confirm whether identity-linked sync is in launch scope."
+      ],
+      "privacyRequirements": [
+        "Raw login tokens must never be returned by production JSON responses.",
+        "Email addresses must stay out of analytics, error reports, share dashboards, and sync-vault blobs.",
+        "Sessions and magic-link secrets must stay hash-stored."
+      ],
+      "currentScaffold": [
+        "backend/app/account_email.py SMTP/dev-token switch",
+        "backend /api/accounts/magic-links endpoints",
+        "frontend magic-link account panel"
+      ],
+      "verification": [
+        "cd backend && python -m pytest tests/test_account_email.py tests/test_api.py tests/test_repositories.py",
+        "cd frontend && npm run test:magic-account"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "launch-decision-record.md",
+        "deployment.md"
+      ],
+      "candidates": [
+        {
+          "id": "dev-token-local",
+          "label": "Development token mode only",
+          "providerType": "prototype",
+          "reviewStatus": "review before production; local development only",
+          "recommendedForPrototype": true,
+          "metadataOnly": true,
+          "notes": [
+            "Useful for local tests and persona walkthroughs.",
+            "Must not be enabled for a public deployment."
+          ]
+        },
+        {
+          "id": "smtp-transactional",
+          "label": "SMTP transactional email provider",
+          "providerType": "external",
+          "reviewStatus": "needs provider, deliverability, and privacy review",
+          "recommendedForPrototype": false,
+          "metadataOnly": true,
+          "notes": [
+            "Uses the existing SMTP-capable scaffold.",
+            "Requires sender domain, bounce handling, and recovery/support decisions."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "billing-web",
+      "label": "Web billing provider",
+      "category": "billing",
+      "status": "provider-decision-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["launch-privacy-moderation"],
+      "decisionNeeded": [
+        "Approve whether Pro billing is in launch scope.",
+        "Select checkout, tax, refund, entitlement, and support workflow.",
+        "Confirm pricing and free-feature boundaries."
+      ],
+      "privacyRequirements": [
+        "Measurements, notes, photos, and sync tokens must not be sent to checkout or billing webhooks.",
+        "Entitlement records must be separable from local measurement logs.",
+        "Pro waitlist data must remain local until account and billing providers are approved."
+      ],
+      "currentScaffold": [
+        "backend/app/data/entitlements.py free/pro feature catalog",
+        "frontend local Pro waitlist and referral credits",
+        "all current user-data tools remain non-gated"
+      ],
+      "verification": [
+        "cd frontend && npm run test:entitlements",
+        "cd backend && python -m pytest tests/test_api.py"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "feature-backlog.md#open-decisions-queue-human-blocking-the-marked-items",
+        "deployment.md"
+      ],
+      "candidates": [
+        {
+          "id": "billing-out-of-scope",
+          "label": "Keep paid billing out of launch scope",
+          "providerType": "scope-decision",
+          "reviewStatus": "review before production; current prototype default",
+          "recommendedForPrototype": true,
+          "metadataOnly": true,
+          "notes": [
+            "Keeps all current tools available without checkout risk.",
+            "Still requires pricing copy to avoid promising unavailable Pro behavior."
+          ]
+        },
+        {
+          "id": "hosted-web-checkout",
+          "label": "Hosted web checkout provider",
+          "providerType": "external",
+          "reviewStatus": "needs billing, tax, privacy, and support review",
+          "recommendedForPrototype": false,
+          "metadataOnly": true,
+          "notes": [
+            "Candidate slot for web subscriptions.",
+            "Requires account identity linkage and webhook verification design."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "native-in-app-purchase",
+      "label": "Native in-app purchase provider",
+      "category": "billing",
+      "status": "native-project-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["launch-privacy-moderation"],
+      "decisionNeeded": [
+        "Decide whether native Pro purchase is in the first store release.",
+        "Approve Apple/Google account setup, product IDs, pricing, and entitlement restore flow.",
+        "Confirm parity with any web checkout plan."
+      ],
+      "privacyRequirements": [
+        "Purchase records must not include body measurements, notes, photos, or strategy choices.",
+        "Native receipt handling must be tied to explicit account identity and revocation policy.",
+        "Store copy must not imply medical, diagnostic, or guaranteed outcome features."
+      ],
+      "currentScaffold": [
+        "Capacitor config and native package scripts",
+        "entitlement catalog and local referral records",
+        "No generated Android/iOS project folders yet"
+      ],
+      "verification": [
+        "cd frontend && npm run test:entitlements",
+        "cd frontend && npm run native:sync"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "frontend/native-readme.md",
+        "feature-backlog.md#open-decisions-queue-human-blocking-the-marked-items"
+      ],
+      "candidates": [
+        {
+          "id": "native-iap-out-of-scope",
+          "label": "Keep native IAP out of launch scope",
+          "providerType": "scope-decision",
+          "reviewStatus": "review before production; current prototype default",
+          "recommendedForPrototype": true,
+          "metadataOnly": true,
+          "notes": [
+            "Lets native builds ship as free/local-first if store policy permits.",
+            "Requires copy cleanup for Pro previews and referrals."
+          ]
+        },
+        {
+          "id": "store-in-app-purchase",
+          "label": "Store in-app purchase integration",
+          "providerType": "native-platform",
+          "reviewStatus": "needs native project, billing, and store-policy review",
+          "recommendedForPrototype": false,
+          "metadataOnly": true,
+          "notes": [
+            "Requires generated native project folders and real device validation.",
+            "Needs entitlement restore and account recovery policy."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "push-notifications",
+      "label": "Web and native push delivery",
+      "category": "notifications",
+      "status": "provider-decision-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["launch-privacy-moderation"],
+      "decisionNeeded": [
+        "Configure production VAPID, FCM, and APNs credentials or keep remote delivery disabled.",
+        "Validate web and native subscription flows on real devices.",
+        "Approve reminder copy and opt-out behavior."
+      ],
+      "privacyRequirements": [
+        "Reminder payloads must remain generic and timestamp-only.",
+        "Device tokens and endpoint hashes must not be exposed in exports, analytics, share dashboards, or logs.",
+        "No measurement values, goals, notes, or account emails in notification payloads."
+      ],
+      "currentScaffold": [
+        "backend web/native push repositories and dry-run workers",
+        "frontend subscribe/unsubscribe controls",
+        "generic reminder payload builders"
+      ],
+      "verification": [
+        "cd frontend && npm run test:notifications",
+        "cd backend && python -m pytest tests/test_api.py tests/test_native_push.py tests/test_repositories.py"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "frontend/native-readme.md",
+        "deployment.md"
+      ],
+      "candidates": [
+        {
+          "id": "local-reminders-only",
+          "label": "Local browser reminders only",
+          "providerType": "scope-decision",
+          "reviewStatus": "review before production; current fallback path",
+          "recommendedForPrototype": true,
+          "metadataOnly": true,
+          "notes": [
+            "Avoids remote push provider setup while preserving local decay reminders.",
+            "Does not cover native background delivery."
+          ]
+        },
+        {
+          "id": "remote-web-native-push",
+          "label": "Remote web/native push providers",
+          "providerType": "external-and-platform",
+          "reviewStatus": "needs credential, device, and privacy review",
+          "recommendedForPrototype": false,
+          "metadataOnly": true,
+          "notes": [
+            "Uses existing timestamp-only scheduling scaffolds.",
+            "Requires production credentials and end-to-end device testing."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "live-updates",
+      "label": "Live-update provider and signing",
+      "category": "native-release",
+      "status": "provider-decision-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["launch-privacy-moderation"],
+      "decisionNeeded": [
+        "Approve provider, signing, staged rollout, and rollback policy.",
+        "Decide whether live updates are allowed for the first native release.",
+        "Define store-review boundaries for server-driven changes."
+      ],
+      "privacyRequirements": [
+        "Update checks must remain release metadata only.",
+        "No account identifiers, measurements, notes, device tokens, or sync tokens in manifest requests.",
+        "Rollback metadata must not expose user state."
+      ],
+      "currentScaffold": [
+        "backend/app/data/live_updates.seed.json",
+        "GET /api/live-updates/manifest",
+        "account-panel version drift check"
+      ],
+      "verification": [
+        "cd frontend && npm run test:live-updates",
+        "cd backend && python scripts/validate_curation.py"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "frontend/native-readme.md",
+        "deployment.md"
+      ],
+      "candidates": [
+        {
+          "id": "store-releases-only",
+          "label": "Store releases only",
+          "providerType": "scope-decision",
+          "reviewStatus": "review before production; conservative default",
+          "recommendedForPrototype": true,
+          "metadataOnly": true,
+          "notes": [
+            "Avoids live-update signing and provider policy work for first release.",
+            "Keeps the manifest as a release-readiness check only."
+          ]
+        },
+        {
+          "id": "signed-live-update-provider",
+          "label": "Signed live-update provider",
+          "providerType": "external-or-self-hosted",
+          "reviewStatus": "needs provider, signing, rollback, and store-policy review",
+          "recommendedForPrototype": false,
+          "metadataOnly": true,
+          "notes": [
+            "Candidate slot for OTA web bundle updates.",
+            "Requires native project folders, signing keys, and staged rollout process."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "native-health-sync",
+      "label": "HealthKit / Health Connect provider path",
+      "category": "native-health",
+      "status": "native-project-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["launch-privacy-moderation"],
+      "decisionNeeded": [
+        "Approve native health plugin, permissions, and store disclosure wording.",
+        "Decide write-only preview versus real read/write sync scope.",
+        "Validate on real iOS and Android devices after native project generation."
+      ],
+      "privacyRequirements": [
+        "Health preview state must remain metadata-only.",
+        "No account emails, notes, food names, photos, or raw measurement arrays in preview persistence.",
+        "Actual native writes must require explicit user action and platform permission."
+      ],
+      "currentScaffold": [
+        "frontend/src/lib/healthSync.js write-batch preview",
+        "account-panel health sync preview controls",
+        "No native HealthKit/Health Connect plugin wiring yet"
+      ],
+      "verification": [
+        "cd frontend && npm run test:health-sync",
+        "cd frontend && npm run native:sync"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "frontend/native-readme.md",
+        "deployment.md"
+      ],
+      "candidates": [
+        {
+          "id": "write-preview-only",
+          "label": "Keep metadata-only write preview",
+          "providerType": "scope-decision",
+          "reviewStatus": "review before production; current prototype default",
+          "recommendedForPrototype": true,
+          "metadataOnly": true,
+          "notes": [
+            "Keeps health sync visible without requesting platform permissions.",
+            "Requires copy that clearly says no health data was written."
+          ]
+        },
+        {
+          "id": "native-health-plugins",
+          "label": "Native health plugins",
+          "providerType": "native-platform",
+          "reviewStatus": "needs native project, permission, device, and policy review",
+          "recommendedForPrototype": false,
+          "metadataOnly": true,
+          "notes": [
+            "Requires generated Android/iOS project folders and real device validation.",
+            "Needs platform-specific disclosures and recovery behavior."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cloud-backup-sync",
+      "label": "Cloud backup and cross-device sync provider",
+      "category": "sync",
+      "status": "provider-decision-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["launch-privacy-moderation"],
+      "decisionNeeded": [
+        "Decide whether automatic cross-device sync is in launch scope.",
+        "Approve provider-backed background sync or keep manual encrypted files only.",
+        "Define recovery, merge, device revocation, and support policy."
+      ],
+      "privacyRequirements": [
+        "Backend and cloud providers must receive only opaque encrypted blobs.",
+        "Passphrases, sync tokens, account emails, notes, photos, and measurement keys must not be sent in sync bodies.",
+        "Manual export/delete must stay available with or without an account."
+      ],
+      "currentScaffold": [
+        "encrypted local backup download/restore",
+        "native encrypted file backup scaffold",
+        "token-scoped encrypted sync-vault API and account-panel manual flow"
+      ],
+      "verification": [
+        "cd frontend && npm run test:encrypted-sync",
+        "cd frontend && npm run test:native-backup",
+        "cd backend && python -m pytest tests/test_api.py tests/test_repositories.py"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "frontend/native-readme.md",
+        "deployment.md"
+      ],
+      "candidates": [
+        {
+          "id": "manual-encrypted-files",
+          "label": "Manual encrypted files only",
+          "providerType": "scope-decision",
+          "reviewStatus": "review before production; current prototype default",
+          "recommendedForPrototype": true,
+          "metadataOnly": true,
+          "notes": [
+            "Keeps recovery user-controlled and avoids background provider assumptions.",
+            "Does not solve automatic multi-device sync."
+          ]
+        },
+        {
+          "id": "opaque-sync-vault",
+          "label": "First-party opaque sync vault",
+          "providerType": "first-party",
+          "reviewStatus": "needs account recovery, deletion, and provider review",
+          "recommendedForPrototype": false,
+          "metadataOnly": true,
+          "notes": [
+            "Uses the existing encrypted sync-vault API.",
+            "Requires production identity, recovery, and support process."
+          ]
+        },
+        {
+          "id": "native-drive-backup",
+          "label": "Native cloud drive backup",
+          "providerType": "native-platform",
+          "reviewStatus": "needs native project and platform-policy review",
+          "recommendedForPrototype": false,
+          "metadataOnly": true,
+          "notes": [
+            "Candidate for iCloud/Google Drive style encrypted backup storage.",
+            "Requires generated native project folders and platform entitlement review."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ai-data-explainer",
+      "label": "AI data explainer provider",
+      "category": "ai",
+      "status": "provider-decision-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["launch-privacy-moderation"],
+      "decisionNeeded": [
+        "Approve production model provider or keep the local deterministic preview only.",
+        "Review prompt-boundary wording for medical, dosing, diagnosis, and prescribing limits.",
+        "Decide whether the feature is Pro-gated and how logs are excluded from prompts."
+      ],
+      "privacyRequirements": [
+        "Account emails, account IDs, private notes, sync tokens, photos, and raw face data must not be sent to a model provider.",
+        "Medical, dosing, prescribing, and diagnosis requests must stay refusal/boundary cases.",
+        "Corpus citations must be context only and not personalized medical advice."
+      ],
+      "currentScaffold": [
+        "frontend/src/lib/dataExplainer.js deterministic local preview",
+        "account-panel explain-my-data controls",
+        "frontend/tests/dataExplainer.node.mjs"
+      ],
+      "verification": [
+        "cd frontend && npm run test:data-explainer",
+        "cd frontend && npm run test:tone"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "launch-decision-record.md",
+        "deployment.md"
+      ],
+      "candidates": [
+        {
+          "id": "local-deterministic-preview",
+          "label": "Local deterministic preview only",
+          "providerType": "scope-decision",
+          "reviewStatus": "review before production; current prototype default",
+          "recommendedForPrototype": true,
+          "metadataOnly": true,
+          "notes": [
+            "Avoids external model upload while preserving UI and prompt-boundary tests.",
+            "Requires final copy review so users do not expect generative advice."
+          ]
+        },
+        {
+          "id": "production-model-provider",
+          "label": "Production model provider",
+          "providerType": "external-or-first-party",
+          "reviewStatus": "needs privacy, prompt, legal, and Pro-gating review",
+          "recommendedForPrototype": false,
+          "metadataOnly": true,
+          "notes": [
+            "Candidate slot for a hosted model.",
+            "Requires strict prompt minimization and high-risk request handling before launch."
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -167,7 +167,11 @@ Required input:
 - production analytics decision
   - agent wiring now exists as a disabled-by-default first-party sanitized
     `/api/product-analytics` path; the remaining decision is provider/hosting
-    approval and whether to enable upload in production
+    approval and whether to enable upload in production. The review-only
+    provider matrix at `/api/provider-decisions` and in the account panel now
+    lists analytics, error monitoring, account email, billing, push,
+    live-update, health, cloud backup/sync, and AI provider candidates for
+    Dawson validation.
 - account/sync decision
   - current code has an email magic-link identity scaffold with dev-token
     verification for local testing, a generic SMTP sender that emails
@@ -196,6 +200,7 @@ Required input:
 
 Use:
 
+- `backend/app/data/provider_decisions.seed.json`
 - `launch-decision-record.md`
 - `frontend/public/legal/`
 - `deployment.md`
@@ -208,6 +213,7 @@ Verification:
 .\verify.ps1
 cd backend
 .\.venv\Scripts\python.exe scripts\launch_preflight.py --fail-on-blockers
+.\.venv\Scripts\python.exe scripts\validate_curation.py --provider-decision-file app\data\provider_decisions.seed.json
 ```
 
 ## 7. Procedure Taxonomy Review

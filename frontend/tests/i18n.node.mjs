@@ -127,6 +127,10 @@ test("translates known keys, falls back to English, and interpolates values", ()
     "8 gate(s) de lanzamiento cargado(s); 8 aun bloquean completar."
   );
   assert.equal(
+    translate("es", "account.provider.status.loaded", { decisions: 10, blocking: 10 }),
+    "10 decision(es) de proveedor cargada(s); 10 aun bloquean completar."
+  );
+  assert.equal(
     translate("es", "account.backup.downloadStatus", {
       snapshots: 1,
       checkIns: 2,

@@ -23,6 +23,10 @@ from app.data.planning import (
     PROTOCOL_TEMPLATES,
 )
 from app.data.procedures import PROCEDURE_LIBRARY
+from app.data.provider_decisions import (
+    PROVIDER_DECISION_LIBRARY,
+    PROVIDER_DECISIONS_SEED_PATH,
+)
 from app.data.reference import REFERENCE_DATA
 from app.data.strategy_corpus import STRATEGY_CORPUS
 from app.main import allowed_cors_origins, app, native_push_delivery_configured, web_push_config_payload
@@ -211,6 +215,44 @@ def test_launch_readiness_endpoint_returns_manual_gates() -> None:
     assert len(blocking) == len(payload["gates"])
     assert all(gate["evidenceRequired"] for gate in payload["gates"])
     assert all(gate["verification"] for gate in payload["gates"])
+    assert "waistCircumference" not in response.text
+    assert "syncToken" not in response.text
+    assert "mason@example.com" not in response.text
+
+
+def test_provider_decisions_endpoint_returns_review_matrix() -> None:
+    response = client.get("/api/provider-decisions")
+
+    assert response.status_code == 200
+    assert PROVIDER_DECISIONS_SEED_PATH.exists()
+    payload = response.json()
+    decision_ids = {decision["id"] for decision in payload["decisions"]}
+    blocking = [decision for decision in payload["decisions"] if decision["blocking"]]
+
+    assert payload["version"] == PROVIDER_DECISION_LIBRARY["version"]
+    assert "Dummy provider decision matrix seed" in payload["source"]
+    assert {
+        "product-analytics",
+        "client-error-monitoring",
+        "account-email",
+        "billing-web",
+        "native-in-app-purchase",
+        "push-notifications",
+        "live-updates",
+        "native-health-sync",
+        "cloud-backup-sync",
+        "ai-data-explainer",
+    }.issubset(decision_ids)
+    assert len(blocking) == len(payload["decisions"])
+    assert all(decision["decisionNeeded"] for decision in payload["decisions"])
+    assert all(decision["privacyRequirements"] for decision in payload["decisions"])
+    assert all(decision["verification"] for decision in payload["decisions"])
+    assert all(decision["candidates"] for decision in payload["decisions"])
+    assert all(
+        candidate["metadataOnly"]
+        for decision in payload["decisions"]
+        for candidate in decision["candidates"]
+    )
     assert "waistCircumference" not in response.text
     assert "syncToken" not in response.text
     assert "mason@example.com" not in response.text

@@ -48,7 +48,9 @@ Protocol Tracker → Diet upgrades → Native app.
       `frontend/src/lib/errorMonitoring.js` installs sanitized browser error
       capture, keeps a local ring buffer, and can opt in to the first-party
       `POST /api/client-errors` sink without raw messages, stacks, or
-      measurement payloads. Human provider/enablement decision remains open.
+      measurement payloads. A review-only provider decision matrix now tracks
+      this as `/api/provider-decisions` and in the account panel. Human
+      provider/enablement decision remains open.
 - [x] Schema single-source: `shared/measurement_schema.json` now defines
       field order, labels, categories, bounds, select options, and defaults;
       the frontend measurement helpers import it directly and the backend
@@ -566,7 +568,8 @@ land. No social features, no marketplace.
       allowlisted event names, sanitized routes, anonymous session IDs, no
       arbitrary properties, no measurement values, disabled-by-default upload,
       SQLite storage, and frontend/backend privacy tests. External provider
-      selection and production enablement remain open.
+      selection and production enablement remain open, with candidate choices
+      tracked in the review-only `/api/provider-decisions` matrix.
 
 ## 14. Accounts, Sync & Multi-Profile
 
@@ -582,7 +585,8 @@ land. No social features, no marketplace.
       `magicLinkToken` URL while keeping the login token out of the JSON
       response, and the frontend opens/scrubs those email-link URLs. Production
       email provider approval, account recovery, and identity-linked production
-      automatic sync remain open.
+      automatic sync remain open, with candidate choices tracked in
+      `/api/provider-decisions`.
 - [x] Encrypted sync prototype: client-side-encrypted blob sync so the server cannot
       read measurements (the data-custody story the trans audience and
       cycle-tracking feature demand). **First backend scaffold:** FastAPI now
