@@ -5,6 +5,7 @@ import { buildProtocolCaseLog } from "./protocolPlanning.js";
 import { buildProcedureCaseLog } from "./procedures.js";
 import { calculateWorkoutPrs } from "./workouts.js";
 import { photoCategoryCounts } from "./photos.js";
+import { createTranslator, normalizeLocale } from "./i18n.js";
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -15,12 +16,12 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
-function formatDate(timestamp) {
+function formatDate(timestamp, locale = "en", t = createTranslator(locale)) {
   if (!timestamp) {
-    return "not set";
+    return t("report.notSet");
   }
 
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(
+  return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
     new Date(timestamp)
   );
 }
@@ -85,14 +86,18 @@ export function buildProgressReportModel({
   };
 }
 
-function measurementRows(measurements = {}) {
+function localizedSex(measurements = {}, t) {
+  return t(`measurement.field.sex.option.${measurements.sex}`, {}, measurements.sex);
+}
+
+function measurementRows(measurements = {}, t) {
   return [
-    ["Height", `${Number(measurements.height).toFixed(1)} cm`],
-    ["Weight", `${Number(measurements.weight).toFixed(1)} kg`],
-    ["Sex", measurements.sex],
-    ["Waist", `${Number(measurements.waistCircumference).toFixed(1)} cm`],
-    ["Bideltoid Circ", `${Number(measurements.bideltoidCircumference).toFixed(1)} cm`],
-    ["Hip", `${Number(measurements.hipCircumference).toFixed(1)} cm`]
+    [t("measurement.field.height.label"), `${Number(measurements.height).toFixed(1)} cm`],
+    [t("measurement.field.weight.label"), `${Number(measurements.weight).toFixed(1)} kg`],
+    [t("measurement.field.sex.label"), localizedSex(measurements, t)],
+    [t("measurement.field.waistCircumference.label"), `${Number(measurements.waistCircumference).toFixed(1)} cm`],
+    [t("measurement.field.bideltoidCircumference.label"), `${Number(measurements.bideltoidCircumference).toFixed(1)} cm`],
+    [t("measurement.field.hipCircumference.label"), `${Number(measurements.hipCircumference).toFixed(1)} cm`]
   ];
 }
 
@@ -107,12 +112,14 @@ function listItems(items, renderItem, emptyText) {
 export function buildProgressReportHtml(input) {
   const model = buildProgressReportModel(input);
   const trendItems = model.trend?.metrics?.slice(0, 6) || [];
+  const locale = normalizeLocale(input?.locale);
+  const t = createTranslator(locale);
 
   return `<!doctype html>
-<html lang="en">
+<html lang="${escapeHtml(locale)}">
   <head>
     <meta charset="utf-8" />
-    <title>bodymod progress report</title>
+    <title>${escapeHtml(t("report.title"))}</title>
     <style>
       :root { color: #17212b; font-family: Georgia, serif; }
       body { margin: 0; background: #f7f5ee; }
@@ -135,16 +142,16 @@ export function buildProgressReportHtml(input) {
   <body>
     <main>
       <header>
-        <h1>bodymod progress report</h1>
-        <p>${escapeHtml(model.account?.displayName || "Local profile")} / generated ${escapeHtml(formatDate(model.generatedAt))}</p>
-        <p class="muted">Printable local report for review conversations. Not medical advice.</p>
-        <button onclick="window.print()">Print / save as PDF</button>
+        <h1>${escapeHtml(t("report.title"))}</h1>
+        <p>${escapeHtml(model.account?.displayName || t("report.localProfile"))} / ${escapeHtml(t("report.generated"))} ${escapeHtml(formatDate(model.generatedAt, locale, t))}</p>
+        <p class="muted">${escapeHtml(t("report.printNote"))}</p>
+        <button onclick="window.print()">${escapeHtml(t("report.printButton"))}</button>
       </header>
 
       <section>
-        <h2>Current measurements</h2>
+        <h2>${escapeHtml(t("report.currentMeasurements"))}</h2>
         <dl>
-          ${measurementRows(model.measurements)
+          ${measurementRows(model.measurements, t)
             .map(
               ([label, value]) => `<div class="stat"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`
             )
@@ -153,102 +160,102 @@ export function buildProgressReportHtml(input) {
       </section>
 
       <section>
-        <h2>Snapshot trend</h2>
-        <p>${model.snapshotCount} snapshot(s) saved.</p>
+        <h2>${escapeHtml(t("report.snapshotTrend"))}</h2>
+        <p>${escapeHtml(t("report.snapshotsSaved", { count: model.snapshotCount }))}</p>
         ${listItems(
           trendItems,
           (metric) => `<li>${escapeHtml(metric.label)}: ${escapeHtml(metric.delta.toFixed(1))} ${escapeHtml(metric.unit)}</li>`,
-          "No multi-snapshot trend yet."
+          t("report.noTrend")
         )}
       </section>
 
       <section class="grid">
         <div>
-          <h2>Goals</h2>
+          <h2>${escapeHtml(t("report.goals"))}</h2>
           ${listItems(
             model.goals,
-            (goal) => `<li><strong>${escapeHtml(goal.label)}</strong>: ${escapeHtml(goal.category)} / ${escapeHtml(goal.checkIns?.length || 0)} check-in(s)</li>`,
-            "No saved goals yet."
+            (goal) => `<li><strong>${escapeHtml(goal.label)}</strong>: ${escapeHtml(goal.category)} / ${escapeHtml(t("report.goalCheckIns", { count: goal.checkIns?.length || 0 }))}</li>`,
+            t("report.noGoals")
           )}
         </div>
         <div>
-          <h2>Check-ins</h2>
+          <h2>${escapeHtml(t("report.checkIns"))}</h2>
           ${listItems(
             model.checkIns.slice(0, 8),
-            (checkIn) => `<li>${escapeHtml(checkIn.type)} / ${escapeHtml(formatDate(checkIn.createdAt))}${checkIn.note ? ` / ${escapeHtml(checkIn.note)}` : ""}</li>`,
-            "No check-ins logged yet."
+            (checkIn) => `<li>${escapeHtml(checkIn.type)} / ${escapeHtml(formatDate(checkIn.createdAt, locale, t))}${checkIn.note ? ` / ${escapeHtml(checkIn.note)}` : ""}</li>`,
+            t("report.noCheckIns")
           )}
         </div>
       </section>
 
       <section>
-        <h2>Protocols and adherence</h2>
+        <h2>${escapeHtml(t("report.protocols"))}</h2>
         ${listItems(
           model.protocols,
-          (protocol) => `<li><strong>${escapeHtml(protocol.label)}</strong>: ${escapeHtml(protocol.status)} / ${escapeHtml(protocol.adherence.checkIns)} adherence check-in(s), ${escapeHtml(protocol.adherence.onTrack)} on track, ${escapeHtml(protocol.adherence.missed)} missed. Dose: ${escapeHtml(protocol.dose)}; frequency: ${escapeHtml(protocol.frequency)}</li>`,
-          "No protocols started yet."
+          (protocol) => `<li><strong>${escapeHtml(protocol.label)}</strong>: ${escapeHtml(protocol.status)} / ${escapeHtml(t("report.adherenceCheckIns", { count: protocol.adherence.checkIns }))}, ${escapeHtml(protocol.adherence.onTrack)} ${escapeHtml(t("report.onTrack"))}, ${escapeHtml(protocol.adherence.missed)} ${escapeHtml(t("report.missed"))}. ${escapeHtml(t("report.dose"))}: ${escapeHtml(protocol.dose)}; ${escapeHtml(t("report.frequency"))}: ${escapeHtml(protocol.frequency)}</li>`,
+          t("report.noProtocols")
         )}
       </section>
 
       <section>
-        <h2>Protocol case logs</h2>
+        <h2>${escapeHtml(t("report.protocolCaseLogs"))}</h2>
         ${listItems(
           model.protocolCaseLogs,
           (caseLog) => `<li><strong>${escapeHtml(caseLog.label)}</strong>: ${escapeHtml(caseLog.outcomeSummary)} / ${escapeHtml(caseLog.projectionSummary)}</li>`,
-          "No protocol case logs yet."
+          t("report.noProtocolCaseLogs")
         )}
       </section>
 
       <section>
-        <h2>Procedure case logs</h2>
+        <h2>${escapeHtml(t("report.procedureCaseLogs"))}</h2>
         ${listItems(
           model.procedureCaseLogs,
           (caseLog) => `<li><strong>${escapeHtml(caseLog.label)}</strong>: ${escapeHtml(caseLog.summary)} / ${escapeHtml(caseLog.reviewStatus)}</li>`,
-          "No procedure case logs yet."
+          t("report.noProcedureCaseLogs")
         )}
       </section>
 
       <section>
-        <h2>Bloodwork</h2>
-        <p>${model.bloodworkResults.length} local-only lab result(s) logged. Excluded from server sync and share dashboards.</p>
+        <h2>${escapeHtml(t("report.bloodwork"))}</h2>
+        <p>${escapeHtml(t("report.bloodworkPrivacy", { count: model.bloodworkResults.length }))}</p>
         ${listItems(
           model.bloodworkTrends,
           (trend) => `<li><strong>${escapeHtml(trend.markerLabel)}</strong>: latest ${escapeHtml(trend.latestValue)} ${escapeHtml(trend.unit)}${trend.delta === null ? "" : ` / delta ${escapeHtml(trend.delta)} ${escapeHtml(trend.unit)}`} / ${escapeHtml(trend.count)} result(s)</li>`,
-          "No bloodwork logged yet."
+          t("report.noBloodworkTrends")
         )}
         ${listItems(
           model.bloodworkResults.slice(0, 6),
-          (result) => `<li>${escapeHtml(formatBloodworkResult(result))} / ${escapeHtml(result.rangeStatus || "no-range")}${result.note ? ` / ${escapeHtml(result.note)}` : ""}</li>`,
-          "No recent lab results."
+          (result) => `<li>${escapeHtml(formatBloodworkResult(result))} / ${escapeHtml(result.rangeStatus || t("report.noRange"))}${result.note ? ` / ${escapeHtml(result.note)}` : ""}</li>`,
+          t("report.noRecentLabs")
         )}
       </section>
 
       <section class="grid">
         <div>
-          <h2>Workout PRs</h2>
+          <h2>${escapeHtml(t("report.workoutPrs"))}</h2>
           ${listItems(
             model.workoutPrs,
-            (record) => `<li><strong>${escapeHtml(record.exerciseLabel)}</strong>: ${escapeHtml(record.maxLoadKg)} kg best / ${escapeHtml(record.maxVolumeKg)} kg volume / ${escapeHtml(record.sessionCount)} session(s)</li>`,
-            "No workout sessions logged yet."
+            (record) => `<li><strong>${escapeHtml(record.exerciseLabel)}</strong>: ${escapeHtml(record.maxLoadKg)} ${escapeHtml(t("report.workoutBest"))} / ${escapeHtml(record.maxVolumeKg)} ${escapeHtml(t("report.workoutVolume"))} / ${escapeHtml(record.sessionCount)} ${escapeHtml(t("report.workoutSessions"))}</li>`,
+            t("report.noWorkoutSessions")
           )}
         </div>
         <div>
-          <h2>Photo manifest</h2>
-          <p>${model.photoCount} local photo(s) stored in this browser.</p>
+          <h2>${escapeHtml(t("report.photoManifest"))}</h2>
+          <p>${escapeHtml(t("report.photoStored", { count: model.photoCount }))}</p>
           ${listItems(
             model.photoCounts,
-            (category) => `<li>${escapeHtml(category.label)}: ${escapeHtml(category.count)} photo(s)</li>`,
-            "No progress photos logged yet."
+            (category) => `<li>${escapeHtml(category.label)}: ${escapeHtml(category.count)} ${escapeHtml(t("report.photoCount"))}</li>`,
+            t("report.noPhotos")
           )}
         </div>
       </section>
 
       <section>
-        <h2>Face measurements</h2>
+        <h2>${escapeHtml(t("report.faceMeasurements"))}</h2>
         ${listItems(
           model.faceMeasurements,
           (scan) => `<li><strong>${escapeHtml(formatFaceMetricSummary(scan))}</strong>${scan.note ? ` / ${escapeHtml(scan.note)}` : ""}</li>`,
-          "No face measurements logged yet."
+          t("report.noFaceMeasurements")
         )}
       </section>
     </main>

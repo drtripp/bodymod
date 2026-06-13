@@ -202,7 +202,8 @@ Implemented now:
 - backend and Node entitlement tests proving current data tools stay non-paywalled
 - persisted locale preference with a lightweight i18n message catalog for the
   top-level shell/header/navigation strings plus first-run onboarding and
-  measurement-form chrome
+  measurement-form chrome, measurement-guide chrome, and printable progress
+  report headings/empty states
 - Capacitor native-shell bootstrap with package scripts, app metadata, Vite `dist/` sync target, and backend `capacitor://localhost` CORS origin
 - Capacitor Preferences-backed storage adapter that hydrates before first render,
   keeps synchronous UI storage reads working from a cache, and migrates existing
@@ -232,8 +233,9 @@ Not implemented yet:
 - source-reviewed procedure taxonomy and clinical/body-mod validation; current procedure data is a dummy review scaffold
 - source-reviewed bloodwork marker taxonomy, units, and reference ranges; current bloodwork data is a dummy local-only review scaffold
 - full app-wide translation coverage; current i18n work covers the shell,
-  onboarding, and measurement-form chrome, while deeper account, diet,
-  strategy, and report copy remains English-first
+  onboarding, measurement-form/guide chrome, and progress report
+  headings/empty states, while deeper account, diet, strategy, and long-form
+  report copy remains English-first
 - generated Android/iOS native project folders, store signing, APNs/FCM production credentials/device validation, real HealthKit/Health Connect plugin reads/writes, native home-screen widget extensions, iCloud/Google Drive backup policy wiring, native store icon generation, and native release workflows
 - full public measurement-guide coverage with reviewed illustrations and final copy
 - production error monitoring and product analytics provider/enablement

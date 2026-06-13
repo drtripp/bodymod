@@ -601,6 +601,7 @@ export default function App() {
         <AccountGoalPanel
           currentMeasurements={currentMeasurements}
           entitlements={entitlements}
+          locale={locale}
           onApplyMeasurements={applyMeasurementSet}
           targetProfiles={rankedMatches}
           onOpenStrategies={() => {

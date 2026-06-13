@@ -129,4 +129,24 @@ test("builds a printable progress report model and HTML", () => {
   assert.match(html, /Photo manifest/);
   assert.match(html, /Face measurements/);
   assert.match(html, /Midface ratio: 0.80/);
+
+  const spanishHtml = buildProgressReportHtml({
+    ...input,
+    locale: "es",
+    goals: [],
+    checkIns: [],
+    protocols: [],
+    bloodworkResults: [],
+    workoutSessions: [],
+    photos: [],
+    faceMeasurements: []
+  });
+
+  assert.match(spanishHtml, /<html lang="es">/);
+  assert.match(spanishHtml, /informe de progreso bodymod/);
+  assert.match(spanishHtml, /Medidas actuales/);
+  assert.match(spanishHtml, /Masculino/);
+  assert.match(spanishHtml, /Aun no hay objetivos guardados/);
+  assert.match(spanishHtml, /Manifiesto de fotos/);
+  assert.match(spanishHtml, /Aun no hay medidas faciales/);
 });

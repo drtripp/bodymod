@@ -2219,6 +2219,29 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.locator('input[name="height"]')).toHaveValue("181");
 });
 
+test("downloads a localized progress report from the account UI", async ({ page }) => {
+  await page.getByLabel("Language").selectOption("es");
+  await page.getByRole("button", { name: "Perfil de usuario" }).click();
+  const accountDialog = page.getByRole("dialog", { name: "Account, logs, and goals" });
+
+  await page.getByLabel("Display name").fill("Lucia");
+  await page.getByLabel("Account email").fill("lucia@example.com");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(accountDialog).toContainText("Signed in as Lucia.");
+
+  const reportPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download progress report" }).click();
+  const reportDownload = await reportPromise;
+  const reportHtml = await readFile(await reportDownload.path(), "utf8");
+
+  expect(reportHtml).toContain('<html lang="es">');
+  expect(reportHtml).toContain("informe de progreso bodymod");
+  expect(reportHtml).toContain("Medidas actuales");
+  expect(reportHtml).toContain("Objetivos");
+  expect(reportHtml).toContain("Aun no hay medidas faciales.");
+  expect(reportHtml).not.toContain("Current measurements");
+});
+
 test("exports and restores encrypted local backups through the account UI", async ({ page }) => {
   await page.getByRole("button", { name: "User profile" }).click();
   let accountDialog = page.getByRole("dialog", { name: "Account, logs, and goals" });

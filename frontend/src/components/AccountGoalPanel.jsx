@@ -435,6 +435,7 @@ function buildTrendWeightChart(series) {
 export default function AccountGoalPanel({
   currentMeasurements,
   entitlements = fallbackEntitlementConfig,
+  locale = "en",
   onApplyMeasurements,
   snapshotProps,
   targetProfiles = [],
@@ -2808,6 +2809,7 @@ export default function AccountGoalPanel({
   function handleDownloadProgressReport() {
     downloadProgressReport({
       account,
+      locale,
       measurements: currentMeasurements,
       snapshots: snapshotProps.snapshots,
       goals,
