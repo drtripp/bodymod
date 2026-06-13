@@ -2349,6 +2349,21 @@ test("downloads a localized progress report from the account UI", async ({ page 
     "Dashboard compartido de solo lectura publicado."
   );
   await expect(shareSection).toContainText("Enlace activo:");
+  const widgetSection = accountDialog.getByLabel("Widget de pantalla de inicio");
+  await page.getByRole("button", { name: "Actualizar snapshot de widget" }).click();
+  await expect(widgetSection).toContainText("Snapshot de widget guardado:");
+  const healthSection = accountDialog.getByLabel("Vista previa de sync de salud");
+  await expect(healthSection).toContainText("Sync de datos de salud");
+  await page.getByRole("button", { name: "Preparar vista previa de sync de salud" }).click();
+  await expect(healthSection).toContainText("Preparados");
+  await expect(accountDialog.getByLabel("Lote de sync de salud preparado")).toContainText(
+    "Muestras de peso:"
+  );
+  const liveSection = accountDialog.getByLabel("Estado de actualizaciones live");
+  await expect(liveSection).toContainText("Sin revisar");
+  await page.getByRole("button", { name: "Revisar manifiesto de actualizaciones" }).click();
+  await expect(liveSection).toContainText("Actualizacion disponible");
+  await expect(liveSection).toContainText("ultima 0.1.1");
   await expect(page.getByLabel("Informe de progreso")).toContainText(
     "Resumen local imprimible"
   );

@@ -92,6 +92,21 @@ test("translates known keys, falls back to English, and interpolates values", ()
     "Enlace activo: https://bodymod.test/?share=abc"
   );
   assert.equal(
+    translate("es", "account.widget.status.saved", {
+      streak: "2 week streak",
+      next: "Next check-in Jun 20"
+    }),
+    "Snapshot de widget guardado: 2 week streak; Next check-in Jun 20."
+  );
+  assert.equal(
+    translate("es", "account.health.status.prepared", { count: 7 }),
+    "Preparados 7 item(s) de escritura HealthKit/Health Connect. Los plugins nativos aun no estan configurados, asi que no se escribieron datos."
+  );
+  assert.equal(
+    translate("es", "account.live.versionLatest", { current: "0.1.0", latest: "0.1.1" }),
+    "Ejecutando 0.1.0 / ultima 0.1.1"
+  );
+  assert.equal(
     translate("es", "account.export.jsonStatus", {
       snapshots: 1,
       checkIns: 2,

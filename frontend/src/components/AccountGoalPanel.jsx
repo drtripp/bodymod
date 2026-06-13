@@ -493,6 +493,80 @@ function formatShareDashboardLinkState(shareDashboardState, t) {
   return t("account.share.noActiveLink");
 }
 
+function formatHomeWidgetSavedStatus(snapshot, t) {
+  return t("account.widget.status.saved", {
+    streak: snapshot.streakLabel,
+    next: snapshot.nextCheckInLabel
+  });
+}
+
+function formatHealthPreparedCount(healthSyncState, t) {
+  return t("account.health.preparedCount", {
+    count: healthSyncState.recordCount
+  });
+}
+
+function formatHealthPreparedAt(healthSyncState, t) {
+  if (healthSyncState.lastPreparedAt) {
+    return t("account.health.lastPrepared", {
+      date: formatDate(healthSyncState.lastPreparedAt)
+    });
+  }
+
+  return t("account.health.notPrepared");
+}
+
+function formatHealthPreviewLines(healthSyncPreview, t) {
+  const counts = healthSyncPreview?.counts || {};
+  return [
+    t("account.health.preview.weightSamples", { count: counts.bodyMass || 0 }),
+    t("account.health.preview.measurementSamples", { count: counts.measurements || 0 }),
+    t("account.health.preview.workoutSamples", { count: counts.workouts || 0 }),
+    t("account.health.preview.nutritionDaySamples", { count: counts.nutritionDays || 0 }),
+    t("account.health.preview.fluidDaySamples", { count: counts.fluidDays || 0 })
+  ];
+}
+
+function formatLiveUpdateStatusLabel(liveUpdateState, t) {
+  return t(
+    `account.live.status.${liveUpdateState.status}`,
+    {},
+    liveUpdateState.statusLabel || "Not checked"
+  );
+}
+
+function formatLiveUpdateVersionLine(liveUpdateState, t) {
+  if (liveUpdateState.latestVersion) {
+    return t("account.live.versionLatest", {
+      current: liveUpdateState.currentVersion,
+      latest: liveUpdateState.latestVersion
+    });
+  }
+
+  return t("account.live.versionNotChecked", {
+    current: liveUpdateState.currentVersion
+  });
+}
+
+function formatLiveUpdateDetail(liveUpdateState, t) {
+  if (liveUpdateState.status === "current") {
+    return t("account.live.detail.current", {
+      channel: liveUpdateState.channelLabel,
+      current: liveUpdateState.currentVersion
+    });
+  }
+
+  if (liveUpdateState.status === "unavailable") {
+    return t("account.live.detail.unavailable");
+  }
+
+  return t("account.live.detail.latest", {
+    channel: liveUpdateState.channelLabel,
+    latest: liveUpdateState.latestVersion,
+    current: liveUpdateState.currentVersion
+  });
+}
+
 function formatMagicLinkRequestStatus(request, t) {
   if (request.deliveryStatus === "dev-token-returned") {
     return t("account.identity.status.devToken", {
@@ -2863,9 +2937,7 @@ export default function AccountGoalPanel({
       cadenceDueState
     });
     setHomeWidgetSnapshot(snapshot);
-    setHomeWidgetStatus(
-      `Widget snapshot saved: ${snapshot.streakLabel}; ${snapshot.nextCheckInLabel}.`
-    );
+    setHomeWidgetStatus(formatHomeWidgetSavedStatus(snapshot, t));
   }
 
   function handlePrepareHealthSyncPreview() {
@@ -2883,13 +2955,15 @@ export default function AccountGoalPanel({
     setHealthSyncPreview(preview);
     setHealthSyncState(nextState);
     setHealthSyncStatus(
-      `Prepared ${preview.counts.total} HealthKit/Health Connect write item(s). Native plugins are not configured yet, so no data was written.`
+      t("account.health.status.prepared", {
+        count: preview.counts.total
+      })
     );
   }
 
   async function handleCheckLiveUpdates() {
     try {
-      setLiveUpdateStatus("Checking live-update manifest...");
+      setLiveUpdateStatus(t("account.live.status.checking"));
       const manifest = await fetchLiveUpdateManifest({
         channel: liveUpdateState.channel || "production",
         currentVersion: APP_VERSION,
@@ -2900,8 +2974,9 @@ export default function AccountGoalPanel({
         requestedChannel: liveUpdateState.channel || "production",
         currentVersion: APP_VERSION
       });
-      setLiveUpdateState(persistLiveUpdateCheck(status));
-      setLiveUpdateStatus(status.detail);
+      const persistedStatus = persistLiveUpdateCheck(status);
+      setLiveUpdateState(persistedStatus);
+      setLiveUpdateStatus(formatLiveUpdateDetail(persistedStatus, t));
     } catch (error) {
       const status = persistLiveUpdateCheck({
         ...liveUpdateState,
@@ -2911,7 +2986,7 @@ export default function AccountGoalPanel({
         detail: error.message || "Live-update manifest check failed."
       });
       setLiveUpdateState(status);
-      setLiveUpdateStatus(status.detail);
+      setLiveUpdateStatus(error.message || formatLiveUpdateDetail(status, t));
     }
   }
 
@@ -3445,9 +3520,9 @@ export default function AccountGoalPanel({
               ) : null}
             </section>
 
-            <section className="home-widget-section" aria-label="Home-screen widget">
+            <section className="home-widget-section" aria-label={t("account.widget.aria")}>
               <div>
-                <h3>Home-screen widget</h3>
+                <h3>{t("account.widget.title")}</h3>
                 <div className="home-widget-preview">
                   <strong>{visibleHomeWidgetSnapshot.streakLabel}</strong>
                   <span>{visibleHomeWidgetSnapshot.nextCheckInLabel}</span>
@@ -3456,11 +3531,13 @@ export default function AccountGoalPanel({
               </div>
               <div className="home-widget-actions">
                 <button className="button" type="button" onClick={handleRefreshHomeWidgetSnapshot}>
-                  Refresh widget snapshot
+                  {t("account.widget.refresh")}
                 </button>
                 {visibleHomeWidgetSnapshot.updatedAt ? (
                   <small>
-                    Updated {formatWidgetDate(visibleHomeWidgetSnapshot.updatedAt)}
+                    {t("account.widget.updated", {
+                      date: formatWidgetDate(visibleHomeWidgetSnapshot.updatedAt)
+                    })}
                   </small>
                 ) : null}
               </div>
@@ -3471,39 +3548,32 @@ export default function AccountGoalPanel({
               ) : null}
             </section>
 
-            <section className="health-sync-section" aria-label="Health data sync preview">
+            <section className="health-sync-section" aria-label={t("account.health.aria")}>
               <div>
-                <h3>Health data sync</h3>
+                <h3>{t("account.health.title")}</h3>
                 <p>
-                  Prepare a native write batch for HealthKit or Health Connect
-                  from local weights, measurements, workouts, nutrition days,
-                  and fluid logs.
+                  {t("account.health.body")}
                 </p>
                 <small>
-                  Current build is preview-only: plugin choice, permissions,
-                  and store review remain native-project work.
+                  {t("account.health.note")}
                 </small>
               </div>
               <div className="health-sync-status-block">
-                <strong>{healthSyncState.recordCount} prepared item(s)</strong>
-                <span>
-                  {healthSyncState.lastPreparedAt
-                    ? `Last prepared ${formatDate(healthSyncState.lastPreparedAt)}`
-                    : "No native health batch prepared yet."}
-                </span>
+                <strong>{formatHealthPreparedCount(healthSyncState, t)}</strong>
+                <span>{formatHealthPreparedAt(healthSyncState, t)}</span>
                 <small>{healthSyncState.privacy}</small>
               </div>
               <div className="health-sync-actions">
                 <button className="button" type="button" onClick={handlePrepareHealthSyncPreview}>
-                  Prepare health sync preview
+                  {t("account.health.prepare")}
                 </button>
-                <small>Metadata is stored locally; raw health values are not persisted in preview state.</small>
+                <small>{t("account.health.metadata")}</small>
               </div>
               {healthSyncPreview ? (
-                <div className="health-sync-preview" aria-label="Prepared health sync batch">
-                  <h4>Prepared batch</h4>
+                <div className="health-sync-preview" aria-label={t("account.health.previewAria")}>
+                  <h4>{t("account.health.previewTitle")}</h4>
                   <ul>
-                    {healthSyncPreview.lines.map((line) => (
+                    {formatHealthPreviewLines(healthSyncPreview, t).map((line) => (
                       <li key={line}>{line}</li>
                     ))}
                   </ul>
@@ -3517,31 +3587,25 @@ export default function AccountGoalPanel({
               ) : null}
             </section>
 
-            <section className="live-update-section" aria-label="Live update status">
+            <section className="live-update-section" aria-label={t("account.live.aria")}>
               <div>
-                <h3>Live updates</h3>
+                <h3>{t("account.live.title")}</h3>
                 <p>
-                  Compare this web/native shell version with the backend
-                  channel manifest before binary-release review.
+                  {t("account.live.body")}
                 </p>
                 <small>
-                  Provider wiring, bundle signing, rollout, and rollback policy remain review-gated.
+                  {t("account.live.note")}
                 </small>
               </div>
               <div className="live-update-status-block">
-                <strong>{liveUpdateState.statusLabel}</strong>
-                <span>{liveUpdateState.channelLabel} channel</span>
-                <small>
-                  Running {liveUpdateState.currentVersion}
-                  {liveUpdateState.latestVersion
-                    ? ` / latest ${liveUpdateState.latestVersion}`
-                    : " / latest not checked"}
-                </small>
+                <strong>{formatLiveUpdateStatusLabel(liveUpdateState, t)}</strong>
+                <span>{t("account.live.channel", { channel: liveUpdateState.channelLabel })}</span>
+                <small>{formatLiveUpdateVersionLine(liveUpdateState, t)}</small>
                 <small>{liveUpdateState.reviewStatus}</small>
               </div>
               <div className="live-update-actions">
                 <button className="button" type="button" onClick={handleCheckLiveUpdates}>
-                  Check update manifest
+                  {t("account.live.check")}
                 </button>
                 <small>{liveUpdateState.privacy}</small>
               </div>
