@@ -129,6 +129,9 @@ Required input:
     no production email provider, account recovery, or provider-backed
     background cross-device sync
 - photo/vision upload decision
+- side-profile model/license decision if automatic sagittal face inference is
+  in launch scope; current code only ships browser-local frontal landmarks and
+  manual side-profile logs
 - legal owner/contact details
 - approval of privacy policy, terms, and medical disclaimer drafts
 - corpus moderation and exclusion policy
@@ -139,6 +142,7 @@ Use:
 - `frontend/public/legal/`
 - `deployment.md`
 - `README.md`
+- `face-measurement-research.md`
 
 Verification:
 

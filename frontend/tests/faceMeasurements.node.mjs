@@ -3,8 +3,10 @@ import { stat } from "node:fs/promises";
 import test from "node:test";
 import {
   buildFaceMeasurementRecord,
+  buildSideProfileMeasurementRecord,
   deriveFaceMetricsFromLandmarks,
   formatFaceMetricSummary,
+  sideProfileManualMetricDefinitions,
   sideProfileResearchNotes
 } from "../src/lib/faceMeasurements.js";
 
@@ -67,6 +69,59 @@ test("builds local-only face measurement records without image data", () => {
   assert.equal(record.dataUrl, undefined);
   assert.equal(record.metrics.some((metric) => metric.id === "philtrumLipRatio"), true);
   assert.match(formatFaceMetricSummary(record), /Midface ratio: 0\.80/);
+});
+
+test("builds manual side-profile logs without storing image data", () => {
+  const record = buildSideProfileMeasurementRecord({
+    side: "right",
+    measuredAt: "2026-06-10T12:00:00.000Z",
+    note: "Neutral posture from right profile.",
+    values: {
+      nasolabialAngleDeg: "96",
+      mentocervicalAngleDeg: "108.5",
+      facialConvexityDeg: "168",
+      chinProjectionMm: "4.2",
+      dataUrl: "should-not-persist"
+    }
+  });
+
+  assert.equal(sideProfileManualMetricDefinitions.length, 4);
+  assert.equal(record.source, "side-profile-manual");
+  assert.equal(record.orientation, "side-profile");
+  assert.equal(record.side, "right");
+  assert.equal(record.landmarkCount, 0);
+  assert.equal(record.dataUrl, undefined);
+  assert.equal(record.metrics[0].displayValue, "96.0 deg");
+  assert.match(formatFaceMetricSummary(record), /Side profile \(right\): Nasolabial angle: 96\.0 deg/);
+  assert.ok(record.limitations.some((note) => note.includes("collection-only")));
+});
+
+test("validates manual side-profile logs", () => {
+  const noteOnly = buildSideProfileMeasurementRecord({
+    side: "left",
+    note: "Reference photo saved separately."
+  });
+
+  assert.equal(formatFaceMetricSummary(noteOnly), "Side profile (left): note only");
+  assert.throws(
+    () =>
+      buildSideProfileMeasurementRecord({
+        values: {
+          nasolabialAngleDeg: "12"
+        }
+      }),
+    /below the review range/
+  );
+  assert.throws(
+    () =>
+      buildSideProfileMeasurementRecord({
+        values: {
+          mentocervicalAngleDeg: "wide"
+        }
+      }),
+    /must be numeric/
+  );
+  assert.throws(() => buildSideProfileMeasurementRecord(), /at least one/);
 });
 
 test("ships self-hosted MediaPipe face model assets", async () => {

@@ -1798,6 +1798,14 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Account email")).not.toBeVisible();
   await expect(page.getByLabel("Face measurement logger")).toContainText("No saved face measurements yet.");
   await expect(page.getByLabel("Side profile research notes")).toContainText("Nose projection");
+  await page.getByLabel("Nasolabial angle").fill("96");
+  await page.getByLabel("Mentocervical angle").fill("108.5");
+  await page.getByLabel("Side profile note").fill("Right side, neutral posture.");
+  await page.getByRole("button", { name: "Save side-profile log" }).click();
+  await expect(page.getByLabel("Face measurement logger")).toContainText("Side profile log saved locally.");
+  await expect(page.getByLabel("Saved face measurements")).toContainText(
+    "Side profile (right): Nasolabial angle: 96.0 deg"
+  );
   await expect(page.getByLabel("Email magic-link identity")).toContainText("Local measurements");
   await page.getByRole("button", { name: "Request magic link" }).click();
   await expect(page.getByLabel("Email magic-link identity")).toContainText("Dev magic-link token returned");
@@ -1904,6 +1912,9 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   expect(signedInExport.accountData.checkIns.some((checkIn) => checkIn.type === "limb-symmetry")).toBe(true);
   expect(signedInExport.accountData.checkIns.some((checkIn) => checkIn.type === "cycle-phase")).toBe(false);
   expect(signedInExport.accountData.photoManifest).toHaveLength(0);
+  expect(signedInExport.accountData.faceMeasurements).toHaveLength(1);
+  expect(signedInExport.accountData.faceMeasurements[0].orientation).toBe("side-profile");
+  expect(JSON.stringify(signedInExport.accountData.faceMeasurements[0])).not.toMatch(/data:image|Right side photo/);
   await expect(page.getByLabel("Local JSON export")).toContainText("JSON export downloaded");
   await page.getByRole("button", { name: "Finish guided weekly check-in" }).click();
   await expect(page.getByLabel("Check-in history")).toContainText("Guided weekly measurements: waist 86.0 cm");
@@ -2163,6 +2174,7 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   expect(reportHtml).toContain("Dumbbell lateral raise");
   expect(reportHtml).toContain("Photo manifest");
   expect(reportHtml).toContain("Face measurements");
+  expect(reportHtml).toContain("Side profile (right): Nasolabial angle: 96.0 deg");
 
   await page.getByRole("button", { name: "Log out" }).click();
   await expect(accountDialog).toContainText("Logged out of this browser profile.");

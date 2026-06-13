@@ -174,7 +174,10 @@ Protocol Tracker → Diet upgrades → Native app.
       frontend now self-hosts the MediaPipe WASM/model assets, supports upload
       and live-camera face scans in the account panel, stores dated local metric
       records without image data, includes those records in progress reports,
-      and documents the side-profile spike in `face-measurement-research.md`.
+      and provides a manual side-profile log for nasolabial angle,
+      mentocervical angle, facial convexity, chin projection, or note-only
+      entries while documenting the side-profile model spike in
+      `face-measurement-research.md`.
 
 ## 4. Check-In Loop & Engagement
 

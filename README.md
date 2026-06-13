@@ -139,7 +139,7 @@ Implemented now:
 - local goals can target preset deltas, custom deltas, target profiles, or saved past-self snapshots, with distance-to-target progress copy
 - readable local JSON export for snapshots and diet data without an account, plus account-scoped logs when signed in
 - opt-in server-side read-only share dashboards with opaque public links and browser-held revoke tokens
-- local browser face measurement logger using self-hosted MediaPipe assets for camera/photo landmark scans
+- local browser face measurement logger using self-hosted MediaPipe assets for camera/photo landmark scans, plus manual side-profile measurement logs while profile-specific ML remains under review
 - local progress photo streams for body, face, and hair with ghost overlay and comparison slider
 - Capacitor Filesystem-backed native progress-photo asset storage, keeping photo bytes out of Preferences/account metadata while preserving local-only web photo behavior
 - current-vs-selected-snapshot silhouette comparison
@@ -227,7 +227,7 @@ Not implemented yet:
   identity-linked production background sync/merge beyond the encrypted
   sync-vault, automatic sync preview, personal data API, and magic-link
   identity scaffolds
-- hosted photo/body inference work; current face scans are browser-local only
+- hosted photo/body inference work; current face scans and manual side-profile logs are browser-local only
 - production FoodData Central import/API ownership; Diet currently has dummy backend USDA-style seed rows plus Open Food Facts lookup
 - source-reviewed procedure taxonomy and clinical/body-mod validation; current procedure data is a dummy review scaffold
 - source-reviewed bloodwork marker taxonomy, units, and reference ranges; current bloodwork data is a dummy local-only review scaffold

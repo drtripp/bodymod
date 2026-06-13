@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import {
   buildFaceMeasurementRecord,
+  buildSideProfileMeasurementRecord,
   formatFaceMetricSummary,
   loadFaceLandmarker,
+  sideProfileManualMetricDefinitions,
   sideProfileResearchNotes,
   summarizeFaceLandmarkerResult
 } from "../lib/faceMeasurements";
@@ -41,6 +43,9 @@ export default function FaceMeasurementPanel({ faceMeasurements, onSaveFaceMeasu
   const [latestScan, setLatestScan] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [scanNote, setScanNote] = useState("");
+  const [sideProfileSide, setSideProfileSide] = useState("right");
+  const [sideProfileValues, setSideProfileValues] = useState({});
+  const [sideProfileNote, setSideProfileNote] = useState("");
   const [isCameraRunning, setIsCameraRunning] = useState(false);
 
   useEffect(() => {
@@ -164,6 +169,29 @@ export default function FaceMeasurementPanel({ faceMeasurements, onSaveFaceMeasu
     }
   }
 
+  function handleSideProfileValueChange(metricId, value) {
+    setSideProfileValues((current) => ({
+      ...current,
+      [metricId]: value
+    }));
+  }
+
+  function handleSaveSideProfileLog() {
+    try {
+      const record = buildSideProfileMeasurementRecord({
+        side: sideProfileSide,
+        values: sideProfileValues,
+        note: sideProfileNote
+      });
+      onSaveFaceMeasurement(record);
+      setSideProfileValues({});
+      setSideProfileNote("");
+      setStatus("Side profile log saved locally.");
+    } catch (error) {
+      setStatus(error.message);
+    }
+  }
+
   return (
     <section className="face-measurement-section" aria-label="Face measurement logger">
       <div className="panel-header">
@@ -250,6 +278,56 @@ export default function FaceMeasurementPanel({ faceMeasurements, onSaveFaceMeasu
             <li key={note}>{note}</li>
           ))}
         </ul>
+      </div>
+
+      <div className="side-profile-manual-log" aria-label="Manual side profile log">
+        <div>
+          <h4>Manual side-profile log</h4>
+          <p>
+            Save side-profile reference measurements from manual annotation or
+            another local tool. No side-profile photo is stored here.
+          </p>
+        </div>
+        <label className="field">
+          <span className="field-label">Profile side</span>
+          <select
+            aria-label="Side profile side"
+            value={sideProfileSide}
+            onChange={(event) => setSideProfileSide(event.target.value)}
+          >
+            <option value="right">Right</option>
+            <option value="left">Left</option>
+            <option value="unspecified">Unspecified</option>
+          </select>
+        </label>
+        <div className="side-profile-field-grid">
+          {sideProfileManualMetricDefinitions.map((metric) => (
+            <label className="field" key={metric.id}>
+              <span className="field-label">{metric.label}</span>
+              <input
+                aria-label={metric.label}
+                inputMode="decimal"
+                value={sideProfileValues[metric.id] || ""}
+                onChange={(event) =>
+                  handleSideProfileValueChange(metric.id, event.target.value)
+                }
+                placeholder={metric.unit}
+              />
+            </label>
+          ))}
+        </div>
+        <label className="field">
+          <span className="field-label">Side profile note</span>
+          <textarea
+            aria-label="Side profile note"
+            value={sideProfileNote}
+            onChange={(event) => setSideProfileNote(event.target.value)}
+            placeholder="Neutral posture, right side, same lens distance."
+          />
+        </label>
+        <button className="button" type="button" onClick={handleSaveSideProfileLog}>
+          Save side-profile log
+        </button>
       </div>
 
       <div aria-label="Saved face measurements">

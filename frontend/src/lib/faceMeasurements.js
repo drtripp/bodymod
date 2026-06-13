@@ -101,9 +101,53 @@ const metricDefinitions = [
   }
 ];
 
+export const sideProfileManualMetricDefinitions = [
+  {
+    id: "nasolabialAngleDeg",
+    label: "Nasolabial angle",
+    precision: 1,
+    unit: "deg",
+    confidence: "manual",
+    min: 60,
+    max: 140,
+    note: "Manual or externally annotated side-profile estimate; not inferred by the frontal face model."
+  },
+  {
+    id: "mentocervicalAngleDeg",
+    label: "Mentocervical angle",
+    precision: 1,
+    unit: "deg",
+    confidence: "manual",
+    min: 70,
+    max: 150,
+    note: "Manual neck/chin angle estimate from a side-profile reference."
+  },
+  {
+    id: "facialConvexityDeg",
+    label: "Facial convexity",
+    precision: 1,
+    unit: "deg",
+    confidence: "manual",
+    min: 120,
+    max: 190,
+    note: "Manual glabella-subnasale-pogonion style profile angle estimate."
+  },
+  {
+    id: "chinProjectionMm",
+    label: "Chin projection",
+    precision: 1,
+    unit: "mm",
+    confidence: "manual",
+    min: -30,
+    max: 40,
+    note: "Manual or calibrated annotation relative to a chosen profile reference line."
+  }
+];
+
 export const sideProfileResearchNotes = [
   "Nose projection, chin projection, nasolabial angle, and sagittal jaw projection need a true side-profile model or calibrated 3D reconstruction.",
   "Frontal Face Landmarker points can log repeatable relative ratios, but they are not enough for reliable depth or profile measurements.",
+  "Manual side-profile logs are collection-only until a licensed browser-local profile model is selected.",
   "Candidate follow-up: browser-local 3D face reconstruction with explicit commercial-license review before shipping."
 ];
 
@@ -236,6 +280,37 @@ function metric(id, value) {
   };
 }
 
+function manualSideProfileMetric(definition, value) {
+  const normalizedValue = String(value ?? "").trim();
+  if (!normalizedValue) {
+    return null;
+  }
+
+  const numericValue = Number(normalizedValue);
+  if (!Number.isFinite(numericValue)) {
+    throw new Error(`${definition.label} must be numeric.`);
+  }
+
+  if (Number.isFinite(definition.min) && numericValue < definition.min) {
+    throw new Error(`${definition.label} is below the review range.`);
+  }
+
+  if (Number.isFinite(definition.max) && numericValue > definition.max) {
+    throw new Error(`${definition.label} is above the review range.`);
+  }
+
+  const rounded = Number(numericValue.toFixed(definition.precision));
+  return {
+    id: definition.id,
+    label: definition.label,
+    value: rounded,
+    unit: definition.unit || "",
+    displayValue: `${rounded.toFixed(definition.precision)}${definition.unit ? ` ${definition.unit}` : ""}`,
+    confidence: definition.confidence,
+    note: definition.note
+  };
+}
+
 export function deriveFaceMetricsFromLandmarks(landmarks) {
   if (!Array.isArray(landmarks) || landmarks.length < 468) {
     throw new Error("A full Face Landmarker mesh is required.");
@@ -356,7 +431,50 @@ export function buildFaceMeasurementRecord(scan, note = "") {
   };
 }
 
+export function buildSideProfileMeasurementRecord({
+  side = "right",
+  measuredAt = new Date().toISOString(),
+  note = "",
+  values = {}
+} = {}) {
+  const profileSide = ["left", "right", "unspecified"].includes(side)
+    ? side
+    : "unspecified";
+  const metrics = sideProfileManualMetricDefinitions
+    .map((definition) => manualSideProfileMetric(definition, values[definition.id]))
+    .filter(Boolean);
+  const normalizedNote = String(note || "").trim();
+
+  if (!metrics.length && !normalizedNote) {
+    throw new Error("Enter at least one side-profile measurement or note.");
+  }
+
+  return {
+    source: "side-profile-manual",
+    orientation: "side-profile",
+    side: profileSide,
+    measuredAt,
+    landmarkCount: 0,
+    metrics,
+    geometry: {},
+    limitations: sideProfileResearchNotes,
+    note: normalizedNote
+  };
+}
+
 export function formatFaceMetricSummary(scan) {
+  if (scan?.orientation === "side-profile" || scan?.source === "side-profile-manual") {
+    const sideLabel = scan.side && scan.side !== "unspecified" ? ` (${scan.side})` : "";
+    if (!scan?.metrics?.length) {
+      return `Side profile${sideLabel}: note only`;
+    }
+
+    return `Side profile${sideLabel}: ${scan.metrics
+      .slice(0, 3)
+      .map((item) => `${item.label}: ${item.displayValue}`)
+      .join(" / ")}`;
+  }
+
   if (!scan?.metrics?.length) {
     return "No saved face metrics.";
   }

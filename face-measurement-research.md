@@ -44,7 +44,14 @@ identity inference:
 Every metric is labeled with low or medium confidence because camera lens,
 pose, expression, crop, and lighting change the derived ratios.
 
-## Side-profile spike
+## Side-profile collection fallback
+
+The account panel now supports a manual side-profile log for nasolabial angle,
+mentocervical angle, facial convexity, chin projection, and note-only entries.
+Those records share the same local face-measurement storage/export/backup/report
+path as frontal scans and do not store side-profile photos.
+
+## Side-profile model spike
 
 Frontal Face Landmarker points are not sufficient for reliable sagittal
 measurements. The app should not claim nose projection, chin projection,
@@ -56,12 +63,12 @@ Candidate follow-up paths:
   use and can run in-browser.
 - A browser-local 3D face reconstruction model with explicit license review,
   size/performance testing, and a calibration story.
-- A manual side-profile annotation flow as a fallback if local ML quality or
-  licensing is not acceptable.
+- Upgrade the current manual side-profile annotation/logging flow if local ML
+  quality or licensing is not acceptable.
 
-Production gate: do not ship side-profile numerical outputs until the selected
-model has permissive commercial terms, repeatability testing, and user-facing
-uncertainty copy.
+Production gate: do not ship automatic side-profile numerical outputs until the
+selected model has permissive commercial terms, repeatability testing, and
+user-facing uncertainty copy.
 
 ## Sources
 

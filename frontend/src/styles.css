@@ -1366,13 +1366,15 @@ textarea {
 
 .face-metric-card,
 .side-profile-note,
+.side-profile-manual-log,
 .face-measurement-list li {
   border: 1px solid var(--color-border);
   background: var(--color-panel-deep);
   padding: 10px;
 }
 
-.face-metric-card {
+.face-metric-card,
+.side-profile-manual-log {
   display: grid;
   gap: 4px;
 }
@@ -1384,6 +1386,7 @@ textarea {
 
 .face-metric-card small,
 .face-metric-card p,
+.side-profile-manual-log p,
 .side-profile-note li,
 .face-measurement-list span,
 .face-measurement-list p {
@@ -1391,9 +1394,21 @@ textarea {
 }
 
 .side-profile-note h4,
+.side-profile-manual-log h4,
 .face-measurement-section h4 {
   margin: 0 0 6px;
   font-size: 0.95rem;
+}
+
+.side-profile-field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.side-profile-manual-log textarea {
+  min-height: 64px;
+  resize: vertical;
 }
 
 .side-profile-note ul,
