@@ -771,6 +771,55 @@ function formatPersonalDataApiMeta(meta, t) {
   return t("account.api.meta.scope", { scopes });
 }
 
+function formatProWaitlistStatus(signup, count, t) {
+  return signup.duplicate
+    ? t("account.entitlements.status.waitlistDuplicate", { count })
+    : t("account.entitlements.status.waitlistSaved", { count });
+}
+
+function formatProWaitlistError(error, t) {
+  const message = error?.message || "";
+  if (message === "Enter a valid email for the Pro waitlist.") {
+    return t("account.entitlements.status.waitlistInvalidEmail");
+  }
+  return message || t("account.entitlements.status.waitlistFailed");
+}
+
+function formatReferralInviteText(accountReferralCode, t) {
+  return t("account.entitlements.referral.inviteText", {
+    code: accountReferralCode
+  });
+}
+
+function formatReferralSummary(referralSummary, t) {
+  return t("account.entitlements.referral.summary", {
+    count: referralSummary.count,
+    months: referralSummary.earnedMonths
+  });
+}
+
+function formatReferralCreditStatus(credit, t) {
+  return credit.duplicate
+    ? t("account.entitlements.status.referralDuplicate")
+    : t("account.entitlements.status.referralLogged", {
+      reward: credit.rewardLabel
+    });
+}
+
+function formatReferralError(error, t) {
+  const message = error?.message || "";
+  const errorKeyByMessage = new Map([
+    ["Referral credits are not enabled.", "account.entitlements.status.referralDisabled"],
+    ["Create a local account before logging a referral.", "account.entitlements.status.referralNoAccount"],
+    ["Enter a referral code.", "account.entitlements.status.referralMissingCode"],
+    ["Use someone else's referral code, not your own.", "account.entitlements.status.referralOwnCode"]
+  ]);
+
+  return errorKeyByMessage.has(message)
+    ? t(errorKeyByMessage.get(message))
+    : message || t("account.entitlements.status.referralFailed");
+}
+
 function formatMagicLinkRequestStatus(request, t) {
   if (request.deliveryStatus === "dev-token-returned") {
     return t("account.identity.status.devToken", {
@@ -949,7 +998,7 @@ export default function AccountGoalPanel({
   const [proWaitlistEmail, setProWaitlistEmail] = useState("");
   const [proWaitlistStatus, setProWaitlistStatus] = useState("");
   const [dataExplainerQuestion, setDataExplainerQuestion] = useState(
-    "What changed and what should I review next?"
+    () => t("account.explainer.defaultQuestion")
   );
   const [dataExplainerResponse, setDataExplainerResponse] = useState(null);
   const [referralCredits, setReferralCredits] = useState(() =>
@@ -3215,13 +3264,9 @@ export default function AccountGoalPanel({
         source: "account-panel"
       });
       const count = loadProWaitlistSignups().length;
-      setProWaitlistStatus(
-        signup.duplicate
-          ? `Already on the local Pro waitlist. ${count} saved signup(s) on this browser.`
-          : `Saved to the local Pro waitlist. ${count} saved signup(s) on this browser.`
-      );
+      setProWaitlistStatus(formatProWaitlistStatus(signup, count, t));
     } catch (error) {
-      setProWaitlistStatus(error.message);
+      setProWaitlistStatus(formatProWaitlistError(error, t));
     }
   }
 
@@ -3252,10 +3297,10 @@ export default function AccountGoalPanel({
       return;
     }
 
-    const text = `Try Body Cafe with my referral code ${accountReferralCode}. Future Pro credits are optional; tracking and exports stay free.`;
+    const text = formatReferralInviteText(accountReferralCode, t);
     try {
       await navigator.clipboard.writeText(text);
-      setReferralStatus("Referral invite copied.");
+      setReferralStatus(t("account.entitlements.status.inviteCopied"));
     } catch (error) {
       setReferralStatus(text);
     }
@@ -3276,13 +3321,9 @@ export default function AccountGoalPanel({
       );
       setReferralCredits(loadReferralCredits(account?.id));
       setReferralCodeInput("");
-      setReferralStatus(
-        credit.duplicate
-          ? "Referral credit already logged locally."
-          : `Referral credit logged locally: ${credit.rewardLabel}.`
-      );
+      setReferralStatus(formatReferralCreditStatus(credit, t));
     } catch (error) {
-      setReferralStatus(error.message);
+      setReferralStatus(formatReferralError(error, t));
     }
   }
 
@@ -3522,17 +3563,17 @@ export default function AccountGoalPanel({
               </section>
             ) : null}
 
-            <section className="entitlement-section" aria-label="Plan and access">
+            <section className="entitlement-section" aria-label={t("account.entitlements.aria")}>
               <div className="entitlement-current">
                 <div>
-                  <h3>{currentTier.label} plan</h3>
+                  <h3>{t("account.entitlements.planLabel", { tier: currentTier.label })}</h3>
                   <p>{currentTier.summary}</p>
                 </div>
                 <strong>{entitlementConfig.waitlist.storage}</strong>
               </div>
               <div className="entitlement-grid">
-                <div className="entitlement-free" aria-label="Free included features">
-                  <h4>Included now</h4>
+                <div className="entitlement-free" aria-label={t("account.entitlements.freeAria")}>
+                  <h4>{t("account.entitlements.includedTitle")}</h4>
                   <ul>
                     {freeEntitlementFeatures.map((feature) => (
                       <li key={feature.id}>
@@ -3544,12 +3585,12 @@ export default function AccountGoalPanel({
                 </div>
                 <form
                   className="pro-waitlist-card"
-                  aria-label="Pro waitlist signup"
+                  aria-label={t("account.entitlements.waitlistAria")}
                   onSubmit={handleProWaitlistSubmit}
                 >
-                  <h4>Pro preview</h4>
+                  <h4>{t("account.entitlements.proPreviewTitle")}</h4>
                   <p>{entitlementConfig.waitlist.message}</p>
-                  <div className="pro-preview-list" aria-label="Locked Pro previews">
+                  <div className="pro-preview-list" aria-label={t("account.entitlements.lockedPreviewAria")}>
                     {proPreviewFeatures.map((feature) => (
                       <article key={feature.id} className="pro-preview-card">
                         <strong>{feature.label}</strong>
@@ -3559,9 +3600,9 @@ export default function AccountGoalPanel({
                     ))}
                   </div>
                   <label className="field">
-                    <span className="field-label">Waitlist email</span>
+                    <span className="field-label">{t("account.entitlements.waitlistEmail")}</span>
                     <input
-                      aria-label="Pro waitlist email"
+                      aria-label={t("account.entitlements.waitlistEmailAria")}
                       type="email"
                       value={proWaitlistEmail}
                       onChange={(event) => setProWaitlistEmail(event.target.value)}
@@ -3569,7 +3610,7 @@ export default function AccountGoalPanel({
                     />
                   </label>
                   <button className="button" type="submit">
-                    Join Pro waitlist
+                    {t("account.entitlements.joinWaitlist")}
                   </button>
                   {proWaitlistStatus ? (
                     <small className="pro-waitlist-status" role="status" aria-live="polite">
@@ -3580,38 +3621,38 @@ export default function AccountGoalPanel({
               </div>
               <form
                 className="referral-card"
-                aria-label="Referral credits"
+                aria-label={t("account.entitlements.referral.aria")}
                 onSubmit={handleReferralSubmit}
               >
                 <div>
-                  <h4>Honest referral</h4>
+                  <h4>{t("account.entitlements.referral.title")}</h4>
                   <p>{entitlementConfig.referral.message}</p>
                   <small>{entitlementConfig.referral.disclaimer}</small>
                 </div>
                 <div className="referral-code-row">
-                  <span>Your code</span>
+                  <span>{t("account.entitlements.referral.yourCode")}</span>
                   <strong>{accountReferralCode}</strong>
                   <button className="button" type="button" onClick={handleCopyReferralInvite}>
-                    Copy invite
+                    {t("account.entitlements.referral.copyInvite")}
                   </button>
                 </div>
                 <label className="field">
-                  <span className="field-label">Friend referral code</span>
+                  <span className="field-label">{t("account.entitlements.referral.friendCode")}</span>
                   <input
-                    aria-label="Friend referral code"
+                    aria-label={t("account.entitlements.referral.friendCodeAria")}
                     value={referralCodeInput}
                     onChange={(event) => setReferralCodeInput(event.target.value)}
                     placeholder="BM-FRIEND1"
                   />
                 </label>
                 <button className="button" type="submit">
-                  Log referral credit
+                  {t("account.entitlements.referral.logCredit")}
                 </button>
                 <span>
-                  {referralSummary.count} local credit(s), {referralSummary.earnedMonths} future Pro month(s).
+                  {formatReferralSummary(referralSummary, t)}
                 </span>
                 {referralCredits.length ? (
-                  <ul className="referral-credit-list" aria-label="Logged referral entries">
+                  <ul className="referral-credit-list" aria-label={t("account.entitlements.referral.loggedAria")}>
                     {referralCredits.slice(0, 3).map((credit) => (
                       <li key={credit.id}>
                         <strong>{credit.referralCode}</strong>
@@ -3628,22 +3669,20 @@ export default function AccountGoalPanel({
               </form>
             </section>
 
-            <section className="data-explainer-section" aria-label="Explain my data preview">
+            <section className="data-explainer-section" aria-label={t("account.explainer.aria")}>
               <div>
-                <h3>Explain my data</h3>
+                <h3>{t("account.explainer.title")}</h3>
                 <p>
-                  Local deterministic Pro preview for asking about this
-                  account's saved measurements, goals, protocols, labs,
-                  workouts, and face metric logs.
+                  {t("account.explainer.body")}
                 </p>
                 <small>
-                  Prompt-boundary: no dosing, prescribing, diagnosis, or medical instructions.
+                  {t("account.explainer.boundaryNote")}
                 </small>
               </div>
               <label className="field data-explainer-question">
-                <span className="field-label">Question</span>
+                <span className="field-label">{t("account.explainer.question")}</span>
                 <textarea
-                  aria-label="Data explainer question"
+                  aria-label={t("account.explainer.questionAria")}
                   value={dataExplainerQuestion}
                   onChange={(event) => setDataExplainerQuestion(event.target.value)}
                   rows="4"
@@ -3651,24 +3690,24 @@ export default function AccountGoalPanel({
               </label>
               <div className="data-explainer-actions">
                 <button className="button" type="button" onClick={handleGenerateDataExplainer}>
-                  Generate data explainer
+                  {t("account.explainer.generate")}
                 </button>
                 <small>
-                  Corpus citations are context only until production prompts and policy are reviewed.
+                  {t("account.explainer.citationNote")}
                 </small>
               </div>
               {dataExplainerResponse ? (
-                <div className="data-explainer-response" aria-label="Data explainer response">
+                <div className="data-explainer-response" aria-label={t("account.explainer.responseAria")}>
                   <div>
                     <strong>
                       {dataExplainerResponse.status === "boundary"
-                        ? "Boundary applied"
-                        : "Local explainer summary"}
+                        ? t("account.explainer.response.boundaryApplied")
+                        : t("account.explainer.response.localSummary")}
                     </strong>
                     <p>{dataExplainerResponse.answerSummary}</p>
                   </div>
                   <div>
-                    <h4>Local data snapshot</h4>
+                    <h4>{t("account.explainer.response.snapshot")}</h4>
                     <ul>
                       {dataExplainerResponse.dataSnapshot.map((line) => (
                         <li key={line}>{line}</li>
@@ -3676,7 +3715,7 @@ export default function AccountGoalPanel({
                     </ul>
                   </div>
                   <div>
-                    <h4>Observations</h4>
+                    <h4>{t("account.explainer.response.observations")}</h4>
                     <ul>
                       {dataExplainerResponse.observations.map((observation) => (
                         <li key={observation}>{observation}</li>
@@ -3684,26 +3723,30 @@ export default function AccountGoalPanel({
                     </ul>
                   </div>
                   <div className="data-explainer-citations">
-                    <h4>Corpus citations</h4>
+                    <h4>{t("account.explainer.response.citations")}</h4>
                     {dataExplainerResponse.citations.length ? (
                       <ul>
                         {dataExplainerResponse.citations.map((citation) => (
                           <li key={`${citation.outcome}-${citation.label}`}>
                             <strong>{citation.label}</strong>
                             <span>
-                              {citation.outcome} / {citation.evidence} evidence / risk {citation.risk}
-                              {citation.contextOnly ? " / context only" : ""}
+                              {citation.outcome} / {citation.evidence}{" "}
+                              {t("account.explainer.response.evidence")} /{" "}
+                              {t("account.explainer.response.risk", { risk: citation.risk })}
+                              {citation.contextOnly
+                                ? ` / ${t("account.explainer.response.contextOnly")}`
+                                : ""}
                             </span>
                             <p>{citation.summary}</p>
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p>No matched corpus citations yet. Ask about a saved goal or protocol.</p>
+                      <p>{t("account.explainer.response.noCitations")}</p>
                     )}
                   </div>
                   <div>
-                    <h4>Next questions</h4>
+                    <h4>{t("account.explainer.response.nextQuestions")}</h4>
                     <ul>
                       {dataExplainerResponse.nextQuestions.map((question) => (
                         <li key={question}>{question}</li>

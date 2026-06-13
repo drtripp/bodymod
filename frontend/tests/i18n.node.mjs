@@ -148,6 +148,27 @@ test("translates known keys, falls back to English, and interpolates values", ()
     "API de datos personales leyo vault de sync cifrado revision 8. No se devolvieron medidas en texto plano."
   );
   assert.equal(
+    translate("es", "account.entitlements.status.waitlistSaved", { count: 2 }),
+    "Guardado en la waitlist Pro local. 2 registro(s) guardado(s) en este navegador."
+  );
+  assert.equal(
+    translate("es", "account.entitlements.referral.summary", {
+      count: 1,
+      months: 1
+    }),
+    "1 credito(s) local(es), 1 mes(es) Pro futuro(s)."
+  );
+  assert.equal(
+    translate("es", "account.entitlements.referral.inviteText", {
+      code: "BM-TEST123"
+    }),
+    "Prueba Body Cafe con mi codigo de referido BM-TEST123. Los creditos Pro futuros son opcionales; el tracking y las exportaciones siguen gratis."
+  );
+  assert.equal(
+    translate("es", "account.explainer.response.risk", { risk: 42 }),
+    "riesgo 42"
+  );
+  assert.equal(
     translate("es", "account.export.jsonStatus", {
       snapshots: 1,
       checkIns: 2,

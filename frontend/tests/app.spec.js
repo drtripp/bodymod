@@ -2337,6 +2337,23 @@ test("downloads a localized progress report from the account UI", async ({ page 
   await page.getByLabel("Email de cuenta").fill("lucia@example.com");
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await expect(accountDialog).toContainText("Signed in as Lucia.");
+  const entitlementSection = accountDialog.getByLabel("Plan y acceso");
+  await expect(entitlementSection).toContainText("Incluido ahora");
+  await expect(entitlementSection).toContainText("Vista previa Pro");
+  await page.getByLabel("Email para waitlist Pro").fill("lucia-pro@example.com");
+  await entitlementSection.getByRole("button", { name: "Unirse a waitlist Pro" }).click();
+  await expect(entitlementSection).toContainText("Guardado en la waitlist Pro local.");
+  const referralSection = accountDialog.getByLabel("Creditos de referido");
+  await expect(referralSection).toContainText("Referido honesto");
+  await page.getByLabel("Codigo de referido de amigo").fill("BM-FRIEND1");
+  await referralSection.getByRole("button", { name: "Registrar credito de referido" }).click();
+  await expect(referralSection).toContainText("Credito de referido registrado localmente");
+  const explainerSection = accountDialog.getByLabel("Vista previa de explicar mis datos");
+  await expect(explainerSection).toContainText("Explicar mis datos");
+  await page.getByRole("button", { name: "Generar explicador de datos" }).click();
+  await expect(accountDialog.getByLabel("Respuesta del explicador de datos")).toContainText(
+    "Resumen local del explicador"
+  );
   await page.getByRole("button", { name: "Solicitar magic link" }).click();
   await expect(identityCard).toContainText("Token dev de magic link devuelto para l***@example.com");
   await page.getByRole("button", { name: "Verificar" }).click();
