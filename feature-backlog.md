@@ -742,9 +742,11 @@ land. No social features, no marketplace.
       `POST /api/case-log-submissions` payloads into a SQLite moderation queue,
       the account panel can submit generated protocol case logs without account
       IDs, notes, photos, or raw measurement fields, and backend/Node/
-      Playwright tests cover the privacy envelope. **[human]** moderation
-      policy, reviewer tooling, and publication decisions remain before any
-      public corpus inclusion.
+      Playwright tests cover the privacy envelope. **Reviewer scaffold:** a
+      token-guarded internal `/api/case-log-submissions/review` path can list
+      queue items and mark them approved, rejected, or removed with sanitized
+      moderation notes. **[human]** moderation policy and publication decisions
+      remain before any public corpus inclusion.
 
 ## 18. Compliance, Trust & Launch
 

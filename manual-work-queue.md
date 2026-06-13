@@ -190,7 +190,9 @@ Required input:
   - agent wiring now exists as a review-only `POST /api/case-log-submissions`
     queue backed by SQLite; account-panel submissions send summarized protocol
     case logs without account IDs, private notes, photos, or raw measurement
-    fields, and nothing is published into the strategy corpus automatically
+    fields, token-guarded reviewer endpoints can list/approve/reject/remove
+    submissions, and nothing is published into the strategy corpus
+    automatically
 
 Use:
 

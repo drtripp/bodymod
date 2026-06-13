@@ -456,6 +456,89 @@ def test_case_log_submission_endpoint_rejects_private_or_unconsented_payloads() 
     assert CaseLogSubmissionRepository().list_submission_dicts() == []
 
 
+def test_case_log_review_endpoint_requires_configured_review_token(monkeypatch) -> None:
+    created = client.post("/api/case-log-submissions", json=case_log_submission_payload())
+    submission_id = created.json()["submissionId"]
+
+    disabled = client.get("/api/case-log-submissions/review")
+
+    monkeypatch.setenv("BODYMOD_CASE_LOG_REVIEW_TOKEN", "review-secret")
+    missing = client.get("/api/case-log-submissions/review")
+    wrong = client.patch(
+        f"/api/case-log-submissions/review/{submission_id}",
+        headers={"X-Bodymod-Review-Token": "wrong-secret"},
+        json={
+            "status": "approved",
+            "moderationNote": "Approved for draft corpus review.",
+        },
+    )
+
+    assert disabled.status_code == 503
+    assert missing.status_code == 403
+    assert wrong.status_code == 403
+
+
+def test_case_log_review_endpoint_lists_and_updates_submissions(monkeypatch) -> None:
+    monkeypatch.setenv("BODYMOD_CASE_LOG_REVIEW_TOKEN", "review-secret")
+    headers = {"X-Bodymod-Review-Token": "review-secret"}
+    created = client.post("/api/case-log-submissions", json=case_log_submission_payload())
+    submission_id = created.json()["submissionId"]
+
+    listed = client.get("/api/case-log-submissions/review", headers=headers)
+    approved = client.patch(
+        f"/api/case-log-submissions/review/{submission_id}",
+        headers=headers,
+        json={
+            "status": "approved",
+            "moderationNote": "Approved for draft corpus review.",
+        },
+    )
+    private_note = client.patch(
+        f"/api/case-log-submissions/review/{submission_id}",
+        headers=headers,
+        json={
+            "status": "rejected",
+            "moderationNote": "Contact mason@example.com for details.",
+        },
+    )
+    removed = client.patch(
+        f"/api/case-log-submissions/review/{submission_id}",
+        headers=headers,
+        json={
+            "status": "removed",
+            "moderationNote": "Removed from active moderation queue.",
+        },
+    )
+    hidden_after_remove = client.get("/api/case-log-submissions/review", headers=headers)
+    visible_with_removed = client.get(
+        "/api/case-log-submissions/review?includeRemoved=true",
+        headers=headers,
+    )
+    missing = client.patch(
+        "/api/case-log-submissions/review/cls_missing",
+        headers=headers,
+        json={
+            "status": "rejected",
+            "moderationNote": "Not enough detail for review.",
+        },
+    )
+
+    assert listed.status_code == 200
+    assert listed.json()["submissions"][0]["submissionId"] == submission_id
+    assert listed.json()["submissions"][0]["status"] == "queued"
+    assert "mason@example.com" not in listed.text
+    assert "waistCircumference" not in listed.text
+    assert approved.status_code == 200
+    assert approved.json()["status"] == "approved"
+    assert approved.json()["moderationNote"] == "Approved for draft corpus review."
+    assert private_note.status_code == 422
+    assert removed.status_code == 200
+    assert removed.json()["status"] == "removed"
+    assert hidden_after_remove.json()["submissions"] == []
+    assert visible_with_removed.json()["submissions"][0]["status"] == "removed"
+    assert missing.status_code == 404
+
+
 def test_attractiveness_evidence_endpoint_returns_review_seed() -> None:
     response = client.get("/api/attractiveness-evidence")
 

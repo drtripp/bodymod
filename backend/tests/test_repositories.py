@@ -109,6 +109,63 @@ def test_case_log_submission_repository_stores_moderation_queue_records(tmp_path
     assert "waistCircumference" not in row["payload_json"]
 
 
+def test_case_log_submission_repository_reviews_and_hides_removed_records(tmp_path) -> None:
+    db_path = tmp_path / "bodymod.sqlite3"
+    repository = CaseLogSubmissionRepository(db_path=db_path)
+    request = CaseLogSubmissionRequest.model_validate(
+        {
+            "caseLog": {
+                "protocolId": "protocol-review-2",
+                "label": "Weekly check-in cadence",
+                "strategyName": "Weekly measurement cadence",
+                "category": "tracking",
+                "status": "archived",
+                "dose": "One structured check-in weekly",
+                "frequency": "8 weeks",
+                "window": "2026-02-01 - 2026-03-28",
+                "adherenceCount": 8,
+                "averageScore": 4.8,
+                "snapshotCount": 8,
+                "outcomeSummary": "Waist trend became easier to interpret",
+                "projectionSummary": "No forecast attached to tracking-only protocol",
+                "sourceType": "user-submitted local protocol",
+                "reviewStatus": "queued-for-moderation",
+                "limitations": [
+                    "Self-logged n=1 report, not evidence of a general effect.",
+                    "Reviewer approval is required before corpus inclusion.",
+                ],
+            },
+            "consent": True,
+            "submitterContext": "local-browser-account",
+            "createdAt": "2026-06-13T12:00:00Z",
+        }
+    )
+
+    created = repository.create_submission(request)
+    approved = repository.review_submission(
+        created["submissionId"],
+        "approved",
+        "Approved for draft corpus review.",
+    )
+    removed = repository.review_submission(
+        created["submissionId"],
+        "removed",
+        "Removed from active moderation queue.",
+    )
+
+    assert approved is not None
+    assert approved["status"] == "approved"
+    assert approved["moderationNote"] == "Approved for draft corpus review."
+    assert removed is not None
+    assert removed["status"] == "removed"
+    assert repository.get_submission_dict(created["submissionId"]) is None
+    assert repository.get_submission_dict(created["submissionId"], include_removed=True)[
+        "status"
+    ] == "removed"
+    assert repository.list_submission_dicts() == []
+    assert repository.list_submission_dicts(include_removed=True)[0]["status"] == "removed"
+
+
 def test_share_snapshot_repository_stores_opaque_expiring_measurement_records(tmp_path) -> None:
     db_path = tmp_path / "bodymod.sqlite3"
     repository = ShareSnapshotRepository(db_path=db_path)

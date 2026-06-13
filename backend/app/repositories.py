@@ -1425,6 +1425,43 @@ class CaseLogSubmissionRepository:
 
         return [self._record(row) for row in rows]
 
+    def get_submission_dict(
+        self,
+        submission_id: str,
+        include_removed: bool = False,
+    ) -> dict[str, Any] | None:
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            row = self._select_submission(connection, submission_id, include_removed)
+
+        return self._record(row) if row else None
+
+    def review_submission(
+        self,
+        submission_id: str,
+        status: str,
+        moderation_note: str,
+    ) -> dict[str, Any] | None:
+        timestamp = utc_timestamp()
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            with connection:
+                cursor = connection.execute(
+                    """
+                    UPDATE case_log_submissions
+                    SET status = ?, moderation_note = ?, updated_at = ?
+                    WHERE submission_id = ?
+                    """,
+                    (status, moderation_note, timestamp, submission_id),
+                )
+                if cursor.rowcount == 0:
+                    return None
+
+            row = self._select_submission(connection, submission_id, include_removed=True)
+
+        return self._record(row) if row else None
+
     def _connect(self) -> sqlite3.Connection:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         connection = sqlite3.connect(self.db_path)
@@ -1444,6 +1481,22 @@ class CaseLogSubmissionRepository:
             )
             """
         )
+
+    def _select_submission(
+        self,
+        connection: sqlite3.Connection,
+        submission_id: str,
+        include_removed: bool = False,
+    ) -> sqlite3.Row | None:
+        removed_clause = "" if include_removed else "AND status != 'removed'"
+        return connection.execute(
+            f"""
+            SELECT submission_id, status, payload_json, moderation_note, created_at, updated_at
+            FROM case_log_submissions
+            WHERE submission_id = ? {removed_clause}
+            """,
+            (submission_id,),
+        ).fetchone()
 
     def _record(self, row: sqlite3.Row) -> dict[str, Any]:
         payload = json.loads(row["payload_json"])

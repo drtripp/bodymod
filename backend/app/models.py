@@ -515,6 +515,22 @@ class CaseLogSubmissionResponse(BaseModel):
     createdAt: str
 
 
+class CaseLogModerationListResponse(BaseModel):
+    submissions: list[CaseLogSubmissionRecord]
+
+
+class CaseLogModerationReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["approved", "rejected", "removed"]
+    moderationNote: str = Field(min_length=1, max_length=500)
+
+    @field_validator("moderationNote")
+    @classmethod
+    def reject_private_note_text(cls, value: str) -> str:
+        return reject_private_case_log_text(value)
+
+
 class StrategySeed(BaseModel):
     name: str
     outcome: str

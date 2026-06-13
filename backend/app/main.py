@@ -1,4 +1,5 @@
 import os
+import secrets
 
 from fastapi import Depends, FastAPI, Header, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,7 +28,10 @@ from app.models import AccountSessionResponse
 from app.models import AccountSessionRevokeResponse
 from app.models import BloodworkLibrary
 from app.models import CaseLogSubmissionRequest
+from app.models import CaseLogSubmissionRecord
 from app.models import CaseLogSubmissionResponse
+from app.models import CaseLogModerationListResponse
+from app.models import CaseLogModerationReviewRequest
 from app.models import ClothingSizeTables
 from app.models import ClientErrorReportRequest
 from app.models import ClientErrorReportResponse
@@ -137,6 +141,22 @@ def bearer_access_token(authorization: str) -> str:
     if not access_token:
         raise HTTPException(status_code=401, detail="Missing bearer token.")
     return access_token
+
+
+def require_case_log_review_token(
+    x_bodymod_review_token: str = Header(default=""),
+) -> None:
+    configured_token = os.getenv("BODYMOD_CASE_LOG_REVIEW_TOKEN", "").strip()
+    if not configured_token:
+        raise HTTPException(
+            status_code=503,
+            detail="Case-log review API is disabled until BODYMOD_CASE_LOG_REVIEW_TOKEN is configured.",
+        )
+    if not x_bodymod_review_token or not secrets.compare_digest(
+        x_bodymod_review_token,
+        configured_token,
+    ):
+        raise HTTPException(status_code=403, detail="Invalid case-log review token.")
 
 
 app.add_middleware(
@@ -292,6 +312,40 @@ def report_product_analytics(request: ProductAnalyticsReportRequest) -> dict:
 )
 def submit_case_log_for_moderation(request: CaseLogSubmissionRequest) -> dict:
     return CaseLogSubmissionRepository().create_submission(request)
+
+
+@app.get(
+    "/api/case-log-submissions/review",
+    response_model=CaseLogModerationListResponse,
+)
+def list_case_log_submissions_for_review(
+    includeRemoved: bool = False,
+    _review_token: None = Depends(require_case_log_review_token),
+) -> dict:
+    return {
+        "submissions": CaseLogSubmissionRepository().list_submission_dicts(
+            include_removed=includeRemoved
+        )
+    }
+
+
+@app.patch(
+    "/api/case-log-submissions/review/{submission_id}",
+    response_model=CaseLogSubmissionRecord,
+)
+def review_case_log_submission(
+    submission_id: str,
+    request: CaseLogModerationReviewRequest,
+    _review_token: None = Depends(require_case_log_review_token),
+) -> dict:
+    submission = CaseLogSubmissionRepository().review_submission(
+        submission_id,
+        request.status,
+        request.moderationNote,
+    )
+    if not submission:
+        raise HTTPException(status_code=404, detail="Case-log submission not found.")
+    return submission
 
 
 @app.post(

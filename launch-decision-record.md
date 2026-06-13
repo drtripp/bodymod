@@ -141,6 +141,9 @@ Current behavior:
 - generated local protocol case logs can be submitted to a review-only backend
   queue, but queued submissions are not public and are not merged into the
   corpus automatically
+- internal reviewers can list, approve, reject, or remove queued submissions
+  only when `BODYMOD_CASE_LOG_REVIEW_TOKEN` is configured and sent with
+  `X-Bodymod-Review-Token`
 - clinical, surgical, pharmaceutical, and medical-adjacent entries are excluded from personalization by default
 
 Before public launch, decide:
@@ -149,8 +152,8 @@ Before public launch, decide:
 - whether high-risk/high-efficacy entries need extra display friction
 - who can approve clinical or surgical entries
 - whether user-submitted entries are allowed
-- what reviewer tooling, consent language, and publication policy apply to
-  queued case-log submissions
+- what consent language and publication policy apply to queued case-log
+  submissions
 
 ### Legal Pages
 

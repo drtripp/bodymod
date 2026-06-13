@@ -158,6 +158,7 @@
         "Disabled-by-default first-party analytics upload",
         "Encrypted sync vault and magic-link account scaffolds",
         "Review-only case-log submission queue at /api/case-log-submissions",
+        "Token-guarded case-log reviewer endpoints at /api/case-log-submissions/review",
         "Expiring opaque measurement share snapshots at /api/share-snapshots"
       ],
       "verification": [

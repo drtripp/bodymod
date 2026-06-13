@@ -49,6 +49,9 @@ local SQLite database. Set `BODYMOD_DB_PATH` to override the default runtime DB
 path (`backend/.local/bodymod.sqlite3`).
 `/api/match` is protected by a configurable in-process rate limit; production
 deployments should still enforce shared edge limits when using multiple workers.
+Set `BODYMOD_CASE_LOG_REVIEW_TOKEN` to enable the internal case-log moderation
+review endpoints under `/api/case-log-submissions/review`; callers must send
+the matching `X-Bodymod-Review-Token` header.
 
 ### Frontend
 
@@ -141,8 +144,9 @@ Implemented now:
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
 - review-only user case-log submission queue: generated protocol case logs can
   be submitted to `/api/case-log-submissions` for future moderation without
-  account IDs, private notes, photos, or raw measurement fields; nothing is
-  published into the corpus until policy/reviewer decisions exist
+  account IDs, private notes, photos, or raw measurement fields; token-guarded
+  reviewer endpoints can list, approve, reject, or remove queue items, and
+  nothing is published into the corpus until policy/publication decisions exist
 - procedure tracker with backend dummy procedure taxonomy, local surgery/filler/piercing/tattoo/body-mod logs, healing windows, photo stream hints, generated reliability events, and case-log output
 - local-only bloodwork log with backend dummy marker/range seed, manual lab-result entry, trend sparklines, protocol links, readable export/backup/report inclusion, and share-dashboard exclusion
 - reliability events pause affected weight and tape trend inference during healing or disruption windows, and pause saved goals whose target metrics are affected
