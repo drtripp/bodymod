@@ -61,15 +61,15 @@ Protocol Tracker → Diet upgrades → Native app.
       English/Spanish coverage for the top-level shell/header/tabs, first-run
       onboarding, measurement categories/field labels/help, unit controls, and
       measurement-guide chrome, account shell/export/report controls, plus
-      printable progress-report headings and empty states. Node tests keep
-      locale persistence, fallback interpolation, English/Spanish catalog
-      parity, localized progress-report output, account export/report status
-      strings, Diet dashboard chrome/status strings, and Strategy explorer
-      chrome/safety copy covered; Playwright verifies the Spanish
-      onboarding/form surface, Diet surface, Strategy surface, and localized
-      account/report workflow. Full app-wide copy extraction, deeper account
-      feature panes, and long-form report body translation remain future
-      passes.
+      printable progress-report headings, empty states, and generated body
+      rows. Node tests keep locale persistence, fallback interpolation,
+      English/Spanish catalog parity, localized progress-report output and
+      dynamic report rows, account export/report status strings, Diet dashboard
+      chrome/status strings, and Strategy explorer chrome/safety copy covered;
+      Playwright verifies the Spanish onboarding/form surface, Diet surface,
+      Strategy surface, and localized account/report workflow. Full app-wide
+      copy extraction, deeper account feature panes, and source, seed, or
+      user-authored content localization remain future passes.
 
 ## 2. Reference Data & Scoring
 

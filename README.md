@@ -210,8 +210,8 @@ Implemented now:
   top-level shell/header/navigation strings plus first-run onboarding and
   measurement-form chrome, measurement-guide chrome, Diet dashboard
   chrome/status strings, Strategy explorer chrome/safety copy, account
-  shell/export/report controls, and printable progress report headings/empty
-  states
+  shell/export/report controls, and printable progress report headings, empty
+  states, and generated body rows
 - Capacitor native-shell bootstrap with package scripts, app metadata, Vite `dist/` sync target, and backend `capacitor://localhost` CORS origin
 - Capacitor Preferences-backed storage adapter that hydrates before first render,
   keeps synchronous UI storage reads working from a cache, and migrates existing
@@ -245,8 +245,8 @@ Not implemented yet:
 - full app-wide translation coverage; current i18n work covers the shell,
   onboarding, measurement-form/guide chrome, Diet dashboard chrome/status
   strings, Strategy explorer chrome/safety copy, account shell/export/report
-  controls, and progress report headings/empty states, while deeper account
-  feature panes and long-form report body copy remain English-first
+  controls, and generated progress report copy, while deeper account feature
+  panes plus source, seed, and user-authored content remain English-first
 - generated Android/iOS native project folders, store signing, APNs/FCM production credentials/device validation, real HealthKit/Health Connect plugin reads/writes, native home-screen widget extensions, iCloud/Google Drive backup policy wiring, native store icon generation, signed live-update provider/rollback policy, and native release workflows
 - full public measurement-guide coverage with reviewed illustrations and final copy
 - production error monitoring and product analytics provider/enablement

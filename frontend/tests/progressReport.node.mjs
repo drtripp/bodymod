@@ -130,6 +130,25 @@ test("builds a printable progress report model and HTML", () => {
   assert.match(html, /Face measurements/);
   assert.match(html, /Midface ratio: 0.80/);
 
+  const spanishFullHtml = buildProgressReportHtml({
+    ...input,
+    locale: "es"
+  });
+
+  assert.match(spanishFullHtml, /Cuerpo \/ 1 check-in/);
+  assert.match(spanishFullHtml, /peso diario/);
+  assert.match(spanishFullHtml, /activo/);
+  assert.match(spanishFullHtml, /1 en curso, 1 omitidos/);
+  assert.match(spanishFullHtml, /Peso: -1.0 kg/);
+  assert.match(spanishFullHtml, /durante \d+ dias/);
+  assert.match(spanishFullHtml, /pausado\(s\) por 28 dia\(s\)/);
+  assert.match(spanishFullHtml, /ultimo 92 mg\/dL/);
+  assert.match(spanishFullHtml, /cambio -8 mg\/dL/);
+  assert.match(spanishFullHtml, /en rango/);
+  assert.match(spanishFullHtml, /Cuerpo: 1 foto\(s\)/);
+  assert.match(spanishFullHtml, /Cara: 1 foto\(s\)/);
+  assert.match(spanishFullHtml, /Ratio de tercio medio: 0.80/);
+
   const spanishHtml = buildProgressReportHtml({
     ...input,
     locale: "es",
