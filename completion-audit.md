@@ -33,6 +33,7 @@ User request:
 | Backend target, match, entitlement, food, procedure, corpus, sharing, and hardening support | `backend/app/main.py`, `backend/app/rate_limit.py`, `backend/app/services.py`, `backend/app/repositories.py`, `backend/app/data/targets.seed.json`, `backend/app/data/match_priorities.py`, `backend/app/data/entitlements.py`, `backend/app/data/food_usda.py`, `backend/app/data/procedures.seed.json`, `backend/app/data/strategy_corpus.py`, `backend/app/data/strategy_corpus.seed.json`, `backend/app/models.py`, `backend/scripts/validate_curation.py`, `target-profiles-template.json`, and `target-profile-curation.md` expose health, targets, rate-limited match endpoints, configurable scoring-priority presets, free/pro entitlement config, dummy USDA-style food search data, a backend-served procedure taxonomy seed, a backend-served strategy corpus seed with linked case logs, a SQLite-backed target repository, an opaque-token share-dashboard repository/API, a target data template, and a structured curation validator. | Done |
 | Measurement-guide seed scaffold | `backend/app/data/measurement_guides.seed.json`, `backend/app/data/measurement_guides.py`, `backend/scripts/validate_curation.py`, backend API/curation tests, and frontend measurement-guide tests provide dummy reviewable guide copy for every non-select measurement schema field with duplicate, missing-field, unknown-field, step, and illustration checks. | Seed scaffold done; reviewed public copy/art pending |
 | USDA-style food seed scaffold | `backend/app/data/food_usda.seed.json`, `backend/app/data/food_usda.py`, `backend/scripts/validate_curation.py`, backend API/curation tests, and frontend Diet tests provide dummy FoodData Central-style rows with search keywords, dummy FDC provenance, required macro/micronutrient keys, and nonnegative nutrient validation. | Seed scaffold done; production FDC import/API pending |
+| FoodData Central import scaffold | `backend/scripts/build_fdc_food_seed.py`, `backend/tests/test_fdc_food_import.py`, `backend/scripts/validate_curation.py`, and `food-data-curation.md` add an offline path for converting locally reviewed FDC API-style JSON or flat CSV into review-gated backend food seed JSON with required macro checks, micronutrient normalization, candidate real-FDC-ID validation, and optional serving-size scaling. | Import scaffold done; API-key policy, live API access, production seed replacement, and nutrition QA pending |
 | Local-only bloodwork scaffold | `backend/app/data/bloodwork.seed.json`, `backend/app/data/bloodwork.py`, `backend/app/main.py`, `backend/app/models.py`, `frontend/src/lib/bloodwork.js`, `frontend/src/components/AccountGoalPanel.jsx`, backup/export/report helpers, and Playwright/Node/backend tests implement a dummy marker/range library, account-scoped lab-result entry, trend rows, protocol links, local backup/report persistence, and explicit share-dashboard exclusion. | Implemented as prototype; source review pending |
 | Honest referral scaffold | `backend/app/data/entitlements.py`, `backend/app/models.py`, `frontend/src/lib/entitlements.js`, `frontend/src/components/AccountGoalPanel.jsx`, local backup/export helpers, and entitlement/browser tests implement local invite codes and future Pro-credit records while keeping all current user data tools non-gated. | Implemented as prototype; production billing/accounts pending |
 | Local data explainer preview | `frontend/src/lib/dataExplainer.js`, `frontend/src/components/AccountGoalPanel.jsx`, `frontend/src/styles.css`, `frontend/tests/dataExplainer.node.mjs`, `frontend/tests/app.spec.js`, and `verify.ps1` implement a browser-local deterministic Pro preview that summarizes account logs, cites matched strategy corpus entries as context only, avoids account emails/IDs/private notes in responses, and applies a dosing/prescribing/diagnosis boundary. | Scaffold done; production AI provider, true Pro gating, and human prompt-boundary review pending |
@@ -98,7 +99,7 @@ npm run capture:screenshots
 Observed result:
 
 - frontend build passed
-- backend pytest passed `84` tests
+- backend pytest passed `88` tests
 - curation JSON validation passed for target/corpus seeds, templates, and the ANSUR mapping file
 - Node corpus validation passed `8` tests
 - Node diet validation passed `13` tests
@@ -158,7 +159,7 @@ cd backend
 
 Observed result:
 
-- backend pytest passed `84` tests
+- backend pytest passed `88` tests
 
 ## Current Decision
 

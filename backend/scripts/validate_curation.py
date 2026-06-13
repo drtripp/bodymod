@@ -270,6 +270,9 @@ def validate_ansur_mapping_file(path: Path) -> str:
 def validate_food_file(path: Path) -> str:
     payload = read_json(path)
     library = FoodSearchResponse.model_validate(payload)
+    allow_real_fdc_ids = "candidate import" in library.source.lower() and any(
+        "review" in note.lower() for note in library.notes
+    )
     food_ids = [food.id for food in library.foods]
     fdc_ids = [food.fdcId or "" for food in library.foods]
     id_duplicates = duplicate_values(food_ids)
@@ -285,7 +288,12 @@ def validate_food_file(path: Path) -> str:
     for food in library.foods:
         if not food.keywords:
             raise ValueError(f"{path}: food {food.id!r} needs search keywords.")
-        if not food.fdcId or not food.fdcId.startswith("dummy-"):
+        if not food.fdcId:
+            raise ValueError(f"{path}: food {food.id!r} needs FDC provenance.")
+        if allow_real_fdc_ids:
+            if not str(food.fdcId).isdigit():
+                raise ValueError(f"{path}: food {food.id!r} needs a numeric FDC id.")
+        elif not str(food.fdcId).startswith("dummy-"):
             raise ValueError(f"{path}: food {food.id!r} needs dummy FDC provenance.")
 
     for food in payload.get("foods", []):

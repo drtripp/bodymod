@@ -406,7 +406,14 @@ Protocol Tracker → Diet upgrades → Native app.
       IDs/FDC IDs, search keywords, required macro/micronutrient keys, and
       nonnegative nutrient values.
 - [ ] Production FDC import/API pipeline, API-key decision, and nutrient
-      validation. **[human]**
+      validation. **[human]** First importer scaffold is in:
+      `backend/scripts/build_fdc_food_seed.py` plus
+      `food-data-curation.md`; it converts locally reviewed FDC API-style JSON
+      or reviewed flat CSV into review-gated backend food seed JSON with
+      required macro checks, micronutrient normalization, real numeric FDC ID
+      validation for candidate imports, and optional serving-size scaling.
+      Live API access, API-key policy, production seed replacement, and
+      nutrition QA remain pending.
 - [x] Water/fluid logging **(new)**: Diet has local fluid entries, quick ml
       presets, manual labels, and target-vs-actual progress.
 - [x] Micronutrient panel expansion beyond the current five, with %-of-target

@@ -164,6 +164,8 @@ Implemented now:
   barcode scanner in Capacitor runtimes, CSV import, local food log, macro
   targets, and expanded micronutrient target rows
 - backend USDA-style food seed file with dummy FDC provenance, search keywords, and nutrient validation
+- offline FoodData Central import scaffold for locally reviewed JSON/CSV exports,
+  with candidate-file validation before any production seed replacement
 - public marketing page at `/landing.html` with current app screenshots, privacy stance, planned store links, and local Pro waitlist capture
 - method/privacy content collapsed into a hover footnote
 - header share icon that copies an encoded measurement URL without showing a share panel
@@ -233,7 +235,9 @@ Not implemented yet:
   sync-vault, automatic sync preview, personal data API, and magic-link
   identity scaffolds
 - hosted photo/body inference work; current face scans and manual side-profile logs are browser-local only
-- production FoodData Central import/API ownership; Diet currently has dummy backend USDA-style seed rows plus Open Food Facts lookup
+- production FoodData Central API ownership and seed replacement; Diet currently
+  has dummy backend USDA-style seed rows, Open Food Facts lookup, and an
+  offline FDC import scaffold for reviewed local exports
 - source-reviewed procedure taxonomy and clinical/body-mod validation; current procedure data is a dummy review scaffold
 - source-reviewed bloodwork marker taxonomy, units, and reference ranges; current bloodwork data is a dummy local-only review scaffold
 - full app-wide translation coverage; current i18n work covers the shell,

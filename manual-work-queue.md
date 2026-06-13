@@ -117,7 +117,39 @@ cd ..\frontend
 npm run test:attractiveness-evidence
 ```
 
-## 5. Launch Privacy And Moderation Approvals
+## 5. FoodData Central Production Import Review
+
+Required input:
+
+- API-key storage and server-side fetch policy
+- source/citation wording and refresh cadence
+- approved serving-size policy for per-100 g values versus serving-size scaling
+- production nutrition QA fixtures for generic, branded, and edge-case rows
+- decision on whether branded foods come from FDC, Open Food Facts, or both
+
+Current implemented baseline:
+
+- dummy backend seed at `backend/app/data/food_usda.seed.json`
+- offline importer at `backend/scripts/build_fdc_food_seed.py`
+- generated candidate files can validate with real numeric FDC IDs while the
+  bundled dummy seed still requires `dummy-*` provenance
+
+Use:
+
+- `food-data-curation.md`
+- `backend/app/data/food_usda.seed.json`
+- `backend/scripts/build_fdc_food_seed.py`
+- `backend/scripts/validate_curation.py`
+
+Verification:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m pytest tests\test_fdc_food_import.py
+.\.venv\Scripts\python.exe scripts\validate_curation.py
+```
+
+## 6. Launch Privacy And Moderation Approvals
 
 Required input:
 
@@ -160,7 +192,7 @@ Verification:
 .\verify.ps1
 ```
 
-## 6. Procedure Taxonomy Review
+## 7. Procedure Taxonomy Review
 
 Required input:
 
@@ -186,7 +218,7 @@ cd ..\frontend
 npm run test:procedures
 ```
 
-## 7. Bloodwork Marker And Range Review
+## 8. Bloodwork Marker And Range Review
 
 Required input:
 
