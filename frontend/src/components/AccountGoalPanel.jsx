@@ -261,8 +261,8 @@ const emptyPlanningData = {
   protocolTaxonomy: []
 };
 
-function formatDate(timestamp) {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(
+function formatDate(timestamp, locale) {
+  return new Intl.DateTimeFormat(locale || undefined, { dateStyle: "medium" }).format(
     new Date(timestamp)
   );
 }
@@ -378,15 +378,21 @@ function formatLoad(value) {
   return load.toFixed(load % 1 ? 1 : 0);
 }
 
-function photoOptionLabel(photo) {
-  return `${photo.category} / ${formatDate(photo.createdAt)} / ${photo.fileName}`;
+function photoCategoryLabel(categoryId, t, fallback = categoryId) {
+  return t(`account.photo.category.${categoryId}`, {}, fallback);
+}
+
+function photoOptionLabel(photo, locale, t) {
+  const category =
+    t && locale !== "en" ? photoCategoryLabel(photo.category, t, photo.category) : photo.category;
+  return `${category} / ${formatDate(photo.createdAt, locale)} / ${photo.fileName}`;
 }
 
 function findPhoto(photos, photoId) {
   return photos.find((photo) => photo.id === photoId) || null;
 }
 
-function PhotoImage({ photo, alt, className = "", ...props }) {
+function PhotoImage({ photo, alt, className = "", loadingLabel = "Photo loading", ...props }) {
   if (!photo?.dataUrl) {
     return (
       <b
@@ -395,7 +401,7 @@ function PhotoImage({ photo, alt, className = "", ...props }) {
         aria-label={alt}
         {...props}
       >
-        Photo loading
+        {loadingLabel}
       </b>
     );
   }
@@ -2449,7 +2455,7 @@ export default function AccountGoalPanel({
     }
 
     if (!file.type.startsWith("image/")) {
-      setStatus("Choose an image file for the photo log.");
+      setStatus(t("account.photo.status.chooseImage"));
       event.target.value = "";
       return;
     }
@@ -2474,12 +2480,16 @@ export default function AccountGoalPanel({
         if (!photoBeforeId && photos[0]) {
           setPhotoBeforeId(photos[0].id);
         }
-        setStatus(`Saved ${record.category} photo locally.`);
+        setStatus(
+          t("account.photo.status.saved", {
+            category: record.category
+          })
+        );
       } catch (error) {
         setStatus(error.message);
       }
     };
-    reader.onerror = () => setStatus("Photo import failed.");
+    reader.onerror = () => setStatus(t("account.photo.status.importFailed"));
     reader.readAsDataURL(file);
     event.target.value = "";
   }
@@ -2488,7 +2498,7 @@ export default function AccountGoalPanel({
     const nextPhotos = await deleteUserPhotoAsset(account.id, photoId);
     const hydratedPhotos = await hydrateUserPhotoAssets(nextPhotos);
     setPhotos(hydratedPhotos);
-    setStatus("Photo deleted from this browser profile.");
+    setStatus(t("account.photo.status.deleted"));
   }
 
   function handleSaveFaceMeasurement(faceMeasurement) {
@@ -5786,40 +5796,40 @@ export default function AccountGoalPanel({
               onSaveFaceMeasurement={handleSaveFaceMeasurement}
             />
 
-            <section className="photo-log-section" aria-label="Photo log">
+            <section className="photo-log-section" aria-label={t("account.photo.aria")}>
               <div className="panel-header">
-                <h3>Photo log</h3>
-                <p>Local-only progress photos for body, face, and hair streams. No photo leaves this browser.</p>
+                <h3>{t("account.photo.title")}</h3>
+                <p>{t("account.photo.body")}</p>
               </div>
 
               <div className="photo-controls">
                 <label className="field">
-                  <span className="field-label">Photo category</span>
+                  <span className="field-label">{t("account.photo.category")}</span>
                   <select
-                    aria-label="Photo category"
+                    aria-label={t("account.photo.categoryAria")}
                     value={photoCategory}
                     onChange={(event) => setPhotoCategory(event.target.value)}
                   >
                     {photoCategoryOptions.map((category) => (
                       <option key={category.id} value={category.id}>
-                        {category.label}
+                        {photoCategoryLabel(category.id, t, category.label)}
                       </option>
                     ))}
                   </select>
                 </label>
                 <label className="field photo-note-field">
-                  <span className="field-label">Photo note</span>
+                  <span className="field-label">{t("account.photo.note")}</span>
                   <textarea
-                    aria-label="Photo note"
+                    aria-label={t("account.photo.noteAria")}
                     value={photoNote}
                     onChange={(event) => setPhotoNote(event.target.value)}
-                    placeholder="Day-0 front pose, same lighting."
+                    placeholder={t("account.photo.notePlaceholder")}
                   />
                 </label>
                 <label className="button file-button photo-import-button">
-                  Capture / import
+                  {t("account.photo.import")}
                   <input
-                    aria-label="Import progress photo"
+                    aria-label={t("account.photo.importAria")}
                     type="file"
                     accept="image/*"
                     capture="environment"
@@ -5830,11 +5840,11 @@ export default function AccountGoalPanel({
 
               {!photos.length ? (
                 <p className="muted-text">
-                  Add a day-0 photo when ready. It is a commitment marker, not a measurement.
+                  {t("account.photo.empty")}
                 </p>
               ) : null}
 
-              <div className="photo-stream-tabs" aria-label="Photo stream counts">
+              <div className="photo-stream-tabs" aria-label={t("account.photo.streamCountsAria")}>
                 {photoCounts.map((category) => (
                   <button
                     key={category.id}
@@ -5842,7 +5852,10 @@ export default function AccountGoalPanel({
                     type="button"
                     onClick={() => setPhotoFilter(category.id)}
                   >
-                    {category.label} {category.count}
+                    {t("account.photo.streamCount", {
+                      category: photoCategoryLabel(category.id, t, category.label),
+                      count: category.count
+                    })}
                   </button>
                 ))}
                 <button
@@ -5850,34 +5863,38 @@ export default function AccountGoalPanel({
                   type="button"
                   onClick={() => setPhotoFilter("all")}
                 >
-                  All {photos.length}
+                  {t("account.photo.allCount", { count: photos.length })}
                 </button>
               </div>
 
               {ghostPhoto ? (
-                <div className="photo-ghost-panel" aria-label="Pose ghost overlay">
+                <div className="photo-ghost-panel" aria-label={t("account.photo.ghostAria")}>
                   <div>
-                    <h4>Pose ghost</h4>
-                    <p>Use the selected previous {photoCategory} photo as a framing reference before the next import.</p>
+                    <h4>{t("account.photo.ghostTitle")}</h4>
+                    <p>
+                      {t("account.photo.ghostBody", {
+                        category: photoCategoryLabel(photoCategory, t, photoCategory)
+                      })}
+                    </p>
                   </div>
                   <label className="field">
-                    <span className="field-label">Ghost reference</span>
+                    <span className="field-label">{t("account.photo.ghostReference")}</span>
                     <select
-                      aria-label="Ghost reference photo"
+                      aria-label={t("account.photo.ghostReferenceAria")}
                       value={photoGhostId || ghostPhoto.id}
                       onChange={(event) => setPhotoGhostId(event.target.value)}
                     >
                       {categoryPhotos.map((photo) => (
                         <option key={photo.id} value={photo.id}>
-                          {photoOptionLabel(photo)}
+                          {photoOptionLabel(photo, locale, t)}
                         </option>
                       ))}
                     </select>
                   </label>
                   <label className="field">
-                    <span className="field-label">Ghost opacity</span>
+                    <span className="field-label">{t("account.photo.ghostOpacity")}</span>
                     <input
-                      aria-label="Ghost opacity"
+                      aria-label={t("account.photo.ghostOpacityAria")}
                       type="range"
                       min="15"
                       max="70"
@@ -5888,7 +5905,10 @@ export default function AccountGoalPanel({
                   <div className="photo-ghost-frame">
                     <PhotoImage
                       photo={ghostPhoto}
-                      alt={`${ghostPhoto.category} ghost reference`}
+                      alt={t("account.photo.alt.ghost", {
+                        category: photoCategoryLabel(ghostPhoto.category, t, ghostPhoto.category)
+                      })}
+                      loadingLabel={t("account.photo.loading")}
                       style={{ opacity: Number(ghostOpacity) / 100 }}
                     />
                     <span />
@@ -5897,40 +5917,40 @@ export default function AccountGoalPanel({
               ) : null}
 
               {photos.length >= 2 ? (
-                <div className="photo-compare-panel" aria-label="Photo comparison slider">
+                <div className="photo-compare-panel" aria-label={t("account.photo.compareAria")}>
                   <div className="photo-compare-controls">
                     <label className="field">
-                      <span className="field-label">Before photo</span>
+                      <span className="field-label">{t("account.photo.before")}</span>
                       <select
-                        aria-label="Before photo"
+                        aria-label={t("account.photo.beforeAria")}
                         value={photoBeforeId}
                         onChange={(event) => setPhotoBeforeId(event.target.value)}
                       >
                         {visiblePhotos.map((photo) => (
                           <option key={photo.id} value={photo.id}>
-                            {photoOptionLabel(photo)}
+                            {photoOptionLabel(photo, locale, t)}
                           </option>
                         ))}
                       </select>
                     </label>
                     <label className="field">
-                      <span className="field-label">After photo</span>
+                      <span className="field-label">{t("account.photo.after")}</span>
                       <select
-                        aria-label="After photo"
+                        aria-label={t("account.photo.afterAria")}
                         value={photoAfterId}
                         onChange={(event) => setPhotoAfterId(event.target.value)}
                       >
                         {visiblePhotos.map((photo) => (
                           <option key={photo.id} value={photo.id}>
-                            {photoOptionLabel(photo)}
+                            {photoOptionLabel(photo, locale, t)}
                           </option>
                         ))}
                       </select>
                     </label>
                     <label className="field">
-                      <span className="field-label">Wipe</span>
+                      <span className="field-label">{t("account.photo.wipe")}</span>
                       <input
-                        aria-label="Photo comparison position"
+                        aria-label={t("account.photo.positionAria")}
                         type="range"
                         min="0"
                         max="100"
@@ -5941,11 +5961,16 @@ export default function AccountGoalPanel({
                   </div>
                   {beforePhoto && afterPhoto ? (
                     <div className="photo-compare-frame">
-                      <PhotoImage photo={beforePhoto} alt="Before progress" />
+                      <PhotoImage
+                        photo={beforePhoto}
+                        alt={t("account.photo.alt.before")}
+                        loadingLabel={t("account.photo.loading")}
+                      />
                       <PhotoImage
                         className="photo-compare-after"
                         photo={afterPhoto}
-                        alt="After progress"
+                        alt={t("account.photo.alt.after")}
+                        loadingLabel={t("account.photo.loading")}
                         style={{ clipPath: `inset(0 ${100 - Number(photoSlider)}% 0 0)` }}
                       />
                       <i style={{ left: `${photoSlider}%` }} />
@@ -5955,28 +5980,43 @@ export default function AccountGoalPanel({
               ) : null}
 
               {latestPhoto ? (
-                <div className="photo-silhouette-pair" aria-label="Photo beside silhouette">
+                <div className="photo-silhouette-pair" aria-label={t("account.photo.silhouetteAria")}>
                   <figure>
-                    <PhotoImage photo={latestPhoto} alt={`${latestPhoto.category} progress`} />
-                    <figcaption>{photoOptionLabel(latestPhoto)}</figcaption>
+                    <PhotoImage
+                      photo={latestPhoto}
+                      alt={t("account.photo.alt.progress", {
+                        category: photoCategoryLabel(latestPhoto.category, t, latestPhoto.category)
+                      })}
+                      loadingLabel={t("account.photo.loading")}
+                    />
+                    <figcaption>{photoOptionLabel(latestPhoto, locale, t)}</figcaption>
                   </figure>
                   <SilhouetteView
                     measurements={currentMeasurements}
-                    label="Photo reference profile"
+                    label={t("account.photo.silhouetteLabel")}
                     view={silhouetteView}
                   />
                 </div>
               ) : null}
 
-              <div aria-label="Progress photo gallery">
+              <div aria-label={t("account.photo.galleryAria")}>
                 {visiblePhotos.length ? (
                   <ul className="photo-gallery-list">
                     {visiblePhotos.map((photo) => (
                       <li key={photo.id}>
-                        <PhotoImage photo={photo} alt={`${photo.category} progress thumbnail`} />
+                        <PhotoImage
+                          photo={photo}
+                          alt={t("account.photo.alt.thumbnail", {
+                            category: photoCategoryLabel(photo.category, t, photo.category)
+                          })}
+                          loadingLabel={t("account.photo.loading")}
+                        />
                         <div>
                           <strong>{photo.fileName}</strong>
-                          <span>{photo.category} / {formatDate(photo.createdAt)}</span>
+                          <span>
+                            {photoCategoryLabel(photo.category, t, photo.category)} /{" "}
+                            {formatDate(photo.createdAt, locale)}
+                          </span>
                           {photo.note ? <p>{photo.note}</p> : null}
                         </div>
                         <button
@@ -5984,13 +6024,13 @@ export default function AccountGoalPanel({
                           type="button"
                           onClick={() => handleDeletePhoto(photo.id)}
                         >
-                          Delete photo
+                          {t("account.photo.delete")}
                         </button>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="muted-text">No photos in this stream yet.</p>
+                  <p className="muted-text">{t("account.photo.emptyStream")}</p>
                 )}
               </div>
             </section>

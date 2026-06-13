@@ -177,6 +177,14 @@ test("translates known keys, falls back to English, and interpolates values", ()
     "confianza media"
   );
   assert.equal(
+    translate("es", "account.photo.status.saved", { category: "body" }),
+    "Foto body guardada localmente."
+  );
+  assert.equal(
+    translate("es", "account.photo.streamCount", { category: "Cuerpo", count: 2 }),
+    "Cuerpo 2"
+  );
+  assert.equal(
     translate("es", "account.export.jsonStatus", {
       snapshots: 1,
       checkIns: 2,

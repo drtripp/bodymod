@@ -2358,6 +2358,10 @@ test("downloads a localized progress report from the account UI", async ({ page 
   await expect(faceSection).toContainText("Escaneo local del navegador");
   await expect(faceSection).toContainText("Aun no hay medidas faciales guardadas.");
   await expect(page.getByRole("button", { name: "Guardar metricas faciales" })).toBeDisabled();
+  const photoSection = accountDialog.getByLabel("Registro de fotos");
+  await expect(photoSection).toContainText("Fotos locales de progreso");
+  await expect(photoSection).toContainText("Agrega una foto dia 0");
+  await expect(page.getByLabel("Importar foto de progreso")).toBeVisible();
   await page.getByRole("button", { name: "Solicitar magic link" }).click();
   await expect(identityCard).toContainText("Token dev de magic link devuelto para l***@example.com");
   await page.getByRole("button", { name: "Verificar" }).click();

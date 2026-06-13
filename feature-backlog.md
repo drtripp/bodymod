@@ -69,12 +69,12 @@ Protocol Tracker → Diet upgrades → Native app.
       interpolation, English/Spanish catalog parity, localized progress-report
       output and dynamic report rows, account identity/share/widget/health-sync/
       live-update/backup/native-backup/encrypted-sync/auto-sync/
-      personal-data-api/entitlement/referral/data-explainer/face-measurement/export/report status strings, Diet dashboard chrome/status
+      personal-data-api/entitlement/referral/data-explainer/face-measurement/photo-log/export/report status strings, Diet dashboard chrome/status
       strings, and Strategy explorer
       chrome/safety copy covered; Playwright verifies the Spanish
       onboarding/form surface, Diet surface, Strategy surface, and localized
       account identity/share/widget/health-sync/live-update/backup/sync/API/
-      entitlement/referral/data-explainer/face-measurement/report workflow.
+      entitlement/referral/data-explainer/face-measurement/photo-log/report workflow.
       Full app-wide copy extraction, remaining
       account feature panes, and source, seed, or user-authored content
       localization remain future passes.
