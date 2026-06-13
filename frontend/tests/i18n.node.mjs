@@ -169,6 +169,14 @@ test("translates known keys, falls back to English, and interpolates values", ()
     "riesgo 42"
   );
   assert.equal(
+    translate("es", "account.face.status.detected", { count: 478 }),
+    "478 landmarks detectados localmente."
+  );
+  assert.equal(
+    translate("es", "account.face.confidence", { confidence: "media" }),
+    "confianza media"
+  );
+  assert.equal(
     translate("es", "account.export.jsonStatus", {
       snapshots: 1,
       checkIns: 2,

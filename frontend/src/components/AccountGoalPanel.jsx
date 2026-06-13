@@ -5782,6 +5782,7 @@ export default function AccountGoalPanel({
 
             <FaceMeasurementPanel
               faceMeasurements={faceMeasurements}
+              locale={locale}
               onSaveFaceMeasurement={handleSaveFaceMeasurement}
             />
 

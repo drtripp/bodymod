@@ -2354,6 +2354,10 @@ test("downloads a localized progress report from the account UI", async ({ page 
   await expect(accountDialog.getByLabel("Respuesta del explicador de datos")).toContainText(
     "Resumen local del explicador"
   );
+  const faceSection = accountDialog.getByLabel("Registro de medidas faciales");
+  await expect(faceSection).toContainText("Escaneo local del navegador");
+  await expect(faceSection).toContainText("Aun no hay medidas faciales guardadas.");
+  await expect(page.getByRole("button", { name: "Guardar metricas faciales" })).toBeDisabled();
   await page.getByRole("button", { name: "Solicitar magic link" }).click();
   await expect(identityCard).toContainText("Token dev de magic link devuelto para l***@example.com");
   await page.getByRole("button", { name: "Verificar" }).click();

@@ -8,12 +8,29 @@ import {
   sideProfileResearchNotes,
   summarizeFaceLandmarkerResult
 } from "../lib/faceMeasurements";
+import { createTranslator } from "../lib/i18n";
 
-function formatDate(timestamp) {
-  return new Intl.DateTimeFormat(undefined, {
+function formatDate(timestamp, locale = "en") {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(new Date(timestamp));
+}
+
+function formatFaceError(error, t) {
+  const message = error?.message || "";
+  const errorKeyByMessage = new Map([
+    ["Choose an image file.", "account.face.status.chooseImage"],
+    ["Face photo analysis failed.", "account.face.status.photoFailed"],
+    ["No face landmarks found.", "account.face.status.noLandmarks"],
+    ["No face metrics to save.", "account.face.status.noMetrics"],
+    ["A full Face Landmarker mesh is required.", "account.face.status.fullMeshRequired"],
+    ["Enter at least one side-profile measurement or note.", "account.face.status.sideProfileRequired"]
+  ]);
+
+  return errorKeyByMessage.has(message)
+    ? t(errorKeyByMessage.get(message))
+    : message || t("account.face.status.failed");
 }
 
 function imageFromDataUrl(dataUrl) {
@@ -34,12 +51,17 @@ function fileToDataUrl(file) {
   });
 }
 
-export default function FaceMeasurementPanel({ faceMeasurements, onSaveFaceMeasurement }) {
+export default function FaceMeasurementPanel({
+  faceMeasurements,
+  locale = "en",
+  onSaveFaceMeasurement
+}) {
+  const t = createTranslator(locale);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const frameRef = useRef(0);
   const liveRef = useRef(false);
-  const [status, setStatus] = useState("Face model idle.");
+  const [status, setStatus] = useState(() => t("account.face.status.idle"));
   const [latestScan, setLatestScan] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [scanNote, setScanNote] = useState("");
@@ -66,12 +88,12 @@ export default function FaceMeasurementPanel({ faceMeasurements, onSaveFaceMeasu
   }
 
   async function analyzeImage(image, source) {
-    setStatus("Warming up local face model...");
+    setStatus(t("account.face.status.warming"));
     const landmarker = await loadFaceLandmarker({ runningMode: "IMAGE" });
     const result = landmarker.detect(image);
     const scan = summarizeFaceLandmarkerResult(result, source);
     setLatestScan(scan);
-    setStatus(`Detected ${scan.landmarkCount} landmarks locally.`);
+    setStatus(t("account.face.status.detected", { count: scan.landmarkCount }));
   }
 
   async function handleUpload(event) {
@@ -90,7 +112,7 @@ export default function FaceMeasurementPanel({ faceMeasurements, onSaveFaceMeasu
       const image = await imageFromDataUrl(dataUrl);
       await analyzeImage(image, "photo");
     } catch (error) {
-      setStatus(error.message || "Face photo analysis failed.");
+      setStatus(formatFaceError(error, t));
     } finally {
       event.target.value = "";
     }
@@ -114,10 +136,10 @@ export default function FaceMeasurementPanel({ faceMeasurements, onSaveFaceMeasu
           if (result?.faceLandmarks?.length) {
             const scan = summarizeFaceLandmarkerResult(result, "camera");
             setLatestScan(scan);
-            setStatus(`Live local scan: ${scan.landmarkCount} landmarks.`);
+            setStatus(t("account.face.status.liveDetected", { count: scan.landmarkCount }));
           }
         } catch (error) {
-          setStatus("Live face scan paused.");
+          setStatus(t("account.face.status.livePaused"));
         }
       }
 
@@ -129,12 +151,12 @@ export default function FaceMeasurementPanel({ faceMeasurements, onSaveFaceMeasu
 
   async function handleStartCamera() {
     if (!navigator.mediaDevices?.getUserMedia) {
-      setStatus("Camera API unavailable in this browser.");
+      setStatus(t("account.face.status.cameraApiUnavailable"));
       return;
     }
 
     try {
-      setStatus("Requesting camera...");
+      setStatus(t("account.face.status.requestingCamera"));
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: "user",
@@ -154,7 +176,7 @@ export default function FaceMeasurementPanel({ faceMeasurements, onSaveFaceMeasu
       await runLiveLoop();
     } catch (error) {
       stopCamera();
-      setStatus("Camera unavailable.");
+      setStatus(t("account.face.status.cameraUnavailable"));
     }
   }
 
@@ -163,9 +185,9 @@ export default function FaceMeasurementPanel({ faceMeasurements, onSaveFaceMeasu
       const record = buildFaceMeasurementRecord(latestScan, scanNote);
       onSaveFaceMeasurement(record);
       setScanNote("");
-      setStatus("Face metrics saved to this local account.");
+      setStatus(t("account.face.status.saved"));
     } catch (error) {
-      setStatus(error.message);
+      setStatus(formatFaceError(error, t));
     }
   }
 
@@ -186,26 +208,26 @@ export default function FaceMeasurementPanel({ faceMeasurements, onSaveFaceMeasu
       onSaveFaceMeasurement(record);
       setSideProfileValues({});
       setSideProfileNote("");
-      setStatus("Side profile log saved locally.");
+      setStatus(t("account.face.status.sideProfileSaved"));
     } catch (error) {
-      setStatus(error.message);
+      setStatus(formatFaceError(error, t));
     }
   }
 
   return (
-    <section className="face-measurement-section" aria-label="Face measurement logger">
+    <section className="face-measurement-section" aria-label={t("account.face.aria")}>
       <div className="panel-header">
-        <h3>Face measurement logger</h3>
-        <p>Browser-local landmark scan for dated face metric logs. No image is saved with the metric record.</p>
+        <h3>{t("account.face.title")}</h3>
+        <p>{t("account.face.body")}</p>
       </div>
 
       <div className="face-scan-grid">
         <div className="face-scan-controls">
           <div className="button-row">
             <label className="button file-button">
-              Upload face photo
+              {t("account.face.upload")}
               <input
-                aria-label="Upload face photo for measurement"
+                aria-label={t("account.face.uploadAria")}
                 type="file"
                 accept="image/*"
                 capture="user"
@@ -217,17 +239,17 @@ export default function FaceMeasurementPanel({ faceMeasurements, onSaveFaceMeasu
               type="button"
               onClick={isCameraRunning ? stopCamera : handleStartCamera}
             >
-              {isCameraRunning ? "Stop camera" : "Start camera scan"}
+              {isCameraRunning ? t("account.face.stopCamera") : t("account.face.startCamera")}
             </button>
           </div>
 
           <label className="field">
-            <span className="field-label">Scan note</span>
+            <span className="field-label">{t("account.face.scanNote")}</span>
             <textarea
-              aria-label="Face scan note"
+              aria-label={t("account.face.scanNoteAria")}
               value={scanNote}
               onChange={(event) => setScanNote(event.target.value)}
-              placeholder="Neutral expression, daylight."
+              placeholder={t("account.face.scanNotePlaceholder")}
             />
           </label>
 
@@ -237,42 +259,42 @@ export default function FaceMeasurementPanel({ faceMeasurements, onSaveFaceMeasu
             onClick={handleSaveScan}
             disabled={!latestScan?.metrics?.length}
           >
-            Save face metrics
+            {t("account.face.saveMetrics")}
           </button>
           <p className="muted-text" role="status" aria-live="polite">
             {status}
           </p>
         </div>
 
-        <div className="face-preview-panel" aria-label="Face scan preview">
+        <div className="face-preview-panel" aria-label={t("account.face.previewAria")}>
           <video
             ref={videoRef}
             className={isCameraRunning ? "" : "is-hidden"}
             muted
             playsInline
           />
-          {previewUrl ? <img src={previewUrl} alt="Uploaded face preview" /> : null}
+          {previewUrl ? <img src={previewUrl} alt={t("account.face.previewAlt")} /> : null}
           {!isCameraRunning && !previewUrl ? (
-            <div className="face-preview-placeholder">Face scan</div>
+            <div className="face-preview-placeholder">{t("account.face.previewPlaceholder")}</div>
           ) : null}
         </div>
       </div>
 
       {latestScan?.metrics?.length ? (
-        <div className="face-metric-grid" aria-label="Latest face metrics">
+        <div className="face-metric-grid" aria-label={t("account.face.latestAria")}>
           {latestScan.metrics.map((metric) => (
             <article key={metric.id} className="face-metric-card">
               <strong>{metric.label}</strong>
               <span>{metric.displayValue}</span>
-              <small>{metric.confidence} confidence</small>
+              <small>{t("account.face.confidence", { confidence: metric.confidence })}</small>
               <p>{metric.note}</p>
             </article>
           ))}
         </div>
       ) : null}
 
-      <div className="side-profile-note" aria-label="Side profile research notes">
-        <h4>Side-profile spike</h4>
+      <div className="side-profile-note" aria-label={t("account.face.sideResearchAria")}>
+        <h4>{t("account.face.sideResearchTitle")}</h4>
         <ul>
           {sideProfileResearchNotes.map((note) => (
             <li key={note}>{note}</li>
@@ -280,24 +302,23 @@ export default function FaceMeasurementPanel({ faceMeasurements, onSaveFaceMeasu
         </ul>
       </div>
 
-      <div className="side-profile-manual-log" aria-label="Manual side profile log">
+      <div className="side-profile-manual-log" aria-label={t("account.face.manualAria")}>
         <div>
-          <h4>Manual side-profile log</h4>
+          <h4>{t("account.face.manualTitle")}</h4>
           <p>
-            Save side-profile reference measurements from manual annotation or
-            another local tool. No side-profile photo is stored here.
+            {t("account.face.manualBody")}
           </p>
         </div>
         <label className="field">
-          <span className="field-label">Profile side</span>
+          <span className="field-label">{t("account.face.profileSide")}</span>
           <select
-            aria-label="Side profile side"
+            aria-label={t("account.face.profileSideAria")}
             value={sideProfileSide}
             onChange={(event) => setSideProfileSide(event.target.value)}
           >
-            <option value="right">Right</option>
-            <option value="left">Left</option>
-            <option value="unspecified">Unspecified</option>
+            <option value="right">{t("account.face.side.right")}</option>
+            <option value="left">{t("account.face.side.left")}</option>
+            <option value="unspecified">{t("account.face.side.unspecified")}</option>
           </select>
         </label>
         <div className="side-profile-field-grid">
@@ -317,33 +338,33 @@ export default function FaceMeasurementPanel({ faceMeasurements, onSaveFaceMeasu
           ))}
         </div>
         <label className="field">
-          <span className="field-label">Side profile note</span>
+          <span className="field-label">{t("account.face.sideNote")}</span>
           <textarea
-            aria-label="Side profile note"
+            aria-label={t("account.face.sideNoteAria")}
             value={sideProfileNote}
             onChange={(event) => setSideProfileNote(event.target.value)}
-            placeholder="Neutral posture, right side, same lens distance."
+            placeholder={t("account.face.sideNotePlaceholder")}
           />
         </label>
         <button className="button" type="button" onClick={handleSaveSideProfileLog}>
-          Save side-profile log
+          {t("account.face.saveSideProfile")}
         </button>
       </div>
 
-      <div aria-label="Saved face measurements">
-        <h4>Saved face measurements</h4>
+      <div aria-label={t("account.face.savedAria")}>
+        <h4>{t("account.face.savedTitle")}</h4>
         {faceMeasurements.length ? (
           <ul className="face-measurement-list">
             {faceMeasurements.slice(0, 5).map((scan) => (
               <li key={scan.id}>
                 <strong>{formatFaceMetricSummary(scan)}</strong>
-                <span>{formatDate(scan.createdAt || scan.measuredAt)} / {scan.source}</span>
+                <span>{formatDate(scan.createdAt || scan.measuredAt, locale)} / {scan.source}</span>
                 {scan.note ? <p>{scan.note}</p> : null}
               </li>
             ))}
           </ul>
         ) : (
-          <p className="muted-text">No saved face measurements yet.</p>
+          <p className="muted-text">{t("account.face.emptySaved")}</p>
         )}
       </div>
     </section>
