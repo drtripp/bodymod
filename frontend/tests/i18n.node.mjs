@@ -128,6 +128,26 @@ test("translates known keys, falls back to English, and interpolates values", ()
     "Backup nativo cifrado guardado: 1 snapshot(s), 2 check-in(s) y 3 item(s) de manifiesto de fotos."
   );
   assert.equal(
+    translate("es", "account.sync.status.created", {
+      revision: 3,
+      checkIns: 4,
+      goals: 5,
+      photos: 6
+    }),
+    "Vault de sync cifrado creado en revision 3. Guarda el token de sync antes de usar otro navegador. Subidos 4 check-in(s), 5 objetivo(s) y 6 item(s) de manifiesto de fotos."
+  );
+  assert.equal(
+    translate("es", "account.autoSync.status.ran", {
+      revision: 7,
+      restore: "Backup restaurado."
+    }),
+    "Vista previa de sync automatico ejecutada en revision 7. Backup restaurado."
+  );
+  assert.equal(
+    translate("es", "account.api.status.read", { revision: 8 }),
+    "API de datos personales leyo vault de sync cifrado revision 8. No se devolvieron medidas en texto plano."
+  );
+  assert.equal(
     translate("es", "account.export.jsonStatus", {
       snapshots: 1,
       checkIns: 2,

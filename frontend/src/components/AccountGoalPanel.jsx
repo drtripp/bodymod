@@ -619,6 +619,158 @@ function formatLiveUpdateDetail(liveUpdateState, t) {
   });
 }
 
+function formatSyncVaultCreatedStatus(record, summary, t) {
+  return t("account.sync.status.created", {
+    revision: record.revision,
+    checkIns: summary.checkIns,
+    goals: summary.goals,
+    photos: summary.photoManifest
+  });
+}
+
+function formatSyncVaultPushedStatus(record, summary, t) {
+  return t("account.sync.status.pushed", {
+    revision: record.revision,
+    checkIns: summary.checkIns,
+    goals: summary.goals,
+    protocols: summary.protocols
+  });
+}
+
+function formatSyncConflictStatus(error, t) {
+  return t("account.sync.status.conflict", {
+    revision: error.detail?.currentRevision || "unknown"
+  });
+}
+
+function formatSyncChangedAgainStatus(error, t) {
+  return t("account.sync.status.changedAgain", {
+    revision: error.detail?.currentRevision || "unknown"
+  });
+}
+
+function formatSyncVaultPulledStatus(record, restoreSummary, t) {
+  return t("account.sync.status.pulled", {
+    revision: record.revision,
+    restore: restoreSummary
+  });
+}
+
+function formatSyncVaultMergedStatus(updatedRecord, summary, restoreSummary, t) {
+  return t("account.sync.status.merged", {
+    revision: updatedRecord.revision,
+    snapshots: summary.snapshots,
+    checkIns: summary.checkIns,
+    goals: summary.goals,
+    protocols: summary.protocols,
+    restore: restoreSummary
+  });
+}
+
+function formatSyncVaultMeta(syncVaultState, t) {
+  if (syncVaultState.updatedAt) {
+    return t("account.sync.meta.updated", {
+      revision: syncVaultState.revision || 0,
+      date: formatDate(syncVaultState.updatedAt)
+    });
+  }
+
+  return t("account.sync.meta.revision", {
+    revision: syncVaultState.revision || 0
+  });
+}
+
+function formatAutoSyncReadinessReason(reason, t) {
+  const reasonMap = new Map([
+    [
+      "Sign in before enabling automatic sync preview.",
+      "account.autoSync.readiness.signIn"
+    ],
+    [
+      "Enter an 8+ character backup passphrase before automatic sync can run.",
+      "account.autoSync.readiness.passphrase"
+    ],
+    [
+      "Create or enter a sync vault ID before automatic sync can run.",
+      "account.autoSync.readiness.vault"
+    ],
+    [
+      "Enter the sync token before automatic sync can run.",
+      "account.autoSync.readiness.token"
+    ],
+    [
+      "Automatic sync preview is ready.",
+      "account.autoSync.readiness.ready"
+    ]
+  ]);
+  const key = reasonMap.get(reason);
+  return key ? t(key) : reason;
+}
+
+function formatAutoSyncLastChecked(autoSyncState, autoSyncReadiness, t) {
+  if (!autoSyncState.lastRunAt) {
+    return formatAutoSyncReadinessReason(autoSyncReadiness.reason, t);
+  }
+
+  if (autoSyncState.lastRevision) {
+    return t("account.autoSync.lastCheckedRevision", {
+      date: formatDate(autoSyncState.lastRunAt),
+      revision: autoSyncState.lastRevision
+    });
+  }
+
+  return t("account.autoSync.lastChecked", {
+    date: formatDate(autoSyncState.lastRunAt)
+  });
+}
+
+function formatAutoSyncEnabledStatus(nextState, t) {
+  return t("account.autoSync.status.enabled", {
+    date: formatDate(nextState.lastRunAt)
+  });
+}
+
+function formatAutoSyncRanStatus(trigger, updatedRecord, restoreSummary, t) {
+  const key =
+    trigger === "manual"
+      ? "account.autoSync.status.ran"
+      : "account.autoSync.status.backgroundRan";
+  return t(key, {
+    revision: updatedRecord.revision,
+    restore: restoreSummary
+  });
+}
+
+function formatAutoSyncConflictStatus(error, t) {
+  return t("account.autoSync.status.conflict", {
+    revision: error.detail?.currentRevision || "unknown"
+  });
+}
+
+function formatPersonalDataApiIssuedStatus(record, t) {
+  return t("account.api.status.issued", {
+    vaultId: record.vaultId
+  });
+}
+
+function formatPersonalDataApiReadStatus(record, t) {
+  return t("account.api.status.read", {
+    revision: record.revision
+  });
+}
+
+function formatPersonalDataApiMeta(meta, t) {
+  const scopes = meta.scopes.join(", ");
+  if (meta.createdAt) {
+    return t("account.api.meta.created", {
+      scopes,
+      date: formatDate(meta.createdAt)
+    });
+  }
+
+  return t("account.api.meta.scope", { scopes });
+}
+
 function formatMagicLinkRequestStatus(request, t) {
   if (request.deliveryStatus === "dev-token-returned") {
     return t("account.identity.status.devToken", {
@@ -708,7 +860,9 @@ export default function AccountGoalPanel({
   const [magicLinkStatus, setMagicLinkStatus] = useState(() =>
     initialMagicLinkToken ? t("account.identity.status.loaded") : ""
   );
-  const [personalDataApiLabel, setPersonalDataApiLabel] = useState("Personal data export");
+  const [personalDataApiLabel, setPersonalDataApiLabel] = useState(() =>
+    t("account.api.defaultLabel")
+  );
   const [personalDataApiToken, setPersonalDataApiToken] = useState("");
   const [personalDataApiTokenMeta, setPersonalDataApiTokenMeta] = useState(null);
   const [personalDataApiStatus, setPersonalDataApiStatus] = useState("");
@@ -1355,7 +1509,7 @@ export default function AccountGoalPanel({
         enabled: true,
         pendingReason: autoSyncReadiness.reason
       });
-      setAutoSyncStatus(autoSyncReadiness.reason);
+      setAutoSyncStatus(formatAutoSyncReadinessReason(autoSyncReadiness.reason, t));
       return;
     }
 
@@ -2680,7 +2834,7 @@ export default function AccountGoalPanel({
     }
 
     try {
-      setSyncStatus("Creating encrypted sync vault...");
+      setSyncStatus(t("account.sync.status.creating"));
       const deviceId = syncDeviceId.trim() || `browser-${account.id.slice(0, 8)}`;
       const { encryptedBackup, summary } = await encryptedBackupForSync();
       const record = await createSyncVault({
@@ -2688,11 +2842,9 @@ export default function AccountGoalPanel({
         deviceId
       });
       persistSyncRecord(record, record.syncToken);
-      setSyncStatus(
-        `Encrypted sync vault created at revision ${record.revision}. Store the sync token before using another browser. Uploaded ${summary.checkIns} check-in(s), ${summary.goals} goal(s), and ${summary.photoManifest} photo manifest item(s).`
-      );
+      setSyncStatus(formatSyncVaultCreatedStatus(record, summary, t));
     } catch (error) {
-      setSyncStatus(error.message || "Encrypted sync vault creation failed.");
+      setSyncStatus(error.message || t("account.sync.status.createFailed"));
     }
   }
 
@@ -2701,12 +2853,14 @@ export default function AccountGoalPanel({
       return;
     }
     if (missingSyncCredentials()) {
-      setSyncStatus("Enter a sync vault ID and token before pushing.");
+      setSyncStatus(t("account.sync.status.missingPush"));
       return;
     }
 
     try {
-      setSyncStatus(force ? "Force pushing encrypted sync vault..." : "Pushing encrypted sync vault...");
+      setSyncStatus(
+        force ? t("account.sync.status.forcePushing") : t("account.sync.status.pushing")
+      );
       const { encryptedBackup, summary } = await encryptedBackupForSync();
       const record = await updateSyncVault({
         vaultId: syncVaultId.trim(),
@@ -2717,16 +2871,12 @@ export default function AccountGoalPanel({
         force
       });
       persistSyncRecord(record);
-      setSyncStatus(
-        `Encrypted sync vault pushed at revision ${record.revision}: ${summary.checkIns} check-in(s), ${summary.goals} goal(s), and ${summary.protocols} protocol(s).`
-      );
+      setSyncStatus(formatSyncVaultPushedStatus(record, summary, t));
     } catch (error) {
       if (error.status === 409) {
-        setSyncStatus(
-          `Encrypted sync conflict at server revision ${error.detail?.currentRevision || "unknown"}. Merge remote changes first, or force push to overwrite.`
-        );
+        setSyncStatus(formatSyncConflictStatus(error, t));
       } else {
-        setSyncStatus(error.message || "Encrypted sync push failed.");
+        setSyncStatus(error.message || t("account.sync.status.pushFailed"));
       }
     }
   }
@@ -2736,12 +2886,12 @@ export default function AccountGoalPanel({
       return;
     }
     if (missingSyncCredentials()) {
-      setSyncStatus("Enter a sync vault ID and token before pulling.");
+      setSyncStatus(t("account.sync.status.missingPull"));
       return;
     }
 
     try {
-      setSyncStatus("Pulling encrypted sync vault...");
+      setSyncStatus(t("account.sync.status.pulling"));
       const record = await readSyncVault({
         vaultId: syncVaultId.trim(),
         syncToken: syncVaultToken.trim()
@@ -2750,9 +2900,9 @@ export default function AccountGoalPanel({
       const bundle = await decryptLocalBackup(encryptedBackup, backupPassphrase);
       const restoreSummary = restoreBackupBundle(bundle);
       persistSyncRecord(record);
-      setSyncStatus(`Pulled encrypted sync vault revision ${record.revision}. ${restoreSummary}`);
+      setSyncStatus(formatSyncVaultPulledStatus(record, restoreSummary, t));
     } catch (error) {
-      setSyncStatus(error.message || "Encrypted sync pull failed.");
+      setSyncStatus(error.message || t("account.sync.status.pullFailed"));
     }
   }
 
@@ -2761,23 +2911,19 @@ export default function AccountGoalPanel({
       return;
     }
     if (missingSyncCredentials()) {
-      setSyncStatus("Enter a sync vault ID and token before merging.");
+      setSyncStatus(t("account.sync.status.missingMerge"));
       return;
     }
 
     try {
-      setSyncStatus("Merging encrypted sync vault...");
+      setSyncStatus(t("account.sync.status.merging"));
       const { updatedRecord, summary, restoreSummary } = await mergeAndPushSyncVault();
-      setSyncStatus(
-        `Merged encrypted sync vault at revision ${updatedRecord.revision}: ${summary.snapshots} snapshot(s), ${summary.checkIns} check-in(s), ${summary.goals} goal(s), and ${summary.protocols} protocol(s). ${restoreSummary}`
-      );
+      setSyncStatus(formatSyncVaultMergedStatus(updatedRecord, summary, restoreSummary, t));
     } catch (error) {
       if (error.status === 409) {
-        setSyncStatus(
-          `Encrypted sync changed again at server revision ${error.detail?.currentRevision || "unknown"}. Merge again, or force push to overwrite.`
-        );
+        setSyncStatus(formatSyncChangedAgainStatus(error, t));
       } else {
-        setSyncStatus(error.message || "Encrypted sync merge failed.");
+        setSyncStatus(error.message || t("account.sync.status.mergeFailed"));
       }
     }
   }
@@ -2799,9 +2945,9 @@ export default function AccountGoalPanel({
     setAutoSyncStatus(
       enabled
         ? autoSyncReadiness.ready
-          ? `Automatic sync preview enabled. Last checked ${formatDate(nextState.lastRunAt)}.`
-          : autoSyncReadiness.reason
-        : "Automatic sync preview disabled."
+          ? formatAutoSyncEnabledStatus(nextState, t)
+          : formatAutoSyncReadinessReason(autoSyncReadiness.reason, t)
+        : t("account.autoSync.status.disabled")
     );
   }
 
@@ -2815,7 +2961,7 @@ export default function AccountGoalPanel({
         enabled: autoSyncState.enabled,
         pendingReason: autoSyncReadiness.reason
       });
-      setAutoSyncStatus(autoSyncReadiness.reason);
+      setAutoSyncStatus(formatAutoSyncReadinessReason(autoSyncReadiness.reason, t));
       return null;
     }
 
@@ -2827,8 +2973,8 @@ export default function AccountGoalPanel({
     setIsAutoSyncing(true);
     setAutoSyncStatus(
       trigger === "manual"
-        ? "Running automatic sync preview..."
-        : "Background automatic sync preview running..."
+        ? t("account.autoSync.status.running")
+        : t("account.autoSync.status.backgroundRunning")
     );
 
     try {
@@ -2848,16 +2994,14 @@ export default function AccountGoalPanel({
         pendingReason: "",
         lastBackupSignature: backupSignature || nativeBackupSignature
       });
-      setAutoSyncStatus(
-        `Automatic sync preview ${trigger === "manual" ? "ran" : "background ran"} at revision ${updatedRecord.revision}. ${restoreSummary}`
-      );
+      setAutoSyncStatus(formatAutoSyncRanStatus(trigger, updatedRecord, restoreSummary, t));
       return updatedRecord;
     } catch (error) {
       const ranAt = new Date().toISOString();
       const message =
         error.status === 409
-          ? `Automatic sync preview found a newer server revision ${error.detail?.currentRevision || "unknown"}. Run merge again, or use the manual force-push control if you intend to overwrite.`
-          : error.message || "Automatic sync preview failed.";
+          ? formatAutoSyncConflictStatus(error, t)
+          : error.message || t("account.autoSync.status.failed");
       persistAutoSyncRecord({
         enabled: autoSyncState.enabled,
         lastRunAt: ranAt,
@@ -2884,13 +3028,13 @@ export default function AccountGoalPanel({
       setSyncVaultId("");
       setSyncVaultToken("");
       setAutoSyncState(clearAutoSyncState());
-      setAutoSyncStatus("Automatic sync preview cleared with local sync credentials.");
-      setSyncStatus("No sync vault credentials to revoke.");
+      setAutoSyncStatus(t("account.autoSync.status.clearedLocal"));
+      setSyncStatus(t("account.sync.status.noCredentialsToRevoke"));
       return;
     }
 
     try {
-      setSyncStatus("Revoking encrypted sync vault...");
+      setSyncStatus(t("account.sync.status.revoking"));
       await revokeSyncVault({
         vaultId: syncVaultId.trim(),
         syncToken: syncVaultToken.trim()
@@ -2901,77 +3045,73 @@ export default function AccountGoalPanel({
       setAutoSyncState(clearedAutoSync);
       setSyncVaultId("");
       setSyncVaultToken("");
-      setAutoSyncStatus("Automatic sync preview cleared with the sync vault.");
-      setSyncStatus("Encrypted sync vault revoked and local credentials cleared.");
+      setAutoSyncStatus(t("account.autoSync.status.clearedVault"));
+      setSyncStatus(t("account.sync.status.revoked"));
     } catch (error) {
-      setSyncStatus(error.message || "Encrypted sync revoke failed.");
+      setSyncStatus(error.message || t("account.sync.status.revokeFailed"));
     }
   }
 
   async function handleCreatePersonalDataApiToken() {
     if (missingSyncCredentials()) {
-      setPersonalDataApiStatus("Create or enter a sync vault before issuing a personal data API token.");
+      setPersonalDataApiStatus(t("account.api.status.missingSync"));
       return;
     }
 
     try {
-      setPersonalDataApiStatus("Issuing personal data API token...");
+      setPersonalDataApiStatus(t("account.api.status.issuing"));
       const record = await createPersonalDataToken({
         vaultId: syncVaultId.trim(),
         syncToken: syncVaultToken.trim(),
-        label: personalDataApiLabel.trim() || "Personal data export"
+        label: personalDataApiLabel.trim() || t("account.api.defaultLabel")
       });
       setPersonalDataApiToken(record.accessToken);
       setPersonalDataApiTokenMeta(record);
-      setPersonalDataApiStatus(
-        `Personal data API token issued for vault ${record.vaultId}. It can read the encrypted sync vault only.`
-      );
+      setPersonalDataApiStatus(formatPersonalDataApiIssuedStatus(record, t));
     } catch (error) {
-      setPersonalDataApiStatus(error.message || "Personal data API token creation failed.");
+      setPersonalDataApiStatus(error.message || t("account.api.status.createFailed"));
     }
   }
 
   async function handleTestPersonalDataApiToken() {
     if (!personalDataApiToken.trim()) {
-      setPersonalDataApiStatus("Enter a personal data API token before testing a read.");
+      setPersonalDataApiStatus(t("account.api.status.missingReadToken"));
       return;
     }
 
     try {
-      setPersonalDataApiStatus("Reading encrypted sync vault through personal data API...");
+      setPersonalDataApiStatus(t("account.api.status.reading"));
       const record = await readPersonalDataSyncVault({
         accessToken: personalDataApiToken.trim()
       });
-      setPersonalDataApiStatus(
-        `Personal data API read encrypted sync vault revision ${record.revision}. No plaintext measurements were returned.`
-      );
+      setPersonalDataApiStatus(formatPersonalDataApiReadStatus(record, t));
     } catch (error) {
-      setPersonalDataApiStatus(error.message || "Personal data API read failed.");
+      setPersonalDataApiStatus(error.message || t("account.api.status.readFailed"));
     }
   }
 
   async function handleCopyPersonalDataApiToken() {
     if (!personalDataApiToken.trim()) {
-      setPersonalDataApiStatus("Create or paste a personal data API token before copying.");
+      setPersonalDataApiStatus(t("account.api.status.missingCopyToken"));
       return;
     }
 
     try {
       await navigator.clipboard.writeText(personalDataApiToken.trim());
-      setPersonalDataApiStatus("Personal data API token copied.");
+      setPersonalDataApiStatus(t("account.api.status.copied"));
     } catch {
-      setPersonalDataApiStatus("Copy failed. Select the token manually.");
+      setPersonalDataApiStatus(t("account.api.status.copyFailed"));
     }
   }
 
   async function handleRevokePersonalDataApiToken() {
     if (!personalDataApiToken.trim()) {
-      setPersonalDataApiStatus("Enter a personal data API token before revoking it.");
+      setPersonalDataApiStatus(t("account.api.status.missingRevokeToken"));
       return;
     }
 
     try {
-      setPersonalDataApiStatus("Revoking personal data API token...");
+      setPersonalDataApiStatus(t("account.api.status.revoking"));
       const result = await revokePersonalDataToken({
         accessToken: personalDataApiToken.trim()
       });
@@ -2979,11 +3119,11 @@ export default function AccountGoalPanel({
       setPersonalDataApiTokenMeta(null);
       setPersonalDataApiStatus(
         result.revoked
-          ? "Personal data API token revoked."
-          : "No active personal data API token was found for revocation."
+          ? t("account.api.status.revoked")
+          : t("account.api.status.noActive")
       );
     } catch (error) {
-      setPersonalDataApiStatus(error.message || "Personal data API token revocation failed.");
+      setPersonalDataApiStatus(error.message || t("account.api.status.revokeFailed"));
     }
   }
 
@@ -3832,36 +3972,34 @@ export default function AccountGoalPanel({
               </div>
             </section>
 
-            <section className="encrypted-sync-section" aria-label="Encrypted sync vault">
+            <section className="encrypted-sync-section" aria-label={t("account.sync.aria")}>
               <div>
-                <h3>Encrypted sync vault</h3>
+                <h3>{t("account.sync.title")}</h3>
                 <p>
-                  Prototype cross-device sync stores only the encrypted backup
-                  blob on the server. Keep the sync token private; it cannot
-                  be recovered if lost.
+                  {t("account.sync.body")}
                 </p>
               </div>
               <div className="encrypted-sync-fields">
                 <label className="field">
-                  <span className="field-label">Device ID</span>
+                  <span className="field-label">{t("account.sync.deviceId")}</span>
                   <input
-                    aria-label="Sync device ID"
+                    aria-label={t("account.sync.deviceIdAria")}
                     value={syncDeviceId}
                     onChange={(event) => setSyncDeviceId(event.target.value)}
                   />
                 </label>
                 <label className="field">
-                  <span className="field-label">Vault ID</span>
+                  <span className="field-label">{t("account.sync.vaultId")}</span>
                   <input
-                    aria-label="Sync vault ID"
+                    aria-label={t("account.sync.vaultIdAria")}
                     value={syncVaultId}
                     onChange={(event) => setSyncVaultId(event.target.value)}
                   />
                 </label>
                 <label className="field">
-                  <span className="field-label">Sync token</span>
+                  <span className="field-label">{t("account.sync.token")}</span>
                   <input
-                    aria-label="Sync token"
+                    aria-label={t("account.sync.tokenAria")}
                     type="password"
                     value={syncVaultToken}
                     onChange={(event) => setSyncVaultToken(event.target.value)}
@@ -3870,53 +4008,46 @@ export default function AccountGoalPanel({
               </div>
               <div className="encrypted-sync-actions">
                 <button className="button" type="button" onClick={handleCreateSyncVault}>
-                  Create sync vault
+                  {t("account.sync.create")}
                 </button>
                 <button className="button" type="button" onClick={() => handlePushSyncVault()}>
-                  Push encrypted sync
+                  {t("account.sync.push")}
                 </button>
                 <button className="button" type="button" onClick={handlePullSyncVault}>
-                  Pull encrypted sync
+                  {t("account.sync.pull")}
                 </button>
                 <button className="button" type="button" onClick={handleMergeSyncVault}>
-                  Merge + push
+                  {t("account.sync.merge")}
                 </button>
                 <button className="button" type="button" onClick={() => handlePushSyncVault({ force: true })}>
-                  Force push
+                  {t("account.sync.forcePush")}
                 </button>
                 <button className="button" type="button" onClick={handleRevokeSyncVault}>
-                  Revoke sync vault
+                  {t("account.sync.revoke")}
                 </button>
               </div>
               {syncVaultState.vaultId ? (
                 <small className="encrypted-sync-meta">
-                  Revision {syncVaultState.revision || 0}
-                  {syncVaultState.updatedAt ? ` / updated ${formatDate(syncVaultState.updatedAt)}` : ""}
+                  {formatSyncVaultMeta(syncVaultState, t)}
                 </small>
               ) : null}
-              <div className="auto-sync-panel" aria-label="Automatic sync preview">
+              <div className="auto-sync-panel" aria-label={t("account.autoSync.aria")}>
                 <div>
-                  <h4>Automatic sync preview</h4>
+                  <h4>{t("account.autoSync.title")}</h4>
                   <p>
-                    Opt in to periodic client-side merge-and-push for this
-                    browser. The passphrase stays in memory and the server
-                    still receives only encrypted vault blobs.
+                    {t("account.autoSync.body")}
                   </p>
-                  <small>
-                    {autoSyncState.lastRunAt
-                      ? `Last checked ${formatDate(autoSyncState.lastRunAt)}${autoSyncState.lastRevision ? ` / revision ${autoSyncState.lastRevision}` : ""}`
-                      : autoSyncReadiness.reason}
-                  </small>
+                  <small>{formatAutoSyncLastChecked(autoSyncState, autoSyncReadiness, t)}</small>
                 </div>
                 <label className="auto-sync-toggle">
                   <input
-                    aria-label="Automatic sync preview toggle"
+                    aria-label={t("account.autoSync.toggleAria")}
                     type="checkbox"
                     checked={autoSyncState.enabled}
                     onChange={handleAutoSyncToggle}
                     disabled={!account}
                   />
-                  <span>Enable preview</span>
+                  <span>{t("account.autoSync.enable")}</span>
                 </label>
                 <div className="auto-sync-actions">
                   <button
@@ -3925,7 +4056,9 @@ export default function AccountGoalPanel({
                     onClick={handleRunAutoSyncNow}
                     disabled={!autoSyncReadiness.ready || isAutoSyncing}
                   >
-                    {isAutoSyncing ? "Syncing..." : "Run auto-sync now"}
+                    {isAutoSyncing
+                      ? t("account.autoSync.syncing")
+                      : t("account.autoSync.runNow")}
                   </button>
                 </div>
                 {autoSyncStatus ? (
@@ -3941,27 +4074,26 @@ export default function AccountGoalPanel({
               ) : null}
             </section>
 
-            <section className="personal-data-api-section" aria-label="Personal data API">
+            <section className="personal-data-api-section" aria-label={t("account.api.aria")}>
               <div>
-                <h3>Personal data API</h3>
+                <h3>{t("account.api.title")}</h3>
                 <p>
-                  Read-only tokens return the encrypted sync vault for personal
-                  tools. Decrypt the blob locally with your backup passphrase.
+                  {t("account.api.body")}
                 </p>
               </div>
               <div className="encrypted-sync-fields">
                 <label className="field">
-                  <span className="field-label">Token label</span>
+                  <span className="field-label">{t("account.api.tokenLabel")}</span>
                   <input
-                    aria-label="Personal data API token label"
+                    aria-label={t("account.api.tokenLabelAria")}
                     value={personalDataApiLabel}
                     onChange={(event) => setPersonalDataApiLabel(event.target.value)}
                   />
                 </label>
                 <label className="field">
-                  <span className="field-label">API token</span>
+                  <span className="field-label">{t("account.api.token")}</span>
                   <input
-                    aria-label="Personal data API token"
+                    aria-label={t("account.api.tokenAria")}
                     type="password"
                     value={personalDataApiToken}
                     onChange={(event) => setPersonalDataApiToken(event.target.value)}
@@ -3970,24 +4102,21 @@ export default function AccountGoalPanel({
               </div>
               <div className="encrypted-sync-actions">
                 <button className="button" type="button" onClick={handleCreatePersonalDataApiToken}>
-                  Issue API token
+                  {t("account.api.issue")}
                 </button>
                 <button className="button" type="button" onClick={handleTestPersonalDataApiToken}>
-                  Test API read
+                  {t("account.api.testRead")}
                 </button>
                 <button className="button" type="button" onClick={handleCopyPersonalDataApiToken}>
-                  Copy API token
+                  {t("account.api.copy")}
                 </button>
                 <button className="button" type="button" onClick={handleRevokePersonalDataApiToken}>
-                  Revoke API token
+                  {t("account.api.revoke")}
                 </button>
               </div>
               {personalDataApiTokenMeta ? (
                 <small className="personal-data-api-meta">
-                  Scope {personalDataApiTokenMeta.scopes.join(", ")}
-                  {personalDataApiTokenMeta.createdAt
-                    ? ` / created ${formatDate(personalDataApiTokenMeta.createdAt)}`
-                    : ""}
+                  {formatPersonalDataApiMeta(personalDataApiTokenMeta, t)}
                 </small>
               ) : null}
               {personalDataApiStatus ? (

@@ -2375,6 +2375,21 @@ test("downloads a localized progress report from the account UI", async ({ page 
   await expect(accountDialog.getByLabel("Backup nativo cifrado")).toContainText(
     "Aun no hay archivo de backup nativo guardado."
   );
+  const syncSection = accountDialog.getByLabel("Vault de sync cifrado");
+  await expect(syncSection).toContainText("Vault de sync cifrado");
+  await page.getByRole("button", { name: "Crear vault de sync" }).click();
+  await expect(syncSection).toContainText("Vault de sync cifrado creado en revision 1");
+  const personalApiSection = accountDialog.getByRole("region", {
+    name: "API de datos personales"
+  });
+  await expect(personalApiSection).toContainText("API de datos personales");
+  await page.getByLabel("Etiqueta del token de API de datos personales").fill("Script QS");
+  await page.getByRole("button", { name: "Emitir token API" }).click();
+  await expect(personalApiSection).toContainText("Token de API de datos personales emitido");
+  await page.getByRole("button", { name: "Probar lectura API" }).click();
+  await expect(personalApiSection).toContainText(
+    "API de datos personales leyo vault de sync cifrado revision 1"
+  );
   await expect(page.getByLabel("Informe de progreso")).toContainText(
     "Resumen local imprimible"
   );
