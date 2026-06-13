@@ -212,6 +212,30 @@ test("translates known keys, falls back to English, and interpolates values", ()
     "waistCircumference / pausa de 21 dia(s)"
   );
   assert.equal(
+    translate("es", "account.planning.status.loaded", {
+      personas: 10,
+      goals: 6,
+      protocols: 6
+    }),
+    "10 persona(s), 6 objetivo(s) y 6 protocolo(s) cargados."
+  );
+  assert.equal(
+    translate("es", "account.planning.goal.progressRow", {
+      label: "Cintura",
+      current: "90.0",
+      target: "86.0",
+      unit: "cm"
+    }),
+    "Cintura: 90.0 / objetivo 86.0 cm"
+  );
+  assert.equal(
+    translate("es", "account.planning.protocol.doseLine", {
+      dose: "4 dias",
+      frequency: "4 sesiones/semana"
+    }),
+    "Dosis: 4 dias; frecuencia: 4 sesiones/semana"
+  );
+  assert.equal(
     translate("es", "account.bloodwork.status.loaded", { count: 4 }),
     "4 seed(s) de marcadores de laboratorio cargados."
   );

@@ -2353,6 +2353,24 @@ test("downloads a localized progress report from the account UI", async ({ page 
   await expect(accountDialog.getByLabel("Formulario de evento de fiabilidad")).toContainText(
     "Modo de evento"
   );
+  const personaSection = accountDialog.getByLabel("Cargador de muestra de persona");
+  await expect(personaSection).toContainText("Muestra de persona");
+  await expect(
+    personaSection.getByRole("button", { name: "Cargar medidas de persona" })
+  ).toBeVisible();
+  const goalSection = accountDialog.getByLabel("Constructor de objetivos");
+  await expect(goalSection).toContainText("Definir objetivo");
+  await expect(page.getByLabel("Preajuste de objetivo")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Guardar objetivo" })).toBeVisible();
+  await expect(accountDialog.getByLabel("Objetivos guardados")).toContainText(
+    "Aun no hay objetivos guardados."
+  );
+  const protocolSection = accountDialog.getByLabel("Tracker de protocolos");
+  await expect(protocolSection).toContainText("Plantilla de protocolo");
+  await expect(page.getByRole("button", { name: "Iniciar protocolo" })).toBeVisible();
+  await expect(accountDialog.getByLabel("Protocolos activos")).toContainText(
+    "Aun no hay protocolos iniciados."
+  );
   const entitlementSection = accountDialog.getByLabel("Plan y acceso");
   await expect(entitlementSection).toContainText("Incluido ahora");
   await expect(entitlementSection).toContainText("Vista previa Pro");

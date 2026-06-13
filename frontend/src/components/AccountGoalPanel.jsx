@@ -145,7 +145,6 @@ import {
   buildProjectedMeasurements,
   buildProtocolCaseLog,
   buildProtocolOutcomeSummary,
-  formatProtocolSchemaSummary,
   splitAffectedFields
 } from "../lib/protocolPlanning";
 import {
@@ -183,7 +182,6 @@ import {
   buildGoalPauseSummary,
   CUSTOM_GOAL_TARGET_ID,
   customGoalMetricOptions,
-  goalTargetSourceLabel,
   parseCustomGoalMetrics
 } from "../lib/goalTargets";
 import {
@@ -322,7 +320,7 @@ function remotePushStatusLabel(status, t) {
   }
 }
 
-function protocolDelta(protocol, currentMeasurements) {
+function protocolDelta(protocol, currentMeasurements, t) {
   const starting = protocol.startingMeasurements;
   if (!starting) {
     return "";
@@ -332,7 +330,10 @@ function protocolDelta(protocol, currentMeasurements) {
   const waistDelta =
     Number(currentMeasurements.waistCircumference) - Number(starting.waistCircumference);
 
-  return `Since start: weight ${formatSignedDelta(weightDelta)} kg, waist ${formatSignedDelta(waistDelta)} cm`;
+  return t("account.planning.protocol.sinceStart", {
+    weight: formatSignedDelta(weightDelta),
+    waist: formatSignedDelta(waistDelta)
+  });
 }
 
 function formatLimbSplitFieldLabel(field, t) {
@@ -535,6 +536,100 @@ function formatWeeklyStreakLabel(weeklyStreak, t) {
 
 function formatMilestoneLabel(milestone, t) {
   return t(`account.tracking.milestone.${milestone.id}`, {}, milestone.label);
+}
+
+function formatGoalMetricLabel(key, fallback, t) {
+  return t(`measurement.field.${key}.label`, {}, fallback);
+}
+
+function formatGoalTargetSourceLabel(goal, t) {
+  if (goal?.targetSource?.type === "past-self") {
+    return t("account.planning.goal.source.pastSelf", {
+      label: goal.targetSource.label
+    });
+  }
+
+  if (goal?.targetSource?.type === "target-profile") {
+    return t("account.planning.goal.source.targetProfile", {
+      label: goal.targetSource.label
+    });
+  }
+
+  if (goal?.targetSource?.type === "custom") {
+    return t("account.planning.goal.source.custom");
+  }
+
+  return "";
+}
+
+function formatGoalTargetDistance(row, t) {
+  if (Math.abs(row.drift) < 0.05) {
+    return t("account.planning.goal.distance.atTarget");
+  }
+
+  const isPastTarget = Math.sign(row.drift) === Math.sign(row.delta);
+  const distance = `${Math.abs(row.drift).toFixed(1)}${row.unit ? ` ${row.unit}` : ""}`;
+  return t(
+    isPastTarget
+      ? "account.planning.goal.distance.pastTarget"
+      : "account.planning.goal.distance.fromTarget",
+    { distance }
+  );
+}
+
+function formatGoalPauseMessage(pauseSummary, t) {
+  return t("account.planning.goal.pauseMessage", {
+    labels: pauseSummary.affectedLabels.join(", "),
+    modes: pauseSummary.eventModes.join(", ")
+  });
+}
+
+function formatMaintenanceAlert(alert, t) {
+  return t("account.planning.goal.maintenanceAlert", {
+    label: formatGoalMetricLabel(alert.key, alert.label, t),
+    drift: formatSignedDelta(Number(alert.drift)),
+    unit: alert.unit,
+    band: Number(alert.band).toFixed(1)
+  });
+}
+
+function formatProtocolSchemaSummaryLocalized(taxonomy = [], t) {
+  if (!taxonomy.length) {
+    return t("account.planning.protocol.schemaUnavailable");
+  }
+
+  return taxonomy
+    .map((item) =>
+      t("account.planning.protocol.schemaItem", {
+        label: item.label,
+        fields: item.doseFields.join(", ")
+      })
+    )
+    .join(" / ");
+}
+
+function formatProtocolStatus(status, t) {
+  return t(`account.planning.protocol.status.${status}`, {}, status);
+}
+
+function formatProtocolOutcomeRow(row, t) {
+  return t("account.planning.protocol.outcomeRow", {
+    label: formatGoalMetricLabel(row.key, row.label, t),
+    delta: row.displayDelta
+  });
+}
+
+function formatProtocolWindow(protocol, t) {
+  return t("account.planning.protocol.window", {
+    start: protocol.startDate || t("account.planning.protocol.openWindow"),
+    end: protocol.endDate || t("account.planning.protocol.openWindow")
+  });
+}
+
+function formatProtocolProjectionSummary(caseLog, t) {
+  return t("account.planning.protocol.caseProjection", {
+    summary: caseLog.projectionSummary
+  });
 }
 
 function formatCheckIn(checkIn, t) {
@@ -1145,7 +1240,9 @@ export default function AccountGoalPanel({
 }) {
   const t = useMemo(() => createTranslator(locale), [locale]);
   const [planningData, setPlanningData] = useState(emptyPlanningData);
-  const [planningStatus, setPlanningStatus] = useState("Loading planning data...");
+  const [planningStatus, setPlanningStatus] = useState(() =>
+    t("account.planning.status.loading")
+  );
   const [exerciseLibrary, setExerciseLibrary] = useState(emptyExerciseLibrary);
   const [exerciseStatus, setExerciseStatus] = useState(() =>
     t("account.workout.status.loading")
@@ -1165,8 +1262,8 @@ export default function AccountGoalPanel({
   const [attractivenessEvidence, setAttractivenessEvidence] = useState(() =>
     normalizeAttractivenessEvidence(fallbackAttractivenessEvidence)
   );
-  const [attractivenessEvidenceStatus, setAttractivenessEvidenceStatus] = useState(
-    "Loading attractiveness evidence notes..."
+  const [attractivenessEvidenceStatus, setAttractivenessEvidenceStatus] = useState(() =>
+    t("account.planning.evidence.status.loading")
   );
   const [accounts, setAccounts] = useState(() => loadAccounts());
   const initialAccount = loadSessionAccount();
@@ -1364,7 +1461,11 @@ export default function AccountGoalPanel({
         }
         setPlanningData(data);
         setPlanningStatus(
-          `Loaded ${data.personas.length} personas, ${data.goalPresets.length} goals, and ${data.protocolTemplates.length} protocols.`
+          t("account.planning.status.loaded", {
+            personas: data.personas.length,
+            goals: data.goalPresets.length,
+            protocols: data.protocolTemplates.length
+          })
         );
         setSelectedPersonaId((current) => current || data.personas[0]?.id || "");
         setSelectedGoalId((current) => current || data.goalPresets[0]?.id || "");
@@ -1374,14 +1475,14 @@ export default function AccountGoalPanel({
       })
       .catch(() => {
         if (isMounted) {
-          setPlanningStatus("Planning data unavailable. Local account tools still work.");
+          setPlanningStatus(t("account.planning.status.unavailable"));
         }
       });
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (account?.email) {
@@ -1557,21 +1658,23 @@ export default function AccountGoalPanel({
         const normalized = normalizeAttractivenessEvidence(data);
         setAttractivenessEvidence(normalized);
         setAttractivenessEvidenceStatus(
-          `Loaded ${normalized.metrics.length} evidence note seed(s).`
+          t("account.planning.evidence.status.loaded", {
+            count: normalized.metrics.length
+          })
         );
       })
       .catch(() => {
         if (isMounted) {
           const fallback = normalizeAttractivenessEvidence(fallbackAttractivenessEvidence);
           setAttractivenessEvidence(fallback);
-          setAttractivenessEvidenceStatus("Evidence notes unavailable. Local fallback framing loaded.");
+          setAttractivenessEvidenceStatus(t("account.planning.evidence.status.unavailable"));
         }
       });
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [t]);
 
   const selectedPersona = planningData.personas.find(
     (persona) => persona.id === selectedPersonaId
@@ -1934,8 +2037,8 @@ export default function AccountGoalPanel({
   ]);
 
   const protocolSchemaSummary = useMemo(
-    () => formatProtocolSchemaSummary(planningData.protocolTaxonomy),
-    [planningData.protocolTaxonomy]
+    () => formatProtocolSchemaSummaryLocalized(planningData.protocolTaxonomy, t),
+    [planningData.protocolTaxonomy, t]
   );
   const lifeEvents = useMemo(
     () => checkIns.filter((checkIn) => checkIn.type === "life-event"),
@@ -2066,7 +2169,7 @@ export default function AccountGoalPanel({
     }
 
     onApplyMeasurements(selectedPersona.startingMeasurements);
-    setStatus(`${selectedPersona.label} measurements loaded into the form.`);
+    setStatus(t("account.planning.persona.status.loaded", { label: selectedPersona.label }));
   }
 
   function handleLogin(event) {
@@ -2193,7 +2296,7 @@ export default function AccountGoalPanel({
     if (isCustomGoalTarget) {
       targetMetrics = parseCustomGoalMetrics(customGoalDeltas);
       if (!Object.keys(targetMetrics).length) {
-        setStatus("Enter at least one custom target delta.");
+        setStatus(t("account.planning.goal.status.enterCustomDelta"));
         return;
       }
 
@@ -2242,10 +2345,17 @@ export default function AccountGoalPanel({
     if (isCustomGoalTarget) {
       setCustomGoalDeltas({});
     }
+    const targetSourceDisplay =
+      targetSource.type === "custom"
+        ? t("account.planning.goal.customDeltas")
+        : targetSource.label;
     setStatus(
       targetSource.type !== "preset"
-        ? `Goal saved: ${selectedGoal.label} toward ${targetSource.label}.`
-        : `Goal saved: ${selectedGoal.label}.`
+        ? t("account.planning.goal.status.savedToward", {
+            label: selectedGoal.label,
+            target: targetSourceDisplay
+          })
+        : t("account.planning.goal.status.saved", { label: selectedGoal.label })
     );
   }
 
@@ -2256,7 +2366,7 @@ export default function AccountGoalPanel({
     });
     setGoals(nextGoals);
     triggerCheckInHaptic();
-    setStatus("Goal check-in logged.");
+    setStatus(t("account.planning.goal.status.checkInLogged"));
   }
 
   function handleDailyCheckIn(event) {
@@ -2567,7 +2677,7 @@ export default function AccountGoalPanel({
     if (protocolEditId) {
       setProtocols(updateUserProtocol(account.id, protocolEditId, payload));
       clearProtocolForm();
-      setStatus(`Protocol updated: ${payload.label}.`);
+      setStatus(t("account.planning.protocol.status.updated", { label: payload.label }));
       return;
     }
 
@@ -2580,7 +2690,7 @@ export default function AccountGoalPanel({
 
     setProtocols([nextProtocol, ...protocols]);
     clearProtocolForm();
-    setStatus(`Protocol started: ${selectedProtocolTemplate.label}.`);
+    setStatus(t("account.planning.protocol.status.started", { label: selectedProtocolTemplate.label }));
   }
 
   function handleProtocolCheckIn(protocolId, adherence) {
@@ -2593,7 +2703,7 @@ export default function AccountGoalPanel({
     });
     setProtocols(nextProtocols);
     triggerCheckInHaptic();
-    setStatus("Protocol adherence check-in logged.");
+    setStatus(t("account.planning.protocol.status.adherenceLogged"));
   }
 
   function handleEditProtocol(protocol) {
@@ -2607,12 +2717,12 @@ export default function AccountGoalPanel({
     setProtocolCalorieDelta(
       Number.isFinite(Number(protocol.calorieDelta)) ? String(protocol.calorieDelta) : ""
     );
-    setStatus(`Editing protocol: ${protocol.label}.`);
+    setStatus(t("account.planning.protocol.status.editing", { label: protocol.label }));
   }
 
   function handleArchiveProtocol(protocolId) {
     setProtocols(archiveUserProtocol(account.id, protocolId));
-    setStatus("Protocol archived.");
+    setStatus(t("account.planning.protocol.status.archivedMessage"));
   }
 
   function handleLifeEvent(event) {
@@ -4510,11 +4620,11 @@ export default function AccountGoalPanel({
               ) : null}
             </section>
 
-            <section className="persona-loader" aria-label="Persona sample loader">
+            <section className="persona-loader" aria-label={t("account.planning.persona.aria")}>
               <label className="field">
-                <span className="field-label">Persona sample</span>
+                <span className="field-label">{t("account.planning.persona.label")}</span>
                 <select
-                  aria-label="Signed-in persona sample"
+                  aria-label={t("account.planning.persona.selectAria")}
                   value={selectedPersonaId}
                   onChange={(event) => setSelectedPersonaId(event.target.value)}
                 >
@@ -4527,7 +4637,7 @@ export default function AccountGoalPanel({
               </label>
               {selectedPersona ? <p className="muted-text">{selectedPersona.motivation}</p> : null}
               <button className="button" type="button" onClick={handleApplyPersona}>
-                Load persona measurements
+                {t("account.planning.persona.load")}
               </button>
             </section>
 
@@ -5125,16 +5235,16 @@ export default function AccountGoalPanel({
               </div>
             </section>
 
-            <section className="goal-builder" aria-label="Goal builder">
+            <section className="goal-builder" aria-label={t("account.planning.goal.aria")}>
               <div className="panel-header">
-                <h3>Set a goal</h3>
-                <p>Goals are local records attached to this browser account.</p>
+                <h3>{t("account.planning.goal.title")}</h3>
+                <p>{t("account.planning.goal.body")}</p>
               </div>
               <form className="goal-form" onSubmit={handleSetGoal}>
                 <label className="field">
-                  <span className="field-label">Goal preset</span>
+                  <span className="field-label">{t("account.planning.goal.preset")}</span>
                   <select
-                    aria-label="Goal preset"
+                    aria-label={t("account.planning.goal.preset")}
                     value={selectedGoalId}
                     onChange={(event) => setSelectedGoalId(event.target.value)}
                   >
@@ -5146,25 +5256,25 @@ export default function AccountGoalPanel({
                   </select>
                 </label>
                 <label className="field">
-                  <span className="field-label">Target date</span>
+                  <span className="field-label">{t("account.planning.goal.targetDate")}</span>
                   <input
-                    aria-label="Goal target date"
+                    aria-label={t("account.planning.goal.targetDateAria")}
                     type="date"
                     value={targetDate}
                     onChange={(event) => setTargetDate(event.target.value)}
                   />
                 </label>
                 <label className="field">
-                  <span className="field-label">Target measurement set</span>
+                  <span className="field-label">{t("account.planning.goal.targetMeasurementSet")}</span>
                   <select
-                    aria-label="Goal target source"
+                    aria-label={t("account.planning.goal.targetSourceAria")}
                     value={selectedGoalTargetId}
                     onChange={(event) => setSelectedGoalTargetId(event.target.value)}
                   >
-                    <option value="">Preset deltas</option>
-                    <option value={CUSTOM_GOAL_TARGET_ID}>Custom deltas</option>
+                    <option value="">{t("account.planning.goal.presetDeltas")}</option>
+                    <option value={CUSTOM_GOAL_TARGET_ID}>{t("account.planning.goal.customDeltas")}</option>
                     {profileGoalTargets.length ? (
-                      <optgroup label="Target profiles">
+                      <optgroup label={t("account.planning.goal.targetProfiles")}>
                         {profileGoalTargets.map((target) => (
                           <option key={target.id} value={target.id}>
                             {target.label}
@@ -5173,7 +5283,7 @@ export default function AccountGoalPanel({
                       </optgroup>
                     ) : null}
                     {snapshotGoalTargets.length ? (
-                      <optgroup label="Past self snapshots">
+                      <optgroup label={t("account.planning.goal.pastSelfSnapshots")}>
                         {snapshotGoalTargets.map((target) => (
                           <option key={target.id} value={target.id}>
                             {target.label}
@@ -5184,12 +5294,21 @@ export default function AccountGoalPanel({
                   </select>
                 </label>
                 {isCustomGoalTarget ? (
-                  <div className="custom-goal-delta-grid" aria-label="Custom goal deltas">
+                  <div
+                    className="custom-goal-delta-grid"
+                    aria-label={t("account.planning.goal.customDeltaGridAria")}
+                  >
                     {customGoalMetricOptions.map((option) => (
                       <label key={option.key} className="field">
-                        <span className="field-label">{option.label} delta</span>
+                        <span className="field-label">
+                          {t("account.planning.goal.customDeltaLabel", {
+                            label: formatGoalMetricLabel(option.key, option.label, t)
+                          })}
+                        </span>
                         <input
-                          aria-label={`Custom ${option.label} delta`}
+                          aria-label={t("account.planning.goal.customDeltaAria", {
+                            label: formatGoalMetricLabel(option.key, option.label, t)
+                          })}
                           inputMode="decimal"
                           value={customGoalDeltas[option.key] || ""}
                           onChange={(event) =>
@@ -5203,9 +5322,9 @@ export default function AccountGoalPanel({
                   </div>
                 ) : null}
                 <label className="field goal-note">
-                  <span className="field-label">Goal note</span>
+                  <span className="field-label">{t("account.planning.goal.note")}</span>
                   <textarea
-                    aria-label="Goal note"
+                    aria-label={t("account.planning.goal.note")}
                     value={goalNote}
                     onChange={(event) => setGoalNote(event.target.value)}
                   />
@@ -5214,8 +5333,11 @@ export default function AccountGoalPanel({
                   <p className="muted-text">{selectedGoal.summary}</p>
                 ) : null}
                 {selectedGoalEvidence.length ? (
-                  <div className="goal-evidence-note" aria-label="Goal evidence notes">
-                    <strong>Evidence notes</strong>
+                  <div
+                    className="goal-evidence-note"
+                    aria-label={t("account.planning.goal.evidenceAria")}
+                  >
+                    <strong>{t("account.planning.goal.evidenceTitle")}</strong>
                     <small>{attractivenessEvidenceStatus}</small>
                     <ul>
                       {selectedGoalEvidence.map((metric) => (
@@ -5232,21 +5354,24 @@ export default function AccountGoalPanel({
                 ) : null}
                 {selectedGoalTarget ? (
                   <p className="muted-text goal-target-copy">
-                    Using {selectedGoalTarget.label} as the target measurement set.
+                    {t("account.planning.goal.usingTarget", { label: selectedGoalTarget.label })}
                   </p>
                 ) : null}
                 {isCustomGoalTarget ? (
                   <p className="muted-text goal-target-copy">
-                    Enter signed deltas from the current measurements. Leave unused fields blank.
+                    {t("account.planning.goal.customTargetCopy")}
                   </p>
                 ) : null}
                 <button className="button" type="submit">
-                  Save goal
+                  {t("account.planning.goal.save")}
                 </button>
               </form>
 
               {suggestedProtocols.length ? (
-                <div className="protocol-card-grid" aria-label="Suggested protocols">
+                <div
+                  className="protocol-card-grid"
+                  aria-label={t("account.planning.goal.suggestedProtocolsAria")}
+                >
                   {suggestedProtocols.map((protocol) => (
                     <article key={protocol.id} className="protocol-card">
                       <strong>{protocol.label}</strong>
@@ -5258,12 +5383,12 @@ export default function AccountGoalPanel({
                 </div>
               ) : null}
               <button className="button" type="button" onClick={onOpenStrategies}>
-                Learn from strategy corpus
+                {t("account.planning.goal.learnStrategies")}
               </button>
             </section>
 
-            <section className="goal-list-section" aria-label="Saved goals">
-              <h3>Saved goals</h3>
+            <section className="goal-list-section" aria-label={t("account.planning.goal.savedAria")}>
+              <h3>{t("account.planning.goal.savedTitle")}</h3>
               {goals.length ? (
                 <ul className="goal-list">
                   {goals.map((goal) => (
@@ -5282,17 +5407,31 @@ export default function AccountGoalPanel({
                               {pauseSummary ? (
                                 <div
                                   className="goal-pause-alert"
-                                  aria-label={`${goal.label} pause status`}
+                                  aria-label={t("account.planning.goal.pauseStatusAria", {
+                                    label: goal.label
+                                  })}
                                 >
-                                  <strong>Goal paused</strong>
+                                  <strong>{t("account.planning.goal.pausedTitle")}</strong>
                                   <span>
-                                    {pauseSummary.message} Resume after {formatDate(pauseSummary.latestEndAt)} or delete/update the reliability event.
+                                    {t("account.planning.goal.resumeAfter", {
+                                      message: formatGoalPauseMessage(pauseSummary, t),
+                                      date: formatDate(pauseSummary.latestEndAt, locale)
+                                    })}
                                   </span>
                                 </div>
                               ) : null}
                               {progress && !pauseSummary ? (
-                                <div className="goal-progress" aria-label={`${goal.label} progress`}>
-                                  <strong>Progress: {Math.round(progress.average)}%</strong>
+                                <div
+                                  className="goal-progress"
+                                  aria-label={t("account.planning.goal.progressAria", {
+                                    label: goal.label
+                                  })}
+                                >
+                                  <strong>
+                                    {t("account.planning.goal.progressTitle", {
+                                      percent: Math.round(progress.average)
+                                    })}
+                                  </strong>
                                   <div className="goal-progress-track">
                                     <i style={{ width: `${progress.average}%` }} />
                                   </div>
@@ -5300,9 +5439,14 @@ export default function AccountGoalPanel({
                                     {progress.rows.map((row) => (
                                       <li key={row.key}>
                                         <span>
-                                          {row.label}: {row.current.toFixed(1)} / target {row.target.toFixed(1)} {row.unit}
+                                          {t("account.planning.goal.progressRow", {
+                                            label: formatGoalMetricLabel(row.key, row.label, t),
+                                            current: row.current.toFixed(1),
+                                            target: row.target.toFixed(1),
+                                            unit: row.unit
+                                          })}
                                         </span>
-                                        <small>{row.targetDistance}</small>
+                                        <small>{formatGoalTargetDistance(row, t)}</small>
                                       </li>
                                     ))}
                                   </ul>
@@ -5311,15 +5455,20 @@ export default function AccountGoalPanel({
                               {driftAlerts && !pauseSummary ? (
                                 <div
                                   className="maintenance-alerts"
-                                  aria-label={`${goal.label} maintenance drift alerts`}
+                                  aria-label={t("account.planning.goal.maintenanceAria", {
+                                    label: goal.label
+                                  })}
                                 >
-                                  <strong>Maintenance drift alert</strong>
+                                  <strong>{t("account.planning.goal.maintenanceTitle")}</strong>
                                   <span>
-                                    Target band last seen at {driftAlerts.reachedLabel} on {formatDate(driftAlerts.reachedAt)}.
+                                    {t("account.planning.goal.maintenanceReached", {
+                                      label: driftAlerts.reachedLabel,
+                                      date: formatDate(driftAlerts.reachedAt, locale)
+                                    })}
                                   </span>
                                   <ul>
                                     {driftAlerts.alerts.map((alert) => (
-                                      <li key={alert.key}>{alert.message}</li>
+                                      <li key={alert.key}>{formatMaintenanceAlert(alert, t)}</li>
                                     ))}
                                   </ul>
                                 </div>
@@ -5328,14 +5477,31 @@ export default function AccountGoalPanel({
                           );
                         })()}
                         <strong>{goal.label}</strong>
-                        <span>{goal.category} / created {formatDate(goal.createdAt)}</span>
-                        {goalTargetSourceLabel(goal) ? <span>{goalTargetSourceLabel(goal)}</span> : null}
-                        {goal.targetDate ? <span>Target date: {goal.targetDate}</span> : null}
+                        <span>
+                          {t("account.planning.goal.createdLine", {
+                            category: goal.category,
+                            date: formatDate(goal.createdAt, locale)
+                          })}
+                        </span>
+                        {formatGoalTargetSourceLabel(goal, t) ? (
+                          <span>{formatGoalTargetSourceLabel(goal, t)}</span>
+                        ) : null}
+                        {goal.targetDate ? (
+                          <span>
+                            {t("account.planning.goal.targetDateLine", {
+                              date: goal.targetDate
+                            })}
+                          </span>
+                        ) : null}
                         {goal.protocolIds?.length ? (
                           <span>{protocolLabels(goal.protocolIds, planningData.protocolTemplates)}</span>
                         ) : null}
                         {goal.note ? <p>{goal.note}</p> : null}
-                        <span>{goal.checkIns?.length || 0} check-in(s)</span>
+                        <span>
+                          {t("account.planning.goal.checkIns", {
+                            count: goal.checkIns?.length || 0
+                          })}
+                        </span>
                       </div>
                       <div className="button-row">
                         <button
@@ -5343,38 +5509,38 @@ export default function AccountGoalPanel({
                           type="button"
                           onClick={() => handleGoalCheckIn(goal.id, "on track")}
                         >
-                          On track
+                          {t("account.planning.goal.onTrack")}
                         </button>
                         <button
                           className="button"
                           type="button"
                           onClick={() => handleGoalCheckIn(goal.id, "needs adjustment")}
                         >
-                          Needs adjustment
+                          {t("account.planning.goal.needsAdjustment")}
                         </button>
                       </div>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="muted-text">No goals saved yet.</p>
+                <p className="muted-text">{t("account.planning.goal.empty")}</p>
               )}
             </section>
 
-            <section className="protocol-tracker" aria-label="Protocol tracker">
+            <section className="protocol-tracker" aria-label={t("account.planning.protocol.aria")}>
               <div className="panel-header">
-                <h3>Protocol tracker</h3>
-                <p>Track planned workouts, procedures, routines, or hacks against snapshots.</p>
+                <h3>{t("account.planning.protocol.title")}</h3>
+                <p>{t("account.planning.protocol.body")}</p>
               </div>
-              <div className="protocol-schema-panel" aria-label="Protocol schema">
-                <strong>Intervention taxonomy</strong>
+              <div className="protocol-schema-panel" aria-label={t("account.planning.protocol.schemaAria")}>
+                <strong>{t("account.planning.protocol.schemaTitle")}</strong>
                 <p>{protocolSchemaSummary}</p>
               </div>
               <form className="protocol-form" onSubmit={handleStartProtocol}>
                 <label className="field">
-                  <span className="field-label">Protocol template</span>
+                  <span className="field-label">{t("account.planning.protocol.template")}</span>
                   <select
-                    aria-label="Protocol template"
+                    aria-label={t("account.planning.protocol.templateAria")}
                     value={selectedProtocolTemplateId}
                     onChange={(event) => setSelectedProtocolTemplateId(event.target.value)}
                   >
@@ -5386,27 +5552,27 @@ export default function AccountGoalPanel({
                   </select>
                 </label>
                 <label className="field">
-                  <span className="field-label">Dose / plan</span>
+                  <span className="field-label">{t("account.planning.protocol.dose")}</span>
                   <input
-                    aria-label="Protocol dose"
+                    aria-label={t("account.planning.protocol.doseAria")}
                     value={protocolDose}
                     onChange={(event) => setProtocolDose(event.target.value)}
                     placeholder="4-day upper/lower split"
                   />
                 </label>
                 <label className="field">
-                  <span className="field-label">Frequency</span>
+                  <span className="field-label">{t("account.planning.protocol.frequency")}</span>
                   <input
-                    aria-label="Protocol frequency"
+                    aria-label={t("account.planning.protocol.frequencyAria")}
                     value={protocolFrequency}
                     onChange={(event) => setProtocolFrequency(event.target.value)}
                     placeholder={selectedProtocolTemplate?.cadence || "weekly"}
                   />
                 </label>
                 <label className="field">
-                  <span className="field-label">Daily calorie delta</span>
+                  <span className="field-label">{t("account.planning.protocol.calorieDelta")}</span>
                   <input
-                    aria-label="Protocol calorie delta"
+                    aria-label={t("account.planning.protocol.calorieDeltaAria")}
                     inputMode="numeric"
                     value={protocolCalorieDelta}
                     onChange={(event) => setProtocolCalorieDelta(event.target.value)}
@@ -5414,44 +5580,48 @@ export default function AccountGoalPanel({
                   />
                 </label>
                 <label className="field">
-                  <span className="field-label">Start date</span>
+                  <span className="field-label">{t("account.planning.protocol.startDate")}</span>
                   <input
-                    aria-label="Protocol start date"
+                    aria-label={t("account.planning.protocol.startDateAria")}
                     type="date"
                     value={protocolStartDate}
                     onChange={(event) => setProtocolStartDate(event.target.value)}
                   />
                 </label>
                 <label className="field">
-                  <span className="field-label">End date</span>
+                  <span className="field-label">{t("account.planning.protocol.endDate")}</span>
                   <input
-                    aria-label="Protocol end date"
+                    aria-label={t("account.planning.protocol.endDateAria")}
                     type="date"
                     value={protocolEndDate}
                     onChange={(event) => setProtocolEndDate(event.target.value)}
                   />
                 </label>
                 <label className="field protocol-confounders">
-                  <span className="field-label">Confounders / notes</span>
+                  <span className="field-label">{t("account.planning.protocol.confounders")}</span>
                   <textarea
-                    aria-label="Protocol confounders"
+                    aria-label={t("account.planning.protocol.confoundersAria")}
                     value={protocolConfounders}
                     onChange={(event) => setProtocolConfounders(event.target.value)}
                   />
                 </label>
                 {selectedProtocolTemplate ? (
                   <p className="muted-text">
-                    {selectedProtocolTemplate.summary} Evidence:{" "}
-                    {selectedProtocolTemplate.evidence}; risk:{" "}
-                    {selectedProtocolTemplate.riskLevel}.
+                    {t("account.planning.protocol.templateSummary", {
+                      summary: selectedProtocolTemplate.summary,
+                      evidence: selectedProtocolTemplate.evidence,
+                      risk: selectedProtocolTemplate.riskLevel
+                    })}
                   </p>
                 ) : null}
                 <button className="button" type="submit">
-                  {protocolEditId ? "Save protocol edits" : "Start protocol"}
+                  {protocolEditId
+                    ? t("account.planning.protocol.saveEdits")
+                    : t("account.planning.protocol.start")}
                 </button>
                 {protocolEditId ? (
                   <button className="button" type="button" onClick={clearProtocolForm}>
-                    Cancel edit
+                    {t("account.planning.protocol.cancelEdit")}
                   </button>
                 ) : null}
               </form>
@@ -5649,7 +5819,7 @@ export default function AccountGoalPanel({
                 )}
               </div>
 
-              <div aria-label="Active protocols">
+              <div aria-label={t("account.planning.protocol.activeAria")}>
                 {protocols.length ? (
                   <ul className="protocol-list">
                     {protocols.map((protocol) => {
@@ -5678,32 +5848,56 @@ export default function AccountGoalPanel({
                           <div>
                             <strong>{protocol.label}</strong>
                             <span>
-                              {protocol.category} / {protocol.evidence} / {protocol.status}
+                              {t("account.planning.protocol.metaLine", {
+                                category: protocol.category,
+                                evidence: protocol.evidence,
+                                status: formatProtocolStatus(protocol.status, t)
+                              })}
                             </span>
-                            <span>Dose: {protocol.dose}; frequency: {protocol.frequency}</span>
+                            <span>
+                              {t("account.planning.protocol.doseLine", {
+                                dose:
+                                  protocol.dose === "not specified"
+                                    ? t("account.planning.protocol.status.notSpecified")
+                                    : protocol.dose,
+                                frequency: protocol.frequency
+                              })}
+                            </span>
                             {protocol.calorieDelta !== null &&
                             protocol.calorieDelta !== undefined &&
                             protocol.calorieDelta !== "" &&
                             Number.isFinite(Number(protocol.calorieDelta)) ? (
-                              <span>Daily energy delta: {protocol.calorieDelta} kcal</span>
-                            ) : null}
-                            {protocol.startDate || protocol.endDate ? (
                               <span>
-                                Window: {protocol.startDate || "open"} - {protocol.endDate || "open"}
+                                {t("account.planning.protocol.energyDelta", {
+                                  delta: protocol.calorieDelta
+                                })}
                               </span>
                             ) : null}
-                            {protocol.confounders ? <p>{protocol.confounders}</p> : null}
-                            <span>{protocol.checkIns?.length || 0} adherence check-in(s)</span>
-                            {outcome.averageScore !== null ? (
-                              <span>{outcome.averageScore.toFixed(1)}/5 average adherence</span>
+                            {protocol.startDate || protocol.endDate ? (
+                              <span>{formatProtocolWindow(protocol, t)}</span>
                             ) : null}
-                            <span>{protocolDelta(protocol, currentMeasurements)}</span>
+                            {protocol.confounders ? <p>{protocol.confounders}</p> : null}
+                            <span>
+                              {t("account.planning.protocol.adherenceCount", {
+                                count: protocol.checkIns?.length || 0
+                              })}
+                            </span>
+                            {outcome.averageScore !== null ? (
+                              <span>
+                                {t("account.planning.protocol.averageAdherence", {
+                                  score: outcome.averageScore.toFixed(1)
+                                })}
+                              </span>
+                            ) : null}
+                            <span>{protocolDelta(protocol, currentMeasurements, t)}</span>
                           </div>
                           <div className="button-row">
                             <label className="field compact-score-field">
-                              <span className="field-label">Adherence score</span>
+                              <span className="field-label">
+                                {t("account.planning.protocol.adherenceScore")}
+                              </span>
                               <select
-                                aria-label="Protocol adherence score"
+                                aria-label={t("account.planning.protocol.adherenceScoreAria")}
                                 value={protocolAdherenceScore}
                                 onChange={(event) => setProtocolAdherenceScore(event.target.value)}
                               >
@@ -5719,14 +5913,14 @@ export default function AccountGoalPanel({
                               type="button"
                               onClick={() => handleProtocolCheckIn(protocol.id, "on track")}
                             >
-                              Protocol on track
+                              {t("account.planning.protocol.onTrack")}
                             </button>
                             <button
                               className="button"
                               type="button"
                               onClick={() => handleProtocolCheckIn(protocol.id, "missed")}
                             >
-                              Protocol missed
+                              {t("account.planning.protocol.missed")}
                             </button>
                             <button
                               className="button"
@@ -5734,7 +5928,7 @@ export default function AccountGoalPanel({
                               onClick={() => handleEditProtocol(protocol)}
                               disabled={protocol.status === "archived"}
                             >
-                              Edit protocol
+                              {t("account.planning.protocol.edit")}
                             </button>
                             <button
                               className="button"
@@ -5742,56 +5936,81 @@ export default function AccountGoalPanel({
                               onClick={() => handleArchiveProtocol(protocol.id)}
                               disabled={protocol.status === "archived"}
                             >
-                              Archive protocol
+                              {t("account.planning.protocol.archive")}
                             </button>
                           </div>
                           <div className="protocol-outcome-grid">
-                            <div aria-label={`${protocol.label} outcome attribution`}>
-                              <h4>Outcome attribution</h4>
-                              <p>{outcome.snapshotCount} snapshot(s) linked during the protocol window.</p>
+                            <div
+                              aria-label={t("account.planning.protocol.outcomeAria", {
+                                label: protocol.label
+                              })}
+                            >
+                              <h4>{t("account.planning.protocol.outcomeTitle")}</h4>
+                              <p>
+                                {t("account.planning.protocol.snapshotLinked", {
+                                  count: outcome.snapshotCount
+                                })}
+                              </p>
                               <ul>
                                 {outcome.rows.map((row) => (
-                                  <li key={row.key}>
-                                    {row.label}: {row.displayDelta}
-                                  </li>
+                                  <li key={row.key}>{formatProtocolOutcomeRow(row, t)}</li>
                                 ))}
                               </ul>
                             </div>
                             {projection ? (
-                              <div aria-label={`${protocol.label} projection band`}>
-                                <h4>Projection band</h4>
+                              <div
+                                aria-label={t("account.planning.protocol.projectionAria", {
+                                  label: protocol.label
+                                })}
+                              >
+                                <h4>{t("account.planning.protocol.projectionTitle")}</h4>
                                 <p>
-                                  {projection.model}: {projection.lowDeltaKg} to {projection.highDeltaKg} kg over {projection.durationDays} days.
+                                  {t("account.planning.protocol.projectionLine", {
+                                    model: projection.model,
+                                    low: projection.lowDeltaKg,
+                                    high: projection.highDeltaKg,
+                                    days: projection.durationDays
+                                  })}
                                 </p>
                                 {projection.assumptions ? (
                                   <small>
-                                    Adult model assumptions: age {projection.assumptions.ageYears}, PAL{" "}
-                                    {projection.assumptions.physicalActivityLevel}, estimated fat mass{" "}
-                                    {projection.assumptions.estimatedFatMassKg} kg, time constant{" "}
-                                    {projection.assumptions.timeConstantDays} days.
+                                    {t("account.planning.protocol.assumptions", {
+                                      age: projection.assumptions.ageYears,
+                                      pal: projection.assumptions.physicalActivityLevel,
+                                      fatMass: projection.assumptions.estimatedFatMassKg,
+                                      timeConstant: projection.assumptions.timeConstantDays
+                                    })}
                                   </small>
                                 ) : null}
                                 <small>{projection.note}</small>
                                 {projectedSilhouette ? (
                                   <div
                                     className="projection-silhouette-card"
-                                    aria-label={`${protocol.label} projected silhouette`}
+                                    aria-label={t("account.planning.protocol.projectedSilhouetteAria", {
+                                      label: protocol.label
+                                    })}
                                   >
                                     <div className="projection-silhouette-grid">
                                       <SilhouetteView
-                                        label={`${protocol.label} protocol start`}
+                                        label={t("account.planning.protocol.startSilhouetteLabel", {
+                                          label: protocol.label
+                                        })}
                                         measurements={protocol.startingMeasurements || currentMeasurements}
                                         view={silhouetteView}
                                       />
                                       <SilhouetteView
-                                        label={`${protocol.label} projected endpoint`}
+                                        label={t("account.planning.protocol.endpointSilhouetteLabel", {
+                                          label: protocol.label
+                                        })}
                                         measurements={projectedSilhouette.measurements}
                                         view={silhouetteView}
                                       />
                                     </div>
                                     <p>
-                                      Projected endpoint: {projectedSilhouette.measurements.weight.toFixed(1)} kg,
-                                      waist {projectedSilhouette.measurements.waistCircumference.toFixed(1)} cm.
+                                      {t("account.planning.protocol.projectedEndpoint", {
+                                        weight: projectedSilhouette.measurements.weight.toFixed(1),
+                                        waist: projectedSilhouette.measurements.waistCircumference.toFixed(1)
+                                      })}
                                     </p>
                                     <small>{projectedSilhouette.note}</small>
                                   </div>
@@ -5799,18 +6018,29 @@ export default function AccountGoalPanel({
                               </div>
                             ) : null}
                             {retro ? (
-                              <div aria-label={`${protocol.label} plan retro`}>
-                                <h4>Plan retro</h4>
+                              <div
+                                aria-label={t("account.planning.protocol.retroAria", {
+                                  label: protocol.label
+                                })}
+                              >
+                                <h4>{t("account.planning.protocol.retroTitle")}</h4>
                                 <p>{retro.label}</p>
                                 <small>
-                                  Actual {retro.actualDeltaKg} kg / projected {retro.projectedBand}
+                                  {t("account.planning.protocol.retroActual", {
+                                    actual: retro.actualDeltaKg,
+                                    projected: retro.projectedBand
+                                  })}
                                 </small>
                               </div>
                             ) : null}
-                            <div aria-label={`${protocol.label} case log`}>
-                              <h4>Case log</h4>
+                            <div
+                              aria-label={t("account.planning.protocol.caseLogAria", {
+                                label: protocol.label
+                              })}
+                            >
+                              <h4>{t("account.planning.protocol.caseLogTitle")}</h4>
                               <p>{caseLog.outcomeSummary}</p>
-                              <small>{caseLog.projectionSummary}</small>
+                              <small>{formatProtocolProjectionSummary(caseLog, t)}</small>
                             </div>
                           </div>
                         </li>
@@ -5818,7 +6048,7 @@ export default function AccountGoalPanel({
                     })}
                   </ul>
                 ) : (
-                  <p className="muted-text">No protocols started yet.</p>
+                  <p className="muted-text">{t("account.planning.protocol.empty")}</p>
                 )}
               </div>
             </section>
