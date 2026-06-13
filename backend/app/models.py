@@ -258,6 +258,47 @@ class ProviderDecisionLibrary(BaseModel):
     decisions: list[ProviderDecision] = Field(min_length=1)
 
 
+class FaceModelCandidate(BaseModel):
+    id: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9._:-]+$")
+    label: str = Field(min_length=1)
+    sourceType: Literal[
+        "reference-app",
+        "implemented-library",
+        "implemented-workflow",
+        "research-candidate",
+        "not-recommended-candidate",
+    ]
+    sourceUrl: str = ""
+    orientationSupport: list[Literal["frontal", "side-profile", "3d"]] = Field(
+        min_length=1
+    )
+    inputModes: list[
+        Literal["live-camera", "upload-photo", "manual-entry", "multi-view-photo"]
+    ] = Field(min_length=1)
+    localRuntime: bool
+    prototypeSafe: bool = False
+    reviewStatus: str = Field(min_length=1)
+    imageStoragePolicy: str = Field(min_length=1)
+    measurementOutputs: list[str] = Field(min_length=1)
+    privacyRequirements: list[str] = Field(min_length=1)
+    limitations: list[str] = Field(min_length=1)
+    nextValidationSteps: list[str] = Field(min_length=1)
+
+    @field_validator("sourceUrl")
+    @classmethod
+    def require_https_source_url(cls, value: str) -> str:
+        if value and not value.startswith("https://"):
+            raise ValueError("Face model candidate source URLs must use HTTPS.")
+        return value
+
+
+class FaceModelCandidateLibrary(BaseModel):
+    version: int = Field(ge=1)
+    source: str = Field(min_length=1)
+    notes: list[str] = Field(default_factory=list)
+    candidates: list[FaceModelCandidate] = Field(min_length=1)
+
+
 class AttractivenessEvidenceSource(BaseModel):
     id: str
     title: str

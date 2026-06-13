@@ -1,4 +1,4 @@
-"""Validate editable curation JSON for target, guide, food, planning, update, launch, provider, evidence, and strategy data.
+"""Validate editable curation JSON for target, guide, food, planning, update, launch, provider, face, evidence, and strategy data.
 
 Run from the backend directory:
 
@@ -15,6 +15,7 @@ Pass explicit files to validate a draft before replacing a seed:
         --live-update-file app\\data\\live_updates.seed.json \\
         --launch-readiness-file app\\data\\launch_readiness.seed.json \\
         --provider-decision-file app\\data\\provider_decisions.seed.json \\
+        --face-model-file app\\data\\face_model_candidates.seed.json \\
         --evidence-file app\\data\\attractiveness_evidence.seed.json \\
         --corpus-file ..\\strategy-corpus-template.json
 """
@@ -32,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.measurement_schema import load_measurement_schema  # noqa: E402
 from app.models import (  # noqa: E402
     AttractivenessEvidenceLibrary,
+    FaceModelCandidateLibrary,
     FoodSearchResponse,
     LaunchReadiness,
     LiveUpdateManifest,
@@ -60,6 +62,9 @@ DEFAULT_LAUNCH_READINESS_FILES = [
 ]
 DEFAULT_PROVIDER_DECISION_FILES = [
     BACKEND_ROOT / "app" / "data" / "provider_decisions.seed.json",
+]
+DEFAULT_FACE_MODEL_FILES = [
+    BACKEND_ROOT / "app" / "data" / "face_model_candidates.seed.json",
 ]
 DEFAULT_GUIDE_FILES = [
     BACKEND_ROOT / "app" / "data" / "measurement_guides.seed.json",
@@ -298,6 +303,63 @@ def validate_provider_decision_file(path: Path) -> str:
                 )
 
     return f"{path}: {len(library.decisions)} provider decision(s)"
+
+
+def validate_face_model_file(path: Path) -> str:
+    payload = read_json(path)
+    library = FaceModelCandidateLibrary.model_validate(payload)
+    candidate_ids = [candidate.id for candidate in library.candidates]
+    duplicates = duplicate_values(candidate_ids)
+
+    if duplicates:
+        raise ValueError(f"{path}: duplicate face model candidate ids: {', '.join(duplicates)}.")
+
+    if "troontraits-reference" not in set(candidate_ids):
+        raise ValueError(f"{path}: expected the TroonTraits reference candidate.")
+
+    side_profile_candidates = [
+        candidate
+        for candidate in library.candidates
+        if "side-profile" in candidate.orientationSupport
+    ]
+    if not side_profile_candidates:
+        raise ValueError(f"{path}: expected at least one side-profile candidate.")
+
+    local_runtime_candidates = [
+        candidate for candidate in library.candidates if candidate.localRuntime
+    ]
+    if not local_runtime_candidates:
+        raise ValueError(f"{path}: expected at least one browser-local candidate.")
+
+    prototype_safe_candidates = [
+        candidate for candidate in library.candidates if candidate.prototypeSafe
+    ]
+    if not prototype_safe_candidates:
+        raise ValueError(f"{path}: expected at least one prototype-safe candidate.")
+
+    for candidate in library.candidates:
+        if "review" not in candidate.reviewStatus.lower():
+            raise ValueError(
+                f"{path}: face model candidate {candidate.id!r} must stay review-gated."
+            )
+        policy = candidate.imageStoragePolicy.lower()
+        if "image" not in policy and "photo" not in policy and "frame" not in policy:
+            raise ValueError(
+                f"{path}: face model candidate {candidate.id!r} needs an image policy."
+            )
+        if not any(
+            "license" in step.lower() or "review" in step.lower()
+            for step in candidate.nextValidationSteps
+        ):
+            raise ValueError(
+                f"{path}: face model candidate {candidate.id!r} needs license/review steps."
+            )
+        if candidate.sourceType == "not-recommended-candidate" and candidate.prototypeSafe:
+            raise ValueError(
+                f"{path}: not-recommended candidate {candidate.id!r} cannot be prototype safe."
+            )
+
+    return f"{path}: {len(library.candidates)} face model candidate(s)"
 
 
 def validate_measurement_guide_file(path: Path) -> str:
@@ -583,6 +645,13 @@ def parse_args() -> argparse.Namespace:
         help="Provider decision JSON file to validate. Repeatable.",
     )
     parser.add_argument(
+        "--face-model-file",
+        action="append",
+        type=Path,
+        dest="face_model_files",
+        help="Face model candidate JSON file to validate. Repeatable.",
+    )
+    parser.add_argument(
         "--guide-file",
         action="append",
         type=Path,
@@ -627,6 +696,7 @@ def main() -> int:
     provider_decision_files = (
         args.provider_decision_files or DEFAULT_PROVIDER_DECISION_FILES
     )
+    face_model_files = args.face_model_files or DEFAULT_FACE_MODEL_FILES
     evidence_files = args.evidence_files or DEFAULT_EVIDENCE_FILES
     corpus_files = args.corpus_files or DEFAULT_CORPUS_FILES
     summaries = [
@@ -638,6 +708,7 @@ def main() -> int:
         *(validate_live_update_file(path) for path in live_update_files),
         *(validate_launch_readiness_file(path) for path in launch_readiness_files),
         *(validate_provider_decision_file(path) for path in provider_decision_files),
+        *(validate_face_model_file(path) for path in face_model_files),
         *(validate_attractiveness_evidence_file(path, planning_files) for path in evidence_files),
         *(validate_strategy_corpus_file(path) for path in corpus_files),
     ]

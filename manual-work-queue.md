@@ -186,8 +186,11 @@ Required input:
     signed bundle workflow, staged rollout, or rollback policy
 - photo/vision upload decision
 - side-profile model/license decision if automatic sagittal face inference is
-  in launch scope; current code only ships browser-local frontal landmarks and
-  manual side-profile logs
+  in launch scope; current code only ships browser-local frontal landmarks,
+  manual side-profile logs, and a review-only
+  `backend/app/data/face_model_candidates.seed.json` matrix surfaced in the
+  face logger. TroonTraits is tracked as a local-scan product-pattern
+  reference only until source/license review or owner permission exists.
 - legal owner/contact details
 - approval of privacy policy, terms, and medical disclaimer drafts
 - corpus moderation and exclusion policy
@@ -201,6 +204,7 @@ Required input:
 Use:
 
 - `backend/app/data/provider_decisions.seed.json`
+- `backend/app/data/face_model_candidates.seed.json`
 - `launch-decision-record.md`
 - `frontend/public/legal/`
 - `deployment.md`
@@ -214,6 +218,7 @@ Verification:
 cd backend
 .\.venv\Scripts\python.exe scripts\launch_preflight.py --fail-on-blockers
 .\.venv\Scripts\python.exe scripts\validate_curation.py --provider-decision-file app\data\provider_decisions.seed.json
+.\.venv\Scripts\python.exe scripts\validate_curation.py --face-model-file app\data\face_model_candidates.seed.json
 ```
 
 ## 7. Procedure Taxonomy Review

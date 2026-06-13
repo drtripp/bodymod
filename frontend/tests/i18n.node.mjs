@@ -197,6 +197,13 @@ test("translates known keys, falls back to English, and interpolates values", ()
     "478 landmarks detectados localmente."
   );
   assert.equal(
+    translate("es", "account.face.modelCandidate.status.loaded", {
+      candidates: 6,
+      sideProfile: 4
+    }),
+    "6 candidato(s) de modelo facial cargado(s); 4 cubren revision de perfil lateral."
+  );
+  assert.equal(
     translate("es", "account.face.confidence", { confidence: "media" }),
     "confianza media"
   );

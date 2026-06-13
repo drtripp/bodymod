@@ -521,6 +521,62 @@ const providerDecisionLibrary = {
   ]
 };
 
+const faceModelCandidateLibrary = {
+  version: 1,
+  source: "Mock face model candidate review seed.",
+  notes: ["Metadata only."],
+  candidates: [
+    {
+      id: "troontraits-reference",
+      label: "TroonTraits local face scan pattern",
+      sourceType: "reference-app",
+      sourceUrl: "https://troontraits.web.app/face",
+      orientationSupport: ["frontal"],
+      inputModes: ["live-camera", "upload-photo"],
+      localRuntime: true,
+      prototypeSafe: false,
+      reviewStatus: "needs source-code and license review",
+      imageStoragePolicy: "Reference-only local face scan pattern; no image storage approval.",
+      measurementOutputs: ["midface ratio"],
+      privacyRequirements: ["No image upload."],
+      limitations: ["Reference only."],
+      nextValidationSteps: ["Review source/license before implementation copying."]
+    },
+    {
+      id: "manual-side-profile-log",
+      label: "Manual side-profile measurement log",
+      sourceType: "implemented-workflow",
+      sourceUrl: "",
+      orientationSupport: ["side-profile"],
+      inputModes: ["manual-entry"],
+      localRuntime: true,
+      prototypeSafe: true,
+      reviewStatus: "implemented as collection fallback; production copy needs review",
+      imageStoragePolicy: "No side-profile photo is stored.",
+      measurementOutputs: ["nasolabial angle", "note-only profile log"],
+      privacyRequirements: ["No image storage."],
+      limitations: ["Manual values depend on external annotation."],
+      nextValidationSteps: ["Review side-profile ranges and copy."]
+    },
+    {
+      id: "browser-local-3d-face-reconstruction",
+      label: "Browser-local 3D face reconstruction",
+      sourceType: "research-candidate",
+      sourceUrl: "",
+      orientationSupport: ["frontal", "side-profile", "3d"],
+      inputModes: ["multi-view-photo"],
+      localRuntime: true,
+      prototypeSafe: false,
+      reviewStatus: "needs model, license, bundle-size, and repeatability review",
+      imageStoragePolicy: "Candidate must run locally and discard frames/images.",
+      measurementOutputs: ["chin projection", "nose projection"],
+      privacyRequirements: ["No identity embeddings."],
+      limitations: ["Needs calibration."],
+      nextValidationSteps: ["Review licensed local models."]
+    }
+  ]
+};
+
 const exerciseLibrary = {
   version: 1,
   reference: "Dummy workout seed data for tests.",
@@ -987,6 +1043,14 @@ async function mockApi(page) {
     const requestBody = route.request().postData() || "";
     expect(requestBody).not.toMatch(/measurements|waistCircumference|mason@example\.com|syncToken|note/);
     await route.fulfill({ json: providerDecisionLibrary });
+  });
+
+  await page.route("**/api/face-model-candidates", async (route) => {
+    const requestBody = route.request().postData() || "";
+    expect(requestBody).not.toMatch(
+      /measurements|waistCircumference|mason@example\.com|syncToken|note|data:image|Right side photo/
+    );
+    await route.fulfill({ json: faceModelCandidateLibrary });
   });
 
   await page.route("**/api/clothing-sizes", async (route) => {
@@ -2117,6 +2181,15 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Account email")).not.toBeVisible();
   await expect(page.getByLabel("Face measurement logger")).toContainText("No saved face measurements yet.");
   await expect(page.getByLabel("Side profile research notes")).toContainText("Nose projection");
+  await expect(page.getByLabel("Face model candidate review")).toContainText(
+    "3 face model candidate(s)"
+  );
+  await expect(page.getByLabel("Face model candidate review")).toContainText(
+    "TroonTraits local face scan pattern"
+  );
+  await expect(page.getByLabel("Face model candidate review")).toContainText(
+    "Review source/license before implementation copying."
+  );
   await page.getByLabel("Nasolabial angle").fill("96");
   await page.getByLabel("Mentocervical angle").fill("108.5");
   await page.getByLabel("Side profile note").fill("Right side, neutral posture.");
@@ -2637,6 +2710,12 @@ test("downloads a localized progress report from the account UI", async ({ page 
   const faceSection = accountDialog.getByLabel("Registro de medidas faciales");
   await expect(faceSection).toContainText("Escaneo local del navegador");
   await expect(faceSection).toContainText("Aun no hay medidas faciales guardadas.");
+  await expect(accountDialog.getByLabel("Revision de candidatos de modelo facial")).toContainText(
+    "2 candidato(s) de perfil lateral"
+  );
+  await expect(accountDialog.getByLabel("Revision de candidatos de modelo facial")).toContainText(
+    "TroonTraits local face scan pattern"
+  );
   await expect(page.getByRole("button", { name: "Guardar metricas faciales" })).toBeDisabled();
   const photoSection = accountDialog.getByLabel("Registro de fotos");
   await expect(photoSection).toContainText("Fotos locales de progreso");

@@ -8,6 +8,10 @@ from app.data.bloodwork import BLOODWORK_LIBRARY
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY, EXERCISE_SEED_PATH
+from app.data.face_model_candidates import (
+    FACE_MODEL_CANDIDATE_LIBRARY,
+    FACE_MODEL_CANDIDATE_SEED_PATH,
+)
 from app.data.food_usda import USDA_FOOD_LIBRARY, USDA_FOOD_SEED_PATH
 from app.data.launch_readiness import LAUNCH_READINESS, LAUNCH_READINESS_SEED_PATH
 from app.data.live_updates import LIVE_UPDATE_MANIFEST, LIVE_UPDATE_SEED_PATH
@@ -256,6 +260,38 @@ def test_provider_decisions_endpoint_returns_review_matrix() -> None:
     assert "waistCircumference" not in response.text
     assert "syncToken" not in response.text
     assert "mason@example.com" not in response.text
+
+
+def test_face_model_candidates_endpoint_returns_review_seed() -> None:
+    response = client.get("/api/face-model-candidates")
+
+    assert response.status_code == 200
+    assert FACE_MODEL_CANDIDATE_SEED_PATH.exists()
+    payload = response.json()
+    candidate_ids = {candidate["id"] for candidate in payload["candidates"]}
+
+    assert payload["version"] == FACE_MODEL_CANDIDATE_LIBRARY["version"]
+    assert "Dummy face model candidate review seed" in payload["source"]
+    assert {
+        "troontraits-reference",
+        "mediapipe-face-landmarker-frontal",
+        "manual-side-profile-log",
+        "browser-local-3d-face-reconstruction",
+        "profile-specific-landmark-detector",
+        "hosted-vision-side-profile-analysis",
+    }.issubset(candidate_ids)
+    assert any(
+        "side-profile" in candidate["orientationSupport"]
+        for candidate in payload["candidates"]
+    )
+    assert any(candidate["prototypeSafe"] for candidate in payload["candidates"])
+    assert any(candidate["localRuntime"] for candidate in payload["candidates"])
+    assert all(candidate["privacyRequirements"] for candidate in payload["candidates"])
+    assert all(candidate["nextValidationSteps"] for candidate in payload["candidates"])
+    assert "waistCircumference" not in response.text
+    assert "syncToken" not in response.text
+    assert "mason@example.com" not in response.text
+    assert "data:image" not in response.text
 
 
 def test_clothing_size_endpoint_returns_placeholder_tables() -> None:

@@ -201,7 +201,11 @@ Protocol Tracker → Diet upgrades → Native app.
       and provides a manual side-profile log for nasolabial angle,
       mentocervical angle, facial convexity, chin projection, or note-only
       entries while documenting the side-profile model spike in
-      `face-measurement-research.md`.
+      `face-measurement-research.md`. A review-only backend candidate matrix
+      now lives at `backend/app/data/face_model_candidates.seed.json`, is
+      exposed through `/api/face-model-candidates`, and is shown in the face
+      logger so TroonTraits remains a product-pattern reference rather than an
+      approved source-code/license dependency.
 
 ## 4. Check-In Loop & Engagement
 

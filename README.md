@@ -156,7 +156,7 @@ Implemented now:
 - readable local JSON export for snapshots and diet data without an account, plus account-scoped logs when signed in
 - opt-in server-side read-only share dashboards with opaque public links and browser-held revoke tokens
 - expiring opaque server-side measurement snapshot links from the header for evaluating a privacy-preserving replacement for encoded share URLs
-- local browser face measurement logger using self-hosted MediaPipe assets for camera/photo landmark scans, plus manual side-profile measurement logs while profile-specific ML remains under review
+- local browser face measurement logger using self-hosted MediaPipe assets for camera/photo landmark scans, plus manual side-profile measurement logs and a backend face-model candidate review matrix while profile-specific ML remains under review
 - local progress photo streams for body, face, and hair with ghost overlay and comparison slider
 - Capacitor Filesystem-backed native progress-photo asset storage, keeping photo bytes out of Preferences/account metadata while preserving local-only web photo behavior
 - current-vs-selected-snapshot silhouette comparison

@@ -63,6 +63,7 @@
     "test:error-monitoring": "node --test tests/errorMonitoring.node.mjs",
     "test:analytics": "node --test tests/productAnalytics.node.mjs",
     "test:face-measurements": "node --test tests/faceMeasurements.node.mjs",
+    "test:face-model-candidates": "node --test tests/faceModelCandidates.node.mjs",
     "test:result-card": "node --test tests/resultCard.node.mjs",
     "test:progress-report": "node --test tests/progressReport.node.mjs",
     "test:population": "node --test tests/populationCharts.node.mjs",

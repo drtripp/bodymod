@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "source": "Dummy face model candidate review seed for Dawson validation. The TroonTraits row is a product-pattern reference only, not a source-code or license approval.",
+  "notes": [
+    "This library is metadata-only: no user images, measurements, account IDs, camera frames, face landmarks, or private notes.",
+    "Automatic side-profile numerical outputs remain blocked until Dawson approves a browser-local model, source/license terms, repeatability tests, and user-facing uncertainty copy.",
+    "The current prototype ships browser-local frontal MediaPipe landmarks and manual side-profile logs without image storage."
+  ],
+  "candidates": [
+    {
+      "id": "troontraits-reference",
+      "label": "TroonTraits local face scan pattern",
+      "sourceType": "reference-app",
+      "sourceUrl": "https://troontraits.web.app/face",
+      "orientationSupport": ["frontal"],
+      "inputModes": ["live-camera", "upload-photo"],
+      "localRuntime": true,
+      "prototypeSafe": false,
+      "reviewStatus": "needs source-code and license review before any implementation copy",
+      "imageStoragePolicy": "Reference pattern says browser-local camera/photo flow; this seed does not approve copying source code or storing images.",
+      "measurementOutputs": ["midface ratio", "live face scan status"],
+      "privacyRequirements": [
+        "Use only as a UX/product reference unless source and license are explicitly approved.",
+        "Keep camera/photo analysis local to the browser.",
+        "Do not store uploaded face photos or live camera frames with measurement records."
+      ],
+      "limitations": [
+        "Public page text does not prove implementation details, model file, license, or measurement accuracy.",
+        "Observed public flow focuses on frontal scan behavior and midface ratio, not side-profile inference."
+      ],
+      "nextValidationSteps": [
+        "Manually inspect source/license or get owner permission before copying any implementation detail.",
+        "Compare only product behavior: local camera/photo modes, privacy copy, and metric logging flow.",
+        "Decide whether this remains a reference only or becomes a licensed implementation target."
+      ]
+    },
+    {
+      "id": "mediapipe-face-landmarker-frontal",
+      "label": "MediaPipe Face Landmarker frontal mesh",
+      "sourceType": "implemented-library",
+      "sourceUrl": "https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker/web_js",
+      "orientationSupport": ["frontal"],
+      "inputModes": ["live-camera", "upload-photo"],
+      "localRuntime": true,
+      "prototypeSafe": true,
+      "reviewStatus": "implemented for frontal prototype; production measurement wording still needs review",
+      "imageStoragePolicy": "Browser-local analysis; saved records keep derived metrics, source, note, timestamp, and landmark count but no image payload.",
+      "measurementOutputs": [
+        "midface ratio",
+        "canthal tilt",
+        "facial thirds balance",
+        "eye spacing ratio",
+        "upper/lower lip ratio",
+        "philtrum split",
+        "fWHR",
+        "cheekbone-to-jaw ratio",
+        "face width/height ratio",
+        "facial fifths balance"
+      ],
+      "privacyRequirements": [
+        "Self-host model and WASM assets.",
+        "Keep image bytes out of saved records, backups, exports, share dashboards, and analytics.",
+        "Label all metrics as low/medium confidence because pose, lens, crop, lighting, and expression change ratios."
+      ],
+      "limitations": [
+        "Frontal landmarks are not sufficient for sagittal nose, chin, jaw, or neck profile measurements.",
+        "The current metrics are repeatable relative logs, not diagnosis, identity inference, or attractiveness scoring."
+      ],
+      "nextValidationSteps": [
+        "Run repeatability tests across lighting, lens distance, crop, and expression.",
+        "Review metric labels and uncertainty copy before public launch.",
+        "Keep side-profile claims out of the automatic model path."
+      ]
+    },
+    {
+      "id": "manual-side-profile-log",
+      "label": "Manual side-profile measurement log",
+      "sourceType": "implemented-workflow",
+      "sourceUrl": "",
+      "orientationSupport": ["side-profile"],
+      "inputModes": ["manual-entry"],
+      "localRuntime": true,
+      "prototypeSafe": true,
+      "reviewStatus": "implemented as collection fallback; production copy needs review",
+      "imageStoragePolicy": "No side-profile photo is stored; users enter manually annotated values or a note.",
+      "measurementOutputs": [
+        "nasolabial angle",
+        "mentocervical angle",
+        "facial convexity",
+        "chin projection",
+        "note-only profile log"
+      ],
+      "privacyRequirements": [
+        "Do not persist side-profile image data.",
+        "Keep manual values account-scoped and exportable/deletable with the rest of local face logs.",
+        "Label entries as manual collection, not automatic model inference."
+      ],
+      "limitations": [
+        "Manual values depend on the user's external annotation method.",
+        "No automatic repeatability guarantee exists until a licensed side-profile model is selected."
+      ],
+      "nextValidationSteps": [
+        "Add optional calibration guidance if Dawson approves a manual annotation workflow.",
+        "Decide whether manual side-profile logging is enough for launch or needs a model search.",
+        "Review side-profile metric ranges and copy with the broader face evidence review."
+      ]
+    },
+    {
+      "id": "browser-local-3d-face-reconstruction",
+      "label": "Browser-local 3D face reconstruction",
+      "sourceType": "research-candidate",
+      "sourceUrl": "",
+      "orientationSupport": ["frontal", "side-profile", "3d"],
+      "inputModes": ["live-camera", "upload-photo", "multi-view-photo"],
+      "localRuntime": true,
+      "prototypeSafe": false,
+      "reviewStatus": "needs model, license, bundle-size, and repeatability review",
+      "imageStoragePolicy": "Candidate must run locally and discard frames/images after deriving review-approved metrics.",
+      "measurementOutputs": [
+        "chin projection",
+        "nose projection",
+        "jaw projection",
+        "facial convexity",
+        "calibrated profile depth candidates"
+      ],
+      "privacyRequirements": [
+        "Must run in browser or native local runtime without uploading face images.",
+        "Must not emit identity embeddings or biometric templates.",
+        "Must document model license, bundle size, failure states, and deletion behavior."
+      ],
+      "limitations": [
+        "Likely heavier than the current Face Landmarker path.",
+        "Depth metrics need calibration and pose normalization before they are useful logs."
+      ],
+      "nextValidationSteps": [
+        "Review candidate model licenses for permissive commercial terms and browser-compatible runtimes.",
+        "Measure load time, memory, model size, and offline behavior.",
+        "Build a fixture set with repeated side-profile/photo captures before enabling outputs."
+      ]
+    },
+    {
+      "id": "profile-specific-landmark-detector",
+      "label": "Profile-specific landmark detector",
+      "sourceType": "research-candidate",
+      "sourceUrl": "",
+      "orientationSupport": ["side-profile"],
+      "inputModes": ["upload-photo", "live-camera"],
+      "localRuntime": true,
+      "prototypeSafe": false,
+      "reviewStatus": "needs licensed model search and validation review",
+      "imageStoragePolicy": "Candidate must analyze images locally and save only derived side-profile metrics or note records.",
+      "measurementOutputs": [
+        "nasolabial angle",
+        "mentocervical angle",
+        "facial convexity",
+        "chin projection proxy",
+        "nose projection proxy"
+      ],
+      "privacyRequirements": [
+        "No image upload, identity matching, or biometric template storage.",
+        "Keep outputs marked as side-profile model estimates with confidence and failure reasons.",
+        "Require explicit user action before saving metrics."
+      ],
+      "limitations": [
+        "A profile-only detector may not solve calibration or scale without reference markers.",
+        "Model availability and license suitability are unknown."
+      ],
+      "nextValidationSteps": [
+        "Search for commercially usable profile landmark models or datasets with explicit license review.",
+        "Test left/right profile mirroring, glasses/facial hair, and crop sensitivity.",
+        "Decide whether metric confidence is good enough to replace manual logs."
+      ]
+    },
+    {
+      "id": "hosted-vision-side-profile-analysis",
+      "label": "Hosted vision side-profile analysis",
+      "sourceType": "not-recommended-candidate",
+      "sourceUrl": "",
+      "orientationSupport": ["side-profile"],
+      "inputModes": ["upload-photo"],
+      "localRuntime": false,
+      "prototypeSafe": false,
+      "reviewStatus": "needs explicit privacy, biometric, legal, and user-consent review",
+      "imageStoragePolicy": "Not approved for launch; would require uploading face photos or derived image features to a provider.",
+      "measurementOutputs": [
+        "side-profile metric estimates",
+        "model-generated annotations"
+      ],
+      "privacyRequirements": [
+        "Requires a separate photo/vision upload decision before any implementation.",
+        "Must not be enabled by default in the local-first prototype.",
+        "Requires provider retention, deletion, consent, and biometric-processing review."
+      ],
+      "limitations": [
+        "Conflicts with the current local-first face measurement promise.",
+        "Adds high privacy and legal risk compared with local/manual workflows."
+      ],
+      "nextValidationSteps": [
+        "Keep out of scope unless Dawson explicitly approves hosted face-photo processing.",
+        "If revisited, run privacy/legal review for consent, retention, deletion, and no-training policy before prototype work.",
+        "Prefer browser-local side-profile options first."
+      ]
+    }
+  ]
+}

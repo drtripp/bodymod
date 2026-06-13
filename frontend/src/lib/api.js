@@ -63,6 +63,10 @@ export function fetchProviderDecisions() {
   return request("/api/provider-decisions");
 }
 
+export function fetchFaceModelCandidates() {
+  return request("/api/face-model-candidates");
+}
+
 export function fetchClothingSizeTables() {
   return request("/api/clothing-sizes");
 }

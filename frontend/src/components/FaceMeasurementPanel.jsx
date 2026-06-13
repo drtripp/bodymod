@@ -1,4 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { fetchFaceModelCandidates } from "../lib/api";
+import {
+  faceModelCandidateSummary,
+  fallbackFaceModelCandidateLibrary,
+  normalizeFaceModelCandidateLibrary
+} from "../lib/faceModelCandidates";
 import {
   buildFaceMeasurementRecord,
   buildSideProfileMeasurementRecord,
@@ -31,6 +37,20 @@ function formatFaceError(error, t) {
   return errorKeyByMessage.has(message)
     ? t(errorKeyByMessage.get(message))
     : message || t("account.face.status.failed");
+}
+
+function formatCandidateLine(candidate, t) {
+  return t("account.face.modelCandidate.line", {
+    status: candidate.reviewStatus,
+    orientations: candidate.orientationSupport.join(", "),
+    runtime: candidate.localRuntime
+      ? t("account.face.modelCandidate.local")
+      : t("account.face.modelCandidate.hosted")
+  });
+}
+
+function formatCandidateNextStep(candidate, t) {
+  return candidate.nextValidationSteps?.[0] || t("account.face.modelCandidate.noStep");
 }
 
 function imageFromDataUrl(dataUrl) {
@@ -69,10 +89,58 @@ export default function FaceMeasurementPanel({
   const [sideProfileValues, setSideProfileValues] = useState({});
   const [sideProfileNote, setSideProfileNote] = useState("");
   const [isCameraRunning, setIsCameraRunning] = useState(false);
+  const [modelCandidateLibrary, setModelCandidateLibrary] = useState(() =>
+    normalizeFaceModelCandidateLibrary(fallbackFaceModelCandidateLibrary)
+  );
+  const [modelCandidateStatus, setModelCandidateStatus] = useState(() =>
+    t("account.face.modelCandidate.status.loading")
+  );
+  const modelCandidateSummary = faceModelCandidateSummary(modelCandidateLibrary);
 
   useEffect(() => {
     return () => stopCamera();
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchFaceModelCandidates()
+      .then((data) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const normalized = normalizeFaceModelCandidateLibrary(data);
+        const summary = faceModelCandidateSummary(normalized);
+        setModelCandidateLibrary(normalized);
+        setModelCandidateStatus(
+          t("account.face.modelCandidate.status.loaded", {
+            candidates: summary.totalCount,
+            sideProfile: summary.sideProfileCount
+          })
+        );
+      })
+      .catch(() => {
+        if (!isMounted) {
+          return;
+        }
+
+        const fallback = normalizeFaceModelCandidateLibrary(
+          fallbackFaceModelCandidateLibrary
+        );
+        const summary = faceModelCandidateSummary(fallback);
+        setModelCandidateLibrary(fallback);
+        setModelCandidateStatus(
+          t("account.face.modelCandidate.status.unavailable", {
+            sideProfile: summary.sideProfileCount
+          })
+        );
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [locale]);
 
   function stopCamera() {
     liveRef.current = false;
@@ -300,6 +368,52 @@ export default function FaceMeasurementPanel({
             <li key={note}>{note}</li>
           ))}
         </ul>
+      </div>
+
+      <div className="face-model-candidate-panel" aria-label={t("account.face.modelCandidate.aria")}>
+        <div>
+          <h4>{t("account.face.modelCandidate.title")}</h4>
+          <p>{t("account.face.modelCandidate.body")}</p>
+          <small>{modelCandidateLibrary.source}</small>
+        </div>
+        <div className="face-model-candidate-summary" aria-label={t("account.face.modelCandidate.summaryAria")}>
+          <strong>
+            {t("account.face.modelCandidate.sideProfileCount", {
+              count: modelCandidateSummary.sideProfileCount
+            })}
+          </strong>
+          <span>
+            {t("account.face.modelCandidate.localCount", {
+              count: modelCandidateSummary.localRuntimeCount
+            })}
+          </span>
+          <small>
+            {t("account.face.modelCandidate.prototypeCount", {
+              count: modelCandidateSummary.prototypeSafeCount
+            })}
+          </small>
+        </div>
+        <ul className="face-model-candidate-list">
+          {modelCandidateLibrary.candidates.slice(0, 4).map((candidate) => (
+            <li key={candidate.id}>
+              <strong>{candidate.label}</strong>
+              <span>{formatCandidateLine(candidate, t)}</span>
+              <small>{formatCandidateNextStep(candidate, t)}</small>
+            </li>
+          ))}
+        </ul>
+        {modelCandidateLibrary.candidates.length > 4 ? (
+          <small>
+            {t("account.face.modelCandidate.remainingCount", {
+              count: modelCandidateLibrary.candidates.length - 4
+            })}
+          </small>
+        ) : null}
+        {modelCandidateStatus ? (
+          <small className="face-model-candidate-status" role="status" aria-live="polite">
+            {modelCandidateStatus}
+          </small>
+        ) : null}
       </div>
 
       <div className="side-profile-manual-log" aria-label={t("account.face.manualAria")}>

@@ -70,6 +70,13 @@ Production gate: do not ship automatic side-profile numerical outputs until the
 selected model has permissive commercial terms, repeatability testing, and
 user-facing uncertainty copy.
 
+The review candidates now also live in
+`backend/app/data/face_model_candidates.seed.json`, are validated by
+`backend/scripts/validate_curation.py`, exposed at `/api/face-model-candidates`,
+and shown inside the face measurement logger. The TroonTraits row is a UX and
+privacy-pattern reference only; it is not approval to copy source code or rely
+on unreviewed licensing.
+
 ## Sources
 
 - https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker/web_js

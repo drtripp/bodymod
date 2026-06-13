@@ -160,7 +160,8 @@
         "Review-only case-log submission queue at /api/case-log-submissions",
         "Token-guarded case-log reviewer endpoints at /api/case-log-submissions/review",
         "Expiring opaque measurement share snapshots at /api/share-snapshots",
-        "Review-only provider decision matrix at /api/provider-decisions"
+        "Review-only provider decision matrix at /api/provider-decisions",
+        "Review-only face model candidate matrix at /api/face-model-candidates"
       ],
       "verification": [
         ".\\verify.ps1",

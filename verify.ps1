@@ -76,6 +76,7 @@ try {
     Invoke-Checked { npm run test:error-monitoring }
     Invoke-Checked { npm run test:analytics }
     Invoke-Checked { npm run test:face-measurements }
+    Invoke-Checked { npm run test:face-model-candidates }
     Invoke-Checked { npm run test:result-card }
     Invoke-Checked { npm run test:progress-report }
     Invoke-Checked { npm run test:population }

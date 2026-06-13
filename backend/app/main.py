@@ -11,6 +11,7 @@ from app.data.bloodwork import BLOODWORK_LIBRARY
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY
+from app.data.face_model_candidates import FACE_MODEL_CANDIDATE_LIBRARY
 from app.data.food_usda import USDA_FOOD_LIBRARY, search_usda_foods
 from app.data.launch_readiness import LAUNCH_READINESS
 from app.data.live_updates import LIVE_UPDATE_MANIFEST
@@ -38,6 +39,7 @@ from app.models import ClientErrorReportRequest
 from app.models import ClientErrorReportResponse
 from app.models import EntitlementConfig
 from app.models import ExerciseLibrary
+from app.models import FaceModelCandidateLibrary
 from app.models import FoodSearchResponse
 from app.models import LaunchReadiness
 from app.models import LiveUpdateManifest
@@ -235,6 +237,11 @@ def launch_readiness() -> dict:
 @app.get("/api/provider-decisions")
 def provider_decisions() -> dict:
     return ProviderDecisionLibrary.model_validate(PROVIDER_DECISION_LIBRARY).model_dump()
+
+
+@app.get("/api/face-model-candidates")
+def face_model_candidates() -> dict:
+    return FaceModelCandidateLibrary.model_validate(FACE_MODEL_CANDIDATE_LIBRARY).model_dump()
 
 
 @app.get("/api/clothing-sizes")
