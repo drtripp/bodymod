@@ -157,10 +157,13 @@
         "frontend/public/legal/",
         "Disabled-by-default first-party analytics upload",
         "Encrypted sync vault and magic-link account scaffolds",
-        "Review-only case-log submission queue at /api/case-log-submissions"
+        "Review-only case-log submission queue at /api/case-log-submissions",
+        "Expiring opaque measurement share snapshots at /api/share-snapshots"
       ],
       "verification": [
-        ".\\verify.ps1"
+        ".\\verify.ps1",
+        "cd backend && python -m pytest tests/test_api.py tests/test_repositories.py",
+        "cd frontend && npm run test:share-snapshots"
       ],
       "docs": [
         "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",

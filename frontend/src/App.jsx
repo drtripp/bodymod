@@ -11,6 +11,7 @@ import ResultSummary from "./components/ResultSummary";
 import SiteHeader from "./components/SiteHeader";
 import StrategyCorpus from "./components/StrategyCorpus";
 import {
+  createShareSnapshot,
   fetchClothingSizeTables,
   fetchEntitlements,
   fetchHealth,
@@ -19,6 +20,7 @@ import {
   fetchMeasurementGuides,
   fetchReferenceData,
   fetchShareDashboard,
+  fetchShareSnapshot,
   fetchTargets
 } from "./lib/api";
 import { trackEvent } from "./lib/analytics";
@@ -31,6 +33,10 @@ import {
   buildShareUrl,
   decodeMeasurementsFromUrl
 } from "./lib/share";
+import {
+  buildShareSnapshotPayload,
+  publicShareSnapshotUrl
+} from "./lib/shareSnapshots";
 import { loadSnapshots } from "./lib/storage";
 import {
   loadOnboardingProfile,
@@ -82,6 +88,10 @@ export default function App() {
   const shareDashboardToken =
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("share") || ""
+      : "";
+  const shareSnapshotToken =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("snapshot") || ""
       : "";
   const [magicLinkTokenFromUrl] = useState(() =>
     typeof window !== "undefined" ? extractMagicLinkTokenFromSearch(window.location.search) : ""
@@ -187,6 +197,7 @@ export default function App() {
     localeAria: t("nav.locale.aria"),
     accountAria: t("nav.account.aria"),
     shareAria: t("nav.share.aria"),
+    snapshotShareAria: t("nav.shareSnapshot.aria"),
     buildPlan: t("nav.buildPlan")
   };
   const localizedThemeOptions = themeOptions.map((option) => ({
@@ -303,6 +314,26 @@ export default function App() {
         setPublicShareStatus("This share link is missing, revoked, or unavailable.");
       });
   }, [shareDashboardToken]);
+
+  useEffect(() => {
+    if (!shareSnapshotToken || shareDashboardToken) {
+      return;
+    }
+
+    setShareStatus(t("share.snapshotLoading"));
+    fetchShareSnapshot(shareSnapshotToken)
+      .then((record) => {
+        if (!record?.snapshot?.measurements) {
+          throw new Error("Missing share snapshot measurements.");
+        }
+        setMeasurementSet(record.snapshot.measurements);
+        setShareStatus(t("share.snapshotLoaded"));
+        trackEvent("share_snapshot_loaded");
+      })
+      .catch(() => {
+        setShareStatus(t("share.snapshotUnavailable"));
+      });
+  }, [locale, shareDashboardToken, shareSnapshotToken]);
 
   useEffect(() => {
     if (!targets.length) {
@@ -445,6 +476,27 @@ export default function App() {
     }
   }
 
+  async function handleCreateShareSnapshot() {
+    const validation = validateCurrentMeasurements();
+    if (!validation.isValid) {
+      setShareStatus(t("share.snapshotInvalid"));
+      return;
+    }
+
+    const payload = buildShareSnapshotPayload(validation.measurements);
+    setShareStatus(t("share.snapshotCreating"));
+
+    try {
+      const record = await createShareSnapshot(payload);
+      const publicUrl = publicShareSnapshotUrl(record.publicToken);
+      await navigator.clipboard.writeText(publicUrl);
+      setShareStatus(t("share.snapshotCreated", { hours: payload.expiresInHours }));
+      trackEvent("share_snapshot_created", { expiresInHours: payload.expiresInHours });
+    } catch (error) {
+      setShareStatus(t("share.snapshotFailed"));
+    }
+  }
+
   function handleSkipToMain(event) {
     event.preventDefault();
     const main = document.getElementById("main-content");
@@ -474,6 +526,7 @@ export default function App() {
         onOpenAccount={() => setIsAccountPanelOpen(true)}
         onOpenStrategies={() => setIsStrategyExplorerOpen(true)}
         onShare={handleCopyShareLink}
+        onShareSnapshot={handleCreateShareSnapshot}
         shareStatus={shareStatus}
       />
 

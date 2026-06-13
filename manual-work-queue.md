@@ -160,6 +160,10 @@ cd backend
 Required input:
 
 - share URL decision
+  - agent scaffold now exists for both header options: legacy encoded
+    measurement URLs (`?m=`) and server-side opaque expiring measurement
+    snapshots (`?snapshot=`) via `/api/share-snapshots`; Dawson still needs to
+    approve which behavior ships publicly
 - production analytics decision
   - agent wiring now exists as a disabled-by-default first-party sanitized
     `/api/product-analytics` path; the remaining decision is provider/hosting

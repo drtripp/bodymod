@@ -526,7 +526,10 @@ land. No social features, no marketplace.
       The acquisition loop — screenshots in Discords/group chats.
 - [ ] Share URL decision: keep encoded-measurement URLs or move to server-side
       opaque snapshot IDs with expiry (open gate in
-      `launch-decision-record.md`). **[human]** decision, agent implementation.
+      `launch-decision-record.md`). **[human]** decision remains open.
+      **Agent scaffold:** the header now supports both the legacy encoded
+      `?m=` link and a lightweight server-side expiring opaque `?snapshot=`
+      measurement link backed by `/api/share-snapshots`.
 - [x] Marketing/landing site **(new)**: separate lightweight public page —
       what it is, privacy stance, screenshots, app-store links, Pro waitlist
       email capture.
@@ -548,7 +551,8 @@ land. No social features, no marketplace.
       FastAPI/SQLite share-dashboard API with opaque public tokens and private
       revoke tokens, plus signed-in account-panel publish/update/copy/revoke
       controls and a `?share=` read-only public dashboard. The header encoded
-      measurement URL remains available pending the final launch share decision.
+      measurement URL and expiring `?snapshot=` opaque measurement URL remain
+      available pending the final launch share decision.
 - [x] Honest referral **(new)**: both sides get a Pro month; never gates
       features or results behind inviting. Implemented as a local-only
       scaffold in the account panel: stable invite codes, friend-code logging,

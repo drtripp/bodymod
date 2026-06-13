@@ -1091,6 +1091,70 @@ class PersonalDataTokenRevokeResponse(BaseModel):
     revoked: bool = True
 
 
+PRIVATE_SHARE_SNAPSHOT_TEXT_PATTERNS = [
+    re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
+    re.compile(r"\b(accountId|sessionToken|syncToken|accessToken)\b", re.IGNORECASE),
+]
+
+
+def reject_private_share_snapshot_text(value: str) -> str:
+    for pattern in PRIVATE_SHARE_SNAPSHOT_TEXT_PATTERNS:
+        if pattern.search(value):
+            raise ValueError("Share snapshots must not include private account data.")
+    return value
+
+
+class ShareSnapshotPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    version: int = Field(default=1, ge=1, le=3)
+    title: str = Field(default="Shared bodymod measurements", min_length=1, max_length=120)
+    createdAt: str = Field(min_length=1, max_length=40)
+    privacyNote: str = Field(default="", max_length=400)
+    measurements: MeasurementSet
+
+    @field_validator("title", "privacyNote")
+    @classmethod
+    def reject_private_text(cls, value: str) -> str:
+        return reject_private_share_snapshot_text(value)
+
+    @field_validator("createdAt")
+    @classmethod
+    def require_isoish_created_at(cls, value: str) -> str:
+        try:
+            datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("Share snapshot timestamps must be ISO-8601 strings.") from error
+        return value
+
+    @field_validator("measurements", mode="before")
+    @classmethod
+    def reject_extra_measurement_keys(cls, value):
+        if isinstance(value, dict):
+            extra_keys = sorted(set(value) - set(MeasurementSet.model_fields))
+            if extra_keys:
+                raise ValueError("Share snapshots must include only measurement fields.")
+        return value
+
+
+class ShareSnapshotCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    snapshot: ShareSnapshotPayload
+    expiresInHours: int = Field(default=72, ge=1, le=168)
+
+
+class ShareSnapshotPublicRecord(BaseModel):
+    publicToken: str
+    createdAt: str
+    expiresAt: str
+    snapshot: ShareSnapshotPayload
+
+
+class ShareSnapshotCreateResponse(ShareSnapshotPublicRecord):
+    pass
+
+
 class ShareDashboardSnapshot(BaseModel):
     id: str
     label: str = ""

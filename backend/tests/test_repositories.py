@@ -1,8 +1,10 @@
 import sqlite3
+from datetime import datetime, timedelta, timezone
 
 from app.models import (
     CaseLogSubmissionRequest,
     EncryptedSyncBlob,
+    ShareSnapshotPayload,
     TargetProfile,
     WebPushSubscriptionPayload,
 )
@@ -11,6 +13,7 @@ from app.repositories import (
     CaseLogSubmissionRepository,
     NativePushTokenRepository,
     PersonalDataTokenRepository,
+    ShareSnapshotRepository,
     SyncConflictError,
     SyncVaultRepository,
     TargetRepository,
@@ -104,6 +107,48 @@ def test_case_log_submission_repository_stores_moderation_queue_records(tmp_path
     assert "accountId" not in row["payload_json"]
     assert "syncToken" not in row["payload_json"]
     assert "waistCircumference" not in row["payload_json"]
+
+
+def test_share_snapshot_repository_stores_opaque_expiring_measurement_records(tmp_path) -> None:
+    db_path = tmp_path / "bodymod.sqlite3"
+    repository = ShareSnapshotRepository(db_path=db_path)
+    measurements = load_target_seed()["targets"][0]["measurements"]
+    snapshot = ShareSnapshotPayload.model_validate(
+        {
+            "version": 1,
+            "title": "Mason measurement snapshot",
+            "createdAt": "2026-06-13T12:00:00Z",
+            "privacyNote": "Expiring read-only measurement snapshot.",
+            "measurements": measurements,
+        }
+    )
+
+    created = repository.create_snapshot(snapshot, expires_in_hours=2)
+    fetched = repository.get_public_snapshot(created["publicToken"])
+    expired = repository.get_public_snapshot(
+        created["publicToken"],
+        now=datetime.now(timezone.utc) + timedelta(hours=3),
+    )
+
+    assert created["publicToken"]
+    assert created["expiresAt"] > created["createdAt"]
+    assert fetched is not None
+    assert fetched["snapshot"]["measurements"]["waistCircumference"] == measurements[
+        "waistCircumference"
+    ]
+    assert expired is None
+
+    with sqlite3.connect(db_path) as connection:
+        connection.row_factory = sqlite3.Row
+        row = connection.execute(
+            "SELECT payload_json FROM share_snapshots WHERE public_token = ?",
+            (created["publicToken"],),
+        ).fetchone()
+
+    assert "mason@example.com" not in row["payload_json"]
+    assert "accountId" not in row["payload_json"]
+    assert "syncToken" not in row["payload_json"]
+    assert "private note" not in row["payload_json"]
 
 
 def test_account_identity_repository_hashes_email_and_auth_tokens(tmp_path) -> None:

@@ -11,6 +11,7 @@ export default function SiteHeader({
   onOpenAccount,
   onOpenStrategies,
   onShare,
+  onShareSnapshot,
   shareStatus
 }) {
   return (
@@ -68,6 +69,14 @@ export default function SiteHeader({
         </button>
         <button className="icon-button share-icon" type="button" aria-label={copy.shareAria} onClick={onShare}>
           <span aria-hidden="true">{"\u2197"}</span>
+        </button>
+        <button
+          className="icon-button snapshot-share-icon"
+          type="button"
+          aria-label={copy.snapshotShareAria}
+          onClick={onShareSnapshot}
+        >
+          <span aria-hidden="true">ID</span>
         </button>
         <button className="button build-plan-button" type="button" onClick={onOpenStrategies}>
           {copy.buildPlan}

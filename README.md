@@ -150,6 +150,7 @@ Implemented now:
 - local goals can target preset deltas, custom deltas, target profiles, or saved past-self snapshots, with distance-to-target progress copy
 - readable local JSON export for snapshots and diet data without an account, plus account-scoped logs when signed in
 - opt-in server-side read-only share dashboards with opaque public links and browser-held revoke tokens
+- expiring opaque server-side measurement snapshot links from the header for evaluating a privacy-preserving replacement for encoded share URLs
 - local browser face measurement logger using self-hosted MediaPipe assets for camera/photo landmark scans, plus manual side-profile measurement logs while profile-specific ML remains under review
 - local progress photo streams for body, face, and hair with ghost overlay and comparison slider
 - Capacitor Filesystem-backed native progress-photo asset storage, keeping photo bytes out of Preferences/account metadata while preserving local-only web photo behavior
@@ -175,7 +176,7 @@ Implemented now:
   with candidate-file validation before any production seed replacement
 - public marketing page at `/landing.html` with current app screenshots, privacy stance, planned store links, and local Pro waitlist capture
 - method/privacy content collapsed into a hover footnote
-- header share icon that copies an encoded measurement URL without showing a share panel
+- header share icon that copies an encoded measurement URL without showing a share panel, plus a separate expiring opaque snapshot link action
 - local-only lightweight usage event logging
 - backend measurement-guide seed file with reviewable copy for every measurable schema field
 - privacy control to inspect and clear local usage events

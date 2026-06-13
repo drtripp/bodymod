@@ -50,6 +50,7 @@ try {
     Invoke-Checked { npm run test:widget-snapshot }
     Invoke-Checked { npm run test:native-backup }
     Invoke-Checked { npm run test:share-dashboard }
+    Invoke-Checked { npm run test:share-snapshots }
     Invoke-Checked { npm run test:storage }
     Invoke-Checked { npm run test:theme }
     Invoke-Checked { npm run test:i18n }

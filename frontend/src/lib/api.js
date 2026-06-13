@@ -113,6 +113,17 @@ export function fetchShareDashboard(publicToken) {
   return request(`/api/share-dashboards/${encodeURIComponent(publicToken)}`);
 }
 
+export function createShareSnapshot(snapshot) {
+  return request("/api/share-snapshots", {
+    method: "POST",
+    body: JSON.stringify(snapshot)
+  });
+}
+
+export function fetchShareSnapshot(publicToken) {
+  return request(`/api/share-snapshots/${encodeURIComponent(publicToken)}`);
+}
+
 export function updateShareDashboard(publicToken, revokeToken, dashboard) {
   return request(`/api/share-dashboards/${encodeURIComponent(publicToken)}`, {
     method: "PUT",

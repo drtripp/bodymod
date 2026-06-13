@@ -871,6 +871,8 @@ function progressPhotoFile(name, color = "#8da9c4") {
 async function mockApi(page) {
   const shareDashboards = new Map();
   let shareCounter = 0;
+  const shareSnapshots = new Map();
+  let shareSnapshotCounter = 0;
   const syncVaults = new Map();
   let syncCounter = 0;
   const personalDataTokens = new Map();
@@ -990,6 +992,49 @@ async function mockApi(page) {
         foods
       }
     });
+  });
+
+  await page.route(/\/api\/share-snapshots(?:\/[^/?]+)?$/, async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const marker = "/api/share-snapshots";
+    const suffix = url.pathname.slice(url.pathname.indexOf(marker) + marker.length);
+    const [publicToken] = suffix.replace(/^\//, "").split("/");
+    const timestamp = "2026-06-13T12:00:00Z";
+
+    if (!publicToken && request.method() === "POST") {
+      const rawBody = request.postData() || "";
+      expect(rawBody).not.toMatch(/mason@example\.com|syncToken|accountId|local-account|private note/i);
+      const body = request.postDataJSON();
+      expect(body.expiresInHours).toBeGreaterThan(0);
+      expect(body.expiresInHours).toBeLessThanOrEqual(168);
+      expect(Object.keys(body.snapshot.measurements)).not.toContain("accountId");
+
+      shareSnapshotCounter += 1;
+      const token = `mock-snapshot-${shareSnapshotCounter}`;
+      const record = {
+        publicToken: token,
+        createdAt: timestamp,
+        expiresAt: "2026-06-16T12:00:00Z",
+        snapshot: body.snapshot
+      };
+      shareSnapshots.set(token, record);
+      await route.fulfill({ status: 201, json: record });
+      return;
+    }
+
+    const record = shareSnapshots.get(publicToken);
+    if (!record) {
+      await route.fulfill({ status: 404, json: { detail: "Share snapshot not found or expired." } });
+      return;
+    }
+
+    if (request.method() === "GET") {
+      await route.fulfill({ json: record });
+      return;
+    }
+
+    await route.fulfill({ status: 405, json: { detail: "Method not allowed." } });
   });
 
   await page.route(/\/api\/share-dashboards(?:\/[^/?]+(?:\/revoke)?)?$/, async (route) => {
@@ -1905,6 +1950,29 @@ test("shares measurements from the header icon and restores them from the URL", 
   await page.goto(shareUrl);
   await expect(page.locator('input[name="height"]')).toHaveValue("180");
   await expect(page).toHaveURL(/m=/);
+});
+
+test("creates and loads an expiring opaque share snapshot from the header", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: "http://127.0.0.1:5173" });
+  await page.locator('input[name="height"]').fill("187");
+  await page.locator('input[name="waistCircumference"]').fill("83");
+
+  await page.getByRole("button", { name: "Create expiring share snapshot" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Expiring share snapshot copied." })
+  ).toBeVisible();
+
+  const snapshotUrl = await page.evaluate(() => navigator.clipboard.readText());
+  expect(snapshotUrl).toContain("snapshot=mock-snapshot-1");
+  expect(snapshotUrl).not.toContain("m=");
+
+  const url = new URL(snapshotUrl);
+  await page.goto(`${url.pathname}${url.search}`);
+  await expect(page.locator('input[name="height"]')).toHaveValue("187");
+  await expect(page.locator('input[name="waistCircumference"]')).toHaveValue("83");
+  await expect(
+    page.getByRole("status").filter({ hasText: "Expiring share snapshot loaded." })
+  ).toBeVisible();
 });
 
 test("supports keyboard landmarks, live statuses, chart descriptions, and dialog escape", async ({ page, context }) => {

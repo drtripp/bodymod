@@ -1184,7 +1184,7 @@ def test_personal_data_api_rejects_bad_auth_and_plaintext_request_fields() -> No
             "syncToken": created.json()["syncToken"],
             "label": "Bad token",
             "scopes": ["sync-vault:read"],
-            "measurements": TARGETS[0]["measurements"],
+            "measurements": {**TARGETS[0]["measurements"]},
         },
     )
     unsupported_scope = client.post(
@@ -1211,7 +1211,7 @@ def share_dashboard_payload(title: str = "Mason bodymod dashboard") -> dict:
             "displayName": "Mason",
             "publishedAt": "2026-06-10T12:00:00Z",
             "privacyNote": "No email or private notes included.",
-            "measurements": TARGETS[0]["measurements"],
+            "measurements": {**TARGETS[0]["measurements"]},
             "stats": {
                 "snapshotCount": 1,
                 "checkInCount": 2,
@@ -1263,6 +1263,60 @@ def share_dashboard_payload(title: str = "Mason bodymod dashboard") -> dict:
             },
         }
     }
+
+
+def share_snapshot_payload(title: str = "Mason measurement snapshot") -> dict:
+    return {
+        "snapshot": {
+            "version": 1,
+            "title": title,
+            "createdAt": "2026-06-13T12:00:00Z",
+            "privacyNote": (
+                "Expiring read-only measurement snapshot. Account email, local account "
+                "IDs, notes, photos, and face scan images are not included."
+            ),
+            "measurements": {**TARGETS[0]["measurements"]},
+        },
+        "expiresInHours": 24,
+    }
+
+
+def test_share_snapshot_endpoint_creates_opaque_expiring_measurement_link() -> None:
+    created = client.post("/api/share-snapshots", json=share_snapshot_payload())
+
+    assert created.status_code == 201
+    created_payload = created.json()
+    public_token = created_payload["publicToken"]
+    assert public_token
+    assert "revokeToken" not in created_payload
+    assert created_payload["expiresAt"] > created_payload["createdAt"]
+    assert created_payload["snapshot"]["title"] == "Mason measurement snapshot"
+
+    fetched = client.get(f"/api/share-snapshots/{public_token}")
+    assert fetched.status_code == 200
+    fetched_payload = fetched.json()
+    assert fetched_payload["publicToken"] == public_token
+    assert fetched_payload["snapshot"]["measurements"]["waistCircumference"] == TARGETS[0][
+        "measurements"
+    ]["waistCircumference"]
+    assert "mason@example.com" not in fetched.text
+    assert "accountId" not in fetched.text
+    assert "syncToken" not in fetched.text
+
+
+def test_share_snapshot_endpoint_rejects_private_or_unbounded_payloads() -> None:
+    with_account = share_snapshot_payload()
+    with_account["accountId"] = "local-account-1"
+    with_private_title = share_snapshot_payload("Mason mason@example.com snapshot")
+    with_measurement_extra = share_snapshot_payload()
+    with_measurement_extra["snapshot"]["measurements"]["accountId"] = "local-account-1"
+    bad_expiry = share_snapshot_payload()
+    bad_expiry["expiresInHours"] = 1000
+
+    assert client.post("/api/share-snapshots", json=with_account).status_code == 422
+    assert client.post("/api/share-snapshots", json=with_private_title).status_code == 422
+    assert client.post("/api/share-snapshots", json=with_measurement_extra).status_code == 422
+    assert client.post("/api/share-snapshots", json=bad_expiry).status_code == 422
 
 
 def test_share_dashboard_lifecycle_uses_private_revoke_token() -> None:

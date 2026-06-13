@@ -38,6 +38,7 @@
     "test:widget-snapshot": "node --test tests/widgetSnapshot.node.mjs",
     "test:native-backup": "node --test tests/nativeBackup.node.mjs",
     "test:share-dashboard": "node --test tests/shareDashboard.node.mjs",
+    "test:share-snapshots": "node --test tests/shareSnapshots.node.mjs",
     "test:storage": "node --test tests/storageAdapter.node.mjs",
     "test:theme": "node --test tests/theme.node.mjs",
     "test:i18n": "node --test tests/i18n.node.mjs",

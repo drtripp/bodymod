@@ -14,6 +14,7 @@ from app.models import (
     EncryptedSyncBlob,
     ProductAnalyticsEvent,
     ShareDashboardPayload,
+    ShareSnapshotPayload,
     TargetProfile,
     WebPushSubscriptionPayload,
 )
@@ -230,6 +231,106 @@ class SyncConflictError(Exception):
         self.current_revision = current_revision
         self.updated_at = updated_at
         super().__init__("Sync vault revision conflict.")
+
+
+class ShareSnapshotRepository:
+    def __init__(self, db_path: Path | str | None = None) -> None:
+        self.db_path = Path(db_path) if db_path is not None else configured_database_path()
+
+    def create_snapshot(
+        self,
+        snapshot: ShareSnapshotPayload,
+        expires_in_hours: int,
+    ) -> dict[str, Any]:
+        public_token = secrets.token_urlsafe(18)
+        created_at_dt = datetime.now(timezone.utc).replace(microsecond=0)
+        created_at = created_at_dt.isoformat()
+        expires_at = (created_at_dt + timedelta(hours=expires_in_hours)).isoformat()
+
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            with connection:
+                connection.execute(
+                    """
+                    INSERT INTO share_snapshots (
+                        public_token,
+                        payload_json,
+                        created_at,
+                        expires_at
+                    )
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (
+                        public_token,
+                        self._payload_json(snapshot),
+                        created_at,
+                        expires_at,
+                    ),
+                )
+
+        return {
+            "publicToken": public_token,
+            "createdAt": created_at,
+            "expiresAt": expires_at,
+            "snapshot": snapshot.model_dump(),
+        }
+
+    def get_public_snapshot(
+        self,
+        public_token: str,
+        now: datetime | None = None,
+    ) -> dict[str, Any] | None:
+        with closing(self._connect()) as connection:
+            self._ensure_schema(connection)
+            row = connection.execute(
+                """
+                SELECT public_token, payload_json, created_at, expires_at
+                FROM share_snapshots
+                WHERE public_token = ?
+                """,
+                (public_token,),
+            ).fetchone()
+
+        if not row:
+            return None
+
+        expires_at = parse_iso_timestamp(row["expires_at"])
+        now_dt = now or datetime.now(timezone.utc)
+        if now_dt.tzinfo is None:
+            now_dt = now_dt.replace(tzinfo=timezone.utc)
+        if expires_at and expires_at <= now_dt.astimezone(timezone.utc):
+            return None
+
+        return self._public_record(row)
+
+    def _connect(self) -> sqlite3.Connection:
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        connection = sqlite3.connect(self.db_path)
+        connection.row_factory = sqlite3.Row
+        return connection
+
+    def _ensure_schema(self, connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS share_snapshots (
+                public_token TEXT PRIMARY KEY,
+                payload_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL
+            )
+            """
+        )
+
+    def _payload_json(self, snapshot: ShareSnapshotPayload) -> str:
+        return json.dumps(snapshot.model_dump(), separators=(",", ":"), sort_keys=True)
+
+    def _public_record(self, row: sqlite3.Row) -> dict[str, Any]:
+        return {
+            "publicToken": row["public_token"],
+            "createdAt": row["created_at"],
+            "expiresAt": row["expires_at"],
+            "snapshot": json.loads(row["payload_json"]),
+        }
 
 
 class ShareDashboardRepository:

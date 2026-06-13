@@ -260,6 +260,12 @@ textarea {
   line-height: 1;
 }
 
+.snapshot-share-icon span {
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .build-plan-button {
   min-width: 108px;
 }

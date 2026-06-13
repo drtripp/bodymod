@@ -85,9 +85,14 @@ Rationale:
 Current behavior:
 
 - share links encode measurements into the URL query string
+- the header can also create a server-side expiring opaque measurement
+  snapshot link under `?snapshot=`, backed by `/api/share-snapshots`
 - users can clear measurement data from the current browser URL
 - signed-in local accounts can publish an opt-in server-side read-only
   dashboard behind an opaque public token and a browser-held revoke token
+- expiring share-snapshot payloads contain only a current measurement set,
+  title/privacy metadata, and expiry metadata; no account email, account IDs,
+  local notes, photos, face scan images, or revoke tokens are included
 - share-dashboard payloads omit account email, local account IDs, notes, photo
   files, and face scan images
 
@@ -95,7 +100,7 @@ Before public launch, decide:
 
 - whether encoded measurement URLs are acceptable at all
 - whether encoded measurement URLs should remain alongside server-side opaque
-  dashboard links
+  expiring snapshot links and dashboard links
 - whether shared dashboard links need expiration, redaction presets, or
   stronger explicit warnings
 

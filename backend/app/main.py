@@ -56,6 +56,9 @@ from app.models import ShareDashboardCreateResponse
 from app.models import ShareDashboardPublicRecord
 from app.models import ShareDashboardRevokeRequest
 from app.models import ShareDashboardUpdateRequest
+from app.models import ShareSnapshotCreateRequest
+from app.models import ShareSnapshotCreateResponse
+from app.models import ShareSnapshotPublicRecord
 from app.models import StrategyCorpusSeed
 from app.models import SyncVaultCreateRequest
 from app.models import SyncVaultCreateResponse
@@ -77,6 +80,7 @@ from app.repositories import (
     PersonalDataTokenRepository,
     ProductAnalyticsRepository,
     ShareDashboardRepository,
+    ShareSnapshotRepository,
     SyncConflictError,
     SyncVaultRepository,
     WebPushSubscriptionRepository,
@@ -288,6 +292,26 @@ def report_product_analytics(request: ProductAnalyticsReportRequest) -> dict:
 )
 def submit_case_log_for_moderation(request: CaseLogSubmissionRequest) -> dict:
     return CaseLogSubmissionRepository().create_submission(request)
+
+
+@app.post(
+    "/api/share-snapshots",
+    response_model=ShareSnapshotCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_share_snapshot(request: ShareSnapshotCreateRequest) -> dict:
+    return ShareSnapshotRepository().create_snapshot(request.snapshot, request.expiresInHours)
+
+
+@app.get(
+    "/api/share-snapshots/{public_token}",
+    response_model=ShareSnapshotPublicRecord,
+)
+def read_share_snapshot(public_token: str) -> dict:
+    snapshot = ShareSnapshotRepository().get_public_snapshot(public_token)
+    if not snapshot:
+        raise HTTPException(status_code=404, detail="Share snapshot not found or expired.")
+    return snapshot
 
 
 @app.post(
