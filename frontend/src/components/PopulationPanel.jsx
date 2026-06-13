@@ -11,6 +11,7 @@ import {
   normalPdf,
   populationMetricValue
 } from "../lib/populationCharts";
+import { createTranslator } from "../lib/i18n";
 
 const sexStyles = {
   female: {
@@ -50,7 +51,7 @@ function formatScore(score) {
   return `${sign}${score.toFixed(2)}`;
 }
 
-function GenderScoreChart({ score }) {
+function GenderScoreChart({ score, t }) {
   const titleId = useId();
   const descriptionId = useId();
   const width = 720;
@@ -80,10 +81,12 @@ function GenderScoreChart({ score }) {
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
     >
-      <title id={titleId}>Gender score distribution</title>
+      <title id={titleId}>{t("population.genderChart.title")}</title>
       <desc id={descriptionId}>
-        Measurement-pattern score {formattedScore}, labeled {scoreLabel}. The chart compares the current
-        measurement pattern with draft male and female reference distributions.
+        {t("population.genderChart.desc", {
+          score: formattedScore,
+          label: scoreLabel
+        })}
       </desc>
       <rect x="0" y="0" width={width} height={height} className="chart-bg" />
       {[-3, -2, -1, 0, 1, 2, 3].map((tick) => (
@@ -99,14 +102,14 @@ function GenderScoreChart({ score }) {
       <path d={`${buildPath(1)} L ${bounds.right} ${bounds.bottom} L ${bounds.left} ${bounds.bottom} Z`} fill={sexStyles.female.band} />
       <path d={buildPath(1)} fill="none" stroke={sexStyles.female.color} strokeWidth="3" />
       <line x1={userX} y1={bounds.top} x2={userX} y2={bounds.bottom} className="population-user-line gender-user-line" />
-      <text x={bounds.left} y={bounds.top - 14} className="chart-sex-label">Male</text>
-      <text x={bounds.right - 96} y={bounds.top - 14} className="chart-sex-label">Female</text>
-      <text x={userX + 8} y={bounds.top + 20} className="chart-user-label">You</text>
+      <text x={bounds.left} y={bounds.top - 14} className="chart-sex-label">{t("population.male")}</text>
+      <text x={bounds.right - 96} y={bounds.top - 14} className="chart-sex-label">{t("population.female")}</text>
+      <text x={userX + 8} y={bounds.top + 20} className="chart-user-label">{t("population.you")}</text>
     </svg>
   );
 }
 
-function ScatterPlot({ measurements, xMetric, yMetric, metrics }) {
+function ScatterPlot({ measurements, xMetric, yMetric, metrics, t }) {
   const titleId = useId();
   const descriptionId = useId();
   const points = useMemo(
@@ -131,10 +134,14 @@ function ScatterPlot({ measurements, xMetric, yMetric, metrics }) {
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
     >
-      <title id={titleId}>US population scatter plot</title>
+      <title id={titleId}>{t("population.scatter.title")}</title>
       <desc id={descriptionId}>
-        Scatter plot comparing {xMetric.label} and {yMetric.label}. Your current point is
-        {formatMetricValue(userXValue, xMetric)} by {formatMetricValue(userYValue, yMetric)}.
+        {t("population.scatter.desc", {
+          xLabel: xMetric.label,
+          yLabel: yMetric.label,
+          xValue: formatMetricValue(userXValue, xMetric),
+          yValue: formatMetricValue(userYValue, yMetric)
+        })}
       </desc>
       <rect x="0" y="0" width={width} height={height} className="chart-bg" />
       <line x1={bounds.left} y1={bounds.bottom} x2={bounds.right} y2={bounds.bottom} className="chart-axis" />
@@ -163,7 +170,7 @@ function ScatterPlot({ measurements, xMetric, yMetric, metrics }) {
         />
       ))}
       <circle cx={userX} cy={userY} r="7" className="population-user-point" />
-      <text x={userX + 10} y={userY - 10} className="chart-user-label">You</text>
+      <text x={userX + 10} y={userY - 10} className="chart-user-label">{t("population.you")}</text>
       <text x={(bounds.left + bounds.right) / 2} y="324" className="chart-axis-label">
         {xMetric.label} ({xMetric.unit})
       </text>
@@ -174,7 +181,7 @@ function ScatterPlot({ measurements, xMetric, yMetric, metrics }) {
   );
 }
 
-function DistributionPlot({ measurements, metric }) {
+function DistributionPlot({ measurements, metric, t }) {
   const titleId = useId();
   const descriptionId = useId();
   const width = 560;
@@ -206,9 +213,12 @@ function DistributionPlot({ measurements, metric }) {
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
     >
-      <title id={titleId}>US population distribution plot</title>
+      <title id={titleId}>{t("population.distribution.title")}</title>
       <desc id={descriptionId}>
-        Distribution plot for {metric.label}. Your current value is {formatMetricValue(userValue, metric)}.
+        {t("population.distribution.desc", {
+          label: metric.label,
+          value: formatMetricValue(userValue, metric)
+        })}
       </desc>
       <rect x="0" y="0" width={width} height={height} className="chart-bg" />
       <line x1={bounds.left} y1={bounds.bottom} x2={bounds.right} y2={bounds.bottom} className="chart-axis" />
@@ -223,7 +233,7 @@ function DistributionPlot({ measurements, metric }) {
       ))}
       <line x1={userX} y1={bounds.top} x2={userX} y2={bounds.bottom} className="population-user-line" />
       <text x={userX + 8} y={bounds.top + 18} className="chart-user-label">
-        You: {formatMetricValue(userValue, metric)}
+        {t("population.userValue", { value: formatMetricValue(userValue, metric) })}
       </text>
       <text x={(bounds.left + bounds.right) / 2} y="324" className="chart-axis-label">
         {metric.label} ({metric.unit})
@@ -232,7 +242,8 @@ function DistributionPlot({ measurements, metric }) {
   );
 }
 
-export default function PopulationPanel({ measurements, referenceData = null }) {
+export default function PopulationPanel({ measurements, referenceData = null, locale = "en" }) {
+  const t = createTranslator(locale);
   const [mode, setMode] = useState("gender");
   const [xMetricKey, setXMetricKey] = useState("height");
   const [yMetricKey, setYMetricKey] = useState("weight");
@@ -260,31 +271,31 @@ export default function PopulationPanel({ measurements, referenceData = null }) 
   return (
     <section className="panel population-panel">
       <div className="comparison-toolbar population-toolbar gender-toolbar">
-        <div className="button-row" role="tablist" aria-label="US population chart mode">
+        <div className="button-row" role="tablist" aria-label={t("population.modeAria")}>
           <button
             className={`button ${mode === "gender" ? "is-active" : ""}`}
             type="button"
             onClick={() => setMode("gender")}
           >
-            Gender score
+            {t("population.mode.gender")}
           </button>
           <button
             className={`button ${mode === "scatter" ? "is-active" : ""}`}
             type="button"
             onClick={() => setMode("scatter")}
           >
-            Scatter
+            {t("population.mode.scatter")}
           </button>
           <button
             className={`button ${mode === "distribution" ? "is-active" : ""}`}
             type="button"
             onClick={() => setMode("distribution")}
           >
-            Distributions
+            {t("population.mode.distributions")}
           </button>
         </div>
         <label className="field compact-field dataset-field">
-          <span className="field-label">Dataset</span>
+          <span className="field-label">{t("population.dataset")}</span>
           <select value={referenceData?.datasetId || "bodymod-dummy-reference-v1"} onChange={() => {}}>
             <option value={referenceData?.datasetId || "bodymod-dummy-reference-v1"}>
               {referenceLabel}
@@ -296,30 +307,28 @@ export default function PopulationPanel({ measurements, referenceData = null }) 
       {mode === "gender" ? (
         <div className="gender-score-panel">
           <div className="gender-score-card">
-            <GenderScoreChart score={genderScore} />
-            <div className="gender-score-readout" aria-label="Gender score readout">
-              <span>Score</span>
+            <GenderScoreChart score={genderScore} t={t} />
+            <div className="gender-score-readout" aria-label={t("population.scoreReadoutAria")}>
+              <span>{t("population.score")}</span>
               <strong>{formatScore(genderScore)}</strong>
               <em>{genderScoreLabel(genderScore)}</em>
             </div>
           </div>
-          <div className="gender-measurement-table" aria-label="Gender measurement scores">
-            <div className="gender-method-note" aria-label="Gender score methodology">
-              <strong>Measurement pattern only</strong>
+          <div className="gender-measurement-table" aria-label={t("population.measurementScoresAria")}>
+            <div className="gender-method-note" aria-label={t("population.methodologyAria")}>
+              <strong>{t("population.methodologyTitle")}</strong>
               <p>
-                This score compares entered measurements with draft sex-coded
-                distribution scaffolds. It is not identity inference, medical
-                advice, or a transition target.
+                {t("population.methodologyBody")}
               </p>
               <p>{referenceCopy}</p>
             </div>
             <table>
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Value</th>
-                  <th>Basis</th>
-                  <th>Score</th>
+                  <th>{t("population.table.name")}</th>
+                  <th>{t("population.table.value")}</th>
+                  <th>{t("population.table.basis")}</th>
+                  <th>{t("population.table.score")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -334,8 +343,13 @@ export default function PopulationPanel({ measurements, referenceData = null }) 
               </tbody>
             </table>
             <p className="muted-text">
-              {genderRows.length} of {populationMetrics.length} metrics, including derived FFMI and frame index.
-              {sourceBackedMetricCount ? ` ${sourceBackedMetricCount} metrics use source-backed NHANES adult tables.` : ""}
+              {t("population.metricsSummary", {
+                count: genderRows.length,
+                total: populationMetrics.length
+              })}
+              {sourceBackedMetricCount
+                ? ` ${t("population.sourceBacked", { count: sourceBackedMetricCount })}`
+                : ""}
             </p>
           </div>
         </div>
@@ -343,7 +357,7 @@ export default function PopulationPanel({ measurements, referenceData = null }) 
         <>
           <div className="population-controls">
             <label className="field compact-field">
-              <span className="field-label">X axis</span>
+              <span className="field-label">{t("population.xAxis")}</span>
               <select value={xMetricKey} onChange={(event) => setXMetricKey(event.target.value)}>
                 {populationMetrics.map((metric) => (
                   <option key={metric.key} value={metric.key}>{metric.label}</option>
@@ -351,7 +365,7 @@ export default function PopulationPanel({ measurements, referenceData = null }) 
               </select>
             </label>
             <label className="field compact-field">
-              <span className="field-label">Y axis</span>
+              <span className="field-label">{t("population.yAxis")}</span>
               <select value={yMetricKey} onChange={(event) => setYMetricKey(event.target.value)}>
                 {populationMetrics.map((metric) => (
                   <option key={metric.key} value={metric.key}>{metric.label}</option>
@@ -364,13 +378,14 @@ export default function PopulationPanel({ measurements, referenceData = null }) 
             xMetric={xMetric}
             yMetric={yMetric}
             metrics={populationMetrics}
+            t={t}
           />
         </>
       ) : (
         <>
           <div className="population-controls">
             <label className="field compact-field">
-              <span className="field-label">Measurement</span>
+              <span className="field-label">{t("population.measurement")}</span>
               <select value={distributionMetricKey} onChange={(event) => setDistributionMetricKey(event.target.value)}>
                 {populationMetrics.map((metric) => (
                   <option key={metric.key} value={metric.key}>{metric.label}</option>
@@ -378,14 +393,14 @@ export default function PopulationPanel({ measurements, referenceData = null }) 
               </select>
             </label>
           </div>
-          <DistributionPlot measurements={measurements} metric={distributionMetric} />
+          <DistributionPlot measurements={measurements} metric={distributionMetric} t={t} />
         </>
       )}
 
-      <div className="population-legend" aria-label="Population chart legend">
-        <span><span className="legend-swatch legend-female" /> Female reference</span>
-        <span><span className="legend-swatch legend-target" /> Male reference</span>
-        <span><span className="legend-swatch legend-current" /> Your score</span>
+      <div className="population-legend" aria-label={t("population.legendAria")}>
+        <span><span className="legend-swatch legend-female" /> {t("population.femaleReference")}</span>
+        <span><span className="legend-swatch legend-target" /> {t("population.maleReference")}</span>
+        <span><span className="legend-swatch legend-current" /> {t("population.yourScore")}</span>
       </div>
     </section>
   );

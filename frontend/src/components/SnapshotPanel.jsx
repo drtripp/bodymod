@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { comparisonMetrics, summarizeSnapshotTrend } from "../lib/comparison";
+import { createTranslator } from "../lib/i18n";
 import {
   buildSnapshotHistoryChart,
   buildSnapshotTrendChart,
@@ -7,8 +8,8 @@ import {
   snapshotHistoryRangeOptions
 } from "../lib/snapshotTrends";
 
-function formatTimestamp(timestamp) {
-  return new Intl.DateTimeFormat(undefined, {
+function formatTimestamp(timestamp, locale) {
+  return new Intl.DateTimeFormat(locale || undefined, {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(new Date(timestamp));
@@ -19,14 +20,23 @@ function formatDelta(delta, unit) {
   return `${sign}${delta.toFixed(1)} ${unit}`;
 }
 
-function formatMeasurements(measurements) {
+function comparisonMetricLabel(key, fallback, t) {
+  return t(`comparison.metric.${key}`, {}, fallback);
+}
+
+function rangeLabel(range, t) {
+  return t(`snapshot.range.${range.id}`, {}, range.label);
+}
+
+function formatMeasurements(measurements, t) {
   const waist = measurements.waistCircumference ?? measurements.waist;
+  const sexLabel = t(`snapshot.sex.${measurements.sex}`, {}, measurements.sex);
 
   return [
     `${measurements.height} cm`,
     `${measurements.weight} kg`,
-    measurements.sex,
-    `waist ${waist}`
+    sexLabel,
+    t("snapshot.measurementSummary.waist", { waist })
   ].join(" / ");
 }
 
@@ -43,8 +53,10 @@ export default function SnapshotPanel({
   onCompareSnapshot,
   onExportSnapshots,
   onImportSnapshots,
-  importStatus
+  importStatus,
+  locale = "en"
 }) {
+  const t = createTranslator(locale);
   const [historyMetric, setHistoryMetric] = useState("weight");
   const [historyRange, setHistoryRange] = useState("all");
   const trend = summarizeSnapshotTrend(snapshots);
@@ -57,29 +69,29 @@ export default function SnapshotPanel({
   return (
     <section className="panel">
       <div className="panel-header">
-        <h2>Snapshots</h2>
-        <p>Save the current measurements locally and restore earlier entries later.</p>
+        <h2>{t("snapshot.title")}</h2>
+        <p>{t("snapshot.body")}</p>
       </div>
 
       <div className="snapshot-actions">
         <label className="field compact-field">
-          <span className="field-label">Optional label</span>
+          <span className="field-label">{t("snapshot.optionalLabel")}</span>
           <input
-            aria-label="Snapshot label"
+            aria-label={t("snapshot.labelAria")}
             value={snapshotLabel}
             onChange={(event) => onSnapshotLabelChange(event.target.value)}
           />
         </label>
         <label className="field compact-field snapshot-note-field">
-          <span className="field-label">Optional note</span>
+          <span className="field-label">{t("snapshot.optionalNote")}</span>
           <textarea
-            aria-label="Snapshot note"
+            aria-label={t("snapshot.noteAria")}
             value={snapshotNote}
             onChange={(event) => onSnapshotNoteChange(event.target.value)}
           />
         </label>
         <button className="button" type="button" onClick={onSaveSnapshot}>
-          Save current snapshot
+          {t("snapshot.save")}
         </button>
         <button
           className="button"
@@ -87,12 +99,12 @@ export default function SnapshotPanel({
           onClick={onExportSnapshots}
           disabled={!snapshots.length}
         >
-          Export
+          {t("snapshot.export")}
         </button>
         <label className="button file-button">
-          Import
+          {t("snapshot.import")}
           <input
-            aria-label="Import snapshots"
+            aria-label={t("snapshot.importAria")}
             type="file"
             accept="application/json,.json"
             onChange={onImportSnapshots}
@@ -102,24 +114,28 @@ export default function SnapshotPanel({
       {importStatus ? <p className="muted-text">{importStatus}</p> : null}
 
       {trend ? (
-        <div className="snapshot-trend" aria-label="Snapshot trend summary">
-          <h3>Trend since {trend.baseline.label || formatTimestamp(trend.baseline.createdAt)}</h3>
+        <div className="snapshot-trend" aria-label={t("snapshot.trendAria")}>
+          <h3>
+            {t("snapshot.trendSince", {
+              label: trend.baseline.label || formatTimestamp(trend.baseline.createdAt, locale)
+            })}
+          </h3>
           <ul>
             {trend.metrics
               .filter((metric) => ["weight", "waistCircumference", "bideltoidCircumference", "hipCircumference"].includes(metric.key))
               .map((metric) => (
                 <li key={metric.key} className={`diff-${metric.direction}`}>
-                  <span>{metric.label}</span>
+                  <span>{comparisonMetricLabel(metric.key, metric.label, t)}</span>
                   <strong>{formatDelta(metric.delta, metric.unit)}</strong>
                 </li>
               ))}
           </ul>
           {trendChart ? (
-            <div className="snapshot-chart" aria-label="Snapshot trend chart">
+            <div className="snapshot-chart" aria-label={t("snapshot.trendChartAria")}>
               <svg
                 viewBox={`0 0 ${trendChart.width} ${trendChart.height}`}
                 role="img"
-                aria-label="Snapshot trend chart lines"
+                aria-label={t("snapshot.trendChartLinesAria")}
               >
                 <line x1="18" y1="18" x2="18" y2="132" />
                 <line x1="18" y1="132" x2="342" y2="132" />
@@ -142,39 +158,44 @@ export default function SnapshotPanel({
                 {trendChart.series.map((series) => (
                   <span key={series.key}>
                     <i className={`line-${series.seriesIndex}`} />
-                    {series.label}: {series.latest.toFixed(1)} {series.unit} ({series.noiseLabel})
+                    {t("snapshot.chartLegendLatest", {
+                      label: comparisonMetricLabel(series.key, series.label, t),
+                      value: series.latest.toFixed(1),
+                      unit: series.unit,
+                      noise: series.noiseLabel
+                    })}
                   </span>
                 ))}
               </div>
-              <p className="muted-text">Bands show typical re-measurement noise, not a target range.</p>
+              <p className="muted-text">{t("snapshot.noiseCopy")}</p>
             </div>
           ) : null}
-          <div className="snapshot-history" aria-label="Snapshot metric history">
+          <div className="snapshot-history" aria-label={t("snapshot.historyAria")}>
             <div className="snapshot-history-controls">
               <label className="field">
-                <span className="field-label">History metric</span>
+                <span className="field-label">{t("snapshot.historyMetric")}</span>
                 <select
-                  aria-label="Snapshot history metric"
+                  aria-label={t("snapshot.historyMetricAria")}
                   value={historyMetric}
                   onChange={(event) => setHistoryMetric(event.target.value)}
                 >
                   {snapshotHistoryMetricOptions.map((metric) => (
                     <option key={metric.key} value={metric.key}>
-                      {metric.label}
+                      {comparisonMetricLabel(metric.key, metric.label, t)}
                     </option>
                   ))}
                 </select>
               </label>
               <label className="field">
-                <span className="field-label">Range</span>
+                <span className="field-label">{t("snapshot.range")}</span>
                 <select
-                  aria-label="Snapshot history range"
+                  aria-label={t("snapshot.rangeAria")}
                   value={historyRange}
                   onChange={(event) => setHistoryRange(event.target.value)}
                 >
                   {snapshotHistoryRangeOptions.map((range) => (
                     <option key={range.id} value={range.id}>
-                      {range.label}
+                      {rangeLabel(range, t)}
                     </option>
                   ))}
                 </select>
@@ -184,16 +205,23 @@ export default function SnapshotPanel({
               <div className="snapshot-history-chart">
                 <div className="snapshot-history-summary">
                   <strong>
-                    {historyChart.label}: {formatDelta(historyChart.delta, historyChart.unit)}
+                    {comparisonMetricLabel(historyChart.metricKey, historyChart.label, t)}:{" "}
+                    {formatDelta(historyChart.delta, historyChart.unit)}
                   </strong>
                   <span>
-                    {historyChart.count} snapshot(s), {historyChart.rangeLabel}; {historyChart.noiseLabel} typical noise
+                    {t("snapshot.historySummary", {
+                      count: historyChart.count,
+                      range: rangeLabel({ id: historyRange, label: historyChart.rangeLabel }, t),
+                      noise: historyChart.noiseLabel
+                    })}
                   </span>
                 </div>
                 <svg
                   viewBox={`0 0 ${historyChart.width} ${historyChart.height}`}
                   role="img"
-                  aria-label={`${historyChart.label} snapshot history chart`}
+                  aria-label={t("snapshot.historyChartAria", {
+                    label: comparisonMetricLabel(historyChart.metricKey, historyChart.label, t)
+                  })}
                 >
                   <line x1="18" y1="18" x2="18" y2="132" />
                   <line x1="18" y1="132" x2="342" y2="132" />
@@ -208,7 +236,11 @@ export default function SnapshotPanel({
                       r="2.4"
                     >
                       <title>
-                        {`${point.value.toFixed(1)} ${historyChart.unit} on ${formatTimestamp(point.createdAt)}`}
+                        {t("snapshot.pointTitle", {
+                          value: point.value.toFixed(1),
+                          unit: historyChart.unit,
+                          date: formatTimestamp(point.createdAt, locale)
+                        })}
                       </title>
                     </circle>
                   ))}
@@ -225,20 +257,20 @@ export default function SnapshotPanel({
                   ))}
                 </svg>
                 {historyChart.notePoints.length ? (
-                  <ul className="snapshot-annotation-list" aria-label="Snapshot note annotations">
+                  <ul className="snapshot-annotation-list" aria-label={t("snapshot.noteAnnotationsAria")}>
                     {historyChart.notePoints.map((point) => (
                       <li key={point.id}>
-                        <strong>{point.label || formatTimestamp(point.createdAt)}</strong>
+                        <strong>{point.label || formatTimestamp(point.createdAt, locale)}</strong>
                         <span>{point.note}</span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="muted-text">Add snapshot notes to annotate this history chart.</p>
+                  <p className="muted-text">{t("snapshot.addNotes")}</p>
                 )}
               </div>
             ) : (
-              <p className="muted-text">Save at least two snapshots with this metric to build a history chart.</p>
+              <p className="muted-text">{t("snapshot.needTwo")}</p>
             )}
           </div>
         </div>
@@ -249,9 +281,9 @@ export default function SnapshotPanel({
           {snapshots.map((snapshot) => (
             <li key={snapshot.id} className="snapshot-row">
               <div className="snapshot-copy">
-                <strong>{snapshot.label || formatTimestamp(snapshot.createdAt)}</strong>
-                {snapshot.label ? <span>{formatTimestamp(snapshot.createdAt)}</span> : null}
-                <span>{formatMeasurements(snapshot.measurements)}</span>
+                <strong>{snapshot.label || formatTimestamp(snapshot.createdAt, locale)}</strong>
+                {snapshot.label ? <span>{formatTimestamp(snapshot.createdAt, locale)}</span> : null}
+                <span>{formatMeasurements(snapshot.measurements, t)}</span>
                 {snapshot.note ? <p>{snapshot.note}</p> : null}
               </div>
               <div className="button-row">
@@ -262,28 +294,28 @@ export default function SnapshotPanel({
                   type="button"
                   onClick={() => onCompareSnapshot(snapshot.id)}
                 >
-                  Compare
+                  {t("snapshot.compare")}
                 </button>
                 <button
                   className="button"
                   type="button"
                   onClick={() => onLoadSnapshot(snapshot.id)}
                 >
-                  Load
+                  {t("snapshot.load")}
                 </button>
                 <button
                   className="button"
                   type="button"
                   onClick={() => onDeleteSnapshot(snapshot.id)}
                 >
-                  Delete
+                  {t("snapshot.delete")}
                 </button>
               </div>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="muted-text">No saved snapshots yet.</p>
+        <p className="muted-text">{t("snapshot.empty")}</p>
       )}
     </section>
   );

@@ -275,7 +275,12 @@ export default function SilhouetteView({
   );
 }
 
-export function SilhouetteViewToggle({ view, onViewChange, label = "Silhouette view" }) {
+export function SilhouetteViewToggle({
+  view,
+  onViewChange,
+  label = "Silhouette view",
+  optionLabels = {}
+}) {
   return (
     <div className="silhouette-view-toggle" role="group" aria-label={label}>
       {silhouetteViewOptions.map((option) => (
@@ -285,7 +290,7 @@ export function SilhouetteViewToggle({ view, onViewChange, label = "Silhouette v
           type="button"
           onClick={() => onViewChange?.(option.id)}
         >
-          {option.label}
+          {optionLabels[option.id] || option.label}
         </button>
       ))}
     </div>

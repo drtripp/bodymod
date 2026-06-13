@@ -5,8 +5,13 @@ import {
   interpolateMeasurements,
   summarizeMeasurementDiff
 } from "../lib/comparison";
+import { createTranslator } from "../lib/i18n";
 import { downloadMorphShareCard } from "../lib/resultCard";
 import { targetBuildProfile } from "../lib/targetFilters";
+
+function comparisonMetricLabel(key, fallback, t) {
+  return t(`comparison.metric.${key}`, {}, fallback);
+}
 
 export default function ComparisonPanel({
   mode,
@@ -21,9 +26,11 @@ export default function ComparisonPanel({
   currentMeasurements,
   snapshotComparison,
   comparisonSnapshot,
+  locale = "en",
   silhouetteView = "front",
   onSilhouetteViewChange
 }) {
+  const t = createTranslator(locale);
   const [morphPosition, setMorphPosition] = useState(50);
   const [isMorphPlaying, setIsMorphPlaying] = useState(false);
   const [morphShareStatus, setMorphShareStatus] = useState("");
@@ -40,6 +47,10 @@ export default function ComparisonPanel({
   const filters = targetFilters || { source: "all", sex: "all", build: "all" };
   const filterOptions = targetFilterOptions || { sources: [], sexes: [], builds: [] };
   const hasAnyTargets = totalTargetCount > 0;
+  const silhouetteViewLabels = {
+    front: t("silhouette.view.front"),
+    side: t("silhouette.view.side")
+  };
   const morphMeasurements = useMemo(
     () =>
       selectedTarget
@@ -79,22 +90,22 @@ export default function ComparisonPanel({
     }
 
     downloadMorphShareCard(currentMeasurements, selectedTarget);
-    setMorphShareStatus("Morph card downloaded.");
+    setMorphShareStatus(t("comparison.morph.cardDownloaded"));
   }
 
   return (
     <section className="panel">
       {hasAnyTargets ? (
         <div className="comparison-toolbar">
-          <div className="target-filter-grid" aria-label="Target filters">
+          <div className="target-filter-grid" aria-label={t("comparison.filtersAria")}>
             <label className="field compact-field">
-              <span className="field-label">Source</span>
+              <span className="field-label">{t("comparison.source")}</span>
               <select
-                aria-label="Target source filter"
+                aria-label={t("comparison.sourceFilterAria")}
                 value={filters.source}
                 onChange={(event) => onTargetFilterChange?.("source", event.target.value)}
               >
-                <option value="all">All sources</option>
+                <option value="all">{t("comparison.allSources")}</option>
                 {filterOptions.sources.map((source) => (
                   <option key={source.id} value={source.id}>
                     {source.label}
@@ -103,13 +114,13 @@ export default function ComparisonPanel({
               </select>
             </label>
             <label className="field compact-field">
-              <span className="field-label">Sex</span>
+              <span className="field-label">{t("comparison.sex")}</span>
               <select
-                aria-label="Target sex filter"
+                aria-label={t("comparison.sexFilterAria")}
                 value={filters.sex}
                 onChange={(event) => onTargetFilterChange?.("sex", event.target.value)}
               >
-                <option value="all">All sexes</option>
+                <option value="all">{t("comparison.allSexes")}</option>
                 {filterOptions.sexes.map((sex) => (
                   <option key={sex.id} value={sex.id}>
                     {sex.label}
@@ -118,13 +129,13 @@ export default function ComparisonPanel({
               </select>
             </label>
             <label className="field compact-field">
-              <span className="field-label">Build</span>
+              <span className="field-label">{t("comparison.build")}</span>
               <select
-                aria-label="Target build filter"
+                aria-label={t("comparison.buildFilterAria")}
                 value={filters.build}
                 onChange={(event) => onTargetFilterChange?.("build", event.target.value)}
               >
-                <option value="all">All builds</option>
+                <option value="all">{t("comparison.allBuilds")}</option>
                 {filterOptions.builds.map((build) => (
                   <option key={build.id} value={build.id}>
                     {build.label}
@@ -132,13 +143,16 @@ export default function ComparisonPanel({
                 ))}
               </select>
             </label>
-            <span className="target-filter-count" aria-label="Filtered target count">
-              {rankedMatches.length} of {totalTargetCount} targets
+            <span className="target-filter-count" aria-label={t("comparison.filteredCountAria")}>
+              {t("comparison.filteredCount", {
+                count: rankedMatches.length,
+                total: totalTargetCount
+              })}
             </span>
           </div>
           {rankedMatches.length ? (
             <label className="field compact-field target-select-field">
-              <span className="field-label">Target</span>
+              <span className="field-label">{t("comparison.target")}</span>
               <select value={selectedTarget?.id || ""} onChange={onTargetChange}>
                 {rankedMatches.map((match) => (
                   <option key={match.id} value={match.id}>
@@ -153,24 +167,24 @@ export default function ComparisonPanel({
 
       {selectedTarget ? (
         <>
-          <div className="target-metadata" aria-label="Selected target metadata">
+          <div className="target-metadata" aria-label={t("comparison.metadataAria")}>
             <div>
-              <span>Target profile</span>
+              <span>{t("comparison.targetProfile")}</span>
               <strong>{selectedTarget.label}</strong>
             </div>
             <div>
-              <span>Type</span>
+              <span>{t("comparison.type")}</span>
               <strong>
                 {targetSource}
                 {targetBuild ? ` / ${targetBuild.label}` : ""}
               </strong>
             </div>
-            <p>{selectedTarget.notes || "No source note captured for this profile."}</p>
+            <p>{selectedTarget.notes || t("comparison.noSourceNote")}</p>
           </div>
 
           {selectedTarget.explanation?.length ? (
-            <div className="target-explanation" aria-label="Target match explanation">
-              <h3>Largest score drivers</h3>
+            <div className="target-explanation" aria-label={t("comparison.explanationAria")}>
+              <h3>{t("comparison.largestDrivers")}</h3>
               <ul>
                 {selectedTarget.explanation.map((item) => (
                   <li key={item}>{item}</li>
@@ -183,7 +197,8 @@ export default function ComparisonPanel({
             <SilhouetteViewToggle
               view={silhouetteView}
               onViewChange={onSilhouetteViewChange}
-              label="Comparison silhouette view"
+              label={t("comparison.silhouetteViewAria")}
+              optionLabels={silhouetteViewLabels}
             />
           </div>
 
@@ -198,10 +213,10 @@ export default function ComparisonPanel({
               }`}
               aria-label={
                 mode === "morph"
-                  ? "Morph comparison"
+                  ? t("comparison.mode.morphAria")
                   : mode === "overlap"
-                    ? "Overlap comparison"
-                    : "Side by side comparison"
+                    ? t("comparison.mode.overlapAria")
+                    : t("comparison.mode.sideBySideAria")
               }
             >
               {mode === "morph" ? (
@@ -211,8 +226,8 @@ export default function ComparisonPanel({
                     measurements={morphMeasurements}
                     view={silhouetteView}
                   />
-                  <div className="morph-readout" aria-label="Morph progress readout">
-                    <span>You</span>
+                  <div className="morph-readout" aria-label={t("comparison.morph.readoutAria")}>
+                    <span>{t("comparison.you")}</span>
                     <strong>{Math.round(morphPosition)}%</strong>
                     <span>{selectedTarget.label}</span>
                   </div>
@@ -221,7 +236,7 @@ export default function ComparisonPanel({
                 <>
                   <div className="comparison-stage-layer stage-user">
                     <SilhouetteView
-                      label="You"
+                      label={t("comparison.you")}
                       measurements={currentMeasurements}
                       view={silhouetteView}
                     />
@@ -235,54 +250,54 @@ export default function ComparisonPanel({
                   </div>
                 </>
               )}
-              <div className="comparison-mode-controls" role="tablist" aria-label="Comparison mode">
+              <div className="comparison-mode-controls" role="tablist" aria-label={t("comparison.modeAria")}>
                 <button
                   className={`button ${mode === "side-by-side" ? "is-active" : ""}`}
                   type="button"
                   onClick={() => onModeChange("side-by-side")}
                 >
-                  Side by side
+                  {t("comparison.mode.sideBySide")}
                 </button>
                 <button
                   className={`button ${mode === "overlap" ? "is-active" : ""}`}
                   type="button"
                   onClick={() => onModeChange("overlap")}
                 >
-                  Overlap
+                  {t("comparison.mode.overlap")}
                 </button>
                 <button
                   className={`button ${mode === "morph" ? "is-active" : ""}`}
                   type="button"
                   onClick={() => onModeChange("morph")}
                 >
-                  Morph
+                  {t("comparison.mode.morph")}
                 </button>
               </div>
               <div className="legend">
                 <span className="legend-item">
                   <span className="legend-swatch legend-user" />
-                  You
+                  {t("comparison.you")}
                 </span>
                 <span className="legend-item">
                   <span className="legend-swatch legend-target" />
-                  Target
+                  {t("comparison.targetLegend")}
                 </span>
               </div>
             </div>
-            <div className="comparison-diff-card" aria-label="Target measurement difference">
+            <div className="comparison-diff-card" aria-label={t("comparison.diffAria")}>
               <table className="comparison-diff-table">
                 <thead>
                   <tr>
-                    <th>Metric</th>
-                    <th>You</th>
-                    <th>Target</th>
-                    <th>Diff</th>
+                    <th>{t("comparison.table.metric")}</th>
+                    <th>{t("comparison.table.you")}</th>
+                    <th>{t("comparison.table.target")}</th>
+                    <th>{t("comparison.table.diff")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {targetComparison.map((item) => (
                     <tr key={item.key} className={`diff-${item.direction}`}>
-                      <th scope="row">{item.label}</th>
+                      <th scope="row">{comparisonMetricLabel(item.key, item.label, t)}</th>
                       <td>{item.currentValue.toFixed(1)} {item.unit}</td>
                       <td>{item.baselineValue.toFixed(1)} {item.unit}</td>
                       <td>
@@ -298,18 +313,18 @@ export default function ComparisonPanel({
             </div>
           </div>
           {mode === "morph" ? (
-            <div className="morph-controls" aria-label="Morph animation controls">
+            <div className="morph-controls" aria-label={t("comparison.morph.controlsAria")}>
               <button
                 className="button"
                 type="button"
                 onClick={() => setIsMorphPlaying((current) => !current)}
               >
-                {isMorphPlaying ? "Pause morph" : "Play morph"}
+                {isMorphPlaying ? t("comparison.morph.pause") : t("comparison.morph.play")}
               </button>
               <label className="field">
-                <span className="field-label">Morph position</span>
+                <span className="field-label">{t("comparison.morph.position")}</span>
                 <input
-                  aria-label="Morph position"
+                  aria-label={t("comparison.morph.position")}
                   type="range"
                   min="0"
                   max="100"
@@ -319,27 +334,26 @@ export default function ComparisonPanel({
                 />
               </label>
               <button className="button" type="button" onClick={handleDownloadMorphCard}>
-                Download morph card
+                {t("comparison.morph.download")}
               </button>
               <small className="muted-text">
-                Animated interpolation between current and target measurements; not anatomy.
+                {t("comparison.morph.note")}
               </small>
               {morphShareStatus ? <small className="muted-text">{morphShareStatus}</small> : null}
             </div>
           ) : null}
           {mode === "overlap" ? (
-            <div className="measurement-band-diff" aria-label="Overlap difference regions">
+            <div className="measurement-band-diff" aria-label={t("comparison.overlap.aria")}>
               <div className="panel-header">
-                <h3>Overlap difference regions</h3>
+                <h3>{t("comparison.overlap.title")}</h3>
                 <p>
-                  Bands rank the largest current-vs-target measurement gaps.
-                  They are not a surgical or anatomical diff.
+                  {t("comparison.overlap.body")}
                 </p>
               </div>
               <ul>
                 {targetBandDiff.map((item) => (
                   <li key={item.key} className={`band-diff-row diff-${item.direction}`}>
-                    <span>{item.label}</span>
+                    <span>{comparisonMetricLabel(item.key, item.label, t)}</span>
                     <div className="band-diff-track" aria-hidden="true">
                       <i style={{ width: `${Math.max(4, item.magnitudePercent)}%` }} />
                     </div>
@@ -356,17 +370,17 @@ export default function ComparisonPanel({
       ) : (
         <p className="muted-text">
           {hasAnyTargets
-            ? "No targets match the active filters."
-            : "Target comparison is available once target profiles are loaded."}
+            ? t("comparison.noFilteredTargets")
+            : t("comparison.noTargets")}
         </p>
       )}
 
       {comparisonSnapshot ? (
-        <div className="snapshot-visual-compare" aria-label="Current vs selected snapshot silhouettes">
-          <h3>Snapshot silhouettes</h3>
+        <div className="snapshot-visual-compare" aria-label={t("comparison.snapshotSilhouettesAria")}>
+          <h3>{t("comparison.snapshotSilhouettesTitle")}</h3>
           <div className="snapshot-silhouette-grid">
             <SilhouetteView
-              label="Current snapshot comparison"
+              label={t("comparison.currentSnapshotComparison")}
               measurements={currentMeasurements}
               view={silhouetteView}
             />
@@ -383,11 +397,11 @@ export default function ComparisonPanel({
 
       {snapshotComparison?.length ? (
         <div className="snapshot-diff">
-          <h3>Current vs selected snapshot</h3>
+          <h3>{t("comparison.currentVsSnapshot")}</h3>
           <ul>
             {snapshotComparison.map((item) => (
               <li key={item.key} className={`diff-row diff-${item.direction}`}>
-                <span>{item.label}</span>
+                <span>{comparisonMetricLabel(item.key, item.label, t)}</span>
                 <strong>
                   {item.delta > 0 ? "+" : ""}
                   {item.delta.toFixed(1)} {item.unit}

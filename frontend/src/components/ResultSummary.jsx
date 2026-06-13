@@ -2,6 +2,7 @@ import { useState } from "react";
 import SilhouetteView, { SilhouetteViewToggle } from "./SilhouetteView";
 import { calculateBodyComposition } from "../lib/bodyComposition";
 import { estimateClothingSizes } from "../lib/clothingSizes";
+import { createTranslator } from "../lib/i18n";
 import { calculateRatios } from "../lib/ratios";
 import { downloadResultCard } from "../lib/resultCard";
 
@@ -21,11 +22,16 @@ function formatKg(value) {
   return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)} kg` : "--";
 }
 
+function measurementLabel(key, fallback, t) {
+  return t(`measurement.field.${key}.label`, {}, fallback);
+}
+
 export default function ResultSummary({
   measurements,
   result,
   apiStatus,
   clothingSizeTables,
+  locale = "en",
   hoveredMeasurement,
   onMeasurementHover,
   silhouetteView = "front",
@@ -34,6 +40,7 @@ export default function ResultSummary({
   matchPriorityPresets = [],
   onMatchPriorityChange
 }) {
+  const t = createTranslator(locale);
   const [shareStatus, setShareStatus] = useState("");
   const ratios = calculateRatios(measurements);
   const bodyComposition = calculateBodyComposition(measurements);
@@ -50,69 +57,92 @@ export default function ResultSummary({
   const metricBlocks = [
     {
       id: "height",
-      label: "Height",
+      label: measurementLabel("height", "Height", t),
       value: `${Number(measurements.height).toFixed(0)} cm`,
-      note: `${result?.percentiles?.height ?? "--"}th pct against population`
+      note: t("result.metric.heightNote", {
+        percentile: result?.percentiles?.height ?? "--"
+      })
     },
     {
       id: "bmi",
       label: "BMI",
       value: ratioById.bmi?.value ?? "--",
-      note: `${ratioById.bmi?.note}. Population percentile TBD`
+      note: t("result.metric.populationTbd", {
+        note: ratioById.bmi?.note ?? "BMI"
+      })
     },
     {
       id: "bodyFat",
-      label: "Est BF%",
+      label: t("result.metric.bodyFat"),
       value: formatPercent(ratioById.bodyFat?.value),
-      note: `${bodyFatMethodSummary}. Population percentile TBD`
+      note: t("result.metric.populationTbd", {
+        note: bodyFatMethodSummary || "--"
+      })
     },
     {
       id: "ffmi",
       label: "FFMI",
       value: bodyComposition.ffmi?.ffmi ?? "--",
       note: bodyComposition.ffmi
-        ? `Normalized ${bodyComposition.ffmi.normalizedFfmi}; ${bodyComposition.ffmi.context}`
-        : "Needs body-fat estimate"
+        ? t("result.metric.ffmiNote", {
+            normalized: bodyComposition.ffmi.normalizedFfmi,
+            context: bodyComposition.ffmi.context
+          })
+        : t("result.metric.needsBodyFat")
     },
     {
       id: "framePotential",
-      label: "Frame",
+      label: t("result.metric.frame"),
       value: bodyComposition.potential?.eligible
         ? `${bodyComposition.potential.remainingLeanMassKg >= 0 ? "+" : ""}${bodyComposition.potential.remainingLeanMassKg.toFixed(1)} kg`
         : "--",
       note: bodyComposition.potential?.eligible
-        ? "Estimated lean-mass room from wrist/ankle frame"
-        : bodyComposition.potential?.note || "Needs wrist and ankle"
+        ? t("result.metric.frameRoom")
+        : bodyComposition.potential?.note || t("result.metric.needsWristAnkle")
     },
     {
       id: "shoulderHip",
       label: "SHR",
       value: ratioById.shoulderHip?.value ?? "--",
-      note: `${ratioById.shoulderHip?.note}. Population percentile TBD`
+      note: t("result.metric.populationTbd", {
+        note: ratioById.shoulderHip?.note ?? "SHR"
+      })
     },
     {
       id: "waistHip",
       label: "WHR",
       value: ratioById.waistHip?.value ?? "--",
-      note: `${ratioById.waistHip?.note}. Waist pct ${result?.percentiles?.waistCircumference ?? "--"}`
+      note: t("result.metric.waistPct", {
+        note: ratioById.waistHip?.note ?? "WHR",
+        percentile: result?.percentiles?.waistCircumference ?? "--"
+      })
     },
     {
       id: "shoulderWaist",
       label: "SWR",
       value: ratioById.shoulderWaist?.value ?? "--",
-      note: `${ratioById.shoulderWaist?.note}. Shoulder pct ${result?.percentiles?.bideltoidCircumference ?? "--"}`
+      note: t("result.metric.shoulderPct", {
+        note: ratioById.shoulderWaist?.note ?? "SWR",
+        percentile: result?.percentiles?.bideltoidCircumference ?? "--"
+      })
     },
     {
       id: "waistHeight",
       label: "WHTR",
       value: ratioById.waistHeight?.value ?? "--",
-      note: `${ratioById.waistHeight?.note}. Reference framing only`
+      note: t("result.metric.referenceOnly", {
+        note: ratioById.waistHeight?.note ?? "WHTR"
+      })
     }
   ];
+  const silhouetteViewLabels = {
+    front: t("silhouette.view.front"),
+    side: t("silhouette.view.side")
+  };
 
   function handleDownloadResultCard() {
     downloadResultCard(measurements, result);
-    setShareStatus("Result card downloaded.");
+    setShareStatus(t("result.cardDownloaded"));
   }
 
   return (
@@ -122,10 +152,11 @@ export default function ResultSummary({
           <SilhouetteViewToggle
             view={silhouetteView}
             onViewChange={onSilhouetteViewChange}
-            label="Result silhouette view"
+            label={t("result.silhouetteViewAria")}
+            optionLabels={silhouetteViewLabels}
           />
           <SilhouetteView
-            label="Current profile"
+            label={t("result.currentProfile")}
             measurements={measurements}
             hoveredMeasurement={hoveredMeasurement}
             onMeasurementHover={onMeasurementHover}
@@ -135,12 +166,12 @@ export default function ResultSummary({
 
         <div className="result-copy">
           <div className="top-match-block">
-            <h3>Top match</h3>
+            <h3>{t("result.topMatch")}</h3>
             {matchPriorityPresets.length ? (
               <label className="field compact-field match-priority-field">
-                <span className="field-label">Match priority</span>
+                <span className="field-label">{t("result.matchPriority")}</span>
                 <select
-                  aria-label="Match priority"
+                  aria-label={t("result.matchPriority")}
                   value={matchPriority}
                   onChange={(event) => onMatchPriorityChange?.(event.target.value)}
                 >
@@ -155,19 +186,27 @@ export default function ResultSummary({
             {selectedPriority ? (
               <small className="muted-text match-priority-summary">
                 {selectedPriority.summary}
-              </small>
-            ) : null}
-            <p>{result?.top_match?.label || "No match yet"}</p>
-            <span>Similarity score: {formatScore(result?.top_match?.similarity)}</span>
+                </small>
+              ) : null}
+            <p>{result?.top_match?.label || t("result.noMatchYet")}</p>
+            <span>
+              {t("result.similarityScore", {
+                score: formatScore(result?.top_match?.similarity)
+              })}
+            </span>
             {runnerUp ? (
               <div className="runner-up-block">
-                <span>Runner up</span>
+                <span>{t("result.runnerUp")}</span>
                 <strong>{runnerUp.label}</strong>
-                <small>Similarity score: {formatScore(runnerUp.similarity)}</small>
+                <small>
+                  {t("result.similarityScore", {
+                    score: formatScore(runnerUp.similarity)
+                  })}
+                </small>
               </div>
             ) : null}
             <button className="button result-card-button" type="button" onClick={handleDownloadResultCard}>
-              Download result card
+              {t("result.downloadCard")}
             </button>
             {shareStatus ? (
               <small className="muted-text" role="status" aria-live="polite">
@@ -176,7 +215,7 @@ export default function ResultSummary({
             ) : null}
           </div>
 
-          <div className="metric-block-grid" aria-label="Result metric blocks">
+          <div className="metric-block-grid" aria-label={t("result.metricBlocksAria")}>
             {metricBlocks.map((metric) => (
               <article key={metric.id} className="metric-block">
                 <span>{metric.label}</span>
@@ -186,10 +225,10 @@ export default function ResultSummary({
             ))}
           </div>
 
-          <div className="body-composition-panel" aria-label="Body composition estimates">
+          <div className="body-composition-panel" aria-label={t("result.bodyCompositionAria")}>
             <div className="fit-panel-header">
-              <h3>Body composition</h3>
-              <span>Formulas, not diagnostics</span>
+              <h3>{t("result.bodyCompositionTitle")}</h3>
+              <span>{t("result.bodyCompositionKicker")}</span>
             </div>
             <div className="composition-grid">
               {bodyComposition.methods.map((method) => (
@@ -204,30 +243,36 @@ export default function ResultSummary({
                 <strong>{bodyComposition.ffmi?.ffmi ?? "--"}</strong>
                 <small>
                   {bodyComposition.ffmi
-                    ? `Lean mass ${formatKg(bodyComposition.ffmi.leanMassKg)}; normalized ${bodyComposition.ffmi.normalizedFfmi}`
-                    : "Needs a body-fat estimate"}
+                    ? t("result.leanMassLine", {
+                        leanMass: formatKg(bodyComposition.ffmi.leanMassKg),
+                        normalized: bodyComposition.ffmi.normalizedFfmi
+                      })
+                    : t("result.needsABodyFat")}
                 </small>
               </article>
               <article className={bodyComposition.potential?.eligible ? "" : "is-muted"}>
-                <span>Frame potential</span>
+                <span>{t("result.framePotential")}</span>
                 <strong>
                   {bodyComposition.potential?.eligible
                     ? formatKg(bodyComposition.potential.leanMassPotentialKg)
-                    : "Male-only"}
+                    : t("result.maleOnly")}
                 </strong>
                 <small>
                   {bodyComposition.potential?.eligible
-                    ? `Potential FFMI ${bodyComposition.potential.potentialFfmi}; ${bodyComposition.potential.note}`
+                    ? t("result.potentialFfmi", {
+                        ffmi: bodyComposition.potential.potentialFfmi,
+                        note: bodyComposition.potential.note
+                      })
                     : bodyComposition.potential?.note}
                 </small>
               </article>
             </div>
           </div>
 
-          <div className="fit-panel" aria-label="Clothing size estimates">
+          <div className="fit-panel" aria-label={t("result.fitAria")}>
             <div className="fit-panel-header">
-              <h3>Fit estimates</h3>
-              <span>Generic US/EU/UK bands</span>
+              <h3>{t("result.fitTitle")}</h3>
+              <span>{t("result.fitKicker")}</span>
             </div>
             <div className="fit-grid">
               {clothingSizes.map((item) => (
@@ -239,21 +284,19 @@ export default function ResultSummary({
               ))}
             </div>
             <p className="muted-text">
-              Approximate only. Brand cut, fabric, and fit preference can move the answer by several sizes.
+              {t("result.fitNote")}
             </p>
           </div>
 
           <div className="stat-block">
-            <h3>Note</h3>
+            <h3>{t("result.noteTitle")}</h3>
             {apiStatus !== "online" ? (
               <p className="result-status" role="status" aria-live="polite">
-                Backend unavailable. Results are limited.
+                {t("result.backendUnavailable")}
               </p>
             ) : null}
             <p>
-              Similarity: 100 means identical measurements, 95+ is within typical
-              re-measurement error, around 40 is a different build. Target profiles
-              are still placeholder estimates.
+              {t("result.similarityExplainer")}
             </p>
             {result?.percentiles?.reference ? (
               <p className="muted-text">{result.percentiles.reference}</p>

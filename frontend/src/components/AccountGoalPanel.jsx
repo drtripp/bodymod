@@ -6723,7 +6723,7 @@ export default function AccountGoalPanel({
               </div>
             </section>
 
-            <SnapshotPanel {...snapshotProps} />
+            <SnapshotPanel {...snapshotProps} locale={locale} />
           </div>
         )}
 

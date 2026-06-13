@@ -518,6 +518,7 @@ export default function App() {
                     result={result}
                     apiStatus={apiStatus}
                     clothingSizeTables={clothingSizeTables}
+                    locale={locale}
                     hoveredMeasurement={hoveredMeasurement}
                     onMeasurementHover={setHoveredMeasurement}
                     silhouetteView={silhouetteView}
@@ -540,6 +541,7 @@ export default function App() {
                     currentMeasurements={currentMeasurements}
                     snapshotComparison={snapshotComparison}
                     comparisonSnapshot={comparisonSnapshot}
+                    locale={locale}
                     silhouetteView={silhouetteView}
                     onSilhouetteViewChange={handleSilhouetteViewChange}
                   />
@@ -547,6 +549,7 @@ export default function App() {
                   <PopulationPanel
                     measurements={currentMeasurements}
                     referenceData={populationReferenceData}
+                    locale={locale}
                   />
                 )}
               </div>

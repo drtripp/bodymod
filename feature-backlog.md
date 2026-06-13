@@ -60,7 +60,8 @@ Protocol Tracker → Diet upgrades → Native app.
       preference, message catalog, fallback/interpolation helpers, and
       English/Spanish coverage for the top-level shell/header/tabs, first-run
       onboarding, measurement categories/field labels/help, unit controls, and
-      measurement-guide chrome, account shell/magic-link identity/share/widget/
+      measurement-guide chrome, Body result/comparison/snapshot/population
+      chrome, account shell/magic-link identity/share/widget/
       health-sync/live-update/backup/native-backup/encrypted-sync/auto-sync/
       personal-data-api/entitlement/referral/data-explainer/face-measurement/check-in-tracking/goal-protocol-planning/export/report
       controls, plus printable
@@ -70,9 +71,9 @@ Protocol Tracker → Diet upgrades → Native app.
       output and dynamic report rows, account identity/share/widget/health-sync/
       live-update/backup/native-backup/encrypted-sync/auto-sync/
       personal-data-api/entitlement/referral/data-explainer/face-measurement/check-in-tracking/goal-protocol-planning/procedure/bloodwork/workout/photo-log/export/report status strings, Diet dashboard chrome/status
-      strings, and Strategy explorer
+      strings, Body result/comparison/snapshot/population chrome, and Strategy explorer
       chrome/safety copy covered; Playwright verifies the Spanish
-      onboarding/form surface, Diet surface, Strategy surface, and localized
+      onboarding/form surface, Body result/comparison/population surface, Diet surface, Strategy surface, and localized
       account identity/share/widget/health-sync/live-update/backup/sync/API/
       entitlement/referral/data-explainer/face-measurement/check-in-tracking/goal-protocol-planning/procedure/bloodwork/workout/photo-log/report workflow.
       Full app-wide copy extraction and source, seed, or user-authored

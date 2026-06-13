@@ -51,6 +51,22 @@ test("translates known keys, falls back to English, and interpolates values", ()
     translate("es", "diet.status.foundFoods", { count: 1 }),
     "1 alimento(s) encontrado(s)."
   );
+  assert.equal(
+    translate("es", "result.similarityScore", { score: "89%" }),
+    "Puntaje de similitud: 89%"
+  );
+  assert.equal(
+    translate("es", "comparison.filteredCount", { count: 1, total: 3 }),
+    "1 de 3 objetivos"
+  );
+  assert.equal(
+    translate("es", "snapshot.measurementSummary.waist", { waist: 86 }),
+    "cintura 86"
+  );
+  assert.equal(
+    translate("es", "population.metricsSummary", { count: 7, total: 20 }),
+    "7 de 20 metricas, incluyendo FFMI derivado e indice de frame."
+  );
   assert.equal(translate("es", "strategy.title"), "Explorador de estrategias");
   assert.equal(
     translate("es", "strategy.loadedSummary", { outcomes: 8, sources: 0, caseLogs: 4 }),

@@ -209,7 +209,8 @@ Implemented now:
 - persisted locale preference with a lightweight i18n message catalog for the
   top-level shell/header/navigation strings plus first-run onboarding and
   measurement-form chrome, measurement-guide chrome, Diet dashboard
-  chrome/status strings, Strategy explorer chrome/safety copy, account
+  chrome/status strings, Body result/comparison/snapshot/population chrome,
+  Strategy explorer chrome/safety copy, account
   shell/magic-link identity/share/widget/health-sync/live-update/backup/
   native-backup/encrypted-sync/auto-sync/personal-data-api/entitlement/
   referral/data-explainer/face-measurement/check-in-tracking/goal-protocol-planning/export/report controls, and printable progress
@@ -246,7 +247,8 @@ Not implemented yet:
 - source-reviewed bloodwork marker taxonomy, units, and reference ranges; current bloodwork data is a dummy local-only review scaffold
 - full app-wide translation coverage; current i18n work covers the shell,
   onboarding, measurement-form/guide chrome, Diet dashboard chrome/status
-  strings, Strategy explorer chrome/safety copy, account shell/magic-link
+  strings, Body result/comparison/snapshot/population chrome, Strategy explorer
+  chrome/safety copy, account shell/magic-link
   identity/share/widget/health-sync/live-update/backup/native-backup/
   encrypted-sync/auto-sync/personal-data-api/entitlement/referral/
   data-explainer/face-measurement/check-in-tracking/goal-protocol-planning/procedure/bloodwork/workout/photo-log/export/report controls, and generated progress report copy,

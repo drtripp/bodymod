@@ -1367,6 +1367,21 @@ test("loads the core measurement and comparison workflow", async ({ page }) => {
   await expect(page.getByLabel("Sistema de unidades de medida")).toContainText("Metrico");
   await expect(page.getByLabel("Guias de medidas")).toBeVisible();
   await expect(page.locator("legend").filter({ hasText: "Perfil" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mejor coincidencia" })).toBeVisible();
+  await expect(page.getByLabel("Prioridad de match")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Vista lateral" })).toBeVisible();
+  await page.getByRole("tab", { name: "vs Objetivo" }).click();
+  await expect(page.getByLabel("Filtros de objetivo")).toBeVisible();
+  await expect(page.getByLabel("Conteo de objetivos filtrados")).toContainText(
+    "3 de 3 objetivos"
+  );
+  await expect(page.getByRole("button", { name: "Superponer" })).toBeVisible();
+  await page.getByRole("tab", { name: "Genero" }).click();
+  await expect(page.getByLabel("Distribucion de puntaje de genero")).toBeVisible();
+  await expect(page.getByLabel("Metodologia de puntaje de genero")).toContainText(
+    "No es inferencia de identidad"
+  );
+  await page.getByRole("tab", { name: "Resultado" }).click();
   await page.getByRole("tab", { name: "Dieta" }).click();
   await expect(page.getByRole("heading", { name: "Dieta", exact: true })).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Busqueda de comida" })).toBeVisible();
