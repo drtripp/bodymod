@@ -249,7 +249,7 @@ Not implemented yet:
   strings, Strategy explorer chrome/safety copy, account shell/magic-link
   identity/share/widget/health-sync/live-update/backup/native-backup/
   encrypted-sync/auto-sync/personal-data-api/entitlement/referral/
-  data-explainer/face-measurement/bloodwork/workout/photo-log/export/report controls, and generated progress report copy,
+  data-explainer/face-measurement/procedure/bloodwork/workout/photo-log/export/report controls, and generated progress report copy,
   while remaining account feature panes plus source, seed, and user-authored
   content remain English-first
 - generated Android/iOS native project folders, store signing, APNs/FCM production credentials/device validation, real HealthKit/Health Connect plugin reads/writes, native home-screen widget extensions, iCloud/Google Drive backup policy wiring, native store icon generation, signed live-update provider/rollback policy, and native release workflows

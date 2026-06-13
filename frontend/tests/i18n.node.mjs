@@ -177,6 +177,21 @@ test("translates known keys, falls back to English, and interpolates values", ()
     "confianza media"
   );
   assert.equal(
+    translate("es", "account.procedure.status.loaded", { count: 3 }),
+    "3 seed(s) de tipos de procedimiento cargados."
+  );
+  assert.equal(
+    translate("es", "account.procedure.caseSummary", {
+      label: "Procedimiento",
+      fields: "waistCircumference",
+      days: 28,
+      snapshots: 1,
+      photos: 2,
+      category: "body"
+    }),
+    "Procedimiento: waistCircumference pausado(s) por 28 dia(s); 1 snapshot(s), 2 foto(s) de body."
+  );
+  assert.equal(
     translate("es", "account.bloodwork.status.loaded", { count: 4 }),
     "4 seed(s) de marcadores de laboratorio cargados."
   );

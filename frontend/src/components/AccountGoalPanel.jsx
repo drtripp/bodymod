@@ -871,8 +871,42 @@ function formatWorkoutError(error, t) {
     : message || t("account.workout.status.failed");
 }
 
+function formatProcedureError(error, t) {
+  const message = error?.message || "";
+  const errorKeyByMessage = new Map([
+    ["Choose a procedure type.", "account.procedure.status.chooseType"]
+  ]);
+
+  return errorKeyByMessage.has(message)
+    ? t(errorKeyByMessage.get(message))
+    : message || t("account.procedure.status.failed");
+}
+
 function formatRangeStatus(status, t) {
   return t(`report.rangeStatus.${status}`, {}, status);
+}
+
+function formatProcedureRecordLine(procedure, locale, t) {
+  if (locale === "en") {
+    return formatProcedureRecord(procedure);
+  }
+
+  return t("account.procedure.recordLine", {
+    label: procedure.label || "Procedure",
+    date: procedure.procedureDate || procedure.createdAt || "",
+    days: Number(procedure.healingDays) || 0
+  });
+}
+
+function formatProcedureCaseSummary(caseLog, t) {
+  return t("account.procedure.caseSummary", {
+    label: caseLog.label,
+    fields: caseLog.affectedFields.length ? caseLog.affectedFields.join(", ") : t("account.procedure.noFields"),
+    days: caseLog.healingDays,
+    snapshots: caseLog.snapshotCount,
+    photos: caseLog.photoCount,
+    category: caseLog.photoCategory
+  });
 }
 
 export default function AccountGoalPanel({
@@ -897,7 +931,9 @@ export default function AccountGoalPanel({
   const [procedureLibrary, setProcedureLibrary] = useState(() =>
     normalizeProcedureLibrary(fallbackProcedureLibrary)
   );
-  const [procedureStatus, setProcedureStatus] = useState("Loading procedure library...");
+  const [procedureStatus, setProcedureStatus] = useState(() =>
+    t("account.procedure.status.loading")
+  );
   const [bloodworkLibrary, setBloodworkLibrary] = useState(() =>
     normalizeBloodworkLibrary(fallbackBloodworkLibrary)
   );
@@ -1223,7 +1259,9 @@ export default function AccountGoalPanel({
         const normalized = normalizeProcedureLibrary(data);
         setProcedureLibrary(normalized);
         setProcedureStatus(
-          `Loaded ${normalized.procedureTypes.length} procedure type seed(s).`
+          t("account.procedure.status.loaded", {
+            count: normalized.procedureTypes.length
+          })
         );
         setSelectedProcedureTypeId((current) => current || normalized.procedureTypes[0]?.id || "");
         setProcedureHealingDays(
@@ -1237,7 +1275,7 @@ export default function AccountGoalPanel({
         if (isMounted) {
           const fallback = normalizeProcedureLibrary(fallbackProcedureLibrary);
           setProcedureLibrary(fallback);
-          setProcedureStatus("Procedure library unavailable. Local fallback seed loaded.");
+          setProcedureStatus(t("account.procedure.status.unavailable"));
           setSelectedProcedureTypeId((current) => current || fallback.procedureTypes[0]?.id || "");
           setProcedureHealingDays(
             (current) => current || String(fallback.procedureTypes[0]?.defaultHealingDays || "")
@@ -1251,7 +1289,7 @@ export default function AccountGoalPanel({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     let isMounted = true;
@@ -2405,9 +2443,13 @@ export default function AccountGoalPanel({
       setLifeEventDurationDays(String(nextProcedure.healingDays));
       setProcedureNote("");
       triggerCheckInHaptic();
-      setStatus(`Procedure logged: ${nextProcedure.label}. Healing window added to reliability events.`);
+      setStatus(
+        t("account.procedure.status.logged", {
+          label: nextProcedure.label
+        })
+      );
     } catch (error) {
-      setStatus(error.message);
+      setStatus(formatProcedureError(error, t));
     }
   }
 
@@ -5162,16 +5204,16 @@ export default function AccountGoalPanel({
                 </div>
               ) : null}
 
-              <div className="procedure-panel" aria-label="Procedure tracker">
+              <div className="procedure-panel" aria-label={t("account.procedure.aria")}>
                 <div>
-                  <h4>Procedure tracker</h4>
+                  <h4>{t("account.procedure.title")}</h4>
                   <p>{procedureStatus}</p>
                 </div>
                 <form className="procedure-form" onSubmit={handleLogProcedure}>
                   <label className="field">
-                    <span className="field-label">Procedure type</span>
+                    <span className="field-label">{t("account.procedure.type")}</span>
                     <select
-                      aria-label="Procedure type"
+                      aria-label={t("account.procedure.typeAria")}
                       value={selectedProcedureTypeId}
                       onChange={(event) => handleProcedureTypeChange(event.target.value)}
                     >
@@ -5183,54 +5225,59 @@ export default function AccountGoalPanel({
                     </select>
                   </label>
                   <label className="field">
-                    <span className="field-label">Date</span>
+                    <span className="field-label">{t("account.procedure.date")}</span>
                     <input
-                      aria-label="Procedure date"
+                      aria-label={t("account.procedure.dateAria")}
                       type="date"
                       value={procedureDate}
                       onChange={(event) => setProcedureDate(event.target.value)}
                     />
                   </label>
                   <label className="field">
-                    <span className="field-label">Healing days</span>
+                    <span className="field-label">{t("account.procedure.healingDays")}</span>
                     <input
-                      aria-label="Procedure healing days"
+                      aria-label={t("account.procedure.healingDaysAria")}
                       inputMode="numeric"
                       value={procedureHealingDays}
                       onChange={(event) => setProcedureHealingDays(event.target.value)}
                     />
                   </label>
                   <label className="field procedure-fields">
-                    <span className="field-label">Affected fields</span>
+                    <span className="field-label">{t("account.procedure.affectedFields")}</span>
                     <input
-                      aria-label="Procedure affected fields"
+                      aria-label={t("account.procedure.affectedFieldsAria")}
                       value={procedureAffectedFields}
                       onChange={(event) => setProcedureAffectedFields(event.target.value)}
-                      placeholder="waistCircumference, hipCircumference"
+                      placeholder={t("account.procedure.affectedFieldsPlaceholder")}
                     />
                   </label>
                   <label className="field procedure-note">
-                    <span className="field-label">Procedure note</span>
+                    <span className="field-label">{t("account.procedure.note")}</span>
                     <textarea
-                      aria-label="Procedure note"
+                      aria-label={t("account.procedure.noteAria")}
                       value={procedureNote}
                       onChange={(event) => setProcedureNote(event.target.value)}
-                      placeholder="Placement, provider-reviewed constraints, or aftercare notes."
+                      placeholder={t("account.procedure.notePlaceholder")}
                     />
                   </label>
                   {selectedProcedureType ? (
-                    <div className="procedure-template-summary" aria-label="Selected procedure guidance">
+                    <div className="procedure-template-summary" aria-label={t("account.procedure.guidanceAria")}>
                       <p>
-                        {selectedProcedureType.summary} Photo stream:{" "}
-                        {selectedProcedureType.photoCategory}. Risk:{" "}
-                        {selectedProcedureType.riskLevel}. Review:{" "}
-                        {selectedProcedureType.reviewStatus}.
+                        {selectedProcedureType.summary}{" "}
+                        {t("account.procedure.guidanceLine", {
+                          photoCategory: selectedProcedureType.photoCategory,
+                          risk: selectedProcedureType.riskLevel,
+                          review: selectedProcedureType.reviewStatus
+                        })}
                       </p>
                       {selectedProcedureType.timeline.length ? (
                         <ul>
                           {selectedProcedureType.timeline.slice(0, 3).map((item) => (
                             <li key={`${selectedProcedureType.id}-${item.day}`}>
-                              Day {item.day}: {item.label}
+                              {t("account.procedure.timelineDay", {
+                                day: item.day,
+                                label: item.label
+                              })}
                             </li>
                           ))}
                         </ul>
@@ -5238,12 +5285,12 @@ export default function AccountGoalPanel({
                     </div>
                   ) : null}
                   <button className="button" type="submit">
-                    Log procedure
+                    {t("account.procedure.log")}
                   </button>
                 </form>
 
                 {procedures.length ? (
-                  <ul className="procedure-list" aria-label="Procedure logs">
+                  <ul className="procedure-list" aria-label={t("account.procedure.logsAria")}>
                     {procedures.slice(0, 5).map((procedure) => {
                       const caseLog = buildProcedureCaseLog(
                         procedure,
@@ -5254,16 +5301,24 @@ export default function AccountGoalPanel({
                       return (
                         <li key={procedure.id}>
                           <div>
-                            <strong>{formatProcedureRecord(procedure)}</strong>
+                            <strong>{formatProcedureRecordLine(procedure, locale, t)}</strong>
                             <span>
-                              {procedure.category} / {procedure.riskLevel} / photo stream {procedure.photoCategory}
+                              {t("account.procedure.metaLine", {
+                                category: procedure.category,
+                                risk: procedure.riskLevel,
+                                photoCategory: procedure.photoCategory
+                              })}
                             </span>
-                            <span>Healing window: {caseLog.window}</span>
+                            <span>
+                              {t("account.procedure.healingWindow", {
+                                window: caseLog.window
+                              })}
+                            </span>
                             {procedure.note ? <p>{procedure.note}</p> : null}
                           </div>
-                          <div aria-label={`${procedure.label} procedure case log`}>
-                            <h5>Case log</h5>
-                            <p>{caseLog.summary}</p>
+                          <div aria-label={t("account.procedure.caseLogAria", { label: procedure.label })}>
+                            <h5>{t("account.procedure.caseLogTitle")}</h5>
+                            <p>{formatProcedureCaseSummary(caseLog, t)}</p>
                             <small>{caseLog.reviewStatus}</small>
                           </div>
                         </li>
@@ -5271,7 +5326,7 @@ export default function AccountGoalPanel({
                     })}
                   </ul>
                 ) : (
-                  <p className="muted-text">No procedure logs yet.</p>
+                  <p className="muted-text">{t("account.procedure.emptyLogs")}</p>
                 )}
               </div>
 

@@ -2362,6 +2362,10 @@ test("downloads a localized progress report from the account UI", async ({ page 
   await expect(photoSection).toContainText("Fotos locales de progreso");
   await expect(photoSection).toContainText("Agrega una foto dia 0");
   await expect(page.getByLabel("Importar foto de progreso")).toBeVisible();
+  const procedureSection = accountDialog.getByLabel("Tracker de procedimientos");
+  await expect(procedureSection).toContainText("tipos de procedimiento");
+  await expect(page.getByLabel("Tipo de procedimiento")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Registrar procedimiento" })).toBeVisible();
   const bloodworkSection = accountDialog.getByLabel("Registro de laboratorios");
   await expect(bloodworkSection).toContainText("Notas locales de laboratorio");
   await expect(page.getByLabel("Marcador de laboratorio")).toBeVisible();
