@@ -16,6 +16,7 @@ Pass explicit files to validate a draft before replacing a seed:
         --launch-readiness-file app\\data\\launch_readiness.seed.json \\
         --provider-decision-file app\\data\\provider_decisions.seed.json \\
         --face-model-file app\\data\\face_model_candidates.seed.json \\
+        --corpus-moderation-file app\\data\\corpus_moderation_policy.seed.json \\
         --evidence-file app\\data\\attractiveness_evidence.seed.json \\
         --corpus-file ..\\strategy-corpus-template.json
 """
@@ -33,6 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.measurement_schema import load_measurement_schema  # noqa: E402
 from app.models import (  # noqa: E402
     AttractivenessEvidenceLibrary,
+    CorpusModerationPolicy,
     FaceModelCandidateLibrary,
     FoodSearchResponse,
     LaunchReadiness,
@@ -65,6 +67,9 @@ DEFAULT_PROVIDER_DECISION_FILES = [
 ]
 DEFAULT_FACE_MODEL_FILES = [
     BACKEND_ROOT / "app" / "data" / "face_model_candidates.seed.json",
+]
+DEFAULT_CORPUS_MODERATION_FILES = [
+    BACKEND_ROOT / "app" / "data" / "corpus_moderation_policy.seed.json",
 ]
 DEFAULT_GUIDE_FILES = [
     BACKEND_ROOT / "app" / "data" / "measurement_guides.seed.json",
@@ -362,6 +367,59 @@ def validate_face_model_file(path: Path) -> str:
     return f"{path}: {len(library.candidates)} face model candidate(s)"
 
 
+def validate_corpus_moderation_file(path: Path) -> str:
+    payload = read_json(path)
+    policy = CorpusModerationPolicy.model_validate(payload)
+    mode_ids = [mode.id for mode in policy.publicationModes]
+    rule_ids = [rule.id for rule in policy.rules]
+    mode_duplicates = duplicate_values(mode_ids)
+    rule_duplicates = duplicate_values(rule_ids)
+
+    if mode_duplicates:
+        raise ValueError(
+            f"{path}: duplicate corpus moderation mode ids: {', '.join(mode_duplicates)}."
+        )
+    if rule_duplicates:
+        raise ValueError(
+            f"{path}: duplicate corpus moderation rule ids: {', '.join(rule_duplicates)}."
+        )
+    if not any(mode.availability == "prototype-default" for mode in policy.publicationModes):
+        raise ValueError(f"{path}: expected one prototype-default publication mode.")
+    if not any(rule.blocking for rule in policy.rules):
+        raise ValueError(f"{path}: expected at least one blocking moderation rule.")
+    if not any("submitted-case-log" in rule.appliesTo for rule in policy.rules):
+        raise ValueError(f"{path}: expected a submitted-case-log moderation rule.")
+
+    for mode in policy.publicationModes:
+        if "review" not in mode.reviewStatus.lower():
+            raise ValueError(
+                f"{path}: publication mode {mode.id!r} must stay review-gated."
+            )
+
+    for rule in policy.rules:
+        if "review" not in rule.reviewStatus.lower():
+            raise ValueError(f"{path}: moderation rule {rule.id!r} must stay review-gated.")
+        if not any(doc.startswith("manual-work-queue.md") for doc in rule.docs):
+            raise ValueError(
+                f"{path}: moderation rule {rule.id!r} must reference manual-work-queue.md."
+            )
+        if not any(
+            "test" in command.lower() or "verify" in command.lower()
+            for command in rule.verification
+        ):
+            raise ValueError(
+                f"{path}: moderation rule {rule.id!r} needs a test or verify command."
+            )
+        if not rule.decisionsRequired:
+            raise ValueError(f"{path}: moderation rule {rule.id!r} needs decisions.")
+        if not rule.exclusionTriggers:
+            raise ValueError(
+                f"{path}: moderation rule {rule.id!r} needs exclusion triggers."
+            )
+
+    return f"{path}: {len(policy.rules)} corpus moderation rule(s)"
+
+
 def validate_measurement_guide_file(path: Path) -> str:
     payload = read_json(path)
     library = MeasurementGuideLibrary.model_validate(payload)
@@ -652,6 +710,13 @@ def parse_args() -> argparse.Namespace:
         help="Face model candidate JSON file to validate. Repeatable.",
     )
     parser.add_argument(
+        "--corpus-moderation-file",
+        action="append",
+        type=Path,
+        dest="corpus_moderation_files",
+        help="Corpus moderation policy JSON file to validate. Repeatable.",
+    )
+    parser.add_argument(
         "--guide-file",
         action="append",
         type=Path,
@@ -697,6 +762,9 @@ def main() -> int:
         args.provider_decision_files or DEFAULT_PROVIDER_DECISION_FILES
     )
     face_model_files = args.face_model_files or DEFAULT_FACE_MODEL_FILES
+    corpus_moderation_files = (
+        args.corpus_moderation_files or DEFAULT_CORPUS_MODERATION_FILES
+    )
     evidence_files = args.evidence_files or DEFAULT_EVIDENCE_FILES
     corpus_files = args.corpus_files or DEFAULT_CORPUS_FILES
     summaries = [
@@ -709,6 +777,7 @@ def main() -> int:
         *(validate_launch_readiness_file(path) for path in launch_readiness_files),
         *(validate_provider_decision_file(path) for path in provider_decision_files),
         *(validate_face_model_file(path) for path in face_model_files),
+        *(validate_corpus_moderation_file(path) for path in corpus_moderation_files),
         *(validate_attractiveness_evidence_file(path, planning_files) for path in evidence_files),
         *(validate_strategy_corpus_file(path) for path in corpus_files),
     ]

@@ -1,0 +1,224 @@
+{
+  "version": 1,
+  "source": "Dummy corpus moderation and publication policy seed mirrored from manual-work-queue.md. Review-only; no user case log publishes automatically.",
+  "notes": [
+    "Metadata-only: no submitted case logs, account IDs, emails, photos, private notes, raw measurements, moderation tokens, or reviewer identities.",
+    "Every rule remains review-gated until Dawson approves publication/exclusion policy or removes public corpus launch from scope."
+  ],
+  "publicationModes": [
+    {
+      "id": "private-review-only",
+      "label": "Private review-only queue",
+      "reviewStatus": "current prototype default; needs review before public launch",
+      "availability": "prototype-default",
+      "notes": [
+        "Submitted case logs stay in the moderation queue and are not added to the public strategy corpus.",
+        "Reviewer endpoints can approve, reject, or remove queue rows, but approval does not publish automatically."
+      ]
+    },
+    {
+      "id": "web-full-corpus",
+      "label": "Web full corpus",
+      "reviewStatus": "needs Dawson source and legal review",
+      "availability": "candidate",
+      "notes": [
+        "Candidate mode for a source-reviewed web corpus with age/high-risk gating.",
+        "Requires final high-risk exclusion decisions before any public release."
+      ]
+    },
+    {
+      "id": "ios-trimmed-corpus",
+      "label": "iOS trimmed corpus",
+      "reviewStatus": "needs App Store policy review",
+      "availability": "candidate",
+      "notes": [
+        "Candidate mode for native builds if store policy requires a reduced corpus.",
+        "May remove surgical, pharmaceutical, or explicit medical-adjacent entries from native distribution."
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "source-reviewed-before-publication",
+      "label": "Source-reviewed before publication",
+      "category": "publication",
+      "appliesTo": [
+        "strategy-entry",
+        "case-log"
+      ],
+      "reviewStatus": "needs Dawson/source review",
+      "blocking": true,
+      "decisionsRequired": [
+        "Approved source-link and citation policy",
+        "Minimum evidence labels for public entries",
+        "Required uncertainty and limitation wording",
+        "Rule for hiding imported or unsupported entries from public browsing"
+      ],
+      "exclusionTriggers": [
+        "Missing source URL for non-anecdotal claims",
+        "Unsupported claim presented without limitations",
+        "Conflicting evidence without reviewer notes",
+        "Promotional or guaranteed-result wording"
+      ],
+      "allowedCurrentScaffold": [
+        "Backend seed/import corpus only",
+        "Strategy explorer age gate and high-risk acknowledgment",
+        "No automatic publication from imported or submitted content"
+      ],
+      "verification": [
+        "cd backend && python scripts/validate_curation.py --corpus-moderation-file app/data/corpus_moderation_policy.seed.json",
+        "cd frontend && npm run test:corpus-moderation"
+      ],
+      "docs": [
+        "manual-work-queue.md#1-source-reviewed-strategy-corpus",
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "strategy-corpus-curation.md"
+      ]
+    },
+    {
+      "id": "high-risk-exclusion",
+      "label": "High-risk personalization exclusion",
+      "category": "safety",
+      "appliesTo": [
+        "strategy-entry"
+      ],
+      "reviewStatus": "needs clinical/body-mod safety review",
+      "blocking": true,
+      "decisionsRequired": [
+        "Which surgical, pharmaceutical, and clinical categories stay web-only",
+        "Which categories are removed from all public corpora",
+        "Required professional-review wording for high-risk entries",
+        "Whether native apps ship a trimmed corpus"
+      ],
+      "exclusionTriggers": [
+        "Surgical or pharmaceutical action framed as personalized advice",
+        "Dosing, prescribing, or diagnosis language",
+        "Illegal or prohibited intervention",
+        "High-risk category without explicit non-personalization status"
+      ],
+      "allowedCurrentScaffold": [
+        "High-risk age gate and acknowledgment",
+        "High-risk strategies excluded from personalization",
+        "Informational detail pages only"
+      ],
+      "verification": [
+        "cd backend && python scripts/validate_curation.py",
+        "cd frontend && npm run test:corpus"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "strategy-corpus-curation.md"
+      ]
+    },
+    {
+      "id": "case-log-publication",
+      "label": "Case-log publication review",
+      "category": "moderation",
+      "appliesTo": [
+        "submitted-case-log"
+      ],
+      "reviewStatus": "needs moderation policy review",
+      "blocking": true,
+      "decisionsRequired": [
+        "Reviewer roles and audit trail policy",
+        "Redaction and removal policy",
+        "Minimum limitation text for n=1 reports",
+        "Appeal or takedown process",
+        "Decision on whether approved queue rows can ever become public corpus entries"
+      ],
+      "exclusionTriggers": [
+        "Account IDs, emails, tokens, private notes, photos, or raw measurement fields",
+        "Medical advice, diagnosis, dosing, or prescriptive instructions",
+        "Minor or age-unclear submitter context",
+        "Missing consent or limitation wording",
+        "Harassing, promotional, or unverifiable content"
+      ],
+      "allowedCurrentScaffold": [
+        "POST /api/case-log-submissions stores review-safe summaries",
+        "Token-guarded /api/case-log-submissions/review endpoints",
+        "Approval updates queue status only and does not publish"
+      ],
+      "verification": [
+        "cd backend && python -m pytest tests/test_api.py",
+        "cd frontend && npm run test:case-log-submissions"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "feature-backlog.md#5-protocol-tracker-build-plan-button"
+      ]
+    },
+    {
+      "id": "app-store-content-scope",
+      "label": "App Store corpus scope",
+      "category": "native-release",
+      "appliesTo": [
+        "strategy-entry",
+        "native-app"
+      ],
+      "reviewStatus": "needs App Store / Play policy review",
+      "blocking": true,
+      "decisionsRequired": [
+        "Whether the full corpus is web-only",
+        "Native age rating and store-disclosure wording",
+        "Which high-risk entries are removed from native builds",
+        "Fallback UX for entries excluded from native scope"
+      ],
+      "exclusionTriggers": [
+        "Controlled-substance or prohibited marketplace content",
+        "Explicit medical dosing or clinical instruction",
+        "Store-policy disallowed body-modification content",
+        "Legal copy not approved for native release"
+      ],
+      "allowedCurrentScaffold": [
+        "Local strategy corpus age gate",
+        "Launch-readiness blocker remains open",
+        "No generated native project release artifacts"
+      ],
+      "verification": [
+        ".\\verify.ps1",
+        "cd backend && python scripts/launch_preflight.py --fail-on-blockers"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "feature-backlog.md#17-app-store-content-strategy-for-corpus",
+        "deployment.md"
+      ]
+    },
+    {
+      "id": "tone-and-claim-boundary",
+      "label": "Tone and claim boundary",
+      "category": "copy",
+      "appliesTo": [
+        "strategy-entry",
+        "case-log",
+        "public-copy"
+      ],
+      "reviewStatus": "needs copy/legal review",
+      "blocking": true,
+      "decisionsRequired": [
+        "Approved non-prescriptive wording for public corpus entries",
+        "Claim language that separates observation from recommendation",
+        "How user-submitted reports label uncertainty and confounders"
+      ],
+      "exclusionTriggers": [
+        "Guaranteed outcomes",
+        "Shaming, moralizing, or body-judgment wording",
+        "Instructions to bypass professional or legal review",
+        "Case-log text framed as generalized evidence"
+      ],
+      "allowedCurrentScaffold": [
+        "Automated tone guard test",
+        "Strategy detail copy states informational-only boundaries",
+        "Case logs render n=1 limitations"
+      ],
+      "verification": [
+        "cd frontend && npm run test:tone",
+        "cd frontend && npm run test:corpus"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "strategy-corpus-curation.md"
+      ]
+    }
+  ]
+}

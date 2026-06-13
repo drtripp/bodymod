@@ -14,6 +14,7 @@
     "native:sync": "npm run build && cap sync",
     "capture:screenshots": "node tests/capture-screenshots.mjs",
     "test:corpus": "node --test tests/strategyCorpus.node.mjs",
+    "test:corpus-moderation": "node --test tests/corpusModerationPolicy.node.mjs",
     "test:diet": "node --test tests/diet.node.mjs",
     "test:diet-import": "node --test tests/dietImport.node.mjs",
     "test:barcode-scanner": "node --test tests/barcodeScanner.node.mjs",

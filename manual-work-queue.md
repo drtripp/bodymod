@@ -200,11 +200,17 @@ Required input:
     fields, token-guarded reviewer endpoints can list/approve/reject/remove
     submissions, and nothing is published into the strategy corpus
     automatically
+  - a review-only corpus moderation policy seed now lives at
+    `backend/app/data/corpus_moderation_policy.seed.json`, is served through
+    `/api/corpus-moderation-policy`, and is shown in Strategy Explorer; it
+    records publication modes, exclusion triggers, and blocking rules for
+    Dawson/legal review before any public corpus inclusion
 
 Use:
 
 - `backend/app/data/provider_decisions.seed.json`
 - `backend/app/data/face_model_candidates.seed.json`
+- `backend/app/data/corpus_moderation_policy.seed.json`
 - `launch-decision-record.md`
 - `frontend/public/legal/`
 - `deployment.md`
@@ -219,6 +225,7 @@ cd backend
 .\.venv\Scripts\python.exe scripts\launch_preflight.py --fail-on-blockers
 .\.venv\Scripts\python.exe scripts\validate_curation.py --provider-decision-file app\data\provider_decisions.seed.json
 .\.venv\Scripts\python.exe scripts\validate_curation.py --face-model-file app\data\face_model_candidates.seed.json
+.\.venv\Scripts\python.exe scripts\validate_curation.py --corpus-moderation-file app\data\corpus_moderation_policy.seed.json
 ```
 
 ## 7. Procedure Taxonomy Review

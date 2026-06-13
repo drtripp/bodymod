@@ -148,6 +148,9 @@ Implemented now:
   account IDs, private notes, photos, or raw measurement fields; token-guarded
   reviewer endpoints can list, approve, reject, or remove queue items, and
   nothing is published into the corpus until policy/publication decisions exist
+- review-only corpus moderation policy seed at `/api/corpus-moderation-policy`
+  that lists publication modes, exclusion triggers, and blocking review rules
+  before user-submitted or imported corpus content can become public
 - procedure tracker with backend dummy procedure taxonomy, local surgery/filler/piercing/tattoo/body-mod logs, healing windows, photo stream hints, generated reliability events, and case-log output
 - local-only bloodwork log with backend dummy marker/range seed, manual lab-result entry, trend sparklines, protocol links, readable export/backup/report inclusion, and share-dashboard exclusion
 - reliability events pause affected weight and tape trend inference during healing or disruption windows, and pause saved goals whose target metrics are affected
@@ -211,8 +214,10 @@ Implemented now:
 - corpus entries display safety flags, legal notes, cost, and personalization exclusion status
 - strategy corpus is behind a local 18+ age gate
 - high-risk corpus entries require an extra informational acknowledgment before opening
+- strategy explorer displays the backend moderation/publication policy summary
+  before the risk map so corpus and case-log content stay review-gated
 - importable corpus template in `strategy-corpus-template.json`
-- structured curation validator for target profiles, strategy entries, and case logs via `backend/scripts/validate_curation.py`
+- structured curation validator for target profiles, strategy entries, case logs, launch/review gates, and corpus moderation policy via `backend/scripts/validate_curation.py`
 - backend and Node corpus validation tests for API seed bounds, case-log links, import/export normalization, local overrides, safety gating, and rejected evidence levels
 - Playwright desktop and phone-viewport frontend user-flow tests
 - pytest backend API/service tests

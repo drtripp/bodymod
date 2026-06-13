@@ -73,6 +73,10 @@ test("translates known keys, falls back to English, and interpolates values", ()
     "8 resultado(s) cargado(s) con 0 enlace(s) de fuente revisada(s) y 4 caso(s)."
   );
   assert.equal(
+    translate("es", "strategy.moderation.status.loaded", { rules: 5, blocking: 5 }),
+    "5 regla(s) de moderacion cargada(s); 5 aun bloquean publicacion."
+  );
+  assert.equal(
     translate("es", "strategy.point.aria", {
       name: "Entrada",
       efficacy: 51,

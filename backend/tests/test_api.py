@@ -6,6 +6,10 @@ from app.data.attractiveness_evidence import (
 )
 from app.data.bloodwork import BLOODWORK_LIBRARY
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
+from app.data.corpus_moderation_policy import (
+    CORPUS_MODERATION_POLICY,
+    CORPUS_MODERATION_POLICY_SEED_PATH,
+)
 from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY, EXERCISE_SEED_PATH
 from app.data.face_model_candidates import (
@@ -466,6 +470,33 @@ def test_strategy_corpus_endpoint_returns_backend_seed() -> None:
         for strategy in all_strategies
         if strategy["sensitivity"] in {"clinical", "surgical", "pharmaceutical", "medical-adjacent"}
     )
+
+
+def test_corpus_moderation_policy_endpoint_returns_review_seed() -> None:
+    response = client.get("/api/corpus-moderation-policy")
+
+    assert response.status_code == 200
+    payload = response.json()
+    rule_ids = {rule["id"] for rule in payload["rules"]}
+    mode_ids = {mode["id"] for mode in payload["publicationModes"]}
+
+    assert payload["version"] == CORPUS_MODERATION_POLICY["version"]
+    assert CORPUS_MODERATION_POLICY_SEED_PATH.exists()
+    assert "review-only" in payload["source"].lower()
+    assert {"private-review-only", "web-full-corpus", "ios-trimmed-corpus"}.issubset(
+        mode_ids
+    )
+    assert "case-log-publication" in rule_ids
+    assert any(mode["availability"] == "prototype-default" for mode in payload["publicationModes"])
+    assert all("review" in mode["reviewStatus"].lower() for mode in payload["publicationModes"])
+    assert all(rule["blocking"] for rule in payload["rules"])
+    assert all("review" in rule["reviewStatus"].lower() for rule in payload["rules"])
+    assert all(rule["decisionsRequired"] for rule in payload["rules"])
+    assert all(rule["exclusionTriggers"] for rule in payload["rules"])
+    assert any("submitted-case-log" in rule["appliesTo"] for rule in payload["rules"])
+    assert "mason@example.com" not in response.text
+    assert "waistCircumference" not in response.text
+    assert "syncToken" not in response.text
 
 
 def case_log_submission_payload() -> dict:

@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchStrategyCorpus } from "../lib/api";
+import { fetchCorpusModerationPolicy, fetchStrategyCorpus } from "../lib/api";
+import {
+  corpusModerationPolicySummary,
+  fallbackCorpusModerationPolicy,
+  normalizeCorpusModerationPolicy
+} from "../lib/corpusModerationPolicy";
 import {
   clearStrategyCorpusOverride,
   acceptStrategyCorpusAgeGate,
@@ -72,6 +77,14 @@ function caseLogsForStrategy(strategy, caseLogs) {
   );
 }
 
+function moderationAppliesLabel(rule, t) {
+  return rule.appliesTo.length ? rule.appliesTo.join(", ") : t("strategy.moderation.notCaptured");
+}
+
+function moderationDecisionPreview(rule, t) {
+  return rule.decisionsRequired[0] || t("strategy.moderation.noDecision");
+}
+
 export default function StrategyCorpus({ locale = "en" }) {
   const t = createTranslator(locale);
   const [corpusOutcomes, setCorpusOutcomes] = useState(() => loadStrategyCorpusBundle().outcomes);
@@ -86,6 +99,10 @@ export default function StrategyCorpus({ locale = "en" }) {
   const [detailStrategySlug, setDetailStrategySlug] = useState("");
   const [ageGateAccepted, setAgeGateAccepted] = useState(() => isStrategyCorpusAgeAccepted());
   const [pendingHighRiskSlug, setPendingHighRiskSlug] = useState("");
+  const [moderationPolicy, setModerationPolicy] = useState(() =>
+    normalizeCorpusModerationPolicy(fallbackCorpusModerationPolicy)
+  );
+  const [moderationPolicyStatus, setModerationPolicyStatus] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -115,6 +132,40 @@ export default function StrategyCorpus({ locale = "en" }) {
       .catch(() => {
         if (isMounted && !hasStrategyCorpusOverride()) {
           setCorpusStatus(t("strategy.status.backendUnavailable"));
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [locale]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    setModerationPolicyStatus(t("strategy.moderation.status.loading"));
+    fetchCorpusModerationPolicy()
+      .then((response) => {
+        const backendPolicy = normalizeCorpusModerationPolicy(response);
+        const summary = corpusModerationPolicySummary(backendPolicy);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setModerationPolicy(backendPolicy);
+        setModerationPolicyStatus(
+          t("strategy.moderation.status.loaded", {
+            rules: summary.totalRules,
+            blocking: summary.blockingCount
+          })
+        );
+      })
+      .catch(() => {
+        if (isMounted) {
+          const fallbackPolicy = normalizeCorpusModerationPolicy(fallbackCorpusModerationPolicy);
+          setModerationPolicy(fallbackPolicy);
+          setModerationPolicyStatus(t("strategy.moderation.status.unavailable"));
         }
       });
 
@@ -183,6 +234,11 @@ export default function StrategyCorpus({ locale = "en" }) {
       ),
     0
   );
+  const moderationSummary = useMemo(
+    () => corpusModerationPolicySummary(moderationPolicy),
+    [moderationPolicy]
+  );
+  const visibleModerationRules = moderationPolicy.rules.slice(0, 3);
 
   function handleExportCorpus() {
     const blob = new Blob([serializeStrategyCorpus(corpusOutcomes, corpusCaseLogs)], {
@@ -509,6 +565,57 @@ export default function StrategyCorpus({ locale = "en" }) {
                 ))}
               </select>
             </label>
+          </div>
+
+          <div className="corpus-moderation-panel" aria-label={t("strategy.moderation.aria")}>
+            <div className="corpus-moderation-copy">
+              <h3>{t("strategy.moderation.title")}</h3>
+              <p>{t("strategy.moderation.body")}</p>
+              <small>{moderationPolicy.source}</small>
+            </div>
+            <div className="corpus-moderation-summary" aria-label={t("strategy.moderation.summaryAria")}>
+              <strong>
+                {t("strategy.moderation.blockingCount", {
+                  count: moderationSummary.blockingCount
+                })}
+              </strong>
+              <span>
+                {t("strategy.moderation.modeCount", {
+                  count: moderationSummary.publicationModeCount
+                })}
+              </span>
+              <small>
+                {moderationSummary.prototypeDefaultMode?.label ||
+                  t("strategy.moderation.noDefaultMode")}
+              </small>
+            </div>
+            <ul className="corpus-moderation-list">
+              {visibleModerationRules.map((rule) => (
+                <li key={rule.id}>
+                  <strong>{rule.label}</strong>
+                  <span>
+                    {t("strategy.moderation.ruleMeta", {
+                      status: rule.reviewStatus,
+                      category: rule.category,
+                      applies: moderationAppliesLabel(rule, t)
+                    })}
+                  </span>
+                  <p>{moderationDecisionPreview(rule, t)}</p>
+                </li>
+              ))}
+            </ul>
+            {moderationSummary.totalRules > visibleModerationRules.length ? (
+              <small className="corpus-moderation-more">
+                {t("strategy.moderation.remainingCount", {
+                  count: moderationSummary.totalRules - visibleModerationRules.length
+                })}
+              </small>
+            ) : null}
+            {moderationPolicyStatus ? (
+              <small className="corpus-moderation-status" role="status" aria-live="polite">
+                {moderationPolicyStatus}
+              </small>
+            ) : null}
           </div>
 
           {selectedOutcome ? (

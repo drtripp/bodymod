@@ -136,6 +136,40 @@ async function mockApi(page) {
     });
   });
 
+  await page.route("**/api/corpus-moderation-policy", async (route) => {
+    await route.fulfill({
+      json: {
+        version: 1,
+        source: "Mock mobile corpus moderation policy.",
+        notes: ["Metadata only."],
+        publicationModes: [
+          {
+            id: "private-review-only",
+            label: "Private review-only queue",
+            reviewStatus: "current prototype default; needs review before public launch",
+            availability: "prototype-default",
+            notes: ["Queue only."]
+          }
+        ],
+        rules: [
+          {
+            id: "case-log-publication",
+            label: "Case-log publication review",
+            category: "moderation",
+            appliesTo: ["submitted-case-log"],
+            reviewStatus: "needs moderation policy review",
+            blocking: true,
+            decisionsRequired: ["Reviewer roles"],
+            exclusionTriggers: ["Private data"],
+            allowedCurrentScaffold: ["Queue only"],
+            verification: ["npm run test:corpus-moderation"],
+            docs: ["manual-work-queue.md#6-launch-privacy-and-moderation-approvals"]
+          }
+        ]
+      }
+    });
+  });
+
   await page.route("**/api/match-priorities", async (route) => {
     await route.fulfill({
       json: {

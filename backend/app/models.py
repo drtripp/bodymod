@@ -650,6 +650,49 @@ class StrategyCorpusSeed(BaseModel):
     caseLogs: list[StrategyCaseLog] = Field(default_factory=list)
 
 
+class CorpusPublicationMode(BaseModel):
+    id: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9._:-]+$")
+    label: str = Field(min_length=1)
+    reviewStatus: str = Field(min_length=1)
+    availability: Literal[
+        "prototype-default",
+        "candidate",
+        "not-approved",
+        "removed-from-scope",
+    ]
+    notes: list[str] = Field(default_factory=list)
+
+
+class CorpusModerationRule(BaseModel):
+    id: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9._:-]+$")
+    label: str = Field(min_length=1)
+    category: str = Field(min_length=1)
+    appliesTo: list[
+        Literal[
+            "strategy-entry",
+            "case-log",
+            "submitted-case-log",
+            "native-app",
+            "public-copy",
+        ]
+    ] = Field(min_length=1)
+    reviewStatus: str = Field(min_length=1)
+    blocking: bool = True
+    decisionsRequired: list[str] = Field(min_length=1)
+    exclusionTriggers: list[str] = Field(min_length=1)
+    allowedCurrentScaffold: list[str] = Field(default_factory=list)
+    verification: list[str] = Field(min_length=1)
+    docs: list[str] = Field(min_length=1)
+
+
+class CorpusModerationPolicy(BaseModel):
+    version: int = Field(ge=1)
+    source: str = Field(min_length=1)
+    notes: list[str] = Field(default_factory=list)
+    publicationModes: list[CorpusPublicationMode] = Field(min_length=1)
+    rules: list[CorpusModerationRule] = Field(min_length=1)
+
+
 class MeasurementGuide(BaseModel):
     field: str
     label: str

@@ -9,6 +9,7 @@ from app.account_email import send_account_magic_link_email
 from app.data.attractiveness_evidence import ATTRACTIVENESS_EVIDENCE
 from app.data.bloodwork import BLOODWORK_LIBRARY
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
+from app.data.corpus_moderation_policy import CORPUS_MODERATION_POLICY
 from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY
 from app.data.face_model_candidates import FACE_MODEL_CANDIDATE_LIBRARY
@@ -37,6 +38,7 @@ from app.models import CaseLogModerationReviewRequest
 from app.models import ClothingSizeTables
 from app.models import ClientErrorReportRequest
 from app.models import ClientErrorReportResponse
+from app.models import CorpusModerationPolicy
 from app.models import EntitlementConfig
 from app.models import ExerciseLibrary
 from app.models import FaceModelCandidateLibrary
@@ -267,6 +269,11 @@ def bloodwork_library() -> dict:
 @app.get("/api/strategy-corpus")
 def strategy_corpus() -> dict:
     return StrategyCorpusSeed.model_validate(STRATEGY_CORPUS).model_dump()
+
+
+@app.get("/api/corpus-moderation-policy")
+def corpus_moderation_policy() -> dict:
+    return CorpusModerationPolicy.model_validate(CORPUS_MODERATION_POLICY).model_dump()
 
 
 @app.get("/api/attractiveness-evidence")

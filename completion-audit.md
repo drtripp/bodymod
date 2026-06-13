@@ -50,6 +50,7 @@ User request:
 | ANSUR reference import scaffold | `backend/app/data/reference.ansur.mapping.json`, `backend/scripts/build_ansur_reference.py`, `backend/tests/test_ansur_import.py`, and `reference-data-curation.md` add a review-gated path for converting a locally reviewed ANSUR-style CSV into sex-specific means, sample SDs, and selected percentile overlay JSON while keeping generated fields unvetted by default. | Import scaffold done; real source download, license/codebook review, and production wiring pending |
 | Strategy corpus scaffold | `backend/app/data/strategy_corpus.py`, `backend/app/data/strategy_corpus.seed.json`, `frontend/src/components/StrategyCorpus.jsx`, `frontend/src/lib/strategyCorpus.js`, `frontend/tests/strategyCorpus.node.mjs`, `strategy-corpus-template.json`, and `strategy-corpus-curation.md` provide a backend API seed source, overlay-based outcome-first browsing, one efficacy/risk plot per selected outcome, clickable dot labels, synopsis modals, high-risk acknowledgments, strategy detail views, linked completed-protocol case logs with n=1 limitations, metadata, local 18+ age-gate storage, local import/export/persistence overrides, validation tests, a curation template, and a manual review rubric. | Scaffold done |
 | User case-log moderation queue scaffold | `backend/app/models.py`, `backend/app/repositories.py`, `backend/app/main.py`, `frontend/src/lib/caseLogSubmissions.js`, `frontend/src/components/AccountGoalPanel.jsx`, `backend/tests/test_api.py`, `backend/tests/test_repositories.py`, `frontend/tests/caseLogSubmissions.node.mjs`, `frontend/tests/app.spec.js`, `feature-backlog.md`, and `manual-work-queue.md` add a review-only `/api/case-log-submissions` queue for generated protocol case logs plus token-guarded `/api/case-log-submissions/review` endpoints for listing and approving/rejecting/removing submissions. The envelope excludes account IDs, private notes, photos, tokens, and raw measurement fields, moderation notes are sanitized, and nothing publishes into the strategy corpus automatically. | Queue/reviewer scaffold done; human moderation policy and publication approval pending |
+| Corpus moderation policy scaffold | `backend/app/data/corpus_moderation_policy.seed.json`, `backend/app/data/corpus_moderation_policy.py`, `backend/app/models.py`, `backend/app/main.py`, `backend/scripts/validate_curation.py`, `frontend/src/lib/corpusModerationPolicy.js`, `frontend/src/components/StrategyCorpus.jsx`, `frontend/tests/corpusModerationPolicy.node.mjs`, `frontend/tests/app.spec.js`, `feature-backlog.md`, and `manual-work-queue.md` add a review-only publication policy seed with publication modes, blocking review rules, exclusion triggers, validator checks, `/api/corpus-moderation-policy`, and a Strategy Explorer policy summary above the risk map. | Scaffold done; human approval of publication modes, exclusion triggers, and reviewer workflow pending |
 | Expiring opaque share snapshot scaffold | `backend/app/models.py`, `backend/app/repositories.py`, `backend/app/main.py`, `frontend/src/lib/shareSnapshots.js`, `frontend/src/lib/api.js`, `frontend/src/App.jsx`, `frontend/src/components/SiteHeader.jsx`, `frontend/tests/shareSnapshots.node.mjs`, `frontend/tests/app.spec.js`, `backend/tests/test_api.py`, `backend/tests/test_repositories.py`, `feature-backlog.md`, `manual-work-queue.md`, and `launch-decision-record.md` add a header-created `/api/share-snapshots` flow for opaque `?snapshot=` measurement links with bounded expiry. Payloads are strict current-measurement snapshots with title/privacy metadata, reject account/token/private extra fields, and load through the frontend URL flow. | Scaffold done; final public share URL policy still pending |
 | Browser-local multi-profile scaffold | `frontend/src/lib/account.js`, `frontend/src/components/AccountGoalPanel.jsx`, `frontend/tests/accountTracking.node.mjs`, and `frontend/tests/app.spec.js` summarize separate account-scoped local stores and exercise one-click switching between two real local profiles through the account UI. | Local scaffold done; encrypted cross-device stores pending |
 | Magic-link account identity scaffold | `backend/app/account_email.py`, `backend/app/models.py`, `backend/app/repositories.py`, `backend/app/main.py`, `frontend/src/lib/magicLinkAccount.js`, `frontend/src/components/AccountGoalPanel.jsx`, `frontend/src/App.jsx`, `backend/tests/test_account_email.py`, `backend/tests/test_api.py`, `backend/tests/test_repositories.py`, `frontend/tests/magicLinkAccount.node.mjs`, `frontend/tests/app.spec.js`, and `verify.ps1` add opt-in email identity endpoints for one-time magic-link request/verify, bearer session read/logout, hash-stored email/link/session secrets, dev-token mode for local verification, optional SMTP delivery that keeps raw login tokens out of JSON responses, frontend `magicLinkToken` URL handling/scrubbing, and account-panel controls that send only email/display-name/user-agent metadata. | SMTP-capable identity scaffold done; production email provider approval, account recovery, and identity-linked production automatic sync pending |
@@ -77,6 +78,7 @@ The wrapper runs the component commands below and cleans Playwright output.
 ```bash
 cd frontend
 npm run test:corpus
+npm run test:corpus-moderation
 npm run test:diet
 npm run test:diet-import
 npm run test:barcode-scanner
@@ -114,11 +116,12 @@ cd backend
 Observed result:
 
 - frontend build passed
-- backend pytest passed `100` tests
-- curation JSON validation passed for target/corpus seeds, templates, the ANSUR mapping file, and launch-readiness gates
+- backend pytest passed `103` tests
+- curation JSON validation passed for target/corpus seeds, templates, the ANSUR mapping file, launch-readiness gates, and the corpus moderation policy seed
 - launch preflight passed structural checks with status `blocked`, `8`
   blocking human gates, and `0` failed structural checks
 - Node corpus validation passed `8` tests
+- Node corpus moderation validation passed `4` tests
 - Node diet validation passed `13` tests
 - Node diet CSV import validation passed `4` tests
 - Node native barcode scanner validation passed `4` tests
@@ -185,7 +188,7 @@ cd backend
 
 Observed result:
 
-- backend pytest passed `100` tests
+- backend pytest passed `103` tests
 
 ## Current Decision
 
@@ -199,6 +202,7 @@ The goal is not complete as a production product. The code and docs now cover th
 
 The concrete manual input queue is tracked in `manual-work-queue.md` and mirrored
 into the validated `/api/launch-readiness` gate seed. User protocol case logs can
-now enter a review-only `/api/case-log-submissions` queue, but human moderation
-policy and publication approval are still required before any submission can
-become corpus content.
+now enter a review-only `/api/case-log-submissions` queue, and the app exposes a
+review-only `/api/corpus-moderation-policy` scaffold, but human approval of
+publication modes, exclusion triggers, and reviewer workflow is still required
+before any submission can become corpus content.

@@ -87,6 +87,10 @@ export function fetchStrategyCorpus() {
   return request("/api/strategy-corpus");
 }
 
+export function fetchCorpusModerationPolicy() {
+  return request("/api/corpus-moderation-policy");
+}
+
 export function submitCaseLogSubmission(submission) {
   return request("/api/case-log-submissions", {
     method: "POST",

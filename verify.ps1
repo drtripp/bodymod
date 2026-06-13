@@ -27,6 +27,7 @@ try {
   Push-Location "frontend"
   try {
     Invoke-Checked { npm run test:corpus }
+    Invoke-Checked { npm run test:corpus-moderation }
     Invoke-Checked { npm run test:diet }
     Invoke-Checked { npm run test:diet-import }
     Invoke-Checked { npm run test:barcode-scanner }

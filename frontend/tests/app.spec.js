@@ -445,6 +445,56 @@ const launchReadiness = {
   ]
 };
 
+const corpusModerationPolicy = {
+  version: 1,
+  source: "Mock review-only corpus moderation policy.",
+  notes: ["Metadata only; no submitted case logs publish automatically."],
+  publicationModes: [
+    {
+      id: "private-review-only",
+      label: "Private review-only queue",
+      reviewStatus: "current prototype default; needs review before public launch",
+      availability: "prototype-default",
+      notes: ["Queue only."]
+    },
+    {
+      id: "web-full-corpus",
+      label: "Web full corpus",
+      reviewStatus: "needs Dawson source and legal review",
+      availability: "candidate",
+      notes: ["Candidate web mode."]
+    }
+  ],
+  rules: [
+    {
+      id: "source-reviewed-before-publication",
+      label: "Source-reviewed before publication",
+      category: "publication",
+      appliesTo: ["strategy-entry", "case-log"],
+      reviewStatus: "needs Dawson/source review",
+      blocking: true,
+      decisionsRequired: ["Approved source-link and citation policy"],
+      exclusionTriggers: ["Missing source URL for non-anecdotal claims"],
+      allowedCurrentScaffold: ["Backend seed/import corpus only"],
+      verification: ["npm run test:corpus-moderation"],
+      docs: ["manual-work-queue.md#1-source-reviewed-strategy-corpus"]
+    },
+    {
+      id: "case-log-publication",
+      label: "Case-log publication review",
+      category: "moderation",
+      appliesTo: ["submitted-case-log"],
+      reviewStatus: "needs moderation policy review",
+      blocking: true,
+      decisionsRequired: ["Reviewer roles and audit trail policy"],
+      exclusionTriggers: ["Private data or medical advice in submitted summaries"],
+      allowedCurrentScaffold: ["POST /api/case-log-submissions stores review-safe summaries"],
+      verification: ["npm run test:case-log-submissions"],
+      docs: ["manual-work-queue.md#6-launch-privacy-and-moderation-approvals"]
+    }
+  ]
+};
+
 const providerDecisionLibrary = {
   version: 1,
   source: "Mock provider decision matrix seed mirrored from manual-work-queue.md.",
@@ -1079,6 +1129,12 @@ async function mockApi(page) {
         caseLogs: strategyCaseLogs
       }
     });
+  });
+
+  await page.route("**/api/corpus-moderation-policy", async (route) => {
+    const requestBody = route.request().postData() || "";
+    expect(requestBody).not.toMatch(/measurements|waistCircumference|mason@example\.com|syncToken|note/);
+    await route.fulfill({ json: corpusModerationPolicy });
   });
 
   await page.route("**/api/case-log-submissions", async (route) => {
@@ -3400,12 +3456,21 @@ test("exposes method, privacy, and strategy corpus content", async ({ page }) =>
   await expect(page.getByText("Local usage events cleared from this browser.")).toBeVisible();
 
   const strategyCorpusResponse = page.waitForResponse(/\/api\/strategy-corpus/);
+  const moderationPolicyResponse = page.waitForResponse(/\/api\/corpus-moderation-policy/);
   await page.getByRole("button", { name: "Build Plan" }).click();
   expect((await strategyCorpusResponse).ok()).toBeTruthy();
+  expect((await moderationPolicyResponse).ok()).toBeTruthy();
   await expect(page.getByRole("heading", { name: "Strategy explorer" })).toBeVisible();
   await expect(page.getByLabel("Strategy corpus age gate")).toContainText("18+ content gate");
   await page.getByRole("button", { name: "I am 18 or older" }).click();
   await expect(page.getByRole("heading", { name: "I want to..." })).toBeVisible();
+  await expect(page.getByLabel("Corpus moderation policy")).toContainText("Review policy");
+  await expect(page.getByLabel("Corpus moderation policy")).toContainText("2 blocking moderation rule(s)");
+  await expect(page.getByLabel("Corpus moderation policy")).toContainText("Private review-only queue");
+  await expect(page.getByLabel("Corpus moderation policy")).toContainText("Case-log publication review");
+  await expect(page.getByLabel("Corpus moderation policy")).toContainText(
+    "Loaded 2 moderation rule(s); 2 still blocking publication."
+  );
   await expect(page.getByLabel("Gain Weight efficacy and risk plot")).toBeVisible();
   await expect(page.getByText("This is not advice")).toBeVisible();
   await expect(page.getByLabel("Filter selected outcome confidence")).toBeVisible();

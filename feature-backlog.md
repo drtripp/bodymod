@@ -755,6 +755,13 @@ land. No social features, no marketplace.
       queue items and mark them approved, rejected, or removed with sanitized
       moderation notes. **[human]** moderation policy and publication decisions
       remain before any public corpus inclusion.
+- [x] Corpus moderation/publication policy scaffold **(new)**: backend serves
+      `backend/app/data/corpus_moderation_policy.seed.json` through
+      `/api/corpus-moderation-policy`, validates review-gated rules and
+      publication modes through `backend/scripts/validate_curation.py`, and
+      Strategy Explorer renders the blocking policy summary above the risk map.
+      **[human]** approval of publication modes, exclusion triggers, and
+      reviewer workflow is still required before public corpus inclusion.
 
 ## 18. Compliance, Trust & Launch
 

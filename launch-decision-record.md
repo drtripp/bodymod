@@ -144,6 +144,9 @@ Current behavior:
 - internal reviewers can list, approve, reject, or remove queued submissions
   only when `BODYMOD_CASE_LOG_REVIEW_TOKEN` is configured and sent with
   `X-Bodymod-Review-Token`
+- a review-only corpus moderation policy seed is served at
+  `/api/corpus-moderation-policy` and shown in Strategy Explorer with
+  publication modes, exclusion triggers, and blocking review rules
 - clinical, surgical, pharmaceutical, and medical-adjacent entries are excluded from personalization by default
 
 Before public launch, decide:

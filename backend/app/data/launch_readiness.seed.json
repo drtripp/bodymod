@@ -159,6 +159,7 @@
         "Encrypted sync vault and magic-link account scaffolds",
         "Review-only case-log submission queue at /api/case-log-submissions",
         "Token-guarded case-log reviewer endpoints at /api/case-log-submissions/review",
+        "Review-only corpus moderation policy at /api/corpus-moderation-policy",
         "Expiring opaque measurement share snapshots at /api/share-snapshots",
         "Review-only provider decision matrix at /api/provider-decisions",
         "Review-only face model candidate matrix at /api/face-model-candidates"
@@ -167,7 +168,8 @@
         ".\\verify.ps1",
         "cd backend && python scripts/launch_preflight.py --fail-on-blockers",
         "cd backend && python -m pytest tests/test_api.py tests/test_repositories.py",
-        "cd frontend && npm run test:share-snapshots"
+        "cd frontend && npm run test:share-snapshots",
+        "cd frontend && npm run test:corpus-moderation"
       ],
       "docs": [
         "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
