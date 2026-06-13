@@ -2341,6 +2341,14 @@ test("downloads a localized progress report from the account UI", async ({ page 
   await expect(identityCard).toContainText("Token dev de magic link devuelto para l***@example.com");
   await page.getByRole("button", { name: "Verificar" }).click();
   await expect(identityCard).toContainText("Identidad de email verificada para l***@example.com");
+  const shareSection = accountDialog.getByLabel("Dashboard compartido de solo lectura");
+  await expect(shareSection).toContainText("Publica un resumen publico opt-in");
+  await expect(shareSection).toContainText("No hay enlace compartido de solo lectura activo.");
+  await page.getByRole("button", { name: "Publicar dashboard compartido" }).click();
+  await expect(shareSection).toContainText(
+    "Dashboard compartido de solo lectura publicado."
+  );
+  await expect(shareSection).toContainText("Enlace activo:");
   await expect(page.getByLabel("Informe de progreso")).toContainText(
     "Resumen local imprimible"
   );

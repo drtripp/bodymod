@@ -86,6 +86,12 @@ test("translates known keys, falls back to English, and interpolates values", ()
     "1 snapshot(s) / 2 protocolo(s) / 3 procedimiento(s) / 4 resultado(s) lab / 5 entrenamiento(s) / 6 foto(s) / 7 escaneo(s) facial(es)"
   );
   assert.equal(
+    translate("es", "account.share.activeLink", {
+      url: "https://bodymod.test/?share=abc"
+    }),
+    "Enlace activo: https://bodymod.test/?share=abc"
+  );
+  assert.equal(
     translate("es", "account.export.jsonStatus", {
       snapshots: 1,
       checkIns: 2,

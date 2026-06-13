@@ -485,6 +485,14 @@ function formatProgressReportCounts(model, t) {
   });
 }
 
+function formatShareDashboardLinkState(shareDashboardState, t) {
+  if (shareDashboardState.publicUrl) {
+    return t("account.share.activeLink", { url: shareDashboardState.publicUrl });
+  }
+
+  return t("account.share.noActiveLink");
+}
+
 function formatMagicLinkRequestStatus(request, t) {
   if (request.deliveryStatus === "dev-token-returned") {
     return t("account.identity.status.devToken", {
@@ -2301,7 +2309,7 @@ export default function AccountGoalPanel({
     }
 
     try {
-      setShareDashboardStatus("Publishing read-only dashboard...");
+      setShareDashboardStatus(t("account.share.status.publishing"));
       const response = await createShareDashboard(shareDashboardPayload);
       const nextState = persistShareDashboardState({
         accountId: account.id,
@@ -2312,20 +2320,20 @@ export default function AccountGoalPanel({
         updatedAt: response.updatedAt
       });
       setShareDashboardState(nextState);
-      setShareDashboardStatus("Read-only share dashboard published.");
+      setShareDashboardStatus(t("account.share.status.published"));
     } catch (error) {
-      setShareDashboardStatus("Share dashboard publish failed.");
+      setShareDashboardStatus(t("account.share.status.publishFailed"));
     }
   }
 
   async function handleUpdateShareDashboard() {
     if (!shareDashboardState.publicToken || !shareDashboardState.revokeToken) {
-      setShareDashboardStatus("Publish a share dashboard before updating it.");
+      setShareDashboardStatus(t("account.share.status.publishBeforeUpdate"));
       return;
     }
 
     try {
-      setShareDashboardStatus("Updating read-only dashboard...");
+      setShareDashboardStatus(t("account.share.status.updating"));
       const response = await updateShareDashboard(
         shareDashboardState.publicToken,
         shareDashboardState.revokeToken,
@@ -2339,21 +2347,21 @@ export default function AccountGoalPanel({
         updatedAt: response.updatedAt
       });
       setShareDashboardState(nextState);
-      setShareDashboardStatus("Read-only share dashboard updated.");
+      setShareDashboardStatus(t("account.share.status.updated"));
     } catch (error) {
-      setShareDashboardStatus("Share dashboard update failed.");
+      setShareDashboardStatus(t("account.share.status.updateFailed"));
     }
   }
 
   async function handleCopyShareDashboardLink() {
     if (!shareDashboardState.publicUrl) {
-      setShareDashboardStatus("Publish a share dashboard before copying it.");
+      setShareDashboardStatus(t("account.share.status.publishBeforeCopy"));
       return;
     }
 
     try {
       await navigator.clipboard.writeText(shareDashboardState.publicUrl);
-      setShareDashboardStatus("Read-only share link copied.");
+      setShareDashboardStatus(t("account.share.status.copied"));
     } catch (error) {
       setShareDashboardStatus(shareDashboardState.publicUrl);
     }
@@ -2362,20 +2370,20 @@ export default function AccountGoalPanel({
   async function handleRevokeShareDashboard() {
     if (!shareDashboardState.publicToken || !shareDashboardState.revokeToken) {
       setShareDashboardState(clearShareDashboardState());
-      setShareDashboardStatus("No active share dashboard to revoke.");
+      setShareDashboardStatus(t("account.share.status.noActive"));
       return;
     }
 
     try {
-      setShareDashboardStatus("Revoking read-only dashboard...");
+      setShareDashboardStatus(t("account.share.status.revoking"));
       await revokeShareDashboard(
         shareDashboardState.publicToken,
         shareDashboardState.revokeToken
       );
       setShareDashboardState(clearShareDashboardState());
-      setShareDashboardStatus("Read-only share dashboard revoked.");
+      setShareDashboardStatus(t("account.share.status.revoked"));
     } catch (error) {
-      setShareDashboardStatus("Share dashboard revoke failed.");
+      setShareDashboardStatus(t("account.share.status.revokeFailed"));
     }
   }
 
@@ -3570,24 +3578,17 @@ export default function AccountGoalPanel({
               </button>
             </section>
 
-            <section className="share-dashboard-section" aria-label="Read-only share dashboard">
+            <section className="share-dashboard-section" aria-label={t("account.share.aria")}>
               <div>
-                <h3>Read-only share dashboard</h3>
+                <h3>{t("account.share.title")}</h3>
                 <p>
-                  Publish an opt-in public profile summary with current
-                  measurements, recent snapshots, goals, and active protocols.
-                  Email, private notes, photo files, and local account IDs stay
-                  out of the payload.
+                  {t("account.share.body")}
                 </p>
-                <span>
-                  {shareDashboardState.publicUrl
-                    ? `Active link: ${shareDashboardState.publicUrl}`
-                    : "No active read-only share link."}
-                </span>
+                <span>{formatShareDashboardLinkState(shareDashboardState, t)}</span>
               </div>
               <div className="share-dashboard-actions">
                 <button className="button" type="button" onClick={handlePublishShareDashboard}>
-                  Publish share dashboard
+                  {t("account.share.publish")}
                 </button>
                 <button
                   className="button"
@@ -3595,7 +3596,7 @@ export default function AccountGoalPanel({
                   onClick={handleUpdateShareDashboard}
                   disabled={!shareDashboardState.publicToken}
                 >
-                  Update share dashboard
+                  {t("account.share.update")}
                 </button>
                 <button
                   className="button"
@@ -3603,7 +3604,7 @@ export default function AccountGoalPanel({
                   onClick={handleCopyShareDashboardLink}
                   disabled={!shareDashboardState.publicUrl}
                 >
-                  Copy share link
+                  {t("account.share.copy")}
                 </button>
                 <button
                   className="button"
@@ -3611,7 +3612,7 @@ export default function AccountGoalPanel({
                   onClick={handleRevokeShareDashboard}
                   disabled={!shareDashboardState.publicToken}
                 >
-                  Revoke share dashboard
+                  {t("account.share.revoke")}
                 </button>
               </div>
               {shareDashboardStatus ? (
