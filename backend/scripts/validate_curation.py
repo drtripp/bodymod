@@ -1,4 +1,4 @@
-"""Validate editable curation JSON for target, guide, food, planning, update, launch, provider, face, evidence, and strategy data.
+"""Validate editable curation JSON for target, guide, food, planning, update, launch, provider, native release, face, evidence, and strategy data.
 
 Run from the backend directory:
 
@@ -15,6 +15,7 @@ Pass explicit files to validate a draft before replacing a seed:
         --live-update-file app\\data\\live_updates.seed.json \\
         --launch-readiness-file app\\data\\launch_readiness.seed.json \\
         --provider-decision-file app\\data\\provider_decisions.seed.json \\
+        --native-release-file app\\data\\native_release.seed.json \\
         --face-model-file app\\data\\face_model_candidates.seed.json \\
         --corpus-moderation-file app\\data\\corpus_moderation_policy.seed.json \\
         --evidence-file app\\data\\attractiveness_evidence.seed.json \\
@@ -40,6 +41,7 @@ from app.models import (  # noqa: E402
     LaunchReadiness,
     LiveUpdateManifest,
     MeasurementGuideLibrary,
+    NativeReleaseChecklist,
     PlanningData,
     ProviderDecisionLibrary,
     StrategyCorpusSeed,
@@ -64,6 +66,9 @@ DEFAULT_LAUNCH_READINESS_FILES = [
 ]
 DEFAULT_PROVIDER_DECISION_FILES = [
     BACKEND_ROOT / "app" / "data" / "provider_decisions.seed.json",
+]
+DEFAULT_NATIVE_RELEASE_FILES = [
+    BACKEND_ROOT / "app" / "data" / "native_release.seed.json",
 ]
 DEFAULT_FACE_MODEL_FILES = [
     BACKEND_ROOT / "app" / "data" / "face_model_candidates.seed.json",
@@ -308,6 +313,67 @@ def validate_provider_decision_file(path: Path) -> str:
                 )
 
     return f"{path}: {len(library.decisions)} provider decision(s)"
+
+
+def validate_native_release_file(path: Path) -> str:
+    payload = read_json(path)
+    checklist = NativeReleaseChecklist.model_validate(payload)
+    item_ids = [item.id for item in checklist.items]
+    duplicates = duplicate_values(item_ids)
+
+    if duplicates:
+        raise ValueError(f"{path}: duplicate native release item ids: {', '.join(duplicates)}.")
+
+    blocking_items = [item for item in checklist.items if item.blocking]
+    if not blocking_items:
+        raise ValueError(f"{path}: expected at least one blocking native release item.")
+
+    platform_set = {
+        platform
+        for item in checklist.items
+        for platform in item.platforms
+    }
+    if not {"ios", "android"}.issubset(platform_set):
+        raise ValueError(f"{path}: expected iOS and Android native release items.")
+    if not any(item.status == "native-project-required" for item in checklist.items):
+        raise ValueError(f"{path}: expected a native-project-required release item.")
+
+    launch_gate_ids = {
+        gate.id
+        for launch_path in DEFAULT_LAUNCH_READINESS_FILES
+        for gate in LaunchReadiness.model_validate(read_json(launch_path)).gates
+    }
+
+    for item in checklist.items:
+        if item.status in {"completed", "removed-from-scope"} and item.blocking:
+            raise ValueError(
+                f"{path}: completed/removed native release item {item.id!r} cannot remain blocking."
+            )
+        if not item.metadataOnly:
+            raise ValueError(f"{path}: native release item {item.id!r} must remain metadata-only.")
+        if not any(doc.startswith("manual-work-queue.md") for doc in item.docs):
+            raise ValueError(
+                f"{path}: native release item {item.id!r} must reference manual-work-queue.md."
+            )
+        if not any(
+            "test" in command.lower() or "verify" in command.lower()
+            for command in item.verification
+        ):
+            raise ValueError(
+                f"{path}: native release item {item.id!r} needs a test or verify command."
+            )
+        unknown_launch_gates = sorted(set(item.launchGateIds) - launch_gate_ids)
+        if unknown_launch_gates:
+            raise ValueError(
+                f"{path}: native release item {item.id!r} references unknown launch gates: "
+                f"{', '.join(unknown_launch_gates)}."
+            )
+        if not item.decisionsRequired:
+            raise ValueError(f"{path}: native release item {item.id!r} needs decisions.")
+        if not item.validationSteps:
+            raise ValueError(f"{path}: native release item {item.id!r} needs validation steps.")
+
+    return f"{path}: {len(checklist.items)} native release item(s)"
 
 
 def validate_face_model_file(path: Path) -> str:
@@ -703,6 +769,13 @@ def parse_args() -> argparse.Namespace:
         help="Provider decision JSON file to validate. Repeatable.",
     )
     parser.add_argument(
+        "--native-release-file",
+        action="append",
+        type=Path,
+        dest="native_release_files",
+        help="Native release readiness JSON file to validate. Repeatable.",
+    )
+    parser.add_argument(
         "--face-model-file",
         action="append",
         type=Path,
@@ -761,6 +834,7 @@ def main() -> int:
     provider_decision_files = (
         args.provider_decision_files or DEFAULT_PROVIDER_DECISION_FILES
     )
+    native_release_files = args.native_release_files or DEFAULT_NATIVE_RELEASE_FILES
     face_model_files = args.face_model_files or DEFAULT_FACE_MODEL_FILES
     corpus_moderation_files = (
         args.corpus_moderation_files or DEFAULT_CORPUS_MODERATION_FILES
@@ -776,6 +850,7 @@ def main() -> int:
         *(validate_live_update_file(path) for path in live_update_files),
         *(validate_launch_readiness_file(path) for path in launch_readiness_files),
         *(validate_provider_decision_file(path) for path in provider_decision_files),
+        *(validate_native_release_file(path) for path in native_release_files),
         *(validate_face_model_file(path) for path in face_model_files),
         *(validate_corpus_moderation_file(path) for path in corpus_moderation_files),
         *(validate_attractiveness_evidence_file(path, planning_files) for path in evidence_files),

@@ -9,6 +9,7 @@ import {
   fetchExerciseLibrary,
   fetchLaunchReadiness,
   fetchLiveUpdateManifest,
+  fetchNativeReleaseReadiness,
   fetchPlanningData,
   fetchProcedureLibrary,
   fetchProviderDecisions,
@@ -242,6 +243,11 @@ import {
   normalizeProviderDecisionLibrary,
   providerDecisionSummary
 } from "../lib/providerDecisions";
+import {
+  fallbackNativeReleaseChecklist,
+  nativeReleaseSummary,
+  normalizeNativeReleaseChecklist
+} from "../lib/nativeRelease";
 import { loadStrategyCorpusBundle } from "../lib/strategyCorpus";
 import {
   buildCaseLogSubmission,
@@ -991,6 +997,22 @@ function formatProviderDecisionNeed(decision, t) {
   return decision.decisionNeeded?.[0] || t("account.provider.noDecision");
 }
 
+function formatNativeReleaseStatus(status, t) {
+  return t(`account.nativeRelease.statusLabel.${status}`, {}, status);
+}
+
+function formatNativeReleaseLine(item, t) {
+  return t("account.nativeRelease.itemLine", {
+    status: formatNativeReleaseStatus(item.status, t),
+    category: item.category,
+    platforms: item.platforms.join(", ")
+  });
+}
+
+function formatNativeReleaseStep(item, t) {
+  return item.validationSteps?.[0] || t("account.nativeRelease.noStep");
+}
+
 function formatSyncVaultCreatedStatus(record, summary, t) {
   return t("account.sync.status.created", {
     revision: record.revision,
@@ -1474,6 +1496,12 @@ export default function AccountGoalPanel({
   const [providerDecisionStatus, setProviderDecisionStatus] = useState(() =>
     t("account.provider.status.loading")
   );
+  const [nativeReleaseChecklist, setNativeReleaseChecklist] = useState(() =>
+    normalizeNativeReleaseChecklist(fallbackNativeReleaseChecklist)
+  );
+  const [nativeReleaseStatus, setNativeReleaseStatus] = useState(() =>
+    t("account.nativeRelease.status.loading")
+  );
   const [selectedProtocolIds, setSelectedProtocolIds] = useState([]);
   const [status, setStatus] = useState("");
 
@@ -1489,6 +1517,7 @@ export default function AccountGoalPanel({
   const referralSummary = summarizeReferralCredits(referralCredits, entitlementConfig);
   const launchSummary = launchReadinessSummary(launchReadiness);
   const providerSummary = providerDecisionSummary(providerDecisionLibrary);
+  const nativeReleaseStats = nativeReleaseSummary(nativeReleaseChecklist);
   const strategyCorpusBundle = useMemo(
     () => loadStrategyCorpusBundle(),
     [account?.id]
@@ -1672,6 +1701,45 @@ export default function AccountGoalPanel({
         setProviderDecisionLibrary(fallback);
         setProviderDecisionStatus(
           t("account.provider.status.unavailable", {
+            blocking: summary.blockingCount
+          })
+        );
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [t]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchNativeReleaseReadiness()
+      .then((data) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const normalized = normalizeNativeReleaseChecklist(data);
+        const summary = nativeReleaseSummary(normalized);
+        setNativeReleaseChecklist(normalized);
+        setNativeReleaseStatus(
+          t("account.nativeRelease.status.loaded", {
+            items: summary.totalCount,
+            blocking: summary.blockingCount
+          })
+        );
+      })
+      .catch(() => {
+        if (!isMounted) {
+          return;
+        }
+
+        const fallback = normalizeNativeReleaseChecklist(fallbackNativeReleaseChecklist);
+        const summary = nativeReleaseSummary(fallback);
+        setNativeReleaseChecklist(fallback);
+        setNativeReleaseStatus(
+          t("account.nativeRelease.status.unavailable", {
             blocking: summary.blockingCount
           })
         );
@@ -4474,6 +4542,55 @@ export default function AccountGoalPanel({
               {liveUpdateStatus ? (
                 <small className="live-update-status" role="status" aria-live="polite">
                   {liveUpdateStatus}
+                </small>
+              ) : null}
+            </section>
+
+            <section className="native-release-section" aria-label={t("account.nativeRelease.aria")}>
+              <div>
+                <h3>{t("account.nativeRelease.title")}</h3>
+                <p>
+                  {t("account.nativeRelease.body")}
+                </p>
+                <small>{nativeReleaseChecklist.source}</small>
+              </div>
+              <div className="native-release-summary" aria-label={t("account.nativeRelease.summaryAria")}>
+                <strong>
+                  {t("account.nativeRelease.blockingCount", {
+                    count: nativeReleaseStats.blockingCount
+                  })}
+                </strong>
+                <span>
+                  {t("account.nativeRelease.itemCount", {
+                    count: nativeReleaseStats.totalCount
+                  })}
+                </span>
+                <small>
+                  {t("account.nativeRelease.platformCount", {
+                    ios: nativeReleaseStats.platformCounts.ios,
+                    android: nativeReleaseStats.platformCounts.android
+                  })}
+                </small>
+              </div>
+              <ul className="native-release-list">
+                {nativeReleaseChecklist.items.slice(0, 4).map((item) => (
+                  <li key={item.id}>
+                    <strong>{item.label}</strong>
+                    <span>{formatNativeReleaseLine(item, t)}</span>
+                    <small>{formatNativeReleaseStep(item, t)}</small>
+                  </li>
+                ))}
+              </ul>
+              {nativeReleaseChecklist.items.length > 4 ? (
+                <small>
+                  {t("account.nativeRelease.remainingCount", {
+                    count: nativeReleaseChecklist.items.length - 4
+                  })}
+                </small>
+              ) : null}
+              {nativeReleaseStatus ? (
+                <small className="native-release-status" role="status" aria-live="polite">
+                  {nativeReleaseStatus}
                 </small>
               ) : null}
             </section>

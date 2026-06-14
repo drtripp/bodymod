@@ -178,6 +178,36 @@
       ]
     },
     {
+      "id": "native-release-readiness",
+      "label": "Native release readiness",
+      "category": "native-release",
+      "status": "native-project-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "evidenceRequired": [
+        "Generated iOS/Android Capacitor project folders",
+        "Store signing and CI workflow",
+        "Real-device validation for native push, health sync, backups, widgets, and live updates",
+        "App Store / Play content rating and corpus scope decisions"
+      ],
+      "currentScaffold": [
+        "frontend/capacitor.config.json",
+        "frontend/native-readme.md",
+        "Native release readiness checklist at /api/native-release-readiness",
+        "Native shell, push, backup, health-sync, widget, and live-update web scaffolds"
+      ],
+      "verification": [
+        ".\\verify.ps1",
+        "cd backend && python scripts/validate_curation.py --native-release-file app/data/native_release.seed.json",
+        "cd frontend && npm run test:native-release"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "feature-backlog.md#16-native-packaging",
+        "deployment.md"
+      ]
+    },
+    {
       "id": "procedure-taxonomy-review",
       "label": "Procedure taxonomy review",
       "category": "clinical-bodymod",

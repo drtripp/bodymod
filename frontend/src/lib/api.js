@@ -63,6 +63,10 @@ export function fetchProviderDecisions() {
   return request("/api/provider-decisions");
 }
 
+export function fetchNativeReleaseReadiness() {
+  return request("/api/native-release-readiness");
+}
+
 export function fetchFaceModelCandidates() {
   return request("/api/face-model-candidates");
 }

@@ -661,6 +661,14 @@ land. No social features, no marketplace.
       packages, `capacitor.config.json`, native add/open/sync package scripts,
       Vite `dist/` as the sync target, and backend `capacitor://localhost`
       CORS handling are in place.
+- [x] Native release readiness checklist **(new)**: backend now serves
+      `backend/app/data/native_release.seed.json` through
+      `/api/native-release-readiness`, validates every item against launch
+      gates/docs/tests, and the account panel shows generated-project,
+      signing/CI, APNs/FCM, HealthKit/Health Connect, native backup, widget,
+      live-update signing, and store corpus-rating blockers. This is
+      metadata-only and still requires generated native projects, store
+      accounts, credentials, device validation, and human approvals.
 - [ ] Generate and maintain Android/iOS Capacitor project folders once native
       toolchains and signing choices are available. This remains separate from
       the web bootstrap so repo verification does not depend on Xcode/Android

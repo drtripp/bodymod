@@ -11,6 +11,7 @@ from scripts.validate_curation import (
     DEFAULT_FOOD_FILES,
     DEFAULT_GUIDE_FILES,
     DEFAULT_LIVE_UPDATE_FILES,
+    DEFAULT_NATIVE_RELEASE_FILES,
     DEFAULT_PLANNING_FILES,
     DEFAULT_PROVIDER_DECISION_FILES,
     DEFAULT_TARGET_FILES,
@@ -21,6 +22,7 @@ from scripts.validate_curation import (
     validate_food_file,
     validate_live_update_file,
     validate_measurement_guide_file,
+    validate_native_release_file,
     validate_planning_file,
     validate_provider_decision_file,
     validate_strategy_corpus_file,
@@ -42,6 +44,9 @@ def test_default_curation_files_validate() -> None:
     provider_decision_summaries = [
         validate_provider_decision_file(path) for path in DEFAULT_PROVIDER_DECISION_FILES
     ]
+    native_release_summaries = [
+        validate_native_release_file(path) for path in DEFAULT_NATIVE_RELEASE_FILES
+    ]
     face_model_summaries = [
         validate_face_model_file(path) for path in DEFAULT_FACE_MODEL_FILES
     ]
@@ -60,6 +65,7 @@ def test_default_curation_files_validate() -> None:
     assert any("10 persona" in summary for summary in planning_summaries)
     assert any("live-update" in summary for summary in live_update_summaries)
     assert any("provider decision" in summary for summary in provider_decision_summaries)
+    assert any("native release item" in summary for summary in native_release_summaries)
     assert any("face model candidate" in summary for summary in face_model_summaries)
     assert any("corpus moderation rule" in summary for summary in corpus_moderation_summaries)
     assert any("attractiveness evidence" in summary for summary in evidence_summaries)

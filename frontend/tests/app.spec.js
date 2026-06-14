@@ -571,6 +571,48 @@ const providerDecisionLibrary = {
   ]
 };
 
+const nativeReleaseChecklist = {
+  version: 1,
+  source: "Mock native release readiness seed.",
+  notes: ["Metadata only."],
+  items: [
+    {
+      id: "generated-native-projects",
+      label: "Generated iOS/Android project folders",
+      category: "project-bootstrap",
+      status: "native-project-required",
+      blocking: true,
+      owner: "Dawson",
+      platforms: ["ios", "android"],
+      launchGateIds: ["native-release-readiness"],
+      releaseRequirement: "Generate native project folders.",
+      decisionsRequired: ["Bundle IDs and app display names."],
+      currentScaffold: ["capacitor.config.json"],
+      validationSteps: ["Run npm run native:add:ios and npm run native:add:android."],
+      verification: ["npm run test:native-release"],
+      docs: ["manual-work-queue.md#6-launch-privacy-and-moderation-approvals"],
+      metadataOnly: true
+    },
+    {
+      id: "native-push-credentials-device-validation",
+      label: "Native push credentials and devices",
+      category: "notifications",
+      status: "device-validation-required",
+      blocking: true,
+      owner: "Dawson",
+      platforms: ["ios", "android"],
+      launchGateIds: ["native-release-readiness"],
+      releaseRequirement: "Validate APNs/FCM delivery on devices.",
+      decisionsRequired: ["APNs and FCM ownership."],
+      currentScaffold: ["send_native_trend_push_reminders.py"],
+      validationSteps: ["Register token on iOS and Android devices."],
+      verification: ["npm run test:notifications"],
+      docs: ["manual-work-queue.md#6-launch-privacy-and-moderation-approvals"],
+      metadataOnly: true
+    }
+  ]
+};
+
 const faceModelCandidateLibrary = {
   version: 1,
   source: "Mock face model candidate review seed.",
@@ -1093,6 +1135,14 @@ async function mockApi(page) {
     const requestBody = route.request().postData() || "";
     expect(requestBody).not.toMatch(/measurements|waistCircumference|mason@example\.com|syncToken|note/);
     await route.fulfill({ json: providerDecisionLibrary });
+  });
+
+  await page.route("**/api/native-release-readiness", async (route) => {
+    const requestBody = route.request().postData() || "";
+    expect(requestBody).not.toMatch(
+      /measurements|waistCircumference|mason@example\.com|syncToken|note|APNS_PRIVATE_KEY|GOOGLE_PLAY_SERVICE_ACCOUNT/
+    );
+    await route.fulfill({ json: nativeReleaseChecklist });
   });
 
   await page.route("**/api/face-model-candidates", async (route) => {
@@ -2600,6 +2650,15 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   expect(JSON.stringify(liveUpdateState)).not.toMatch(
     /mason@example\.com|waistCircumference|Low sodium|Strict reps|First persona/
   );
+  await expect(page.getByLabel("Native release readiness")).toContainText(
+    "2 blocking native release item(s)"
+  );
+  await expect(page.getByLabel("Native release readiness")).toContainText(
+    "Generated iOS/Android project folders"
+  );
+  await expect(page.getByLabel("Native release readiness")).toContainText(
+    "Run npm run native:add:ios and npm run native:add:android."
+  );
   await expect(page.getByLabel("Provider decision matrix")).toContainText(
     "2 blocking provider decision(s)"
   );
@@ -2816,6 +2875,9 @@ test("downloads a localized progress report from the account UI", async ({ page 
   await page.getByRole("button", { name: "Revisar manifiesto de actualizaciones" }).click();
   await expect(liveSection).toContainText("Actualizacion disponible");
   await expect(liveSection).toContainText("ultima 0.1.1");
+  const nativeReleaseSection = accountDialog.getByLabel("Preparacion de release nativo");
+  await expect(nativeReleaseSection).toContainText("2 item(s) de release nativo bloqueante(s)");
+  await expect(nativeReleaseSection).toContainText("Generated iOS/Android project folders");
   const providerSection = accountDialog.getByLabel("Matriz de decisiones de proveedor");
   await expect(providerSection).toContainText("2 decision(es) de proveedor bloqueante(s)");
   await expect(providerSection).toContainText("Product analytics provider");

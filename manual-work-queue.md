@@ -184,6 +184,14 @@ Required input:
   - current code has a review-only backend live-update manifest and
     account-panel drift check, but no production Capgo/self-hosted provider,
     signed bundle workflow, staged rollout, or rollback policy
+- native release readiness
+  - a review-only native release checklist now lives at
+    `backend/app/data/native_release.seed.json`, is served through
+    `/api/native-release-readiness`, and is shown in the account panel; it
+    tracks generated project folders, signing/CI, APNs/FCM device validation,
+    HealthKit/Health Connect, native backup policy, widgets, live-update
+    signing, and store corpus-rating scope without storing credentials,
+    signing assets, device IDs, or user data
 - photo/vision upload decision
 - side-profile model/license decision if automatic sagittal face inference is
   in launch scope; current code only ships browser-local frontal landmarks,
@@ -209,6 +217,7 @@ Required input:
 Use:
 
 - `backend/app/data/provider_decisions.seed.json`
+- `backend/app/data/native_release.seed.json`
 - `backend/app/data/face_model_candidates.seed.json`
 - `backend/app/data/corpus_moderation_policy.seed.json`
 - `launch-decision-record.md`
@@ -224,6 +233,7 @@ Verification:
 cd backend
 .\.venv\Scripts\python.exe scripts\launch_preflight.py --fail-on-blockers
 .\.venv\Scripts\python.exe scripts\validate_curation.py --provider-decision-file app\data\provider_decisions.seed.json
+.\.venv\Scripts\python.exe scripts\validate_curation.py --native-release-file app\data\native_release.seed.json
 .\.venv\Scripts\python.exe scripts\validate_curation.py --face-model-file app\data\face_model_candidates.seed.json
 .\.venv\Scripts\python.exe scripts\validate_curation.py --corpus-moderation-file app\data\corpus_moderation_policy.seed.json
 ```

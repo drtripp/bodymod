@@ -489,20 +489,34 @@ textarea {
   padding: 12px;
 }
 
+.native-release-section {
+  border: 1px solid var(--color-border);
+  background: var(--color-page);
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(190px, 0.34fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+}
+
 .provider-decision-summary,
-.provider-decision-list {
+.provider-decision-list,
+.native-release-summary,
+.native-release-list {
   display: grid;
   gap: 8px;
 }
 
-.provider-decision-list {
+.provider-decision-list,
+.native-release-list {
   grid-column: 1 / -1;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.provider-decision-list li {
+.provider-decision-list li,
+.native-release-list li {
   border: 1px solid var(--color-border);
   background: var(--color-panel);
   display: grid;
@@ -511,6 +525,10 @@ textarea {
 }
 
 .provider-decision-status {
+  grid-column: 1 / -1;
+}
+
+.native-release-status {
   grid-column: 1 / -1;
 }
 
@@ -808,6 +826,7 @@ textarea {
 .health-sync-section h3,
 .health-sync-section h4,
 .live-update-section h3,
+.native-release-section h3,
 .provider-decision-section h3,
 .launch-readiness-section h3,
 .share-dashboard-section h3,
@@ -835,6 +854,10 @@ textarea {
 .live-update-section span,
 .live-update-section small,
 .live-update-status,
+.native-release-section p,
+.native-release-section span,
+.native-release-section small,
+.native-release-status,
 .provider-decision-section p,
 .provider-decision-section span,
 .provider-decision-section small,
@@ -5395,6 +5418,7 @@ textarea {
   .home-widget-section,
   .health-sync-section,
   .live-update-section,
+  .native-release-section,
   .provider-decision-section,
   .launch-readiness-section,
   .data-explainer-section,

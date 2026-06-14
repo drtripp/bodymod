@@ -17,6 +17,7 @@ from app.data.food_usda import USDA_FOOD_LIBRARY, search_usda_foods
 from app.data.launch_readiness import LAUNCH_READINESS
 from app.data.live_updates import LIVE_UPDATE_MANIFEST
 from app.data.measurement_guides import MEASUREMENT_GUIDES
+from app.data.native_release import NATIVE_RELEASE_CHECKLIST
 from app.data.planning import GOAL_PRESETS, PERSONAS, PROTOCOL_TAXONOMY, PROTOCOL_TEMPLATES
 from app.data.procedures import PROCEDURE_LIBRARY
 from app.data.provider_decisions import PROVIDER_DECISION_LIBRARY
@@ -48,6 +49,7 @@ from app.models import LiveUpdateManifest
 from app.models import LiveUpdateManifestResponse
 from app.models import MeasurementGuideLibrary
 from app.models import MeasurementSet
+from app.models import NativeReleaseChecklist
 from app.models import NativePushTokenRequest
 from app.models import NativePushTokenResponse
 from app.models import NativePushUnsubscribeRequest
@@ -239,6 +241,11 @@ def launch_readiness() -> dict:
 @app.get("/api/provider-decisions")
 def provider_decisions() -> dict:
     return ProviderDecisionLibrary.model_validate(PROVIDER_DECISION_LIBRARY).model_dump()
+
+
+@app.get("/api/native-release-readiness")
+def native_release_readiness() -> dict:
+    return NativeReleaseChecklist.model_validate(NATIVE_RELEASE_CHECKLIST).model_dump()
 
 
 @app.get("/api/face-model-candidates")

@@ -132,6 +132,24 @@ Before public launch, decide:
 - which reference population is acceptable
 - whether demographic strata are useful or too privacy-sensitive
 
+### Native Release
+
+Current behavior:
+
+- native release readiness is tracked at `/api/native-release-readiness` with
+  metadata-only blockers for generated projects, signing/CI, device validation,
+  widgets, backup policy, live-update signing, and store corpus-rating scope
+- the account panel shows the checklist, but no signing material, credentials,
+  device identifiers, store-account data, or user measurements are stored there
+
+Before public launch, decide:
+
+- generated iOS/Android project ownership and commit policy
+- signing asset and CI secret storage
+- APNs/FCM, HealthKit/Health Connect, widget, backup, and live-update device
+  validation standards
+- App Store / Play content rating and native corpus scope
+
 ### Corpus Moderation
 
 Current behavior:

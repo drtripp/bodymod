@@ -23,6 +23,7 @@ from app.data.measurement_guides import (
     MEASUREMENT_GUIDES,
     MEASUREMENT_GUIDE_SEED_PATH,
 )
+from app.data.native_release import NATIVE_RELEASE_CHECKLIST, NATIVE_RELEASE_SEED_PATH
 from app.data.planning import (
     GOAL_PRESETS,
     PERSONAS,
@@ -219,6 +220,7 @@ def test_launch_readiness_endpoint_returns_manual_gates() -> None:
         "production-target-profiles",
         "broader-reference-data",
         "launch-privacy-moderation",
+        "native-release-readiness",
     }.issubset(gate_ids)
     assert len(blocking) == len(payload["gates"])
     assert all(gate["evidenceRequired"] for gate in payload["gates"])
@@ -264,6 +266,37 @@ def test_provider_decisions_endpoint_returns_review_matrix() -> None:
     assert "waistCircumference" not in response.text
     assert "syncToken" not in response.text
     assert "mason@example.com" not in response.text
+
+
+def test_native_release_readiness_endpoint_returns_review_checklist() -> None:
+    response = client.get("/api/native-release-readiness")
+
+    assert response.status_code == 200
+    assert NATIVE_RELEASE_SEED_PATH.exists()
+    payload = response.json()
+    item_ids = {item["id"] for item in payload["items"]}
+    platforms = {platform for item in payload["items"] for platform in item["platforms"]}
+    blocking = [item for item in payload["items"] if item["blocking"]]
+
+    assert payload["version"] == NATIVE_RELEASE_CHECKLIST["version"]
+    assert "native release readiness seed" in payload["source"]
+    assert {
+        "generated-native-projects",
+        "native-push-credentials-device-validation",
+        "healthkit-health-connect-device-validation",
+        "app-store-content-rating",
+    }.issubset(item_ids)
+    assert {"ios", "android"}.issubset(platforms)
+    assert len(blocking) == len(payload["items"])
+    assert all(item["metadataOnly"] for item in payload["items"])
+    assert all(item["decisionsRequired"] for item in payload["items"])
+    assert all(item["validationSteps"] for item in payload["items"])
+    assert all("native-release-readiness" in item["launchGateIds"] for item in payload["items"])
+    assert "waistCircumference" not in response.text
+    assert "syncToken" not in response.text
+    assert "mason@example.com" not in response.text
+    assert "APNS_PRIVATE_KEY" not in response.text
+    assert "GOOGLE_PLAY_SERVICE_ACCOUNT" not in response.text
 
 
 def test_face_model_candidates_endpoint_returns_review_seed() -> None:

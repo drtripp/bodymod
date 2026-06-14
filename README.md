@@ -140,6 +140,10 @@ Implemented now:
 - backend launch-readiness gate seed and account-panel checklist that mirrors
   the manual work queue into machine-validated blockers before completion or
   production launch
+- backend native-release readiness seed at `/api/native-release-readiness`
+  plus an account-panel checklist for generated iOS/Android folders, signing,
+  device validation, widgets, native backup policy, live updates, and store
+  corpus-rating scope
 - maintenance drift alerts for saved goals once an at-target snapshot exists
 - optional local cycle phase logs that add weight/waist fluctuation context, remain off by default, and can be deleted separately
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
@@ -217,7 +221,7 @@ Implemented now:
 - strategy explorer displays the backend moderation/publication policy summary
   before the risk map so corpus and case-log content stay review-gated
 - importable corpus template in `strategy-corpus-template.json`
-- structured curation validator for target profiles, strategy entries, case logs, launch/review gates, and corpus moderation policy via `backend/scripts/validate_curation.py`
+- structured curation validator for target profiles, strategy entries, case logs, launch/review gates, native release readiness, and corpus moderation policy via `backend/scripts/validate_curation.py`
 - backend and Node corpus validation tests for API seed bounds, case-log links, import/export normalization, local overrides, safety gating, and rejected evidence levels
 - Playwright desktop and phone-viewport frontend user-flow tests
 - pytest backend API/service tests
@@ -271,7 +275,7 @@ Not implemented yet:
   encrypted-sync/auto-sync/personal-data-api/entitlement/referral/
   data-explainer/face-measurement/check-in-tracking/goal-protocol-planning/procedure/bloodwork/workout/photo-log/export/report controls, and generated progress report copy,
   while source, seed, and user-authored content remain English-first
-- generated Android/iOS native project folders, store signing, APNs/FCM production credentials/device validation, real HealthKit/Health Connect plugin reads/writes, native home-screen widget extensions, iCloud/Google Drive backup policy wiring, native store icon generation, signed live-update provider/rollback policy, and native release workflows
+- generated Android/iOS native project folders, store signing, APNs/FCM production credentials/device validation, real HealthKit/Health Connect plugin reads/writes, native home-screen widget extensions, iCloud/Google Drive backup policy wiring, native store icon generation, signed live-update provider/rollback policy, and native release workflows; a review-only native release readiness matrix is exposed at `/api/native-release-readiness` and in the account panel so these choices stay structured launch blockers
 - full public measurement-guide coverage with reviewed illustrations and final copy
 - production error monitoring and product analytics provider/enablement
   decisions; sanitized first-party wiring exists but upload is disabled unless

@@ -258,6 +258,40 @@ class ProviderDecisionLibrary(BaseModel):
     decisions: list[ProviderDecision] = Field(min_length=1)
 
 
+class NativeReleaseItem(BaseModel):
+    id: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9._:-]+$")
+    label: str = Field(min_length=1)
+    category: str = Field(min_length=1)
+    status: Literal[
+        "human-review-required",
+        "native-project-required",
+        "provider-decision-required",
+        "device-validation-required",
+        "store-review-required",
+        "ci-required",
+        "completed",
+        "removed-from-scope",
+    ]
+    blocking: bool = True
+    owner: str = Field(min_length=1)
+    platforms: list[Literal["ios", "android", "web"]] = Field(min_length=1)
+    launchGateIds: list[str] = Field(default_factory=list)
+    releaseRequirement: str = Field(min_length=1)
+    decisionsRequired: list[str] = Field(min_length=1)
+    currentScaffold: list[str] = Field(default_factory=list)
+    validationSteps: list[str] = Field(min_length=1)
+    verification: list[str] = Field(min_length=1)
+    docs: list[str] = Field(min_length=1)
+    metadataOnly: bool = True
+
+
+class NativeReleaseChecklist(BaseModel):
+    version: int = Field(ge=1)
+    source: str = Field(min_length=1)
+    notes: list[str] = Field(default_factory=list)
+    items: list[NativeReleaseItem] = Field(min_length=1)
+
+
 class FaceModelCandidate(BaseModel):
     id: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9._:-]+$")
     label: str = Field(min_length=1)

@@ -1,0 +1,348 @@
+{
+  "version": 1,
+  "source": "Dummy native release readiness seed mirrored from feature-backlog.md, deployment.md, and manual-work-queue.md. Metadata-only; no signing keys, credentials, tokens, device IDs, or user data.",
+  "notes": [
+    "Every item remains blocking until generated native projects, provider credentials, store copy, device validation, or CI ownership are approved.",
+    "This checklist tracks release-readiness scope only; it does not store signing material, APNs/FCM credentials, HealthKit/Health Connect data, backup files, or store-account identifiers."
+  ],
+  "items": [
+    {
+      "id": "generated-native-projects",
+      "label": "Generated iOS/Android project folders",
+      "category": "project-bootstrap",
+      "status": "native-project-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "launchGateIds": [
+        "native-release-readiness"
+      ],
+      "releaseRequirement": "Generate and review Capacitor iOS/Android project folders after native toolchain, bundle IDs, and signing choices are ready.",
+      "decisionsRequired": [
+        "Bundle IDs and app display names",
+        "Whether generated native folders are committed to the repo",
+        "Native build flavors for production, beta, and local testing"
+      ],
+      "currentScaffold": [
+        "frontend/capacitor.config.json",
+        "frontend/native-readme.md",
+        "frontend/package.json native scripts"
+      ],
+      "validationSteps": [
+        "Run npm run native:add:ios and npm run native:add:android after toolchains are installed",
+        "Open generated projects and confirm safe-area/status-bar/splash behavior",
+        "Run npm run native:sync after production web build"
+      ],
+      "verification": [
+        "cd frontend && npm run test:native-release",
+        ".\\verify.ps1"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "feature-backlog.md#16-native-packaging",
+        "deployment.md"
+      ],
+      "metadataOnly": true
+    },
+    {
+      "id": "store-signing-and-ci",
+      "label": "Store signing and CI lane",
+      "category": "release-automation",
+      "status": "ci-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "launchGateIds": [
+        "native-release-readiness"
+      ],
+      "releaseRequirement": "Configure signing, certificates/profiles/keystores, and a macOS CI lane without committing secrets.",
+      "decisionsRequired": [
+        "Apple Developer and Play Console ownership",
+        "Signing asset storage policy",
+        "Fastlane or equivalent upload workflow",
+        "Secret rotation and emergency revoke process"
+      ],
+      "currentScaffold": [
+        "deployment.md native release notes",
+        "manual-work-queue.md native release owner list"
+      ],
+      "validationSteps": [
+        "Build unsigned local native shells first",
+        "Validate signed beta build on a device",
+        "Confirm CI secrets are masked and never printed"
+      ],
+      "verification": [
+        ".\\verify.ps1",
+        "cd frontend && npm run build"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "feature-backlog.md#16-native-packaging",
+        "deployment.md"
+      ],
+      "metadataOnly": true
+    },
+    {
+      "id": "native-push-credentials-device-validation",
+      "label": "Native push credentials and devices",
+      "category": "notifications",
+      "status": "device-validation-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "launchGateIds": [
+        "native-release-readiness"
+      ],
+      "releaseRequirement": "Validate APNs/FCM delivery on real devices while keeping reminder payloads generic and measurement-free.",
+      "decisionsRequired": [
+        "APNs key/certificate ownership",
+        "FCM project ownership",
+        "Unsubscribe and token cleanup policy",
+        "Production delivery schedule"
+      ],
+      "currentScaffold": [
+        "backend/scripts/send_native_trend_push_reminders.py",
+        "backend/app/native_push.py",
+        "frontend/src/lib/notifications.js native token adapter"
+      ],
+      "validationSteps": [
+        "Register token on iOS and Android devices",
+        "Send dry-run and live stale-trend reminders",
+        "Confirm backend stores token hashes and timestamp-only schedules"
+      ],
+      "verification": [
+        "cd backend && python -m pytest tests/test_native_push.py",
+        "cd frontend && npm run test:notifications"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "feature-backlog.md#16-native-packaging",
+        "deployment.md"
+      ],
+      "metadataOnly": true
+    },
+    {
+      "id": "healthkit-health-connect-device-validation",
+      "label": "HealthKit / Health Connect validation",
+      "category": "health-data",
+      "status": "device-validation-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "launchGateIds": [
+        "native-release-readiness",
+        "launch-privacy-moderation"
+      ],
+      "releaseRequirement": "Install native health plugins, approve permission copy, and validate local write/read flows on devices.",
+      "decisionsRequired": [
+        "HealthKit and Health Connect permission wording",
+        "Whether reads/imports are in launch scope",
+        "Which health categories remain write-preview only",
+        "Support plan for denied or revoked permissions"
+      ],
+      "currentScaffold": [
+        "frontend/src/lib/healthSync.js write-batch preview",
+        "Account-panel health sync preview",
+        "Local metadata-only preview state"
+      ],
+      "validationSteps": [
+        "Install native health plugins in generated project folders",
+        "Write a test weight/workout/nutrition batch on each platform",
+        "Verify no food names, notes, account IDs, or raw private labels leave local storage"
+      ],
+      "verification": [
+        "cd frontend && npm run test:health-sync",
+        ".\\verify.ps1"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "feature-backlog.md#16-native-packaging",
+        "deployment.md"
+      ],
+      "metadataOnly": true
+    },
+    {
+      "id": "native-backup-cloud-policy",
+      "label": "Native encrypted backup cloud policy",
+      "category": "backup",
+      "status": "human-review-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "launchGateIds": [
+        "native-release-readiness",
+        "launch-privacy-moderation"
+      ],
+      "releaseRequirement": "Decide whether iCloud/Google Drive backup hooks ship and keep backup blobs client-side encrypted.",
+      "decisionsRequired": [
+        "iCloud and Google Drive storage policy",
+        "Whether backup files are app-scoped or user-selected exports",
+        "Recovery wording for lost passphrases",
+        "Whether future sync must remain client-side encrypted"
+      ],
+      "currentScaffold": [
+        "frontend/src/lib/nativeBackup.js",
+        "Account-panel native backup save/restore/delete controls",
+        "Encrypted local backup format"
+      ],
+      "validationSteps": [
+        "Validate native file save/restore/delete on generated projects",
+        "Confirm cloud backup cannot read plaintext without the user passphrase",
+        "Review platform backup exclusions for photo bytes and app data"
+      ],
+      "verification": [
+        "cd frontend && npm run test:native-backup",
+        "cd frontend && npm run test:local-backup"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "feature-backlog.md#16-native-packaging",
+        "deployment.md"
+      ],
+      "metadataOnly": true
+    },
+    {
+      "id": "native-widget-extensions",
+      "label": "Native home-screen widget extensions",
+      "category": "native-automation",
+      "status": "native-project-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "launchGateIds": [
+        "native-release-readiness"
+      ],
+      "releaseRequirement": "Build iOS/Android widget extensions around the measurement-free widget snapshot.",
+      "decisionsRequired": [
+        "Widget extension design for iOS and Android",
+        "Shared storage/app group policy",
+        "Refresh cadence and stale-state behavior"
+      ],
+      "currentScaffold": [
+        "frontend/src/lib/widgetSnapshot.js",
+        "Account-panel widget snapshot preview",
+        "Measurement-free streak and next-check-in payload"
+      ],
+      "validationSteps": [
+        "Read widget payload from native shared storage",
+        "Confirm widget never displays raw measurements",
+        "Validate refresh after account check-in save"
+      ],
+      "verification": [
+        "cd frontend && npm run test:widget-snapshot",
+        "cd frontend && npm run test:native-release"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "feature-backlog.md#16-native-packaging",
+        "deployment.md"
+      ],
+      "metadataOnly": true
+    },
+    {
+      "id": "live-update-signing-rollout",
+      "label": "Live update signing and rollout",
+      "category": "live-updates",
+      "status": "provider-decision-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "platforms": [
+        "ios",
+        "android",
+        "web"
+      ],
+      "launchGateIds": [
+        "native-release-readiness"
+      ],
+      "releaseRequirement": "Approve live-update provider or self-hosted path, signed bundle workflow, staged rollout, and rollback policy.",
+      "decisionsRequired": [
+        "Capgo/self-hosted provider decision",
+        "Bundle signing key storage",
+        "Staged rollout and rollback policy",
+        "Store-policy review for live updates"
+      ],
+      "currentScaffold": [
+        "backend/app/data/live_updates.seed.json",
+        "/api/live-updates/manifest",
+        "Account-panel live-update drift check"
+      ],
+      "validationSteps": [
+        "Generate signed beta bundle artifact",
+        "Validate update status on web/native shells",
+        "Exercise rollback path without leaking account data"
+      ],
+      "verification": [
+        "cd frontend && npm run test:live-updates",
+        "cd backend && python scripts/validate_curation.py"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "feature-backlog.md#16-native-packaging",
+        "deployment.md"
+      ],
+      "metadataOnly": true
+    },
+    {
+      "id": "app-store-content-rating",
+      "label": "Store content rating and corpus scope",
+      "category": "store-review",
+      "status": "store-review-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "launchGateIds": [
+        "native-release-readiness",
+        "launch-privacy-moderation",
+        "strategy-corpus-v1"
+      ],
+      "releaseRequirement": "Decide 17+ rating, native corpus trimming, store disclosures, and fallback UX for web-only corpus entries.",
+      "decisionsRequired": [
+        "iOS full-depth versus trimmed corpus decision",
+        "Google Play equivalent content-rating responses",
+        "Store listing medical/health disclaimer wording",
+        "Fallback UX for excluded high-risk entries"
+      ],
+      "currentScaffold": [
+        "Strategy corpus age gate",
+        "High-risk acknowledgment",
+        "Review-only corpus moderation policy at /api/corpus-moderation-policy"
+      ],
+      "validationSteps": [
+        "Review native store questionnaires against final corpus scope",
+        "Confirm high-risk entries are excluded or gated as approved",
+        "Verify store listing screenshots do not imply medical guidance"
+      ],
+      "verification": [
+        "cd frontend && npm run test:corpus",
+        "cd frontend && npm run test:corpus-moderation"
+      ],
+      "docs": [
+        "manual-work-queue.md#6-launch-privacy-and-moderation-approvals",
+        "feature-backlog.md#17-strategy-corpus--case-logs",
+        "deployment.md"
+      ],
+      "metadataOnly": true
+    }
+  ]
+}

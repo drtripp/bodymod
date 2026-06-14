@@ -249,3 +249,6 @@ This deployment path is suitable for a prototype. Public launch still needs:
 - production-quality target profiles
 - source-reviewed strategy corpus data
 - final decisions on encoded share URLs and analytics provider/hosting
+- native release readiness items from `/api/native-release-readiness`,
+  including generated iOS/Android projects, signing, device validation,
+  widgets, backup policy, live-update signing, and store corpus-rating scope

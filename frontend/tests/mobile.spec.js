@@ -170,6 +170,35 @@ async function mockApi(page) {
     });
   });
 
+  await page.route("**/api/native-release-readiness", async (route) => {
+    await route.fulfill({
+      json: {
+        version: 1,
+        source: "Mock mobile native release readiness.",
+        notes: ["Metadata only."],
+        items: [
+          {
+            id: "generated-native-projects",
+            label: "Generated iOS/Android project folders",
+            category: "project-bootstrap",
+            status: "native-project-required",
+            blocking: true,
+            owner: "Dawson",
+            platforms: ["ios", "android"],
+            launchGateIds: ["native-release-readiness"],
+            releaseRequirement: "Generate native project folders.",
+            decisionsRequired: ["Bundle IDs"],
+            currentScaffold: ["capacitor.config.json"],
+            validationSteps: ["Run native project generation."],
+            verification: ["npm run test:native-release"],
+            docs: ["manual-work-queue.md#6-launch-privacy-and-moderation-approvals"],
+            metadataOnly: true
+          }
+        ]
+      }
+    });
+  });
+
   await page.route("**/api/match-priorities", async (route) => {
     await route.fulfill({
       json: {
