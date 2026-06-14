@@ -33,6 +33,7 @@ User request:
 | Launch preflight report scaffold | `backend/scripts/launch_preflight.py`, `backend/tests/test_launch_preflight.py`, `backend/app/data/launch_readiness.seed.json`, `feature-backlog.md`, `manual-work-queue.md`, `README.md`, and `verify.ps1` build a machine-readable launch preflight report from readiness gates, required docs, legal drafts, review screenshots, and browser share/persona flow coverage. Normal verifier mode passes with unresolved human gates reported as `blocked`; `--fail-on-blockers` is available for the final launch go/no-go. | Preflight scaffold done; blocking human launch gates remain |
 | Provider decision matrix scaffold | `backend/app/data/provider_decisions.seed.json`, `backend/app/data/provider_decisions.py`, `backend/app/models.py`, `backend/app/main.py`, `backend/scripts/validate_curation.py`, `frontend/src/lib/providerDecisions.js`, `frontend/src/components/AccountGoalPanel.jsx`, `frontend/tests/providerDecisions.node.mjs`, `frontend/tests/app.spec.js`, and `verify.ps1` add metadata-only candidate rows for analytics, error monitoring, account email, billing, native IAP, push, live updates, health sync, cloud backup/sync, and AI explainer providers. The matrix is served at `/api/provider-decisions`, shown in the account panel, validated against launch gates/docs/tests, and remains blocking until Dawson approves providers or removes items from scope. | Scaffold done; human/provider decisions remain blocking |
 | Native release readiness scaffold | `backend/app/data/native_release.seed.json`, `backend/app/data/native_release.py`, `backend/app/models.py`, `backend/app/main.py`, `backend/scripts/validate_curation.py`, `frontend/src/lib/nativeRelease.js`, `frontend/src/components/AccountGoalPanel.jsx`, `frontend/tests/nativeRelease.node.mjs`, `frontend/tests/app.spec.js`, `feature-backlog.md`, and `manual-work-queue.md` add a metadata-only native release checklist for generated project folders, signing/CI, APNs/FCM, HealthKit/Health Connect, native backups, widgets, live updates, and store corpus-rating scope. It is served at `/api/native-release-readiness`, shown in the account panel, and validates against launch gates/docs/tests. | Scaffold done; generated native projects, signing, store accounts, credentials, device validation, and human approvals remain blocking |
+| Curation review packet scaffold | `backend/app/data/curation_review.seed.json`, `backend/app/data/curation_review.py`, `backend/app/models.py`, `backend/app/main.py`, `backend/scripts/validate_curation.py`, `frontend/src/lib/curationReview.js`, `frontend/src/components/AccountGoalPanel.jsx`, `frontend/tests/curationReview.node.mjs`, `frontend/tests/app.spec.js`, `feature-backlog.md`, and `manual-work-queue.md` add metadata-only review packets for strategy corpus, target profiles, reference data, FoodData Central, attractiveness evidence, procedure taxonomy, and bloodwork marker/range inputs. It is served at `/api/curation-review-packets`, shown in the account panel, and validates linked launch gates, seed files, reviewer questions, acceptance criteria, and docs. | Scaffold done; human source/content/clinical review remains blocking |
 | Face model candidate review scaffold | `backend/app/data/face_model_candidates.seed.json`, `backend/app/data/face_model_candidates.py`, `backend/app/models.py`, `backend/app/main.py`, `backend/scripts/validate_curation.py`, `frontend/src/lib/faceModelCandidates.js`, `frontend/src/components/FaceMeasurementPanel.jsx`, `frontend/tests/faceModelCandidates.node.mjs`, `frontend/tests/app.spec.js`, and `verify.ps1` add a metadata-only model/source review matrix for the TroonTraits local-scan pattern, current MediaPipe frontal implementation, manual side-profile logs, browser-local 3D/profile research paths, and a not-approved hosted vision option. The matrix is served at `/api/face-model-candidates`, shown in the face logger, and keeps automatic side-profile inference blocked until model/license/repeatability review is complete. | Scaffold done; side-profile model/license decision remains blocking |
 | Flesh out measurement-first app features | `frontend/src/App.jsx`, components, and libs implement expanded measurement entry, validation, persisted cafe/graphite themes, skip-to-main navigation, visible focus rings, live status regions, form error associations, chart descriptions, front/side silhouette projections with themed line-art styling, a 10-profile silhouette QA fixture set, configurable match-priority presets, top match plus runner-up display, simplified result metrics, snapshots, local trend charting, per-metric snapshot history charts, historical weight CSV import, optional left/right limb-symmetry check-ins, optional local cycle phase logs, first-snapshot browser notification permission plus service-worker/fallback stale-trend reminder helpers, readable local JSON export with or without an account, encrypted local backup/restore, local free/pro entitlement display, Pro waitlist capture, opt-in read-only share dashboards, goal progress with target-relative distance copy, life-event goal pausing, browser-local frontal face landmark logs plus manual side-profile logs without image storage, first-class local procedure logs with healing windows/case logs/photo stream hints, maintenance drift alerts, current-vs-prior snapshot silhouette comparison, target metadata/explanation display, target difference tables, tabbed result / vs Target / vs US Population panes, Body/Diet top-level navigation, Diet backend USDA-style food search, Open Food Facts lookup/barcode/logging/import, expanded micronutrient target rows, header share action, method/privacy footnote, public landing page, public methodology page, public measurement-guide pages for every measurable schema field, draft legal pages, local events, and corpus UI. | Implemented as prototype |
 | Backend target, match, entitlement, food, procedure, corpus, sharing, and hardening support | `backend/app/main.py`, `backend/app/rate_limit.py`, `backend/app/services.py`, `backend/app/repositories.py`, `backend/app/data/targets.seed.json`, `backend/app/data/match_priorities.py`, `backend/app/data/entitlements.py`, `backend/app/data/food_usda.py`, `backend/app/data/procedures.seed.json`, `backend/app/data/strategy_corpus.py`, `backend/app/data/strategy_corpus.seed.json`, `backend/app/models.py`, `backend/scripts/validate_curation.py`, `target-profiles-template.json`, and `target-profile-curation.md` expose health, targets, rate-limited match endpoints, configurable scoring-priority presets, free/pro entitlement config, dummy USDA-style food search data, a backend-served procedure taxonomy seed, a backend-served strategy corpus seed with linked case logs, a SQLite-backed target repository, an opaque-token share-dashboard repository/API, a target data template, and a structured curation validator. | Done |
@@ -100,6 +101,7 @@ npm run test:live-updates
 npm run test:launch-readiness
 npm run test:provider-decisions
 npm run test:native-release
+npm run test:curation-review
 npm run test:case-log-submissions
 npm run test:share-snapshots
 npm run test:measurement-schema
@@ -119,8 +121,8 @@ cd backend
 Observed result:
 
 - frontend build passed
-- backend pytest passed `104` tests
-- curation JSON validation passed for target/corpus seeds, templates, the ANSUR mapping file, `9` launch-readiness gates, `10` provider decisions, `8` native release items, face-model candidates, and the corpus moderation policy seed
+- backend pytest passed `105` tests
+- curation JSON validation passed for target/corpus seeds, templates, the ANSUR mapping file, `9` launch-readiness gates, `10` provider decisions, `8` native release items, `7` curation review packets, face-model candidates, and the corpus moderation policy seed
 - launch preflight passed structural checks with status `blocked`, `9`
   blocking human gates, and `0` failed structural checks
 - Node corpus validation passed `8` tests
@@ -161,6 +163,7 @@ Observed result:
 - Node launch-readiness validation passed `2` tests
 - Node provider-decision validation passed `2` tests
 - Node native-release validation passed `3` tests
+- Node curation-review validation passed `3` tests
 - Node case-log submission validation passed `3` tests
 - Node shared measurement schema validation passed `3` tests
 - Node entitlement validation passed `5` tests
@@ -183,7 +186,9 @@ Observed result:
   nutrient cards, backend food-source labels, theme toggle, free/pro access
   section, waitlist form, methodology copy, public guide copy, draft legal
   copy, corpus safety controls, linked case-log detail layout, and queued
-  case-log submission card/status are readable on desktop and mobile
+  case-log submission card/status are readable on desktop and mobile; targeted
+  real-server desktop/mobile screenshots confirmed the curation review packet
+  section is readable without overlap
 - `.\verify.ps1` completed successfully
 
 ```bash
@@ -193,7 +198,7 @@ cd backend
 
 Observed result:
 
-- backend pytest passed `104` tests
+- backend pytest passed `105` tests
 
 ## Current Decision
 
@@ -206,8 +211,9 @@ The goal is not complete as a production product. The code and docs now cover th
 - launch privacy and moderation approvals from `launch-decision-record.md`
 
 The concrete manual input queue is tracked in `manual-work-queue.md` and mirrored
-into the validated `/api/launch-readiness` gate seed. User protocol case logs can
-now enter a review-only `/api/case-log-submissions` queue, and the app exposes a
+into the validated `/api/launch-readiness` gate seed and
+`/api/curation-review-packets` packet seed. User protocol case logs can now
+enter a review-only `/api/case-log-submissions` queue, and the app exposes a
 review-only `/api/corpus-moderation-policy` scaffold, but human approval of
 publication modes, exclusion triggers, and reviewer workflow is still required
 before any submission can become corpus content.

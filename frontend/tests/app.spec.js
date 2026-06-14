@@ -613,6 +613,48 @@ const nativeReleaseChecklist = {
   ]
 };
 
+const curationReviewLibrary = {
+  version: 1,
+  source: "Mock curation review packet seed.",
+  notes: ["Metadata only."],
+  packets: [
+    {
+      id: "strategy-corpus-source-review",
+      label: "Strategy corpus source review",
+      category: "strategy-corpus",
+      status: "human-review-required",
+      blocking: true,
+      owner: "Dawson",
+      launchGateIds: ["strategy-corpus-v1"],
+      inputRequired: ["Prioritized outcome list for the first public corpus."],
+      seedFiles: ["backend/app/data/strategy_corpus.seed.json"],
+      reviewerQuestions: ["Which outcomes ship first?"],
+      acceptanceCriteria: ["Every public strategy has source metadata."],
+      currentScaffold: ["Strategy explorer"],
+      verification: ["npm run test:corpus"],
+      docs: ["manual-work-queue.md#1-source-reviewed-strategy-corpus"],
+      metadataOnly: true
+    },
+    {
+      id: "target-profile-curation",
+      label: "Production target profile curation",
+      category: "target-profiles",
+      status: "human-review-required",
+      blocking: true,
+      owner: "Dawson",
+      launchGateIds: ["production-target-profiles"],
+      inputRequired: ["Target library scope."],
+      seedFiles: ["backend/app/data/targets.seed.json"],
+      reviewerQuestions: ["Generic or named targets?"],
+      acceptanceCriteria: ["Every target has uncertainty notes."],
+      currentScaffold: ["Target filters"],
+      verification: ["python -m pytest"],
+      docs: ["manual-work-queue.md#2-production-target-profiles"],
+      metadataOnly: true
+    }
+  ]
+};
+
 const faceModelCandidateLibrary = {
   version: 1,
   source: "Mock face model candidate review seed.",
@@ -1143,6 +1185,14 @@ async function mockApi(page) {
       /measurements|waistCircumference|mason@example\.com|syncToken|note|APNS_PRIVATE_KEY|GOOGLE_PLAY_SERVICE_ACCOUNT/
     );
     await route.fulfill({ json: nativeReleaseChecklist });
+  });
+
+  await page.route("**/api/curation-review-packets", async (route) => {
+    const requestBody = route.request().postData() || "";
+    expect(requestBody).not.toMatch(
+      /measurements|waistCircumference|mason@example\.com|syncToken|private note|data:image/
+    );
+    await route.fulfill({ json: curationReviewLibrary });
   });
 
   await page.route("**/api/face-model-candidates", async (route) => {
@@ -2659,6 +2709,15 @@ test("creates a local account, logs a snapshot, sets a goal, and logs back in", 
   await expect(page.getByLabel("Native release readiness")).toContainText(
     "Run npm run native:add:ios and npm run native:add:android."
   );
+  await expect(page.getByLabel("Curation review packets")).toContainText(
+    "2 blocking curation packet(s)"
+  );
+  await expect(page.getByLabel("Curation review packets")).toContainText(
+    "Strategy corpus source review"
+  );
+  await expect(page.getByLabel("Curation review packets")).toContainText(
+    "Prioritized outcome list for the first public corpus."
+  );
   await expect(page.getByLabel("Provider decision matrix")).toContainText(
     "2 blocking provider decision(s)"
   );
@@ -2878,6 +2937,9 @@ test("downloads a localized progress report from the account UI", async ({ page 
   const nativeReleaseSection = accountDialog.getByLabel("Preparacion de release nativo");
   await expect(nativeReleaseSection).toContainText("2 item(s) de release nativo bloqueante(s)");
   await expect(nativeReleaseSection).toContainText("Generated iOS/Android project folders");
+  const curationSection = accountDialog.getByLabel("Paquetes de revision de curacion");
+  await expect(curationSection).toContainText("2 paquete(s) de curacion bloqueante(s)");
+  await expect(curationSection).toContainText("Strategy corpus source review");
   const providerSection = accountDialog.getByLabel("Matriz de decisiones de proveedor");
   await expect(providerSection).toContainText("2 decision(es) de proveedor bloqueante(s)");
   await expect(providerSection).toContainText("Product analytics provider");

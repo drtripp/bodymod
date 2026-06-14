@@ -745,6 +745,15 @@ land. No social features, no marketplace.
       Implemented as a structured git workflow: editable target/corpus JSON
       seeds and templates validate through `backend/scripts/validate_curation.py`,
       and `verify.ps1` runs the validator before frontend checks.
+- [x] Curation review packet handoff **(new)**: backend now serves
+      `backend/app/data/curation_review.seed.json` through
+      `/api/curation-review-packets`, validates packet IDs, linked launch
+      gates, seed file paths, reviewer questions, acceptance criteria, and
+      metadata-only status through `backend/scripts/validate_curation.py`, and
+      the account panel shows the blocking packets for strategy corpus,
+      targets, reference data, FDC, attractiveness evidence, procedures, and
+      bloodwork. **[human]** source/content review still remains before those
+      dummy seeds become production data.
 - [x] Case-log content type linked from corpus entries (schema shared with
       the protocol tracker's completed protocols). Backend corpus seed now
       carries dummy completed-protocol case logs linked by `caseLogIds`; the

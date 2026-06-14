@@ -144,6 +144,10 @@ Implemented now:
   plus an account-panel checklist for generated iOS/Android folders, signing,
   device validation, widgets, native backup policy, live updates, and store
   corpus-rating scope
+- backend curation-review packet seed at `/api/curation-review-packets`
+  plus an account-panel checklist for source/content inputs needed before
+  dummy strategy, target, reference, food, evidence, procedure, and bloodwork
+  seeds can become production data
 - maintenance drift alerts for saved goals once an at-target snapshot exists
 - optional local cycle phase logs that add weight/waist fluctuation context, remain off by default, and can be deleted separately
 - protocol tracker with backend-seeded taxonomy, local create/edit/archive, adherence scoring, outcome attribution, case logs, plan retros, and reliability/life-event annotations
@@ -221,7 +225,7 @@ Implemented now:
 - strategy explorer displays the backend moderation/publication policy summary
   before the risk map so corpus and case-log content stay review-gated
 - importable corpus template in `strategy-corpus-template.json`
-- structured curation validator for target profiles, strategy entries, case logs, launch/review gates, native release readiness, and corpus moderation policy via `backend/scripts/validate_curation.py`
+- structured curation validator for target profiles, strategy entries, case logs, launch/review gates, native release readiness, curation review packets, and corpus moderation policy via `backend/scripts/validate_curation.py`
 - backend and Node corpus validation tests for API seed bounds, case-log links, import/export normalization, local overrides, safety gating, and rejected evidence levels
 - Playwright desktop and phone-viewport frontend user-flow tests
 - pytest backend API/service tests
@@ -291,6 +295,9 @@ Not implemented yet:
 - manual launch-readiness gates must be resolved or removed from scope; the
   current checklist is exposed at `/api/launch-readiness` and in the account
   panel
+- curation review packets must still be answered with source-reviewed inputs;
+  the current packet checklist is exposed at `/api/curation-review-packets`
+  and in the account panel
 
 ## Current Measurement Schema
 

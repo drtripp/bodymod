@@ -499,8 +499,20 @@ textarea {
   padding: 12px;
 }
 
+.curation-review-section {
+  border: 1px solid var(--color-border);
+  background: var(--color-page);
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(190px, 0.34fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+}
+
 .provider-decision-summary,
 .provider-decision-list,
+.curation-review-summary,
+.curation-review-list,
 .native-release-summary,
 .native-release-list {
   display: grid;
@@ -508,6 +520,7 @@ textarea {
 }
 
 .provider-decision-list,
+.curation-review-list,
 .native-release-list {
   grid-column: 1 / -1;
   list-style: none;
@@ -516,6 +529,7 @@ textarea {
 }
 
 .provider-decision-list li,
+.curation-review-list li,
 .native-release-list li {
   border: 1px solid var(--color-border);
   background: var(--color-panel);
@@ -529,6 +543,10 @@ textarea {
 }
 
 .native-release-status {
+  grid-column: 1 / -1;
+}
+
+.curation-review-status {
   grid-column: 1 / -1;
 }
 
@@ -827,6 +845,7 @@ textarea {
 .health-sync-section h4,
 .live-update-section h3,
 .native-release-section h3,
+.curation-review-section h3,
 .provider-decision-section h3,
 .launch-readiness-section h3,
 .share-dashboard-section h3,
@@ -858,6 +877,10 @@ textarea {
 .native-release-section span,
 .native-release-section small,
 .native-release-status,
+.curation-review-section p,
+.curation-review-section span,
+.curation-review-section small,
+.curation-review-status,
 .provider-decision-section p,
 .provider-decision-section span,
 .provider-decision-section small,
@@ -5419,6 +5442,7 @@ textarea {
   .health-sync-section,
   .live-update-section,
   .native-release-section,
+  .curation-review-section,
   .provider-decision-section,
   .launch-readiness-section,
   .data-explainer-section,

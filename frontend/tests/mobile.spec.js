@@ -199,6 +199,35 @@ async function mockApi(page) {
     });
   });
 
+  await page.route("**/api/curation-review-packets", async (route) => {
+    await route.fulfill({
+      json: {
+        version: 1,
+        source: "Mock mobile curation review packets.",
+        notes: ["Metadata only."],
+        packets: [
+          {
+            id: "strategy-corpus-source-review",
+            label: "Strategy corpus source review",
+            category: "strategy-corpus",
+            status: "human-review-required",
+            blocking: true,
+            owner: "Dawson",
+            launchGateIds: ["strategy-corpus-v1"],
+            inputRequired: ["Prioritized outcome list."],
+            seedFiles: ["backend/app/data/strategy_corpus.seed.json"],
+            reviewerQuestions: ["Which outcomes ship first?"],
+            acceptanceCriteria: ["Every strategy has source metadata."],
+            currentScaffold: ["Strategy explorer"],
+            verification: ["npm run test:corpus"],
+            docs: ["manual-work-queue.md#1-source-reviewed-strategy-corpus"],
+            metadataOnly: true
+          }
+        ]
+      }
+    });
+  });
+
   await page.route("**/api/match-priorities", async (route) => {
     await route.fulfill({
       json: {

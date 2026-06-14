@@ -16,6 +16,7 @@ Pass explicit files to validate a draft before replacing a seed:
         --launch-readiness-file app\\data\\launch_readiness.seed.json \\
         --provider-decision-file app\\data\\provider_decisions.seed.json \\
         --native-release-file app\\data\\native_release.seed.json \\
+        --curation-review-file app\\data\\curation_review.seed.json \\
         --face-model-file app\\data\\face_model_candidates.seed.json \\
         --corpus-moderation-file app\\data\\corpus_moderation_policy.seed.json \\
         --evidence-file app\\data\\attractiveness_evidence.seed.json \\
@@ -36,6 +37,7 @@ from app.measurement_schema import load_measurement_schema  # noqa: E402
 from app.models import (  # noqa: E402
     AttractivenessEvidenceLibrary,
     CorpusModerationPolicy,
+    CurationReviewLibrary,
     FaceModelCandidateLibrary,
     FoodSearchResponse,
     LaunchReadiness,
@@ -69,6 +71,9 @@ DEFAULT_PROVIDER_DECISION_FILES = [
 ]
 DEFAULT_NATIVE_RELEASE_FILES = [
     BACKEND_ROOT / "app" / "data" / "native_release.seed.json",
+]
+DEFAULT_CURATION_REVIEW_FILES = [
+    BACKEND_ROOT / "app" / "data" / "curation_review.seed.json",
 ]
 DEFAULT_FACE_MODEL_FILES = [
     BACKEND_ROOT / "app" / "data" / "face_model_candidates.seed.json",
@@ -374,6 +379,83 @@ def validate_native_release_file(path: Path) -> str:
             raise ValueError(f"{path}: native release item {item.id!r} needs validation steps.")
 
     return f"{path}: {len(checklist.items)} native release item(s)"
+
+
+def validate_curation_review_file(path: Path) -> str:
+    payload = read_json(path)
+    library = CurationReviewLibrary.model_validate(payload)
+    packet_ids = [packet.id for packet in library.packets]
+    duplicates = duplicate_values(packet_ids)
+
+    if duplicates:
+        raise ValueError(f"{path}: duplicate curation review packet ids: {', '.join(duplicates)}.")
+
+    required_packets = {
+        "strategy-corpus-source-review",
+        "target-profile-curation",
+        "reference-data-curation",
+        "fooddata-central-production-review",
+        "attractiveness-evidence-review",
+        "procedure-taxonomy-review",
+        "bloodwork-marker-review",
+    }
+    missing_packets = sorted(required_packets - set(packet_ids))
+    if missing_packets:
+        raise ValueError(
+            f"{path}: missing curation review packet ids: {', '.join(missing_packets)}."
+        )
+
+    blocking_packets = [packet for packet in library.packets if packet.blocking]
+    if not blocking_packets:
+        raise ValueError(f"{path}: expected at least one blocking curation review packet.")
+
+    launch_gate_ids = {
+        gate.id
+        for launch_path in DEFAULT_LAUNCH_READINESS_FILES
+        for gate in LaunchReadiness.model_validate(read_json(launch_path)).gates
+    }
+
+    for packet in library.packets:
+        if packet.status in {"completed", "removed-from-scope"} and packet.blocking:
+            raise ValueError(
+                f"{path}: completed/removed curation packet {packet.id!r} cannot remain blocking."
+            )
+        if not packet.metadataOnly:
+            raise ValueError(f"{path}: curation packet {packet.id!r} must remain metadata-only.")
+        if not any(doc.startswith("manual-work-queue.md") for doc in packet.docs):
+            raise ValueError(
+                f"{path}: curation packet {packet.id!r} must reference manual-work-queue.md."
+            )
+        if not any(
+            "test" in command.lower()
+            or "verify" in command.lower()
+            or "validate" in command.lower()
+            for command in packet.verification
+        ):
+            raise ValueError(
+                f"{path}: curation packet {packet.id!r} needs a test, verify, or validate command."
+            )
+        unknown_launch_gates = sorted(set(packet.launchGateIds) - launch_gate_ids)
+        if unknown_launch_gates:
+            raise ValueError(
+                f"{path}: curation packet {packet.id!r} references unknown launch gates: "
+                f"{', '.join(unknown_launch_gates)}."
+            )
+        for seed_file in packet.seedFiles:
+            seed_path = (REPO_ROOT / seed_file).resolve()
+            if not seed_path.exists():
+                raise ValueError(
+                    f"{path}: curation packet {packet.id!r} references missing seed file "
+                    f"{seed_file!r}."
+                )
+        if not packet.inputRequired:
+            raise ValueError(f"{path}: curation packet {packet.id!r} needs required inputs.")
+        if not packet.reviewerQuestions:
+            raise ValueError(f"{path}: curation packet {packet.id!r} needs reviewer questions.")
+        if not packet.acceptanceCriteria:
+            raise ValueError(f"{path}: curation packet {packet.id!r} needs acceptance criteria.")
+
+    return f"{path}: {len(library.packets)} curation review packet(s)"
 
 
 def validate_face_model_file(path: Path) -> str:
@@ -776,6 +858,13 @@ def parse_args() -> argparse.Namespace:
         help="Native release readiness JSON file to validate. Repeatable.",
     )
     parser.add_argument(
+        "--curation-review-file",
+        action="append",
+        type=Path,
+        dest="curation_review_files",
+        help="Curation review packet JSON file to validate. Repeatable.",
+    )
+    parser.add_argument(
         "--face-model-file",
         action="append",
         type=Path,
@@ -835,6 +924,7 @@ def main() -> int:
         args.provider_decision_files or DEFAULT_PROVIDER_DECISION_FILES
     )
     native_release_files = args.native_release_files or DEFAULT_NATIVE_RELEASE_FILES
+    curation_review_files = args.curation_review_files or DEFAULT_CURATION_REVIEW_FILES
     face_model_files = args.face_model_files or DEFAULT_FACE_MODEL_FILES
     corpus_moderation_files = (
         args.corpus_moderation_files or DEFAULT_CORPUS_MODERATION_FILES
@@ -851,6 +941,7 @@ def main() -> int:
         *(validate_launch_readiness_file(path) for path in launch_readiness_files),
         *(validate_provider_decision_file(path) for path in provider_decision_files),
         *(validate_native_release_file(path) for path in native_release_files),
+        *(validate_curation_review_file(path) for path in curation_review_files),
         *(validate_face_model_file(path) for path in face_model_files),
         *(validate_corpus_moderation_file(path) for path in corpus_moderation_files),
         *(validate_attractiveness_evidence_file(path, planning_files) for path in evidence_files),

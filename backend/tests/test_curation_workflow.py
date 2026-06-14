@@ -5,6 +5,7 @@ import pytest
 from scripts.validate_curation import (
     DEFAULT_CORPUS_FILES,
     DEFAULT_CORPUS_MODERATION_FILES,
+    DEFAULT_CURATION_REVIEW_FILES,
     DEFAULT_ANSUR_MAPPING_FILES,
     DEFAULT_EVIDENCE_FILES,
     DEFAULT_FACE_MODEL_FILES,
@@ -18,6 +19,7 @@ from scripts.validate_curation import (
     validate_attractiveness_evidence_file,
     validate_ansur_mapping_file,
     validate_corpus_moderation_file,
+    validate_curation_review_file,
     validate_face_model_file,
     validate_food_file,
     validate_live_update_file,
@@ -47,6 +49,9 @@ def test_default_curation_files_validate() -> None:
     native_release_summaries = [
         validate_native_release_file(path) for path in DEFAULT_NATIVE_RELEASE_FILES
     ]
+    curation_review_summaries = [
+        validate_curation_review_file(path) for path in DEFAULT_CURATION_REVIEW_FILES
+    ]
     face_model_summaries = [
         validate_face_model_file(path) for path in DEFAULT_FACE_MODEL_FILES
     ]
@@ -66,6 +71,7 @@ def test_default_curation_files_validate() -> None:
     assert any("live-update" in summary for summary in live_update_summaries)
     assert any("provider decision" in summary for summary in provider_decision_summaries)
     assert any("native release item" in summary for summary in native_release_summaries)
+    assert any("curation review packet" in summary for summary in curation_review_summaries)
     assert any("face model candidate" in summary for summary in face_model_summaries)
     assert any("corpus moderation rule" in summary for summary in corpus_moderation_summaries)
     assert any("attractiveness evidence" in summary for summary in evidence_summaries)

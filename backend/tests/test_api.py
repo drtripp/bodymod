@@ -10,6 +10,7 @@ from app.data.corpus_moderation_policy import (
     CORPUS_MODERATION_POLICY,
     CORPUS_MODERATION_POLICY_SEED_PATH,
 )
+from app.data.curation_review import CURATION_REVIEW_LIBRARY, CURATION_REVIEW_SEED_PATH
 from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY, EXERCISE_SEED_PATH
 from app.data.face_model_candidates import (
@@ -297,6 +298,42 @@ def test_native_release_readiness_endpoint_returns_review_checklist() -> None:
     assert "mason@example.com" not in response.text
     assert "APNS_PRIVATE_KEY" not in response.text
     assert "GOOGLE_PLAY_SERVICE_ACCOUNT" not in response.text
+
+
+def test_curation_review_packets_endpoint_returns_review_packets() -> None:
+    response = client.get("/api/curation-review-packets")
+
+    assert response.status_code == 200
+    assert CURATION_REVIEW_SEED_PATH.exists()
+    payload = response.json()
+    packet_ids = {packet["id"] for packet in payload["packets"]}
+    blocking = [packet for packet in payload["packets"] if packet["blocking"]]
+
+    assert payload["version"] == CURATION_REVIEW_LIBRARY["version"]
+    assert "Dummy curation review packet seed" in payload["source"]
+    assert {
+        "strategy-corpus-source-review",
+        "target-profile-curation",
+        "reference-data-curation",
+        "fooddata-central-production-review",
+        "attractiveness-evidence-review",
+        "procedure-taxonomy-review",
+        "bloodwork-marker-review",
+    }.issubset(packet_ids)
+    assert len(blocking) == len(payload["packets"])
+    assert all(packet["metadataOnly"] for packet in payload["packets"])
+    assert all(packet["inputRequired"] for packet in payload["packets"])
+    assert all(packet["seedFiles"] for packet in payload["packets"])
+    assert all(packet["reviewerQuestions"] for packet in payload["packets"])
+    assert all(packet["acceptanceCriteria"] for packet in payload["packets"])
+    assert all(
+        any(doc.startswith("manual-work-queue.md") for doc in packet["docs"])
+        for packet in payload["packets"]
+    )
+    assert "waistCircumference" not in response.text
+    assert "syncToken" not in response.text
+    assert "mason@example.com" not in response.text
+    assert "data:image" not in response.text
 
 
 def test_face_model_candidates_endpoint_returns_review_seed() -> None:

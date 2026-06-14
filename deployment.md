@@ -248,6 +248,8 @@ This deployment path is suitable for a prototype. Public launch still needs:
 - vetted reference-population percentile data
 - production-quality target profiles
 - source-reviewed strategy corpus data
+- reviewed curation packets from `/api/curation-review-packets` before dummy
+  content/data seeds are promoted to production
 - final decisions on encoded share URLs and analytics provider/hosting
 - native release readiness items from `/api/native-release-readiness`,
   including generated iOS/Android projects, signing, device validation,

@@ -165,6 +165,10 @@ Current behavior:
 - a review-only corpus moderation policy seed is served at
   `/api/corpus-moderation-policy` and shown in Strategy Explorer with
   publication modes, exclusion triggers, and blocking review rules
+- curation review packets are served at `/api/curation-review-packets` and
+  shown in the account panel with metadata-only source/content review inputs
+  for strategy corpus, targets, reference data, FDC, attractiveness evidence,
+  procedures, and bloodwork seeds
 - clinical, surgical, pharmaceutical, and medical-adjacent entries are excluded from personalization by default
 
 Before public launch, decide:
@@ -175,6 +179,8 @@ Before public launch, decide:
 - whether user-submitted entries are allowed
 - what consent language and publication policy apply to queued case-log
   submissions
+- which curation packets have enough reviewed source/content evidence to
+  replace dummy seed data
 
 ### Legal Pages
 

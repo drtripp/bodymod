@@ -10,6 +10,7 @@ from app.data.attractiveness_evidence import ATTRACTIVENESS_EVIDENCE
 from app.data.bloodwork import BLOODWORK_LIBRARY
 from app.data.clothing_sizes import CLOTHING_SIZE_TABLES
 from app.data.corpus_moderation_policy import CORPUS_MODERATION_POLICY
+from app.data.curation_review import CURATION_REVIEW_LIBRARY
 from app.data.entitlements import ENTITLEMENT_CONFIG
 from app.data.exercises import EXERCISE_LIBRARY
 from app.data.face_model_candidates import FACE_MODEL_CANDIDATE_LIBRARY
@@ -40,6 +41,7 @@ from app.models import ClothingSizeTables
 from app.models import ClientErrorReportRequest
 from app.models import ClientErrorReportResponse
 from app.models import CorpusModerationPolicy
+from app.models import CurationReviewLibrary
 from app.models import EntitlementConfig
 from app.models import ExerciseLibrary
 from app.models import FaceModelCandidateLibrary
@@ -246,6 +248,11 @@ def provider_decisions() -> dict:
 @app.get("/api/native-release-readiness")
 def native_release_readiness() -> dict:
     return NativeReleaseChecklist.model_validate(NATIVE_RELEASE_CHECKLIST).model_dump()
+
+
+@app.get("/api/curation-review-packets")
+def curation_review_packets() -> dict:
+    return CurationReviewLibrary.model_validate(CURATION_REVIEW_LIBRARY).model_dump()
 
 
 @app.get("/api/face-model-candidates")

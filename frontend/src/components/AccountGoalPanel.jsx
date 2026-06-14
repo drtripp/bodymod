@@ -6,6 +6,7 @@ import {
   createShareDashboard,
   fetchAttractivenessEvidence,
   fetchBloodworkLibrary,
+  fetchCurationReviewPackets,
   fetchExerciseLibrary,
   fetchLaunchReadiness,
   fetchLiveUpdateManifest,
@@ -248,6 +249,11 @@ import {
   nativeReleaseSummary,
   normalizeNativeReleaseChecklist
 } from "../lib/nativeRelease";
+import {
+  curationReviewSummary,
+  fallbackCurationReviewLibrary,
+  normalizeCurationReviewLibrary
+} from "../lib/curationReview";
 import { loadStrategyCorpusBundle } from "../lib/strategyCorpus";
 import {
   buildCaseLogSubmission,
@@ -1013,6 +1019,22 @@ function formatNativeReleaseStep(item, t) {
   return item.validationSteps?.[0] || t("account.nativeRelease.noStep");
 }
 
+function formatCurationReviewStatus(status, t) {
+  return t(`account.curation.statusLabel.${status}`, {}, status);
+}
+
+function formatCurationReviewLine(packet, t) {
+  return t("account.curation.packetLine", {
+    status: formatCurationReviewStatus(packet.status, t),
+    category: packet.category,
+    owner: packet.owner
+  });
+}
+
+function formatCurationReviewInput(packet, t) {
+  return packet.inputRequired?.[0] || t("account.curation.noInput");
+}
+
 function formatSyncVaultCreatedStatus(record, summary, t) {
   return t("account.sync.status.created", {
     revision: record.revision,
@@ -1502,6 +1524,12 @@ export default function AccountGoalPanel({
   const [nativeReleaseStatus, setNativeReleaseStatus] = useState(() =>
     t("account.nativeRelease.status.loading")
   );
+  const [curationReviewLibrary, setCurationReviewLibrary] = useState(() =>
+    normalizeCurationReviewLibrary(fallbackCurationReviewLibrary)
+  );
+  const [curationReviewStatus, setCurationReviewStatus] = useState(() =>
+    t("account.curation.status.loading")
+  );
   const [selectedProtocolIds, setSelectedProtocolIds] = useState([]);
   const [status, setStatus] = useState("");
 
@@ -1518,6 +1546,7 @@ export default function AccountGoalPanel({
   const launchSummary = launchReadinessSummary(launchReadiness);
   const providerSummary = providerDecisionSummary(providerDecisionLibrary);
   const nativeReleaseStats = nativeReleaseSummary(nativeReleaseChecklist);
+  const curationSummary = curationReviewSummary(curationReviewLibrary);
   const strategyCorpusBundle = useMemo(
     () => loadStrategyCorpusBundle(),
     [account?.id]
@@ -1662,6 +1691,45 @@ export default function AccountGoalPanel({
         setLaunchReadiness(fallback);
         setLaunchReadinessStatus(
           t("account.launch.status.unavailable", {
+            blocking: summary.blockingCount
+          })
+        );
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [t]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchCurationReviewPackets()
+      .then((data) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const normalized = normalizeCurationReviewLibrary(data);
+        const summary = curationReviewSummary(normalized);
+        setCurationReviewLibrary(normalized);
+        setCurationReviewStatus(
+          t("account.curation.status.loaded", {
+            packets: summary.totalCount,
+            blocking: summary.blockingCount
+          })
+        );
+      })
+      .catch(() => {
+        if (!isMounted) {
+          return;
+        }
+
+        const fallback = normalizeCurationReviewLibrary(fallbackCurationReviewLibrary);
+        const summary = curationReviewSummary(fallback);
+        setCurationReviewLibrary(fallback);
+        setCurationReviewStatus(
+          t("account.curation.status.unavailable", {
             blocking: summary.blockingCount
           })
         );
@@ -4591,6 +4659,54 @@ export default function AccountGoalPanel({
               {nativeReleaseStatus ? (
                 <small className="native-release-status" role="status" aria-live="polite">
                   {nativeReleaseStatus}
+                </small>
+              ) : null}
+            </section>
+
+            <section className="curation-review-section" aria-label={t("account.curation.aria")}>
+              <div>
+                <h3>{t("account.curation.title")}</h3>
+                <p>
+                  {t("account.curation.body")}
+                </p>
+                <small>{curationReviewLibrary.source}</small>
+              </div>
+              <div className="curation-review-summary" aria-label={t("account.curation.summaryAria")}>
+                <strong>
+                  {t("account.curation.blockingCount", {
+                    count: curationSummary.blockingCount
+                  })}
+                </strong>
+                <span>
+                  {t("account.curation.packetCount", {
+                    count: curationSummary.totalCount
+                  })}
+                </span>
+                <small>
+                  {t("account.curation.seedFileCount", {
+                    count: curationSummary.seedFileCount
+                  })}
+                </small>
+              </div>
+              <ul className="curation-review-list">
+                {curationReviewLibrary.packets.slice(0, 4).map((packet) => (
+                  <li key={packet.id}>
+                    <strong>{packet.label}</strong>
+                    <span>{formatCurationReviewLine(packet, t)}</span>
+                    <small>{formatCurationReviewInput(packet, t)}</small>
+                  </li>
+                ))}
+              </ul>
+              {curationReviewLibrary.packets.length > 4 ? (
+                <small>
+                  {t("account.curation.remainingCount", {
+                    count: curationReviewLibrary.packets.length - 4
+                  })}
+                </small>
+              ) : null}
+              {curationReviewStatus ? (
+                <small className="curation-review-status" role="status" aria-live="polite">
+                  {curationReviewStatus}
                 </small>
               ) : null}
             </section>

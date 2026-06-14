@@ -37,6 +37,7 @@
     "test:launch-readiness": "node --test tests/launchReadiness.node.mjs",
     "test:provider-decisions": "node --test tests/providerDecisions.node.mjs",
     "test:native-release": "node --test tests/nativeRelease.node.mjs",
+    "test:curation-review": "node --test tests/curationReview.node.mjs",
     "test:case-log-submissions": "node --test tests/caseLogSubmissions.node.mjs",
     "test:widget-snapshot": "node --test tests/widgetSnapshot.node.mjs",
     "test:native-backup": "node --test tests/nativeBackup.node.mjs",

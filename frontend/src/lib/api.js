@@ -67,6 +67,10 @@ export function fetchNativeReleaseReadiness() {
   return request("/api/native-release-readiness");
 }
 
+export function fetchCurationReviewPackets() {
+  return request("/api/curation-review-packets");
+}
+
 export function fetchFaceModelCandidates() {
   return request("/api/face-model-candidates");
 }

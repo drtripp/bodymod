@@ -1,0 +1,304 @@
+{
+  "version": 1,
+  "source": "Dummy curation review packet seed mirrored from manual-work-queue.md. Packets remain blockers until Dawson provides reviewed inputs or removes the linked gate from launch scope.",
+  "notes": [
+    "This seed is intentionally metadata-only: no user measurements, account data, photos, lab values, credentials, private notes, or reviewer identities.",
+    "Each packet points to the existing editable seed/template files and the evidence needed before replacing dummy content with production content."
+  ],
+  "packets": [
+    {
+      "id": "strategy-corpus-source-review",
+      "label": "Strategy corpus source review",
+      "category": "strategy-corpus",
+      "status": "human-review-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["strategy-corpus-v1"],
+      "inputRequired": [
+        "Prioritized outcome list for the first public corpus",
+        "Source-reviewed strategy entries with evidence, risk, reversibility, legal notes, and contraindications",
+        "High-risk moderation decisions and non-personalization labels"
+      ],
+      "seedFiles": [
+        "backend/app/data/strategy_corpus.seed.json",
+        "strategy-corpus-template.json"
+      ],
+      "reviewerQuestions": [
+        "Which 2-3 outcomes should ship in v1?",
+        "Which high-risk categories are informational-only, web-only, or excluded?",
+        "What source standard is required for public entries versus n=1 case logs?"
+      ],
+      "acceptanceCriteria": [
+        "Every public strategy has source metadata, evidence/risk/reversibility scores, legal notes, uncertainty notes, and reviewed high-risk status.",
+        "No imported or user-submitted case log publishes automatically.",
+        "High-risk strategies remain excluded from personalization."
+      ],
+      "currentScaffold": [
+        "Backend strategy corpus seed and import/export template",
+        "Strategy explorer age gate, high-risk acknowledgment, and linked case-log rendering",
+        "Corpus moderation policy seed"
+      ],
+      "verification": [
+        "cd backend && python scripts/validate_curation.py --curation-review-file app/data/curation_review.seed.json",
+        "cd frontend && npm run test:corpus"
+      ],
+      "docs": [
+        "manual-work-queue.md#1-source-reviewed-strategy-corpus",
+        "strategy-corpus-curation.md"
+      ],
+      "metadataOnly": true
+    },
+    {
+      "id": "target-profile-curation",
+      "label": "Production target profile curation",
+      "category": "target-profiles",
+      "status": "human-review-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["production-target-profiles"],
+      "inputRequired": [
+        "Target library scope",
+        "Source or estimation method for each target",
+        "Production notes and uncertainty labels",
+        "Decision on named fictional or real-person targets"
+      ],
+      "seedFiles": [
+        "backend/app/data/targets.seed.json",
+        "target-profiles-template.json"
+      ],
+      "reviewerQuestions": [
+        "Which target archetypes are acceptable for v1?",
+        "Can any named target be used, or should all profiles remain generic archetypes?",
+        "What uncertainty language is required per source type?"
+      ],
+      "acceptanceCriteria": [
+        "Every target validates against the shared measurement schema.",
+        "Every target has source type, notes, and uncertainty framing.",
+        "Named-person policy is explicitly approved or targets remain archetypal."
+      ],
+      "currentScaffold": [
+        "SQLite-seeded target profiles",
+        "Target filter UI",
+        "Past-self target support"
+      ],
+      "verification": [
+        "cd backend && python -m pytest",
+        "cd backend && python scripts/validate_curation.py"
+      ],
+      "docs": [
+        "manual-work-queue.md#2-production-target-profiles",
+        "target-profile-curation.md"
+      ],
+      "metadataOnly": true
+    },
+    {
+      "id": "reference-data-curation",
+      "label": "Broader reference data curation",
+      "category": "reference-data",
+      "status": "source-review-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["broader-reference-data"],
+      "inputRequired": [
+        "Selected reference population for fields not covered by NHANES",
+        "Source URL, license, codebook confirmation, field mapping, and unit conversion rules",
+        "Production reference label and fixture outputs for tests"
+      ],
+      "seedFiles": [
+        "backend/app/data/reference.seed.json",
+        "backend/app/data/reference.nhanes.seed.json",
+        "backend/app/data/reference.ansur.mapping.json"
+      ],
+      "reviewerQuestions": [
+        "Should unsupported fields use ANSUR, another source, or remain visibly scaffolded?",
+        "What label should the population panel show for each source?",
+        "Which fields need sex-specific empirical tables before launch?"
+      ],
+      "acceptanceCriteria": [
+        "Unsupported fields are replaced with reviewed data or clearly remain scaffold-labeled.",
+        "License/source notes are documented before any production overlay is used.",
+        "Population panel labels match the reviewed source metadata."
+      ],
+      "currentScaffold": [
+        "NHANES adult height, weight, waist, and hip overlay",
+        "Reference scaffold for unsupported fields",
+        "ANSUR-style importer and mapping file"
+      ],
+      "verification": [
+        "cd backend && python -m pytest tests/test_ansur_import.py",
+        "cd backend && python scripts/validate_curation.py"
+      ],
+      "docs": [
+        "manual-work-queue.md#3-broader-vetted-percentile-reference-data",
+        "reference-data-curation.md"
+      ],
+      "metadataOnly": true
+    },
+    {
+      "id": "fooddata-central-production-review",
+      "label": "FoodData Central production review",
+      "category": "nutrition-data",
+      "status": "provider-decision-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["fooddata-central-production"],
+      "inputRequired": [
+        "API-key storage and server-side fetch policy",
+        "Source/citation wording and refresh cadence",
+        "Approved serving-size policy for per-100 g values versus serving-size scaling",
+        "Production nutrition QA fixtures for generic, branded, and edge-case rows"
+      ],
+      "seedFiles": [
+        "backend/app/data/food_usda.seed.json"
+      ],
+      "reviewerQuestions": [
+        "Should branded foods come from FDC, Open Food Facts, or both?",
+        "What refresh cadence is acceptable for production nutrition data?",
+        "Which edge-case nutrient rows should block seed promotion?"
+      ],
+      "acceptanceCriteria": [
+        "Candidate rows use real numeric FDC IDs unless explicitly kept as dummy seed rows.",
+        "Macro and micronutrient keys are present and nonnegative.",
+        "Serving-size conversion policy is documented before replacing the dummy seed."
+      ],
+      "currentScaffold": [
+        "Dummy USDA-style backend food seed",
+        "Offline FDC JSON/CSV importer",
+        "Diet search merges backend foods with Open Food Facts"
+      ],
+      "verification": [
+        "cd backend && python -m pytest tests/test_fdc_food_import.py",
+        "cd backend && python scripts/validate_curation.py --food-file app/data/food_usda.seed.json"
+      ],
+      "docs": [
+        "manual-work-queue.md#5-fooddata-central-production-import-review",
+        "food-data-curation.md"
+      ],
+      "metadataOnly": true
+    },
+    {
+      "id": "attractiveness-evidence-review",
+      "label": "Attractiveness evidence review",
+      "category": "research",
+      "status": "human-review-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["attractiveness-evidence-review"],
+      "inputRequired": [
+        "Approve or revise attractiveness-evidence-base.md",
+        "Decide which evidence rows can ship as reference-only goal context",
+        "Review summaries for non-prescriptive wording and contested-claim labels"
+      ],
+      "seedFiles": [
+        "backend/app/data/attractiveness_evidence.seed.json",
+        "attractiveness-evidence-base.md"
+      ],
+      "reviewerQuestions": [
+        "Which rows are shippable as reference context?",
+        "Which contested claims should be hidden, kept as needs-research, or removed?",
+        "Is additional source review required for height, FFMI, body symmetry, or facial-ratio claims?"
+      ],
+      "acceptanceCriteria": [
+        "Every row has a reviewed verdict: ship-reference, needs-research, or do-not-ship.",
+        "Goal UI copy stays reference-only and non-prescriptive.",
+        "Contested face/body claims are not converted into target recommendations."
+      ],
+      "currentScaffold": [
+        "Backend attractiveness evidence seed and API",
+        "Goal builder evidence notes with review status",
+        "Frontend evidence normalization tests"
+      ],
+      "verification": [
+        "cd backend && python scripts/validate_curation.py --evidence-file app/data/attractiveness_evidence.seed.json",
+        "cd frontend && npm run test:attractiveness-evidence"
+      ],
+      "docs": [
+        "manual-work-queue.md#4-attractiveness-evidence-review",
+        "attractiveness-evidence-base.md"
+      ],
+      "metadataOnly": true
+    },
+    {
+      "id": "procedure-taxonomy-review",
+      "label": "Procedure taxonomy review",
+      "category": "clinical-bodymod",
+      "status": "human-review-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["procedure-taxonomy-review"],
+      "inputRequired": [
+        "Reviewed procedure categories and labels",
+        "Default healing-window ranges by procedure/body area",
+        "Affected measurement field mappings",
+        "Approved photo stream guidance and safety copy"
+      ],
+      "seedFiles": [
+        "backend/app/data/procedures.seed.json"
+      ],
+      "reviewerQuestions": [
+        "Which procedure categories belong in the initial local-only tracker?",
+        "Which affected fields should pause trend/goal interpretation?",
+        "What safety wording is required for body-mod and clinical-adjacent logs?"
+      ],
+      "acceptanceCriteria": [
+        "Each procedure type has reviewed category, affected fields, healing window, risk level, and photo category.",
+        "Procedure logs remain local-first and informational.",
+        "Reliability windows pause affected trend and goal interpretation."
+      ],
+      "currentScaffold": [
+        "Backend procedure seed and API",
+        "Local procedure tracker",
+        "Procedure reliability events and progress-report case logs"
+      ],
+      "verification": [
+        "cd backend && python -m pytest tests/test_api.py",
+        "cd frontend && npm run test:procedures"
+      ],
+      "docs": [
+        "manual-work-queue.md#7-procedure-taxonomy-review"
+      ],
+      "metadataOnly": true
+    },
+    {
+      "id": "bloodwork-marker-review",
+      "label": "Bloodwork marker and range review",
+      "category": "health-data",
+      "status": "human-review-required",
+      "blocking": true,
+      "owner": "Dawson",
+      "launchGateIds": ["bloodwork-marker-review"],
+      "inputRequired": [
+        "Reviewed marker groups, labels, units, and aliases",
+        "Sex/context-specific reference ranges and out-of-range copy",
+        "Approved panel presets for hormones, lipids, metabolic, thyroid, and inflammation markers",
+        "Explicit local-only health-data privacy copy"
+      ],
+      "seedFiles": [
+        "backend/app/data/bloodwork.seed.json"
+      ],
+      "reviewerQuestions": [
+        "Which marker panels are acceptable for the local-only prototype?",
+        "Which reference ranges need sex, age, or context-specific review before public copy?",
+        "Should any future sync of lab metadata remain client-side encrypted only?"
+      ],
+      "acceptanceCriteria": [
+        "Each marker has reviewed units, group, summary, aliases where needed, and reference ranges.",
+        "Out-of-range copy remains informational and not diagnostic.",
+        "Bloodwork stays excluded from public share dashboards and plaintext server sync."
+      ],
+      "currentScaffold": [
+        "Backend bloodwork marker seed and API",
+        "Local-only lab-result entry and trend rows",
+        "Export, encrypted backup, and progress-report inclusion"
+      ],
+      "verification": [
+        "cd backend && python -m pytest tests/test_api.py",
+        "cd frontend && npm run test:bloodwork"
+      ],
+      "docs": [
+        "manual-work-queue.md#8-bloodwork-marker-and-range-review"
+      ],
+      "metadataOnly": true
+    }
+  ]
+}

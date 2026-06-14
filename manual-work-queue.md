@@ -9,6 +9,12 @@ The same blockers are mirrored in
 checklist. `backend/scripts/validate_curation.py` validates that each gate
 links back to this queue and names a verification command.
 
+The concrete source/content input packets are also mirrored in
+`backend/app/data/curation_review.seed.json`, exposed through
+`/api/curation-review-packets`, and shown in the account-panel curation review
+checklist. That packet seed stays metadata-only and tracks the dummy seed files,
+review questions, and acceptance criteria for the curation gates below.
+
 ## 1. Source-Reviewed Strategy Corpus
 
 Required input:
@@ -218,6 +224,7 @@ Use:
 
 - `backend/app/data/provider_decisions.seed.json`
 - `backend/app/data/native_release.seed.json`
+- `backend/app/data/curation_review.seed.json`
 - `backend/app/data/face_model_candidates.seed.json`
 - `backend/app/data/corpus_moderation_policy.seed.json`
 - `launch-decision-record.md`
@@ -234,6 +241,7 @@ cd backend
 .\.venv\Scripts\python.exe scripts\launch_preflight.py --fail-on-blockers
 .\.venv\Scripts\python.exe scripts\validate_curation.py --provider-decision-file app\data\provider_decisions.seed.json
 .\.venv\Scripts\python.exe scripts\validate_curation.py --native-release-file app\data\native_release.seed.json
+.\.venv\Scripts\python.exe scripts\validate_curation.py --curation-review-file app\data\curation_review.seed.json
 .\.venv\Scripts\python.exe scripts\validate_curation.py --face-model-file app\data\face_model_candidates.seed.json
 .\.venv\Scripts\python.exe scripts\validate_curation.py --corpus-moderation-file app\data\corpus_moderation_policy.seed.json
 ```

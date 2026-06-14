@@ -292,6 +292,37 @@ class NativeReleaseChecklist(BaseModel):
     items: list[NativeReleaseItem] = Field(min_length=1)
 
 
+class CurationReviewPacket(BaseModel):
+    id: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9._:-]+$")
+    label: str = Field(min_length=1)
+    category: str = Field(min_length=1)
+    status: Literal[
+        "human-review-required",
+        "source-review-required",
+        "provider-decision-required",
+        "completed",
+        "removed-from-scope",
+    ]
+    blocking: bool = True
+    owner: str = Field(min_length=1)
+    launchGateIds: list[str] = Field(default_factory=list)
+    inputRequired: list[str] = Field(min_length=1)
+    seedFiles: list[str] = Field(min_length=1)
+    reviewerQuestions: list[str] = Field(min_length=1)
+    acceptanceCriteria: list[str] = Field(min_length=1)
+    currentScaffold: list[str] = Field(default_factory=list)
+    verification: list[str] = Field(min_length=1)
+    docs: list[str] = Field(min_length=1)
+    metadataOnly: bool = True
+
+
+class CurationReviewLibrary(BaseModel):
+    version: int = Field(ge=1)
+    source: str = Field(min_length=1)
+    notes: list[str] = Field(default_factory=list)
+    packets: list[CurationReviewPacket] = Field(min_length=1)
+
+
 class FaceModelCandidate(BaseModel):
     id: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9._:-]+$")
     label: str = Field(min_length=1)
